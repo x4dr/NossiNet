@@ -78,7 +78,7 @@ def start():
 @app.route('/resetdb/')
 def resetdb():
     init_db()
-    return "ok"
+    return "ok "
 
 
 @app.route('/user/<username>')
