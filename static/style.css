@@ -1,0 +1,23 @@
+body            { font-family: sans-serif; background: #000000; }
+a, h1, h2       { color: #00f700; }
+h1, h2          { font-family: 'Georgia', serif; margin: 0; }
+h1              { border-bottom: 2px solid #000000;  }
+h2              { font-size: 1.2em; }
+
+.page           { margin: 2em auto; width: 35em; border: 5px solid #00f700;
+                  padding: 0.8em; background: #000; color: #00f700; }
+.leet {
+            background-color: black;
+            font-weight: bold;
+            color: green;
+        }
+.entries        { list-style: none; margin: 0; padding: 0; background: #000000;color:#00f700 }
+.entries li     { margin: 0.8em 1.2em; }
+.entries li h2  { margin-left: -1em; }
+.add-entry      { font-size: 0.9em; border-bottom: 1px solid #0000ff; }
+.add-entry dl   { font-weight: bold; color: #00f700; }
+.metanav        { text-align: right; font-size: 0.8em; padding: 0.3em;
+                  margin-bottom: 1em; background: #000;color: #00f700; }
+.flash          { background:#000; padding: 0.5em;
+                  border: 1px solid #00f700; }
+.error          { background: #ff0000; padding: 0.5em; }
