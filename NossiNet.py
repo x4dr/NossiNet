@@ -1,21 +1,21 @@
 import sqlite3
+from contextlib import closing
+
 from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash
 
-from contextlib import closing
-from NossiPack.krypta import *
-
 from NossiPack.User import *
+
 
 # configuration
 
 
 
 DATABASE = '/home/maric/workspace/PycharmProjects/NossiNet/NN.db'
-DEBUG = True
-SECRET_KEY = 'key'
-USERNAME = 'admin'
-PASSWORD = 'default'
+# DEBUG = True
+SECRET_KEY = 'ajdjJFeiJjFnnm88e4ko94VBPhzgY34'
+# USERNAME = 'admin'
+# PASSWORD = 'default'
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -127,8 +127,11 @@ def resetdb():
 
 @app.route('/user/<username>')
 def show_user_profile(username):
-    return render_template('layout.html', username)
-    # , 'User {0} has {1} Kudos'.format(username, random.randint(1, 100000)))
+    ul = Userlist()
+    if ul.contains(username):
+        u = ul.getuserbyname(username)
+        return render_template('userinfo.html', user=u)
+    return render_template('layout.html', error='User not found')
 
 
 @app.errorhandler(404)
@@ -137,4 +140,4 @@ def page_not_found(error):
 
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0')
+    app.run(debug=True)  #False, host='0.0.0.0')

@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+{% block head %}
+    {% for headstate in heads %}
+        {{ headstate|safe }}
+    {% else %}
+    {% endfor %}
+{% endblock %}
+{% block body %}
+    {% if session.logged_in %}
+        <h2>{{ user.username }} has {{ user.Kudos }} Kudos.</h2>
+    {% else %}
+        <h2> You need to be logged in to see this page.</h2>
+    {% endif %}
+    <br>
+    <button class="leeet" onclick="goBack()">Go Back</button>
+{% endblock %}

@@ -60,6 +60,12 @@ class Userlist(object):
                 return True
         return False
 
+    def getuserbyname(self, username):
+        for u in self.userlist:
+            if u.username == username:
+                return u
+        return None
+
     def valid(self, user, password):
         for u in self.userlist:
             if u.username == user:

@@ -19,7 +19,9 @@
   {% endif %}
   <ul class=entries>
   {% for entry in entries %}
-      <li><h2>"{{ entry.title }}" by {{ entry.author }}</h2>{{ entry.text|safe }}
+      <li><h2>"{{ entry.title }}" by <a
+              href="{{ url_for('show_user_profile', username=entry.author) }}">{{ entry.author }}</a>
+      </h2>{{ entry.text|safe }}
   {% else %}
     <li><em>Unbelievable.  No entries here so far</em>
   {% endfor %}
