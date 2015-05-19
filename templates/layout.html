@@ -3,13 +3,14 @@
 <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
 {% block head %}{% endblock %}
 <div class=page>
-  <h1>NOSFERATU NETWORK</h1>
+    <h1><a href={{ url_for('show_entries') }}>NOSFERATU NETWORK</a></h1>
   <div class=metanav>
   {% if not session.logged_in %}
-    <a href="{{ url_for('login') }}">log in</a>
+      <a href="{{ url_for('login') }}">log in</a>
       <a href="{{ url_for('register') }}">register</a>
   {% else %}
-    <a href="{{ url_for('logout') }}">log out</a>
+      {{ session.user }}
+      <a href="{{ url_for('logout') }}">log out</a>
   {% endif %}
   </div>
   {% for message in get_flashed_messages() %}

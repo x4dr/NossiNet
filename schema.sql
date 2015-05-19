@@ -1,7 +1,21 @@
-drop table if exists entries;
-create table entries (
-  id integer primary key autoincrement,
+CREATE TABLE IF NOT EXISTS entries (
+  id     INTEGER PRIMARY KEY AUTOINCREMENT,
   author TEXT NOT NULL,
-  title text not null,
-  text text not null
+  title  TEXT NOT NULL,
+  text   TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS messages (
+  id      INTEGER PRIMARY KEY AUTOINCREMENT,
+  author  TEXT NOT NULL,
+  text    TEXT NOT NULL,
+  value   INTEGER,
+  lock    BOOLEAN,
+  honored BOOLEAN
+);
+
+CREATE TABLE IF NOT EXISTS users (
+  username     TEXT PRIMARY KEY NOT NULL,
+  passwordhash TEXT             NOT NULL,
+  kudos        INTEGER          NOT NULL
+)

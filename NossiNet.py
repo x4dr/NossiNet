@@ -1,10 +1,11 @@
-import sqlite3
+import random
 from contextlib import closing
 
 from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash
 
 from NossiPack.User import *
+
 
 
 # configuration
@@ -19,6 +20,12 @@ SECRET_KEY = 'ajdjJFeiJjFnnm88e4ko94VBPhzgY34'
 
 app = Flask(__name__)
 app.config.from_object(__name__)
+
+messages = []
+
+
+def addmessage(recipient, text):
+    messages.append(dict())
 
 
 def init_db():
@@ -72,13 +79,15 @@ def register():
             username = username.upper()
             if request.form['password'] == request.form['passwordcheck']:
                 password = request.form['password']
-                if len(password) > 5:
+                if len(password) > 0:
+                    print("creating user", username)
                     error = u.adduser(User(username, password))
-                    if error is not None:
+                    print("error is", error)
+                    if error is None:
                         flash('User successfully created.')
                         return redirect(url_for('start'))
                 else:
-                    error = 'Password is too short!'
+                    error = 'Password has to be not empty!'
             else:
                 error = 'Passwords do not match!'
         else:
@@ -92,7 +101,7 @@ def login():
     u = Userlist()
     if request.method == 'POST':
         user = request.form['username']
-        user.upper()
+        user = user.upper()
         if not u.valid(user, request.form['password']):
             error = 'invalid username/password combination'
         else:
@@ -100,14 +109,17 @@ def login():
             session['user'] = user
             flash('You were logged in')
             return redirect(url_for('show_entries'))
+
     return render_template('login.html', error=error)
 
 
 @app.route('/logout')
 def logout():
-    session.pop('logged_in', None)
+    session.pop('logged_in', None)  # (none is what runs if the pop is not successfull)
+    session.pop('user', None)
     flash('You were logged out')
     return redirect(url_for('show_entries'))
+
 
 
 @app.route('/nn')
@@ -119,7 +131,7 @@ def start():
                            heads=['<META HTTP-EQUIV="refresh" CONTENT="5;url=/">'])
 
 
-@app.route('/resetdb/')
+@app.route('/regendb/')
 def resetdb():
     init_db()
     return "ok "
@@ -130,8 +142,10 @@ def show_user_profile(username):
     ul = Userlist()
     if ul.contains(username):
         u = ul.getuserbyname(username)
-        return render_template('userinfo.html', user=u)
-    return render_template('layout.html', error='User not found')
+    else:
+        u = User(username, "")
+        u.kudos = random.randint(0, 10000)
+    return render_template('userinfo.html', user=u)
 
 
 @app.errorhandler(404)
@@ -139,5 +153,28 @@ def page_not_found(error):
     return error
 
 
+@app.route('/deathanddestruction')
+def deldb():
+    db = connect_db()
+    db.execute('DROP TABLE IF EXISTS entries')
+    db.execute('DROP TABLE IF EXISTS messages')
+    db.commit()
+    init_db()
+    return "<link rel=stylesheet type=text/css href=\"/static/style.css\"> death and destruction has been brought forth"
+
+
+def openupdb():
+    db = connect_db()
+    # db.execute('DELETE FROM entries WHERE ID = 3')
+    # cur = db.execute('SELECT  FROM entries ORDER BY id DESC')
+    # print (cur.fetchall())
+    # cur =
+    if db is not None:
+        db.close()
+
+
+openupdb()
+
 if __name__ == '__main__':
-    app.run(debug=True)  #False, host='0.0.0.0')
+    app.run(debug=True)
+    # app.run(debug=False, host='0.0.0.0')
