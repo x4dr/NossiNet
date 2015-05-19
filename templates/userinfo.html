@@ -7,6 +7,20 @@
 {% endblock %}
 {% block body %}
     {% if session.logged_in %}
+        {% if session.get('user') != user.username %}
+            <form action="{{ url_for('send_msg', username=user.username) }}" method=post class=add-entry>
+                <dl>
+                    <dt>Title:</dt>
+                    <dd><input class=leet type=text size=30 name="title" , required></dd>
+                    <dt>Text:</dt>
+                    <dd><textarea class=leet name="text" rows=5 cols=40, required></textarea></dd>
+                    <dt>Price to view</dt>
+                    <dd><input class=leet value="0" type=number name="value" , required></dd>
+                    <br>
+                    <dd><input class=leeet type=submit value=Send></dd>
+                </dl>
+            </form>
+        {% endif %}
         <h2>{{ user.username }} has {{ user.kudos }} Kudos.</h2>
         {% for msg in msgs %}
             <br>__________________________________________________________<br>
@@ -15,12 +29,19 @@
             {% if msg.value > 0 %}
                 <br><h3>This message has a value of {{ msg.value }} and is{% if msg.lock %} locked{% else %}
                 unlocked{% endif %}.
+                {{ msg.lock }}{{ msg.lock }}{{ msg.lock }}
+                {% if msg.lock == true %}
+                    <br> TEEEST
+                    <button class="leeet" onclick="{{ url_for('unlock', msg) }}">Unlock (costs {{ msg.value }} )
+                    </button>
+                    <br>
+                {% endif %}
                 <br> This deal has{% if msg.honored %}{% else %} not{% endif %} been honored. </h3>
             {% endif %}
         {% endfor %}
     {% else %}
         <h2> You need to be logged in to see this page.</h2>
     {% endif %}
-    <br>
+    <br><br>
     <button class="leeet" onclick="goBack()">Go Back</button>
 {% endblock %}
