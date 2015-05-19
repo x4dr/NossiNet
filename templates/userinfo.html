@@ -20,21 +20,43 @@
                     <dd><input class=leeet type=submit value=Send></dd>
                 </dl>
             </form>
+            <h2>{{ user.username }} has {{ user.kudos }} Kudos.</h2>
+        {% else %}
+            <h2>You have {{ user.kudos }} Kudos.</h2>
+            <h2>You have {{ user.funds }} Credits. <a href="{{ url_for('add_funds', user=user.username) }}"> BUY
+                CREDITS </a></h2>
         {% endif %}
-        <h2>{{ user.username }} has {{ user.kudos }} Kudos.</h2>
+
         {% for msg in msgs %}
             <br>__________________________________________________________<br>
-            <h2>Message by <a href="{{ url_for('show_user_profile', username=msg.author) }}">{{ msg.author }}</a>
+            <h2>"{{ msg.title }}" by <a
+                    href="{{ url_for('show_user_profile', username=msg.author) }}">{{ msg.author }}</a>
             </h2>{{ msg.text|safe }}
             {% if msg.value > 0 %}
                 <br><h3>This message has a value of {{ msg.value }} and is{% if msg.lock %} locked{% else %}
                 unlocked{% endif %}.
-                {{ msg.lock }}{{ msg.lock }}{{ msg.lock }}
-                {% if msg.lock == true %}
-                    <br> TEEEST
-                    <button class="leeet" onclick="{{ url_for('unlock', msg) }}">Unlock (costs {{ msg.value }} )
-                    </button>
+
+                {% if msg.lock %}
+                    </h3><br>
+                    <form action="{{ url_for('unlock', ident=msg.id) }}">
+                        If you unlock this message, the price in kudos plus 10% your total kudos will be moved into
+                        escrow for you and your partner. If it was to your liking you should honor the message,
+                        giving back the amount in escrow for both and adding the price in kudos on top of that.
+                        <br>
+                        <br>
+                        <input class=leeet type="submit" value="Unlock (costs {{ msg.value }})">
+                    </form>
                     <br>
+                    <h3>
+                {% else %}
+                    {% if msg.honored %}{% else %}<br>
+                        <form action="{{ url_for('honor', ident=msg.id) }}">
+                            <dd> If you liked this deal honor this deal you will gain {{ msg.kudosrep }}
+                                and {{ msg.author }} will gain {{ msg.kudosaut }} Kudos.
+                            </dd>
+                            <input class=leeet type="submit" value="Honor it.">
+                        </form>
+                        <br> {% endif %}
                 {% endif %}
                 <br> This deal has{% if msg.honored %}{% else %} not{% endif %} been honored. </h3>
             {% endif %}

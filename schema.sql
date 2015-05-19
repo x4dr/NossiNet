@@ -7,17 +7,21 @@ CREATE TABLE IF NOT EXISTS entries (
 --DROP TABLE messages;
 CREATE TABLE IF NOT EXISTS messages (
   id      INTEGER PRIMARY KEY AUTOINCREMENT,
-  author  TEXT NOT NULL,
+  author    TEXT NOT NULL,
   recipient TEXT NOT NULL,
   title     TEXT NOT NULL,
-  text    TEXT NOT NULL,
+  text      TEXT NOT NULL,
   value   INTEGER,
+  kudosrep  INTEGER,
+  kudosaut  INTEGER,
   lock    BOOLEAN,
   honored BOOLEAN
 );
 
+--DROP TABLE users;
 CREATE TABLE IF NOT EXISTS users (
   username     TEXT PRIMARY KEY NOT NULL,
   passwordhash TEXT             NOT NULL,
-  kudos        INTEGER          NOT NULL
+  kudos INTEGER NOT NULL,
+  funds INTEGER NOT NULL
 )

@@ -14,12 +14,13 @@ def connect_db():
 
 
 class User(object):
-    def __init__(self, username, password="", passwordhash=None, kudos=0):
+    def __init__(self, username, password="", passwordhash=None, kudos=0, funds=0):
         self.username = username
         self.pw_hash = generate_password_hash(password)
         if passwordhash is not None:
             self.pw_hash = passwordhash
         self.kudos = kudos
+        self.funds = funds
 
     def set_password(self, oldpassword, newpassword):
         if check_password_hash(oldpassword):
@@ -44,17 +45,18 @@ class Userlist(object):
 
     def loaduserlist(self):  # converts the SQL table into a list for easier access
         db = connect_db()
-        cur = db.execute('SELECT username, passwordhash, kudos FROM users')
-        self.userlist = [User(username=row[0], passwordhash=row[1], kudos=row[2]) for row in cur.fetchall()]
+        cur = db.execute('SELECT username, passwordhash, kudos, funds FROM users')
+        self.userlist = [User(username=row[0], passwordhash=row[1], kudos=row[2], funds=row[3]) for row in
+                         cur.fetchall()]
         db.close()
 
     def saveuserlist(
             self):  # writes/overwrites the SQL table with the maybe changed list. this is not performant at all
         db = connect_db()
         for u in self.userlist:
-            d = dict(username=u.username, pwhash=u.pw_hash, kudos=u.kudos)
-            db.execute("INSERT OR REPLACE INTO users (username, passwordhash, kudos) "
-                       "VALUES (:username,:pwhash,:kudos)", d)
+            d = dict(username=u.username, pwhash=u.pw_hash, kudos=u.kudos, funds=u.funds)
+            db.execute("INSERT OR REPLACE INTO users (username, passwordhash, kudos, funds) "
+                       "VALUES (:username,:pwhash,:kudos, :funds)", d)
         db.commit()
         db.close()
 
@@ -75,6 +77,14 @@ class Userlist(object):
         for u in self.userlist:
             if u.username == username:
                 return u
+        return None
+
+    def getfunds(self, user=None, username=None):
+        if user is None:
+            if username is not None:
+                user = self.getuserbyname(username)
+        if user is not None:
+            return user.funds
         return None
 
     def valid(self, user, password):

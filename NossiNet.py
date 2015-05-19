@@ -10,6 +10,7 @@ from NossiPack.User import *
 
 
 
+
 # configuration
 
 
@@ -117,7 +118,6 @@ def logout():
     return redirect(url_for('show_entries'))
 
 
-
 @app.route('/nn')
 def start():
     print("nncalled")
@@ -142,14 +142,17 @@ def show_user_profile(username):
             [session.get('user')])
         for row in cur.fetchall():
             msg = dict(author=row[0], title=row[1], text=row[2], value=row[3], lock=row[4], honored=row[5], id=row[6])
-            print(msg)
+            cur2 = g.db.execute('SELECT kudosrep, kudosaut FROM messages WHERE id = ?', [msg['id']])
+            for row2 in cur2.fetchall():
+                msg['kudosrep'] = row2[0]
+                msg['kudosaut'] = row2[1]
             if msg['lock']:
-                msg['text'] = '[locked until you pay]'  # TODO: how it is supposed to work
+                msg['text'] = '[locked until you pay]'
             if msg['value'] <= 0:  # usually we dont need the special stuff
                 msg.pop('honored')
                 msg.pop('lock')
             msgs.append(msg)
-  #  else:
+            #  else:
 
     ul = Userlist()
     if ul.contains(username):
@@ -167,17 +170,9 @@ def send_msg(username):
     if not session.get('logged_in'):
         error = 'You are not logged in!'
         return redirect(url_for('login'))
-    print('getting to before the execute')
-    print(session.get('user'))
-    print(request.form['title'])
-    print(request.form['text'])
-    print(request.form['value'])
-    print(request.form['value'] != 0)
-    print(request.form['value'] == 0)
     g.db.execute('INSERT INTO messages (author,recipient,title,text,value,lock,honored) VALUES (?, ?, ?, ?, ?, ?, ?)',
                  [session.get('user'), username, request.form['title'], request.form['text'], request.form['value'],
                   not check0(request.form['value']), check0(request.form['value'])])
-    print('and making it through')
     g.db.commit()
     flash('Message sent')
     return redirect(url_for('show_entries'))  # , error = error)
@@ -187,9 +182,100 @@ def check0(a):  # used in sendmsg because typecasts in THAT line would make thin
     return int(a) == 0
 
 
-@app.route('/unlock/msg')
-def unlock(msg):
-    pass
+@app.route('/honor/<ident>')
+def honor(ident):
+    ul = Userlist()
+    error = None
+    lock = 0
+    u = ul.getuserbyname(session.get('user'))
+    cur = g.db.execute('SELECT author, value, lock, honored FROM messages WHERE id = ?', [ident])
+    for row in cur.fetchall():
+        author = row[0]
+        value = row[1]
+        lock = row[2]
+        honored = row[3]
+    n = ul.getuserbyname(author)
+    if lock != 1:
+        if honored != 0:
+            error = "This agreement has already been honored."
+        else:
+            cur = g.db.execute('SELECT kudosrep, kudosaut FROM messages WHERE id = ?', [ident])
+            for row in cur.fetchall():
+                kudosrep = row[0]
+                kudosaut = row[1]
+            u.kudos = u.kudos + kudosrep
+            n.kudos = n.kudos + kudosaut
+            g.db.execute('UPDATE messages SET honored = 1 WHERE id = ?', [ident])
+            cur = g.db.execute('SELECT * FROM messages')
+            for row in cur.fetchall():
+                print(row)
+            flash("Transfer complete. Check the received messsage and "
+                  "press the Honor Button if is was what you ordered.")
+            g.db.commit()
+            ul.saveuserlist()
+    else:
+        flash('already unlocked!')
+    return render_template('userinfo.html', user=u, error=error,
+                           heads=['<META HTTP-EQUIV="refresh" CONTENT="5;url=' + url_for('show_user_profile',
+                                                                                         username=u.username) + '">'])
+
+
+@app.route('/unlock/<ident>')
+def unlock(ident):
+    ul = Userlist()
+    error = None
+    lock = 0
+    author = ''
+    value = sys.maxsize
+    u = ul.getuserbyname(session.get('user'))
+    cur = g.db.execute('SELECT author, value, lock FROM messages WHERE id = ?', [ident])
+    for row in cur.fetchall():
+        author = row[0]
+        value = row[1]
+        lock = row[2]
+    n = ul.getuserbyname(author)  # n because n = u seen from the other side of the table
+    if lock == 1:
+        if u.kudos * 0.9 < value:
+            error = "You do not have enough kudos for this transaction!"
+        elif n.kudos * 0.9 < value:
+            error = "Your partner has not enough kudos for this transaction!"
+        elif u.funds < value:
+            error = "Not enough funds."
+        else:
+            u.funds -= value
+            uescrow = int(
+                0.1 * u.kudos + value * 2)  # (10% of the total Kudos now + twice the value) will be paid upon redemption
+            u.kudos = int((0.9 * u.kudos) - value)  # but 10% and the value are deducted now
+            n.funds += value
+            nescrow = int(0.1 * n.kudos + value * 2)
+            n.kudos = int((0.9 * n.kudos) - value)
+            g.db.execute('UPDATE messages SET lock = 0, kudosrep=?, kudosaut=? WHERE id = ?',
+                         [uescrow, nescrow, ident])
+            # cur = g.db.execute('SELECT * FROM messages')
+            # for row in cur.fetchall():
+            #    print(row)
+            flash("Transfer complete. Check the received messsage and "
+                  "press the Honor Button if is was what you ordered.")
+            g.db.commit()
+            ul.saveuserlist()
+    else:
+        flash('already unlocked!')
+    return render_template('userinfo.html', user=u, error=error,
+                           heads=['<META HTTP-EQUIV="refresh" CONTENT="5;url=' + url_for('show_user_profile',
+                                                                                         username=u.username) + '">'])
+
+
+@app.route('/add_funds/<user>')
+def add_funds(user):
+    ul = Userlist()
+    print(user + 'used cheating!')
+    u = ul.getuserbyname(user)
+    u.kudos = 20
+    u.funds = 10
+    ul.saveuserlist()
+    flash('this will obviously not stay')
+    return render_template('userinfo.html', user=u)
+
 
 
 @app.errorhandler(404)
@@ -204,6 +290,7 @@ def deldb():
     db.execute('DROP TABLE IF EXISTS messages')
     db.commit()
     init_db()
+    session.clear
     return "<link rel=stylesheet type=text/css href=\"/static/style.css\"> death and destruction has been brought forth"
 
 
