@@ -10,12 +10,13 @@ body {
 }
 a, h1, h2       { color: #00f700; }
 
-h1, h2 {
-    font-family: "Lucida Console", Monaco, monospace;
-    margin: 0;
-}
+
 h1              { border-bottom: 2px solid #000000;  }
 h2              { font-size: 1.2em; }
+
+h3 {
+    color: #007700
+}
 
 .page           { margin: 2em auto; width: 35em; border: 5px solid #00f700;
                   padding: 0.8em; background: #000; color: #00f700; }

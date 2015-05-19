@@ -8,6 +8,7 @@ from NossiPack.User import *
 
 
 
+
 # configuration
 
 
@@ -21,12 +22,19 @@ SECRET_KEY = 'ajdjJFeiJjFnnm88e4ko94VBPhzgY34'
 app = Flask(__name__)
 app.config.from_object(__name__)
 
-messages = []
 
+@app.route('/sendmsg', methods=['POST'])
+def send_msg():
+    if not session.get('logged_in'):
+        error = 'You are not logged in!'
+        return redirect(url_for('login'))
 
-def addmessage(recipient, text):
-    messages.append(dict())
-
+    g.db.execute('INSERT INTO messages (author,text,value,lock,honored) VALUES (?, ?, ?, ?, ?)',
+                 [session.get('user'), request.form['text'], request.form['value'],
+                  request.form['value'] != 0, request.form['value'] == 0])
+    g.db.commit()
+    flash('New entry was successfully posted')
+    return redirect(url_for('show_entries'))
 
 def init_db():
     with closing(connect_db()) as db:
@@ -139,13 +147,28 @@ def resetdb():
 
 @app.route('/user/<username>')
 def show_user_profile(username):
+    msgs = []
+    if username == session.get('user'):
+        g.db.execute('INSERT INTO messages (author,text,value,lock,honored) VALUES (?,?,?,?,?)',
+                     ["system", "LOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO " \
+                                "OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOONG", 500, False, False])
+        cur = g.db.execute('SELECT author,text,value,lock,honored FROM messages ORDER BY id DESC')
+        for row in cur.fetchall():
+            msg = dict(author=row[0], text=row[1], value=row[2], lock=row[3], honored=row[4])
+            if msg['lock']:
+                msg['text'] = '[locked until you pay]'  # TODO: how it is supposed to work
+            if msg['value'] <= 0:  # usually we dont need the special stuff
+                msg.pop('honored')
+                msg.pop('value')
+                msg.pop('lock')
+            msgs.append(msg)
     ul = Userlist()
     if ul.contains(username):
         u = ul.getuserbyname(username)
     else:
         u = User(username, "")
         u.kudos = random.randint(0, 10000)
-    return render_template('userinfo.html', user=u)
+    return render_template('userinfo.html', user=u, msgs=msgs)
 
 
 @app.errorhandler(404)

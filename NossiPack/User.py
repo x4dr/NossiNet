@@ -21,7 +21,6 @@ class User(object):
             self.pw_hash = passwordhash
         self.kudos = kudos
 
-
     def set_password(self, oldpassword, newpassword):
         if check_password_hash(oldpassword):
             self.pw_hash = generate_password_hash(newpassword)

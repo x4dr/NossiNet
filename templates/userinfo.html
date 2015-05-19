@@ -8,6 +8,16 @@
 {% block body %}
     {% if session.logged_in %}
         <h2>{{ user.username }} has {{ user.kudos }} Kudos.</h2>
+        {% for msg in msgs %}
+            <br>__________________________________________________________<br>
+            <h2>Message by <a href="{{ url_for('show_user_profile', username=msg.author) }}">{{ msg.author }}</a>
+            </h2>{{ msg.text|safe }}
+            {% if msg.value > 0 %}
+                <br><h3>This message has a value of {{ msg.value }} and is{% if msg.lock %} locked{% else %}
+                unlocked{% endif %}.
+                <br> This deal has{% if msg.honored %}{% else %} not{% endif %} been honored. </h3>
+            {% endif %}
+        {% endfor %}
     {% else %}
         <h2> You need to be logged in to see this page.</h2>
     {% endif %}
