@@ -14,7 +14,7 @@ def connect_db():
 
 
 class User(object):
-    def __init__(self, username, password="", passwordhash=None, kudos=0, funds=0):
+    def __init__(self, username, password="", passwordhash=None, kudos=2, funds=0):
         self.username = username
         self.pw_hash = generate_password_hash(password)
         if passwordhash is not None:

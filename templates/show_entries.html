@@ -21,7 +21,13 @@
   {% for entry in entries %}
       <li><h2>"{{ entry.title }}" by <a
               href="{{ url_for('show_user_profile', username=entry.author) }}">{{ entry.author }}</a>
-      </h2>{{ entry.text|safe }}
+      </h2>{{ entry.text|safe }} <br>
+          {% if entry.plusoned %} {% else %}
+              <form action="{{ url_for('plusone',ident=entry.id) }}" , method="post" , class="add-entry">
+                  <input class=leeet type=submit value="+1">
+                  <br>
+              </form>
+          {% endif %}
   {% else %}
     <li><em>Unbelievable.  No entries here so far</em>
   {% endfor %}

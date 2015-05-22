@@ -1,8 +1,10 @@
+--DROP TABLE entries;
 CREATE TABLE IF NOT EXISTS entries (
   id     INTEGER PRIMARY KEY AUTOINCREMENT,
   author TEXT NOT NULL,
   title  TEXT NOT NULL,
-  text   TEXT NOT NULL
+  text     TEXT NOT NULL,
+  plusoned TEXT
 );
 --DROP TABLE messages;
 CREATE TABLE IF NOT EXISTS messages (

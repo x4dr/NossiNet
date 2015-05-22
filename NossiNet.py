@@ -1,10 +1,13 @@
 import random
 from contextlib import closing
+import time
 
 from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash
 
 from NossiPack.User import *
+
+
 
 
 
@@ -50,9 +53,42 @@ def teardown_request(exception):
 
 @app.route('/')
 def show_entries():
-    cur = g.db.execute('SELECT author, title, text FROM entries ORDER BY id DESC')
-    entries = [dict(author=row[0], title=row[1], text=row[2]) for row in cur.fetchall()]
+    cur = g.db.execute('SELECT author, title, text, plusOned, id FROM entries ORDER BY id DESC')
+    entries = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4]) for row in cur.fetchall()]
+    for e in entries:
+        if e.get('plusoned') is not None:
+            esplit = e.get('plusoned').split(' ')
+            e['plusoned'] = ((session.get('user') in esplit) or (session.get('user') == e.get('author')))
+        else:
+            e['plusoned'] = (session.get('user') == e.get('author'))
     return render_template('show_entries.html', entries=entries)
+
+
+@app.route('/plusone/<ident>', methods=['POST'])
+def plusone(ident):
+    cur = g.db.execute('SELECT author, title, text, plusOned, id FROM entries WHERE id = ?', [ident])
+    for row in cur.fetchall():  # SHOULD only run once
+        entry = dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4])
+    ul = Userlist()
+    u = ul.getuserbyname(entry.get('author'))
+    if entry.get('author') == session.get('user'):
+        flash('upvoting your own posts?')
+        return redirect(url_for('show_entries'))
+
+    if entry.get('plusoned') is not None:
+        if session.get('user') not in entry.get('plusoned').split(' '):
+            entry['plusoned'] = entry.get('plusoned') + ' ' + session.user
+            u.kudos += 1
+        else:
+            flash('already done that')
+            return redirect(url_for('show_entries'))
+    else:
+        entry['plusoned'] = session.get('user')
+        u.kudos += 1
+    ul.saveuserlist()
+    g.db.execute('UPDATE entries SET plusOned = ? WHERE ID = ?', [entry.get('plusoned'), ident])
+    g.db.commit()
+    return redirect(url_for('show_entries'))
 
 
 @app.route('/add', methods=['POST'])
@@ -265,17 +301,45 @@ def unlock(ident):
                                                                                          username=u.username) + '">'])
 
 
-@app.route('/add_funds/<user>')
+@app.route('/add_funds/<user>', methods=['GET', 'POST'])
 def add_funds(user):
     ul = Userlist()
-    print(user + 'used cheating!')
     u = ul.getuserbyname(user)
-    u.kudos = 20
-    u.funds = 10
-    ul.saveuserlist()
-    flash('this will obviously not stay')
-    return render_template('userinfo.html', user=u)
+    error = None
+    keyprovided = False
+    if request.method == 'POST':
+        try:
+            amount = int(request.form['amount'])
+            if amount > 0:
+                key = int(time.time())
+                key = generate_password_hash(str(key))
+                print(key)
+                session['key'] = key[-10:]
+                session['amount'] = amount
+                keyprovided = True
+            else:
+                error = 'need positive amount'
+        except Exception as inst:
+            print(type(inst))
+            print(inst.args)  # arguments stored in .args
+            print(inst)  # __str__ allows args to be printed directly
+            try:
+                key = request.form['key'][-10:]
+                if key == session.pop('key'):
+                    flash('Transfer of ' + str(session.get('amount')) + ' Credits was successfull!')
+                    u.funds += int(session.pop('amount'))
+                else:
+                    error = 'wrong key, transaction invalidated.'
+                    session.pop('amount')
+                    session.pop('key')
+            except Exception as ins:
+                print(type(ins))
+                print(ins.args)  # arguments stored in .args
+                print(ins)  # __str__ allows args to be printed directly
+                error = 'invalid transaction'
 
+    ul.saveuserlist()
+    return render_template('funds.html', user=u, error=error, keyprovided=keyprovided)
 
 
 @app.errorhandler(404)

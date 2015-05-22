@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+{% block body %}
+    <h2>Buy Credits</h2>
+    Welcome to NosfertuDeadDropServices! The deal is simple. You put money in a a container. You put at at
+    THE PLACE told to you by a trusted member of the community
+    (<a href="{{ url_for('show_user_profile',username='Maric') }}">MARIC</a>, for example) and NDDS will come pick it
+    up and provide you with a key if what we find is what you said you hid. Then you input the key and receive money.
+    <form action="{{ url_for('add_funds', user= session.user) }}" method=post>
+        <dl>
+            {% if keyprovided %}
+                <dt>Key:
+                <dd><input class=leet type=text name=key>
+                    {% else %}
+                <dt>Amount:
+                <dd><input class=leet type=number name="amount">
+            {% endif %}
+            <dd><input class=leet type=submit value=Send>
+        </dl>
+    </form>
+{% endblock %}
