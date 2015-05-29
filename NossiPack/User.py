@@ -14,7 +14,8 @@ def connect_db():
 
 
 class User(object):
-    def __init__(self, username, password="", passwordhash=None, kudos=2, funds=0):
+    def __init__(self, username, password="", passwordhash=None, kudos=10, funds=0, kudosdebt="empty"):
+        self.kudosdebt = kudosdebt
         self.username = username
         self.pw_hash = generate_password_hash(password)
         if passwordhash is not None:
@@ -23,11 +24,11 @@ class User(object):
         self.funds = funds
 
     def set_password(self, oldpassword, newpassword):
-        if check_password_hash(oldpassword):
-            self.pw_hash = generate_password_hash(newpassword)
-            return True
-        else:
-            return False
+        # if check_password_hash(oldpassword):
+        self.pw_hash = generate_password_hash(newpassword)
+        return True
+        # else:
+        #   return False
 
     def check_password(self, password):
         return check_password_hash(self.pw_hash, password)
@@ -45,25 +46,31 @@ class Userlist(object):
 
     def loaduserlist(self):  # converts the SQL table into a list for easier access
         db = connect_db()
-        cur = db.execute('SELECT username, passwordhash, kudos, funds FROM users')
-        self.userlist = [User(username=row[0], passwordhash=row[1], kudos=row[2], funds=row[3]) for row in
-                         cur.fetchall()]
+        cur = db.execute('SELECT username, passwordhash, kudos, funds, kudosdebt FROM users')
+        self.userlist = [User(username=row[0], passwordhash=row[1],
+                              kudos=row[2], funds=row[3], kudosdebt=row[4]) for row in cur.fetchall()]
         db.close()
 
     def saveuserlist(
             self):  # writes/overwrites the SQL table with the maybe changed list. this is not performant at all
         db = connect_db()
+        print("-->", self.userlist[-1].kudosdebt, len(self.userlist))
         for u in self.userlist:
-            d = dict(username=u.username, pwhash=u.pw_hash, kudos=u.kudos, funds=u.funds)
-            db.execute("INSERT OR REPLACE INTO users (username, passwordhash, kudos, funds) "
-                       "VALUES (:username,:pwhash,:kudos, :funds)", d)
+            test = u.kudos
+            test = u.kudosdebt
+            d = dict(username=u.username, pwhash=u.pw_hash, kudos=u.kudos, funds=u.funds, kudosdebt=u.kudosdebt)
+            db.execute("INSERT OR REPLACE INTO users (username, passwordhash, kudos, funds, kudosdebt) "
+                       "VALUES (:username,:pwhash,:kudos, :funds, :kudosdebt)", d)
         db.commit()
         db.close()
 
     def adduser(self, user):
+        print("alksdjalskdjasldjasldkj")
         if self.contains(user.username):
             return 'Name is taken!'
         self.userlist.append(user)
+        print(user.kudosdebt)
+        print(self.userlist[-1].kudosdebt)
         self.saveuserlist()
         return None
 

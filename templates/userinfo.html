@@ -23,8 +23,8 @@
             <h2>{{ user.username }} has {{ user.kudos }} Kudos.</h2>
         {% else %}
             <h2>You have {{ user.kudos }} Kudos.</h2>
-            <h2>You have {{ user.funds }} Credits. <a href="{{ url_for('add_funds', user=user.username) }}"> BUY
-                CREDITS </a></h2>
+            <h2>You have {{ user.funds }} Credits.</h2> <br><h2><a href="{{ url_for('add_funds') }}"> BUY
+            CREDITS </a></h2> <br> <h2></h2> <h2><a href="{{ url_for('payout') }}"> SELL CREDITS </a></h2>
         {% endif %}
 
         {% for msg in msgs %}

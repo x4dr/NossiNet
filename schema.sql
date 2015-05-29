@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS messages (
 CREATE TABLE IF NOT EXISTS users (
   username     TEXT PRIMARY KEY NOT NULL,
   passwordhash TEXT             NOT NULL,
-  kudos INTEGER NOT NULL,
-  funds INTEGER NOT NULL
+  kudos        INTEGER          NOT NULL,
+  funds        INTEGER          NOT NULL,
+  kudosdebt    TEXT             NOT NULL
 )

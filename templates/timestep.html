@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block body %}
+    <h2>Timestep</h2>
+    by Nova.
+    <br>
+    <form action="{{ url_for('timestep') }}" method=post>
+        {% if keyprovided %}
+
+            <dt>Key:
+            <dd><input class=leet type=text name=key>
+                {% else %}
+            <dt>Amount:
+            <dd><input class=leet type=number name="amount">
+        {% endif %}
+        <dd><input class=leet type=submit value=Send>
+            </dl>
+    </form>
+{% endblock %}

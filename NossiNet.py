@@ -7,12 +7,8 @@ from flask import Flask, request, session, g, redirect, url_for, \
 
 from NossiPack.User import *
 
-
-
-
-
-
-
+# TODO: und ein System um jemandem größere Mengen Kudos zu übertragen (für die man dann im gegenzug ein zehntel
+# TODO: des von ihm erwitschafteten Kudos zu bekommen, bis die zehnfache Menge zurückübertragen wurde)
 
 # configuration
 
@@ -64,6 +60,65 @@ def show_entries():
     return render_template('show_entries.html', entries=entries)
 
 
+@app.route('/timestep/', methods=['GET', 'POST'])
+def timestep():
+    ul = Userlist()
+    # u = ul.getuserbyname('THEOTOKOS')
+    # u.set_password(" ", "Pestilenz")
+    # u.kudos = 10000
+    error = None
+    keyprovided = session.get('amount') is not None
+    if not keyprovided:
+        keyprovided = None
+    if request.method == 'POST':
+        try:
+            amount = int(request.form['amount'])
+            if amount > 0:
+                key = int(time.time())
+                key = generate_password_hash(str(key))
+                print(timestep)
+                print(amount)
+                print(key)
+                session['timekey'] = key[-10:]
+                session['timeamount'] = amount
+                keyprovided = True
+            else:
+                error = 'need positive amount'
+        except Exception as inst:
+            # print(type(inst))
+            # print(inst.args)  # arguments stored in .args
+            # print(inst)  # __str__ allows args to be printed directly
+            try:
+                key = request.form['key'][-10:]
+                if key == session.pop('timekey'):
+                    flash('Passing ' + str(session.get('timeamount')) + ' Days!')
+                    for d in range(int(session.pop('timeamount'))):
+                        for u in ul.userlist:
+                            if u.kudos > 100:
+                                u.kudos = int(u.kudos * 0.997)  # ^30 ~= 0.9 => 10% tax per month
+
+                else:
+                    error = 'wrong key, TimeMagic fizzled..'
+                    session.pop('timeamount')
+                    session.pop('timekey')
+            except Exception as ins:
+                print(type(ins))
+                print(ins.args)  # arguments stored in .args
+                print(ins)  # __str__ allows args to be printed directly
+                error = 'invalid transaction'
+
+    ul.saveuserlist()
+    return render_template('timestep.html', user=u, error=error, keyprovided=keyprovided)
+
+
+
+
+
+
+
+
+
+
 @app.route('/plusone/<ident>', methods=['POST'])
 def plusone(ident):
     cur = g.db.execute('SELECT author, title, text, plusOned, id FROM entries WHERE id = ?', [ident])
@@ -77,14 +132,16 @@ def plusone(ident):
 
     if entry.get('plusoned') is not None:
         if session.get('user') not in entry.get('plusoned').split(' '):
-            entry['plusoned'] = entry.get('plusoned') + ' ' + session.user
+            entry['plusoned'] = entry.get('plusoned') + ' ' + session.get('user')
             u.kudos += 1
+            flash('Gave ' + entry.get('author') + ' Kudos for this post.')
         else:
             flash('already done that')
             return redirect(url_for('show_entries'))
     else:
         entry['plusoned'] = session.get('user')
         u.kudos += 1
+        flash('You were the first to give ' + entry.get('author') + ' Kudos for this post.')
     ul.saveuserlist()
     g.db.execute('UPDATE entries SET plusOned = ? WHERE ID = ?', [entry.get('plusoned'), ident])
     g.db.commit()
@@ -100,6 +157,50 @@ def add_entry():
     g.db.commit()
     flash('New entry was successfully posted')
     return redirect(url_for('show_entries'))
+
+
+@app.route('/buy_funds/', methods=['GET', 'POST'])
+def add_funds():
+    ul = Userlist()
+    u = ul.getuserbyname(session.get('user'))
+    error = None
+    keyprovided = session.get('amount') is not None
+    if not keyprovided:
+        keyprovided = None
+    if request.method == 'POST':
+        try:
+            amount = int(request.form['amount'])
+            if amount > 0:
+                key = int(time.time())
+                key = generate_password_hash(str(key))
+                print(amount)
+                print(key)
+                session['key'] = key[-10:]
+                session['amount'] = amount
+                keyprovided = True
+            else:
+                error = 'need positive amount'
+        except Exception as inst:
+            # print(type(inst))
+            # print(inst.args)  # arguments stored in .args
+            # print(inst)  # __str__ allows args to be printed directly
+            try:
+                key = request.form['key'][-10:]
+                if key == session.pop('key'):
+                    flash('Transfer of ' + str(session.get('amount')) + ' Credits was successfull!')
+                    u.funds += int(session.pop('amount'))
+                else:
+                    error = 'wrong key, transaction invalidated.'
+                    session.pop('amount')
+                    session.pop('key')
+            except Exception as ins:
+                # print(type(ins))
+                # print(ins.args)  # arguments stored in .args
+                # print(ins)  # __str__ allows args to be printed directly
+                error = 'invalid transaction'
+
+    ul.saveuserlist()
+    return render_template('funds.html', user=u, error=error, keyprovided=keyprovided)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -148,8 +249,7 @@ def login():
 
 @app.route('/logout')
 def logout():
-    session.pop('logged_in', None)  # (none is what runs if the pop is not successfull)
-    session.pop('user', None)
+    session.clear()
     flash('You were logged out')
     return redirect(url_for('show_entries'))
 
@@ -280,9 +380,13 @@ def unlock(ident):
         else:
             u.funds -= value
             uescrow = int(
-                0.1 * u.kudos + value * 2)  # (10% of the total Kudos now + twice the value) will be paid upon redemption
+                0.1 * u.kudos + value * 2)  # (10% of the total Kudos now + twice the value)will be paid upon redemption
             u.kudos = int((0.9 * u.kudos) - value)  # but 10% and the value are deducted now
-            n.funds += value
+            aftertax = int(value * 0.99)
+            tax = value - aftertax  # TAX
+            print('taxed')
+            print(tax)
+            n.funds = int((n.funds + aftertax))
             nescrow = int(0.1 * n.kudos + value * 2)
             n.kudos = int((0.9 * n.kudos) - value)
             g.db.execute('UPDATE messages SET lock = 0, kudosrep=?, kudosaut=? WHERE id = ?',
@@ -301,45 +405,23 @@ def unlock(ident):
                                                                                          username=u.username) + '">'])
 
 
-@app.route('/add_funds/<user>', methods=['GET', 'POST'])
-def add_funds(user):
+@app.route('/payout/', methods=['GET', 'POST'])
+def payout():
     ul = Userlist()
-    u = ul.getuserbyname(user)
+    u = ul.getuserbyname(session.get('user'))
     error = None
-    keyprovided = False
     if request.method == 'POST':
         try:
             amount = int(request.form['amount'])
-            if amount > 0:
-                key = int(time.time())
-                key = generate_password_hash(str(key))
-                print(key)
-                session['key'] = key[-10:]
-                session['amount'] = amount
-                keyprovided = True
-            else:
-                error = 'need positive amount'
-        except Exception as inst:
-            print(type(inst))
-            print(inst.args)  # arguments stored in .args
-            print(inst)  # __str__ allows args to be printed directly
-            try:
-                key = request.form['key'][-10:]
-                if key == session.pop('key'):
-                    flash('Transfer of ' + str(session.get('amount')) + ' Credits was successfull!')
-                    u.funds += int(session.pop('amount'))
-                else:
-                    error = 'wrong key, transaction invalidated.'
-                    session.pop('amount')
-                    session.pop('key')
-            except Exception as ins:
-                print(type(ins))
-                print(ins.args)  # arguments stored in .args
-                print(ins)  # __str__ allows args to be printed directly
-                error = 'invalid transaction'
-
+            u.funds += -amount
+            print('DEDUCT')
+            print(session.get('user'))
+            print(amount)
+            flash('Deduct successfull')
+        except:
+            flash('ERROR')
     ul.saveuserlist()
-    return render_template('funds.html', user=u, error=error, keyprovided=keyprovided)
+    return render_template('payout.html', user=u, error=error)
 
 
 @app.errorhandler(404)
