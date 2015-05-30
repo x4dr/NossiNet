@@ -9,6 +9,7 @@ from NossiPack.User import *
 
 
 
+
 # configuration
 
 
@@ -64,7 +65,6 @@ def kudosloan():
     entries = u.get_kudosdebts()
     if request.method == 'POST':
         id = request.form['id']
-        print(id.__class__.__name__)
         entry = None
         for e in entries:
             if e.get('id') == id:
@@ -83,8 +83,6 @@ def kudosloan():
     for e in entries:
         e['currentkudos'] = ul.getuserbyname(e.get('loaner')).kudos
     return render_template('loankudos.html', entries=entries)
-
-
 
 
 @app.route('/')
@@ -125,9 +123,6 @@ def timestep():
             else:
                 error = 'need positive amount'
         except Exception as inst:
-            # print(type(inst))
-            # print(inst.args)  # arguments stored in .args
-            # print(inst)  # __str__ allows args to be printed directly
             try:
                 key = request.form['key'][-10:]
                 if key == session.pop('timekey'):
@@ -142,9 +137,7 @@ def timestep():
                     session.pop('timeamount')
                     session.pop('timekey')
             except Exception as ins:
-                print(type(ins))
-                print(ins.args)  # arguments stored in .args
-                print(ins)  # __str__ allows args to be printed directly
+
                 error = 'invalid transaction'
 
     ul.saveuserlist()
@@ -205,17 +198,15 @@ def add_funds():
             if amount > 0:
                 key = int(time.time())
                 key = generate_password_hash(str(key))
-                print(amount)
-                print(key)
+                print("user: ", u.username)
+                print("amount: ", amount)
+                print("key: ", key)
                 session['key'] = key[-10:]
                 session['amount'] = amount
                 keyprovided = True
             else:
                 error = 'need positive amount'
         except Exception as inst:
-            # print(type(inst))
-            # print(inst.args)  # arguments stored in .args
-            # print(inst)  # __str__ allows args to be printed directly
             try:
                 key = request.form['key'][-10:]
                 if key == session.pop('key'):
@@ -226,9 +217,6 @@ def add_funds():
                     session.pop('amount')
                     session.pop('key')
             except Exception as ins:
-                # print(type(ins))
-                # print(ins.args)  # arguments stored in .args
-                # print(ins)  # __str__ allows args to be printed directly
                 error = 'invalid transaction'
 
     ul.saveuserlist()
@@ -328,7 +316,9 @@ def show_user_profile(username):
     else:
         u = User(username, "")
         u.kudos = random.randint(0, 10000)
-    site = render_template('userinfo.html', user=u, msgs=msgs)
+
+    ownkudos = ul.getuserbyname(session.get('user')).kudos
+    site = render_template('userinfo.html', ownkudos=ownkudos, user=u, msgs=msgs)
     return site
 
 
@@ -429,8 +419,8 @@ def unlock(ident):
             # cur = g.db.execute('SELECT * FROM messages')
             # for row in cur.fetchall():
             #    print(row)
-            flash("Transfer complete. Check the received messsage and "
-                  "press the Honor Button if is was what you ordered.")
+            flash("Transfer complete. Check the received message and "
+                  "press the Honor Button if it was what you ordered.")
             g.db.commit()
             ul.saveuserlist()
     else:
@@ -488,5 +478,5 @@ def openupdb():
 openupdb()
 
 if __name__ == '__main__':
-    # app.run(debug=True)
-    app.run(debug=False, host='0.0.0.0')
+    app.run(debug=True)
+    # app.run(debug=False, host='0.0.0.0')

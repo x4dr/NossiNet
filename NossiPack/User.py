@@ -16,7 +16,7 @@ def connect_db():
 class User(object):
     def __init__(self, username, password="", passwordhash=None, kudos=10, funds=0, kudosdebt=""):
         self.kudosdebt = kudosdebt
-        self.username = username
+        self.username = username.strip()
         self.pw_hash = generate_password_hash(password)
         if passwordhash is not None:
             self.pw_hash = passwordhash
@@ -56,7 +56,6 @@ class User(object):
 
     def get_kudosdebts(self):
         kd = self.kudosdebt
-        print("kd=", kd)
         kd = kd.split("|")
         entries = []
         for s in kd:
