@@ -21,10 +21,18 @@
                 </dl>
             </form>
             <h2>{{ user.username }} has {{ user.kudos }} Kudos.</h2>
+            <form action="{{ url_for('loankudos', user = user.username) }}" class="add-entry">
+                <input class="leeet" type="submit" value="Vouch for {{ user.username }}"></form>
+            <dd> When they accept
+                this, 20% of your Kudos (right now that would be {{ user.kudos // 5 }}) will be deducted from you,
+                half of that (right now {{ user.kudos // 10 }}) will be granted to them and as they earn Kudos
+                you will get double your investment (right now {{ (user.kudos // 5)*4 }} Kudos) back.
+            </dd>
         {% else %}
-            <h2>You have {{ user.kudos }} Kudos.</h2>
-            <h2>You have {{ user.funds }} Credits.</h2> <br><h2><a href="{{ url_for('add_funds') }}"> BUY
-            CREDITS </a></h2> <br> <h2></h2> <h2><a href="{{ url_for('payout') }}"> SELL CREDITS </a></h2>
+            <h2>You have {{ user.kudos }} Kudos. </h2> </h2>
+            <h3><a href="{{ url_for('kudosloan') }}"> VOUCHING OFFERS</a></h3>
+            <h2>You have {{ user.funds }} Credits.</h2> <h3><a href="{{ url_for('add_funds') }}"> BUY
+            CREDITS </a></h3>  <h2></h2> <h3><a href="{{ url_for('payout') }}"> SELL CREDITS </a></h3>
         {% endif %}
 
         {% for msg in msgs %}

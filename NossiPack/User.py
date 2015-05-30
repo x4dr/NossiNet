@@ -14,7 +14,7 @@ def connect_db():
 
 
 class User(object):
-    def __init__(self, username, password="", passwordhash=None, kudos=10, funds=0, kudosdebt="empty"):
+    def __init__(self, username, password="", passwordhash=None, kudos=10, funds=0, kudosdebt=""):
         self.kudosdebt = kudosdebt
         self.username = username
         self.pw_hash = generate_password_hash(password)
@@ -34,7 +34,54 @@ class User(object):
         return check_password_hash(self.pw_hash, password)
 
     def addkudos(self, kudos):
+        if kudos == 0:
+            return  # so that if two people both owe each other it will not create an endless loop
+        l = self.get_kudosdebts()
+        u = None
+        i = 0
+        while i < len(l):
+            d = l[i]
+            if int(d.get('remaining')) > 0:
+                ul = Userlist()
+                u = ul.getuserbyname(d.get('loaner'))
+                break
+
+        if u is not None:
+            tax = int(0.1 * kudos)  # rounds down, so < 10 kudos transactions are not taxed
+            kudos += -tax  # yes this means that negative kudos is applied as well
+            d['remaining'] = int(d.get('remaining')) - tax  # can go below zero, then its overtaxed ^^ lucky/unlucky
+            u.addkudos(tax)  # if the loaner is in debt it will cascade
         self.kudos += kudos
+        self.set_kudosdebts(l)
+
+    def get_kudosdebts(self):
+        kd = self.kudosdebt
+        print("kd=", kd)
+        kd = kd.split("|")
+        entries = []
+        for s in kd:
+            tmp = s.split("#")
+            if len(tmp) == 5:
+                entries.append(dict(loaner=tmp[0], state=tmp[1], remaining=tmp[2], original=tmp[3], id=tmp[4]))
+            else:
+                print("kudos error with: ", tmp)
+        return entries
+
+    def set_kudosdebts(self, entries):
+        result = ""
+        for e in entries:
+            result += e.get('loaner') + "#" + e.get('state') + "#" + str(e.get('remaining')) + "#" + str(e.get(
+                'original')) + "#" + str(e.get('id')) + "|"
+        print(result)
+        self.kudosdebt = result
+
+    def add_kudosoffer(self, loaner):
+        l = self.get_kudosdebts()
+        i = 0
+        if len(l) > 0:
+            i = int(l[-1].id) + 1
+        l.append(dict(loaner=loaner, state="unaccepted", remaining="-1", original="-1", id=str(i)))
+        self.set_kudosdebts(l)
 
 
 class Userlist(object):
@@ -54,7 +101,7 @@ class Userlist(object):
     def saveuserlist(
             self):  # writes/overwrites the SQL table with the maybe changed list. this is not performant at all
         db = connect_db()
-        print("-->", self.userlist[-1].kudosdebt, len(self.userlist))
+
         for u in self.userlist:
             test = u.kudos
             test = u.kudosdebt

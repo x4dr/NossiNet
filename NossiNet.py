@@ -7,8 +7,7 @@ from flask import Flask, request, session, g, redirect, url_for, \
 
 from NossiPack.User import *
 
-# TODO: und ein System um jemandem größere Mengen Kudos zu übertragen (für die man dann im gegenzug ein zehntel
-# TODO: des von ihm erwitschafteten Kudos zu bekommen, bis die zehnfache Menge zurückübertragen wurde)
+
 
 # configuration
 
@@ -45,6 +44,47 @@ def teardown_request(exception):
     db = getattr(g, 'db', None)
     if db is not None:
         db.close()
+
+
+@app.route('/kudosloan/<user>', methods=['GET'])
+def loankudos(user):
+    ul = Userlist()
+    loaner = ul.getuserbyname(session.get('user'))
+    loanee = ul.getuserbyname(user)
+    loanee.add_kudosoffer(loaner.username)
+    ul.saveuserlist()
+    flash("Extended offer for vouching")
+    return redirect(url_for('kudosloan'))
+
+
+@app.route('/kudosloan/', methods=['GET', 'POST'])
+def kudosloan():
+    ul = Userlist()
+    u = ul.getuserbyname(session.get('user'))
+    entries = u.get_kudosdebts()
+    if request.method == 'POST':
+        id = request.form['id']
+        print(id.__class__.__name__)
+        entry = None
+        for e in entries:
+            if e.get('id') == id:
+                entry = e
+        if entry is not None:
+            if entry.get('state') == 'unaccepted':
+                entry['state'] = 'accepted'
+                n = ul.getuserbyname(entry.get('loaner'))
+                amount = int(n.kudos * 0.1)
+                n.kudos += -amount * 2
+                u.kudos += amount
+                entry['original'] = str(amount)
+                entry['remaining'] = str(amount * 4)
+    u.set_kudosdebts(entries)
+    ul.saveuserlist()
+    for e in entries:
+        e['currentkudos'] = ul.getuserbyname(e.get('loaner')).kudos
+    return render_template('loankudos.html', entries=entries)
+
+
 
 
 @app.route('/')
@@ -109,14 +149,6 @@ def timestep():
 
     ul.saveuserlist()
     return render_template('timestep.html', user=u, error=error, keyprovided=keyprovided)
-
-
-
-
-
-
-
-
 
 
 @app.route('/plusone/<ident>', methods=['POST'])
@@ -320,6 +352,7 @@ def check0(a):  # used in sendmsg because typecasts in THAT line would make thin
 
 @app.route('/honor/<ident>')
 def honor(ident):
+    honored = 1
     ul = Userlist()
     error = None
     lock = 0
@@ -327,7 +360,7 @@ def honor(ident):
     cur = g.db.execute('SELECT author, value, lock, honored FROM messages WHERE id = ?', [ident])
     for row in cur.fetchall():
         author = row[0]
-        value = row[1]
+        # value = row[1]
         lock = row[2]
         honored = row[3]
     n = ul.getuserbyname(author)
@@ -339,8 +372,8 @@ def honor(ident):
             for row in cur.fetchall():
                 kudosrep = row[0]
                 kudosaut = row[1]
-            u.kudos = u.kudos + kudosrep
-            n.kudos = n.kudos + kudosaut
+            u.addkudos(kudosrep)
+            n.addkudos(kudosaut)
             g.db.execute('UPDATE messages SET honored = 1 WHERE id = ?', [ident])
             cur = g.db.execute('SELECT * FROM messages')
             for row in cur.fetchall():
@@ -380,15 +413,17 @@ def unlock(ident):
         else:
             u.funds -= value
             uescrow = int(
-                0.1 * u.kudos + value * 2)  # (10% of the total Kudos now + twice the value)will be paid upon redemption
-            u.kudos = int((0.9 * u.kudos) - value)  # but 10% and the value are deducted now
+                0.1 * u.kudos + value)  # (10% of the total Kudos now + twice the value)will be paid upon redemption
+            u.addkudos(-uescrow)  # but 10% and the value are deducted now
+            uescrow += value
             aftertax = int(value * 0.99)
             tax = value - aftertax  # TAX
             print('taxed')
             print(tax)
             n.funds = int((n.funds + aftertax))
-            nescrow = int(0.1 * n.kudos + value * 2)
-            n.kudos = int((0.9 * n.kudos) - value)
+            nescrow = int(0.1 * n.kudos + value)
+            n.addkudos(-nescrow)
+            nescrow += value
             g.db.execute('UPDATE messages SET lock = 0, kudosrep=?, kudosaut=? WHERE id = ?',
                          [uescrow, nescrow, ident])
             # cur = g.db.execute('SELECT * FROM messages')
@@ -453,5 +488,5 @@ def openupdb():
 openupdb()
 
 if __name__ == '__main__':
-    app.run(debug=True)
-    # app.run(debug=False, host='0.0.0.0')
+    # app.run(debug=True)
+    app.run(debug=False, host='0.0.0.0')
