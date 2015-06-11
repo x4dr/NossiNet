@@ -23,12 +23,9 @@ class User(object):
         self.kudos = kudos
         self.funds = funds
 
-    def set_password(self, oldpassword, newpassword):
-        # if check_password_hash(oldpassword):
+    def set_password(self, newpassword):
         self.pw_hash = generate_password_hash(newpassword)
         return True
-        # else:
-        #   return False
 
     def check_password(self, password):
         return check_password_hash(self.pw_hash, password)
@@ -111,7 +108,6 @@ class Userlist(object):
         db.close()
 
     def adduser(self, user):
-        print("alksdjalskdjasldjasldkj")
         if self.contains(user.username):
             return 'Name is taken!'
         self.userlist.append(user)

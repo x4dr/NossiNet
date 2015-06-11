@@ -19,8 +19,10 @@
   {% endfor %}
   {% block body %}{% endblock %}
 </div>
-
-
+{% if not session.logged_in %}
+    <br>
+    <a href="{{ url_for('impressum') }}">Impressum</a>
+{% endif %}
 <script>
     function goBack() {
         window.history.back();

@@ -4,6 +4,7 @@ __author__ = 'maric'
 import os
 import random
 import struct
+
 from Crypto.Cipher import AES
 
 
@@ -74,3 +75,62 @@ def decrypt_file(key, in_filename, out_filename=None, chunksize=24 * 1024):
                 outfile.write(decryptor.decrypt(chunk))
 
             outfile.truncate(origsize)
+
+
+def d10(amount, difficulty=6, mode=""):
+    successes = 0
+    ones = 0
+    i = 0
+    while i < amount:
+        i += 1
+        r = random.Random().randint(1, 10)
+        if r >= difficulty:
+            successes += 1
+        if r == 1:
+            ones += 1
+        if "X10" in mode:
+            if r == 10:
+                amount += 1
+        if "X9" in mode:
+            if r == 9:
+                amount += 1
+        if "X8" in mode:
+            if r == 8:
+                amount += 1
+        if "X7" in mode:
+            if r == 7:
+                amount += 1
+    if successes > 0:
+        if successes > ones:
+            return successes - ones
+        else:
+            return 0
+    else:
+        return -ones
+
+
+def roll(low=0, high=0, attribute=0, ability=0):
+    output = 0
+    if high != 0:
+        output = random.Random().randint(low, high)
+    if attribute != 0:
+        if ability == 0:
+            return d10(attribute - 1)
+        else:
+            return d10(attribute + ability)
+    return output
+
+
+def randomlyspend(count, start, maximum, points):
+    tmp = []
+    for i in range(count):
+        tmp.append(start)
+    while points > 0:
+        i = random.Random().randrange(0, len(tmp))
+        if tmp[i] >= maximum:
+            if all([t >= maximum for t in tmp]):
+                break
+            continue
+        tmp[i] += 1
+        points += -1
+    return tmp

@@ -5,7 +5,10 @@ import time
 from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash
 
+from NossiPack.Character import makechar
 from NossiPack.User import *
+
+
 
 
 
@@ -129,11 +132,11 @@ def timestep():
                     flash('Passing ' + str(session.get('timeamount')) + ' Days!')
                     for d in range(int(session.pop('timeamount'))):
                         for u in ul.userlist:
-                            if u.kudos > 100:
-                                u.kudos = int(u.kudos * 0.997)  # ^30 ~= 0.9 => 10% tax per month
+                            u.kudos += -int((
+                                                u.kudos + 70) ** 1.1 * 0.0035)  # ^30 ~= 0.9 => 10% tax per month scaling up more harshly, stabilizing at 100
 
                 else:
-                    error = 'wrong key, TimeMagic fizzled..'
+                    error = 'wrong key, TimeMagic fizzled...'
                     session.pop('timeamount')
                     session.pop('timekey')
             except Exception as ins:
@@ -236,6 +239,7 @@ def register():
                 if len(password) > 0:
                     print("creating user", username)
                     error = u.adduser(User(username, password))
+                    print(password)
                     print("error is", error)
                     if error is None:
                         flash('User successfully created.')
@@ -316,10 +320,16 @@ def show_user_profile(username):
     else:
         u = User(username, "")
         u.kudos = random.randint(0, 10000)
-
-    ownkudos = ul.getuserbyname(session.get('user')).kudos
+    ownkudos = 0
+    if session.get('logged_in', False):
+        ownkudos = ul.getuserbyname(session.get('user')).kudos
     site = render_template('userinfo.html', ownkudos=ownkudos, user=u, msgs=msgs)
     return site
+
+
+@app.route('/impressum/')
+def impressum():
+    return render_template('Impressum.html')
 
 
 @app.route('/sendmsg/<username>', methods=['POST'])
@@ -406,7 +416,7 @@ def unlock(ident):
                 0.1 * u.kudos + value)  # (10% of the total Kudos now + twice the value)will be paid upon redemption
             u.addkudos(-uescrow)  # but 10% and the value are deducted now
             uescrow += value
-            aftertax = int(value * 0.99)
+            aftertax = int(value ** 1.1 * 0.99)
             tax = value - aftertax  # TAX
             print('taxed')
             print(tax)
@@ -454,15 +464,35 @@ def page_not_found(error):
     return error
 
 
-@app.route('/deathanddestruction')
-def deldb():
+@app.route('/deathanddestruction/')
+def deldbredir():
+    return deldb()
+
+
+@app.route('/deathanddestruction/<key>')
+def deldb(key="None"):
     db = connect_db()
-    db.execute('DROP TABLE IF EXISTS entries')
-    db.execute('DROP TABLE IF EXISTS messages')
-    db.commit()
-    init_db()
-    session.clear
-    return "<link rel=stylesheet type=text/css href=\"/static/style.css\"> death and destruction has been brought forth"
+    if key == "None":
+        key = int(time.time())
+        key = generate_password_hash(str(key))
+        print("KEYOFDEATHINCOMING!")
+        print("KEYOFDEATH", key)
+        session['deathkey'] = key[-10:]
+    else:
+        if session.get('deathkey', None) == key[-10:]:
+            db.execute('DROP TABLE IF EXISTS entries')
+            db.execute('DROP TABLE IF EXISTS messages')
+            db.execute('DROP TABLE IF EXISTS users')
+            db.commit()
+            # init_db()
+            # session.clear
+            return "<link rel=stylesheet type=text/css href=\"/static/style.css\"> death and destruction has been brought forth"
+    return "<link rel=stylesheet type=text/css href=\"/static/style.css\"> DO YOU HAVE THE KEY"
+
+
+@app.route('/chargen/<mini>,<maxi>,<a>,<b>,<c>')
+def chargen(mini, maxi, a, b, c):
+    return render_template("chargen.html", char=makechar(int(mini), int(maxi), int(a), int(b), int(c)).getstringrepr())
 
 
 def openupdb():
@@ -478,5 +508,5 @@ def openupdb():
 openupdb()
 
 if __name__ == '__main__':
-    app.run(debug=True)
-    # app.run(debug=False, host='0.0.0.0')
+    # app.run(debug=True)
+    app.run(debug=False, host='0.0.0.0')
