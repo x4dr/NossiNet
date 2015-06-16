@@ -16,11 +16,12 @@ from NossiPack.User import *
 
 
 
+
 # configuration
 
 
 
-DATABASE = '/home/maric/workspace/PycharmProjects/NossiNet/NN.db'
+DATABASE = './NN.db'
 # DEBUG = True
 SECRET_KEY = 'ajdjJFeiJjFnnm88e4ko94VBPhzgY34'
 # USERNAME = 'admin'
@@ -526,5 +527,5 @@ def openupdb():
 openupdb()
 
 if __name__ == '__main__':
-    app.run(debug=True)
-    # app.run(debug=False, host='0.0.0.0')
+    # app.run(debug=True)
+    app.run(debug=False, host='0.0.0.0')
