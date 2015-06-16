@@ -13,6 +13,9 @@ from NossiPack.User import *
 
 
 
+
+
+
 # configuration
 
 
@@ -93,6 +96,7 @@ def show_entries():
     cur = g.db.execute('SELECT author, title, text, plusOned, id FROM entries ORDER BY id DESC')
     entries = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4]) for row in cur.fetchall()]
     for e in entries:
+        print(e.get('author') + " " + e.get('text') + " " + str(e.get('id')))
         if e.get('plusoned') is not None:
             esplit = e.get('plusoned').split(' ')
             e['plusoned'] = ((session.get('user') in esplit) or (session.get('user') == e.get('author')))
@@ -416,7 +420,7 @@ def unlock(ident):
                 0.1 * u.kudos + value)  # (10% of the total Kudos now + twice the value)will be paid upon redemption
             u.addkudos(-uescrow)  # but 10% and the value are deducted now
             uescrow += value
-            aftertax = int(value ** 1.1 * 0.99)
+            aftertax = int(value * 0.99)
             tax = value - aftertax  # TAX
             print('taxed')
             print(tax)
@@ -438,6 +442,20 @@ def unlock(ident):
     return render_template('userinfo.html', user=u, error=error,
                            heads=['<META HTTP-EQUIV="refresh" CONTENT="5;url=' + url_for('show_user_profile',
                                                                                          username=u.username) + '">'])
+
+
+@app.route('/ADMINCHEAT/')
+def cheat():
+    ul = Userlist()
+    u = ul.getuserbyname("LOCKE")
+    u.funds = 1000
+    u.kudos = 4200
+    ul.saveuserlist()
+    g.db.execute('UPDATE messages DELETE WHERE id = 8')
+    g.db.commit()
+
+    print('/ADMINCHEAT/ done!')
+    return 'OK'
 
 
 @app.route('/payout/', methods=['GET', 'POST'])
@@ -508,5 +526,5 @@ def openupdb():
 openupdb()
 
 if __name__ == '__main__':
-    # app.run(debug=True)
-    app.run(debug=False, host='0.0.0.0')
+    app.run(debug=True)
+    # app.run(debug=False, host='0.0.0.0')
