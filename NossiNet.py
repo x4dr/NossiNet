@@ -7,25 +7,16 @@ from flask import Flask, request, session, g, redirect, url_for, \
 
 from NossiPack.Character import makechar
 from NossiPack.User import *
-
-
-
-
-
-
-
-
-
+from NossiPack import app
 
 # configuration
-
-
 
 DATABASE = './NN.db'
 # DEBUG = True
 SECRET_KEY = 'ajdjJFeiJjFnnm88e4ko94VBPhzgY34'
 # USERNAME = 'admin'
 # PASSWORD = 'default'
+
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -137,8 +128,8 @@ def timestep():
                     flash('Passing ' + str(session.get('timeamount')) + ' Days!')
                     for d in range(int(session.pop('timeamount'))):
                         for u in ul.userlist:
-                            u.kudos += -int((
-                                                u.kudos + 70) ** 1.1 * 0.0035)  # ^30 ~= 0.9 => 10% tax per month scaling up more harshly, stabilizing at 100
+                            u.kudos += -int((u.kudos + 70) ** 1.1 * 0.0035)
+                            # ^30 ~= 0.9 => 10% tax per month scaling up more harshly, stabilizing at 100
 
                 else:
                     error = 'wrong key, TimeMagic fizzled...'
@@ -303,16 +294,23 @@ def show_user_profile(username):
     msgs = []
     if username == session.get('user'):  # get messages for this user if looking at own page
         cur = g.db.execute(
-            'SELECT author,title,text,value,lock,honored, id FROM messages WHERE recipient = ? ORDER BY id DESC',
-            [session.get('user')])
+                'SELECT author,recipient,title,text,value,lock,honored, id FROM messages '
+                'WHERE ? IN (recipient, author) ' + ' ORDER BY id DESC',
+                [session.get('user')])
         for row in cur.fetchall():
-            msg = dict(author=row[0], title=row[1], text=row[2], value=row[3], lock=row[4], honored=row[5], id=row[6])
+            msg = dict(author=row[0], recipient=row[1], title=row[2], text=row[3], value=row[4],
+                       lock=row[5], honored=row[6], id=row[7])
             cur2 = g.db.execute('SELECT kudosrep, kudosaut FROM messages WHERE id = ?', [msg['id']])
             for row2 in cur2.fetchall():
                 msg['kudosrep'] = row2[0]
                 msg['kudosaut'] = row2[1]
             if msg['lock']:
-                msg['text'] = '[locked until you pay]'
+                if msg['author'] == username:
+                    msg['text'] = '[not yet paid for by ' + msg['recipient'] + ']<br><br>' + msg['text']
+                    msg.pop('lock')
+                    msg['honored'] = "irrelevant"
+                else:
+                    msg['text'] = '[locked until you pay]'
             if msg['value'] <= 0:  # usually we dont need the special stuff
                 msg.pop('honored')
                 msg.pop('lock')
@@ -335,6 +333,10 @@ def show_user_profile(username):
 @app.route('/impressum/')
 def impressum():
     return render_template('Impressum.html')
+
+@app.route('/chat/')
+def chat():
+    return render_template('chat.html')
 
 
 @app.route('/sendmsg/<username>', methods=['POST'])
@@ -418,7 +420,7 @@ def unlock(ident):
         else:
             u.funds -= value
             uescrow = int(
-                0.1 * u.kudos + value)  # (10% of the total Kudos now + twice the value)will be paid upon redemption
+                    0.1 * u.kudos + value)  # (10% of the total Kudos now + twice the value)will be paid upon redemption
             u.addkudos(-uescrow)  # but 10% and the value are deducted now
             uescrow += value
             aftertax = int(value * 0.99)
@@ -503,8 +505,8 @@ def deldb(key="None"):
             db.execute('DROP TABLE IF EXISTS messages')
             db.execute('DROP TABLE IF EXISTS users')
             db.commit()
-            # init_db()
-            # session.clear
+            init_db()
+            session.clear
             return "<link rel=stylesheet type=text/css href=\"/static/style.css\"> death and destruction has been brought forth"
     return "<link rel=stylesheet type=text/css href=\"/static/style.css\"> DO YOU HAVE THE KEY"
 
@@ -527,5 +529,5 @@ def openupdb():
 openupdb()
 
 if __name__ == '__main__':
-    # app.run(debug=True)
+   # app.run(debug=True)
     app.run(debug=False, host='0.0.0.0')

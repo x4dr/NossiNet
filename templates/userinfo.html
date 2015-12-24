@@ -15,7 +15,7 @@
                     <dt>Text:</dt>
                     <dd><textarea class=leet name="text" rows=5 cols=40, required></textarea></dd>
                     <dt>Price to view</dt>
-                    <dd><input class=leet value="0" type=number name="value" , required></dd>
+                    <dd><input class=leet value="0" type=number name="price" , required></dd>
                     <br>
                     <dd><input class=leeet type=submit value=Send></dd>
                 </dl>
@@ -37,12 +37,14 @@
 
         {% for msg in msgs %}
             <br>__________________________________________________________<br>
-            <h2>"{{ msg.title }}" by <a
-                    href="{{ url_for('show_user_profile', username=msg.author) }}">{{ msg.author }}</a>
+            <h2>"{{ msg.title }}" {% if msg.author == user.username%}
+                to <a href="{{ url_for('show_user_profile', username=msg.recipient) }}">{{ msg.recipient }}
+                {% else %}
+                 by <a href="{{ url_for('show_user_profile', username=msg.author) }}">{{ msg.author }} {% endif %}</a>
             </h2>{{ msg.text|safe }}
             {% if msg.value > 0 %}
-                <br><h3>This message has a value of {{ msg.value }} and is{% if msg.lock %} locked{% else %}
-                unlocked{% endif %}.
+                <br><h3>This message has a price of {{ msg.value }} Credit{% if msg.value!=1 %}s{% endif %}{% if msg.honored=="irrelevant" %}{% else %}
+                   and is{% if msg.lock %} locked{% else %} unlocked{% endif %}{% endif %}.
 
                 {% if msg.lock %}
                     </h3><br>
@@ -57,16 +59,21 @@
                     <br>
                     <h3>
                 {% else %}
-                    {% if msg.honored %}{% else %}<br>
+                    {% if msg.honored %}
+                    {% else %}<br>
                         <form action="{{ url_for('honor', ident=msg.id) }}">
-                            <dd> If you liked this deal honor this deal you will gain {{ msg.kudosrep }}
+                            <br>
+                             If you liked this deal, honor it and you will gain {{ msg.kudosrep }} Kudos
                                 and {{ msg.author }} will gain {{ msg.kudosaut }} Kudos.
-                            </dd>
+                            <br>
                             <input class=leeet type="submit" value="Honor it.">
                         </form>
                         <br> {% endif %}
                 {% endif %}
+            {% if msg.honored=="irrelevant" %}
+            {% else %}
                 <br> This deal has{% if msg.honored %}{% else %} not{% endif %} been honored. </h3>
+            {% endif %}
             {% endif %}
         {% endfor %}
     {% else %}

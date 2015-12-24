@@ -6,7 +6,7 @@ __author__ = 'maric'
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 
-DATABASE = '/home/maric/workspace/PycharmProjects/NossiNet/NN.db'
+DATABASE = './NN.db'
 
 
 def connect_db():
