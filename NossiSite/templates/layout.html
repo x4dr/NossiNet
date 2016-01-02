@@ -1,7 +1,15 @@
 <!doctype html>
 <title>NossiNet</title>
 <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+<head>
+<script>
+    function goBack() {
+        window.history.back();
+    }
+</script>
 {% block head %}{% endblock %}
+</head>
+<body>
 <div class=page>
     <h1><a href={{ url_for('show_entries') }}>NOSFERATU NETWORK</a></h1>
   <div class=metanav>
@@ -23,8 +31,4 @@
     <br>
     <a href="{{ url_for('impressum') }}">Impressum</a>
 {% endif %}
-<script>
-    function goBack() {
-        window.history.back();
-    }
-</script>
+</body>
