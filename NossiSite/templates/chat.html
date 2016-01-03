@@ -12,34 +12,50 @@
             // event handler for server sent data
             // the data is displayed in the "Received" section of the page
             socket.on('Message', function(msg) {
-                $('#log').append('<br>' + $('<div/>').text('Received #' + msg.count + ': ' + msg.data).html());
+                $('#log').append('<br>' + $('<div/>').text(msg.prefix+ ': ' + msg.data).html());
             });
 
             // event handler for new connections
             socket.on('connect', function() {
-                socket.emit('ClientServerEvent', {data: 'I\'m connected!'});
+                socket.emit('ClientServerEvent', {data: 'connection established'});
             });
 
             // handlers for the different forms in the page
             // these send data to the server in a variety of ways
             $('form#emit').submit(function(event) {
-                socket.emit('ClientServerEvent', {data: $('#emit_data').val()});
+                socket.emit('ClientServerEvent',
+                        {prefix:document.name_prefix_form.name_prefix.value,
+                             data: $('#emit_data').val()});
                 return false;
             });
             $('form#broadcast').submit(function(event) {
-                socket.emit('BroadCastEvent', {data: $('#broadcast_data').val()});
+                socket.emit('BroadCastEvent',
+                        {prefix:document.name_prefix_form.name_prefix.value,
+                            data: $('#broadcast_data').val()});
                 return false;
             });
             $('form#join').submit(function(event) {
-                socket.emit('Join', {room: $('#join_room').val()});
+                socket.emit('Join',
+                        {prefix:document.name_prefix_form.name_prefix.value,
+                             room: $('#join_room').val()});
                 return false;
             });
             $('form#leave').submit(function(event) {
-                socket.emit('Leave', {room: $('#leave_room').val()});
+                socket.emit('Leave',
+                        {prefix:document.name_prefix_form.name_prefix.value,
+                            room: $('#leave_room').val()});
                 return false;
             });
             $('form#send_room').submit(function(event) {
-                socket.emit('RoomEvent', {room: $('#room_name').val(), data: $('#room_data').val()});
+                socket.emit('RoomEvent',
+                        {prefix:document.name_prefix_form.name_prefix.value,
+                             room: $('#room_name').val(), data: $('#room_data').val()});
+                return false;
+            });
+            $('form#send_privmsg').submit(function(event) {
+                socket.emit('PrivateAnonymousMessage',
+                        {prefix:document.name_prefix_form.name_prefix.value,
+                             recipient: $('#user_name').val(), data: $('#message_data').val()});
                 return false;
             });
             $('form#disconnect').submit(function(event) {
@@ -50,7 +66,14 @@
     </script>
 {% endblock %}
 {% block body %}
-    <h1>Flask-SocketIO Test</h1>
+    <h1>Nosferatu Messaging Service</h1>
+
+    <form name="name_prefix_form">
+        shown name: <br>
+        <input class=leet type="text" name="name_prefix" id="name_prefix_id" value="Anonymous">
+        <br><br><br>
+    </form>
+
     <h2>Send:</h2>
     <form id="emit" method="POST" action='#'>
         <input class=leet type="text" name="emit_data" id="emit_data" placeholder="Message">
@@ -72,6 +95,11 @@
         <input class=leet type="text" name="room_name" id="room_name" placeholder="Room Name">
         <input class=leet type="text" name="room_data" id="room_data" placeholder="Message">
         <input class=leet type="submit" value="Send to Room">
+    </form>
+    <form id="send_privmsg" method="POST" action='#'>
+        <input class=leet type="text" name="user_name" id="user_name" placeholder="User Name">
+        <input class=leet type="text" name="message_data" id="message_data" placeholder="Message">
+        <input class=leet type="submit" value="Send to User">
     </form>
     <form id="disconnect" method="POST" action="#">
         <input class=leet type="submit" value="Disconnect">

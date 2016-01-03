@@ -57,9 +57,6 @@ def show_entries():
 @app.route('/timestep/', methods=['GET', 'POST'])
 def timestep():
     ul = Userlist()
-    # u = ul.getuserbyname('THEOTOKOS')
-    # u.set_password(" ", "Pestilenz")
-    # u.kudos = 10000
     error = None
     keyprovided = session.get('amount') is not None
     if not keyprovided:
