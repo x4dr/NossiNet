@@ -1,6 +1,7 @@
 from NossiSite import app
 from NossiSite.helpers import g, session, render_template, request, redirect, url_for, abort, render_template, flash
-import NossiPack
+from NossiPack.User import Userlist, User
+import random
 
 @app.route('/kudosloan/<user>', methods=['GET'])
 def loankudos(user):
@@ -104,6 +105,9 @@ def plusone(ident):
         entry = dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4])
     ul = Userlist()
     u = ul.getuserbyname(entry.get('author'))
+    if u is None:
+        flash("that user is nonexistent, sorry")
+        return redirect(url_for('show_entries'))
     if entry.get('author') == session.get('user'):
         flash('upvoting your own posts?')
         return redirect(url_for('show_entries'))
