@@ -1,123 +1,88 @@
 {% extends "layout.html" %}
 {% block head %}
-    <title>Flask-SocketIO Test</title>
     <script type="text/javascript" charset="utf-8">
-
-        $('textarea').keydown(function (event) {
-            if (event.keyCode == 13) {
-                if(event.shiftKey){
-                } else {
-                    alert('hi')
-                    $('form').submit();
-                }
-            }
-        });
-
         $(document).ready(function(){
-            var namespace = '/chat'; // change to an empty string to use the global namespace
+            var namespace = '/chat';
 
-            // the socket.io documentation recommends sending an explicit package upon connection
-            // this is specially important when using the global namespace
             var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
 
             // event handler for server sent data
             // the data is displayed in the "Received" section of the page
             socket.on('Message', function(msg) {
-                $('#log').append('<br>' + $('<div/>').text(msg.prefix+ ': ' + msg.data).html());
+                var box = $('#chatbox');
+                box.append('<br>' + $('<div/>').text(msg.data).html());
+                box.scrollTop(box[0].scrollHeight);
             });
 
-            // event handler for new connections
+            socket.on('Status', function(msg) {
+                document.getElementById('statusmessage').innerHTML = msg.status
+            });
+
+            socket.on('Exec', function(msg){
+                eval(msg.command)
+
+            });
+
             socket.on('connect', function() {
                 socket.emit('ClientServerEvent', {data: 'connection established'});
             });
+            var prevCommand = [];
+            var commandCount = 0;
+            var keyCount = 0;
 
-            // handlers for the different forms in the page
-            // these send data to the server in a variety of ways
-            $('form#emit').submit(function(event) {
+            $('form#message').submit(function(event) {
+                if(document.getElementById('message_data').value != ''){
                 socket.emit('ClientServerEvent',
-                        {prefix:document.name_prefix_form.name_prefix.value,
-                             data: $('#emit_data').val()});
+                        {data: $('#message_data').val()});
+                commandCount++;
+                keyCount = 0;
+                prevCommand[commandCount] = $('#message_data').val();
+                document.getElementById('message_data').value = ''}
                 return false;
             });
-            $('form#broadcast').submit(function(event) {
-                socket.emit('BroadCastEvent',
-                        {prefix:document.name_prefix_form.name_prefix.value,
-                            data: $('#broadcast_data').val()});
-                return false;
-            });
-            $('form#join').submit(function(event) {
-                socket.emit('Join',
-                        {prefix:document.name_prefix_form.name_prefix.value,
-                             room: $('#join_room').val()});
-                return false;
-            });
-            $('form#leave').submit(function(event) {
-                socket.emit('Leave',
-                        {prefix:document.name_prefix_form.name_prefix.value,
-                            room: $('#leave_room').val()});
-                return false;
-            });
-            $('form#send_room').submit(function(event) {
-                socket.emit('RoomEvent',
-                        {prefix:document.name_prefix_form.name_prefix.value,
-                             room: $('#room_name').val(), data: $('#room_data').val()});
-                return false;
-            });
-            $('form#send_privmsg').submit(function(event) {
-                socket.emit('PrivateAnonymousMessage',
-                        {prefix:document.name_prefix_form.name_prefix.value,
-                             recipient: $('#user_name').val(), data: $('#message_data').val()});
-                return false;
-            });
-            $('form#disconnect').submit(function(event) {
-                socket.emit('Disconnect');
-                return false;
+
+            $(document).keydown(function(event){
+                var msgdata = $('#message_data')
+                if(event.which == 38){
+                    keyCount++;
+                    if(typeof prevCommand[keyCount] !== "undefined") {
+                        var index = prevCommand.length-keyCount;
+                        msgdata.val(prevCommand[index]);
+                    } else {
+                        keyCount = 1
+                        var index = prevCommand.length-keyCount;
+                        msgdata.val(prevCommand[index]);
+                    }
+                    return false;
+                }else if(event.which == 40) {
+                    keyCount--;
+                        if(typeof prevCommand[keyCount] !== "undefined") {
+                        var index = prevCommand.length-keyCount;
+                        msgdata.val(prevCommand[index]);
+                      //  moveCursorToEnd(msgdata)
+                    } else {
+                            keyCount = 0
+                            var index = prevCommand.length-keyCount;
+                        msgdata.val('');
+                        }
+                    return false;
+                }
             });
         });
     </script>
 {% endblock %}
 {% block body %}
-    <h1>Nosferatu Messaging Service</h1>
+    <div id="wrapper">
 
-    <form name="name_prefix_form">
-        shown name: <br>
-        <input class=leet type="text" name="name_prefix" id="name_prefix_id" value="Anonymous">
-        <br><br><br>
+    <div id="chatbox"></div>
+    <div id="statusmessage">Waiting for Server connection...</div>
+    <form id="message" name="message" method="POST" action="#">
+        <div class="formline">
+            <input class="leet" name="submitmsg" type="submit"  id="submitmsg"
+                   value="Send" style="float: right; width:  10%" />
+            <span><input class="leet" type="text" name="message_data" id="message_data"
+                   placeholder="Message" autocomplete="off" style="width: 88%"></span>
+        </div>
     </form>
 
-    <h2>Send:</h2>
-    <form id="emit" method="POST" action='#'>
-        <input class=leet type="text" name="emit_data" id="emit_data" placeholder="Message">
-        <input class=leet type="submit" value="Echo">
-    </form>
-    <form id="broadcast" method="POST" action='#'>
-        <input class=leet type="text" name="broadcast_data" id="broadcast_data" placeholder="Message">
-        <input class=leet type="submit" value="Broadcast">
-    </form>
-    <form id="join" method="POST" action='#'>
-        <input class=leet type="text" name="join_room" id="join_room" placeholder="Room Name">
-        <input class=leet type="submit" value="Join Room">
-    </form>
-    <form id="leave" method="POST" action='#'>
-        <input class=leet type="text" name="leave_room" id="leave_room" placeholder="Room Name">
-        <input class=leet type="submit" value="Leave Room">
-    </form>
-    <form id="send_room" method="POST" action='#'>
-        <input class=leet type="text" name="room_name" id="room_name" placeholder="Room Name">
-        <input class=leet type="text" name="room_data" id="room_data" placeholder="Message">
-        <input class=leet type="submit" value="Send to Room">
-    </form>
-    <form id="send_privmsg" method="POST" action='#'>
-        <input class=leet type="text" name="user_name" id="user_name" placeholder="User Name">
-        <input class=leet type="text" name="message_data" id="message_data" placeholder="Message">
-        <input class=leet type="submit" value="Send to User">
-    </form>
-    <form id="disconnect" method="POST" action="#">
-        <input class=leet type="submit" value="Disconnect">
-    </form>
-    <form id="CLI" method="POST" action="#">
-        <textarea class="leet" onkeydown="sayHi()"></textarea>
-    </form>
-    <h2>Receive:</h2>
-    <div id="log"></div>
 {% endblock %}

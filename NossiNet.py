@@ -2,4 +2,4 @@
 
 from NossiSite import app, socketio
 
-socketio.run(app, "127.0.0.1", debug=True)
+socketio.run(app, "0.0.0.0", debug=False)

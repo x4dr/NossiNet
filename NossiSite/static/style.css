@@ -25,8 +25,8 @@ h3 {
 .page           { margin: 2em auto; width: 35em; border: 5px solid #00f700;
                   padding: 0.8em; background: #000; color: #00f700; }
 .leet {
-            background-color: black;
-            font-weight: bold;
+    background-color: black;
+    font-weight: bold;
     color: #00f700;
     border: 1px solid #00f700
         }
@@ -55,3 +55,54 @@ h3 {
     background: #cf0012;
     padding: 0.5em;
 }
+
+#chatbox {
+    text-align:left;
+    margin-bottom:25px;
+    padding:10px;
+    background:#000;
+    height:320px;
+    white-space: pre-wrap;
+    border:1px solid #00f700;
+    overflow:auto; }
+
+::-webkit-scrollbar {
+     width: auto;
+}
+::-webkit-scrollbar-track {
+      background-color: #000200;
+}
+::-webkit-scrollbar-thumb {
+      background-color: #00f700;
+}
+::-webkit-scrollbar-button {
+      background-color: #003300;
+}
+::-webkit-scrollbar-corner{
+    background-color: #003300;
+}
+
+#usermsg {
+    width:395px;
+    border:1px solid #00f700; }
+
+#submit { width: 60px; }
+
+.error { color: #ff0000; }
+
+.formLine {
+    overflow: hidden;
+    background: #ccc;
+    width: 100%
+}
+.formLine span {
+    display: block;
+    overflow: hidden;
+    padding: 0 5px;
+}
+.formLine input {
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+}
+

@@ -207,6 +207,7 @@ def register():
     return render_template('register.html', error=error)
 
 
+#TODO: HOLY SHIT IMPLEMENT FORM TOKENS
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
