@@ -223,4 +223,3 @@ def test_disconnect():
     print('Client disconnected', request.sid)
     for r in session['rooms']:
         r.userleave(session['user'])
-    update()
