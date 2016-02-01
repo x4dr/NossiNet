@@ -54,6 +54,7 @@ h3 {
 .error {
     background: #cf0012;
     padding: 0.5em;
+    color: #000000
 }
 
 #chatbox {
@@ -88,7 +89,6 @@ h3 {
 
 #submit { width: 60px; }
 
-.error { color: #000; }
 
 .formLine {
     overflow: hidden;
