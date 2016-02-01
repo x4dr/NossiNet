@@ -88,7 +88,7 @@ h3 {
 
 #submit { width: 60px; }
 
-.error { color: #ff0000; }
+.error { color: #000; }
 
 .formLine {
     overflow: hidden;
