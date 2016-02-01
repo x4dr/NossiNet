@@ -64,7 +64,8 @@ def show_entries():
             e['plusoned'] = ((session.get('user') in esplit) or (session.get('user') == e.get('author')))
         else:
             e['plusoned'] = (session.get('user') == e.get('author'))
-    return render_template('show_entries.html', entries=entries)
+    token[session['user']] = generate_token(session)
+    return render_template('show_entries.html', entries=entries, token=token[session['user']])
 
 
 @app.route('/timestep/', methods=['GET', 'POST'])
