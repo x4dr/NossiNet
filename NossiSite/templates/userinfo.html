@@ -11,6 +11,7 @@
             <form action="{{ url_for('send_msg', username=user.username) }}" method=post class=add-entry>
                 <dl>
                     <dt>Title:</dt>
+                    <input type="hidden" value={{ token }} name="token">
                     <dd><input class=leet type=text size=30 name="title" , required></dd>
                     <dt>Text:</dt>
                     <dd><textarea class=leet name="text" rows=5 cols=40, required></textarea></dd>

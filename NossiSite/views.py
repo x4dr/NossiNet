@@ -1,7 +1,12 @@
 from NossiSite import app
-from NossiSite.helpers import g, session, render_template, request, redirect, url_for, abort, render_template, flash
+from NossiSite.helpers import g, session, render_template, generate_token, request, redirect, url_for, abort, \
+    render_template, flash, connect_db, generate_password_hash, init_db
 from NossiPack.User import Userlist, User
 import random
+import time
+
+token = {}
+
 
 @app.route('/kudosloan/<user>', methods=['GET'])
 def loankudos(user):
@@ -17,28 +22,35 @@ def loankudos(user):
 @app.route('/kudosloan/', methods=['GET', 'POST'])
 def kudosloan():
     ul = Userlist()
+    global token
     u = ul.getuserbyname(session.get('user'))
     entries = u.get_kudosdebts()
     if request.method == 'POST':
-        id = request.form['id']
-        entry = None
-        for e in entries:
-            if e.get('id') == id:
-                entry = e
-        if entry is not None:
-            if entry.get('state') == 'unaccepted':
-                entry['state'] = 'accepted'
-                n = ul.getuserbyname(entry.get('loaner'))
-                amount = int(n.kudos * 0.1)
-                n.kudos += -amount * 2
-                u.kudos += amount
-                entry['original'] = str(amount)
-                entry['remaining'] = str(amount * 4)
+        if token[session['user']] != request.form['token']:
+            flash("invalid token!")
+        else:
+            token[session['user']].pop()
+            id = request.form['id']
+            entry = None
+            for e in entries:
+                if e.get('id') == id:
+                    entry = e
+            if entry is not None:
+                if entry.get('state') == 'unaccepted':
+                    entry['state'] = 'accepted'
+                    n = ul.getuserbyname(entry.get('loaner'))
+                    amount = int(n.kudos * 0.1)
+                    n.kudos += -amount * 2
+                    u.kudos += amount
+                    entry['original'] = str(amount)
+                    entry['remaining'] = str(amount * 4)
     u.set_kudosdebts(entries)
     ul.saveuserlist()
     for e in entries:
         e['currentkudos'] = ul.getuserbyname(e.get('loaner')).kudos
-    return render_template('loankudos.html', entries=entries)
+
+    token[session['user']] = generate_token(session)
+    return render_template('loankudos.html', entries=entries, token=token[session['user']])
 
 
 @app.route('/')
@@ -100,33 +112,37 @@ def timestep():
 
 @app.route('/plusone/<ident>', methods=['POST'])
 def plusone(ident):
-    cur = g.db.execute('SELECT author, title, text, plusOned, id FROM entries WHERE id = ?', [ident])
-    for row in cur.fetchall():  # SHOULD only run once
-        entry = dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4])
-    ul = Userlist()
-    u = ul.getuserbyname(entry.get('author'))
-    if u is None:
-        flash("that user is nonexistent, sorry")
-        return redirect(url_for('show_entries'))
-    if entry.get('author') == session.get('user'):
-        flash('upvoting your own posts?')
-        return redirect(url_for('show_entries'))
-
-    if entry.get('plusoned') is not None:
-        if session.get('user') not in entry.get('plusoned').split(' '):
-            entry['plusoned'] = entry.get('plusoned') + ' ' + session.get('user')
-            u.kudos += 1
-            flash('Gave ' + entry.get('author') + ' Kudos for this post.')
-        else:
-            flash('already done that')
-            return redirect(url_for('show_entries'))
+    global token
+    if token[session['user']] != request.form['token']:
+        flash("invalid token!")
     else:
-        entry['plusoned'] = session.get('user')
-        u.kudos += 1
-        flash('You were the first to give ' + entry.get('author') + ' Kudos for this post.')
-    ul.saveuserlist()
-    g.db.execute('UPDATE entries SET plusOned = ? WHERE ID = ?', [entry.get('plusoned'), ident])
-    g.db.commit()
+        cur = g.db.execute('SELECT author, title, text, plusOned, id FROM entries WHERE id = ?', [ident])
+        for row in cur.fetchall():  # SHOULD only run once
+            entry = dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4])
+        ul = Userlist()
+        u = ul.getuserbyname(entry.get('author'))
+        if u is None:
+            flash("that user is nonexistent, sorry")
+            return redirect(url_for('show_entries'))
+        if entry.get('author') == session.get('user'):
+            flash('upvoting your own posts?')
+            return redirect(url_for('show_entries'))
+
+        if entry.get('plusoned') is not None:
+            if session.get('user') not in entry.get('plusoned').split(' '):
+                entry['plusoned'] = entry.get('plusoned') + ' ' + session.get('user')
+                u.kudos += 1
+                flash('Gave ' + entry.get('author') + ' Kudos for this post.')
+            else:
+                flash('already done that')
+                return redirect(url_for('show_entries'))
+        else:
+            entry['plusoned'] = session.get('user')
+            u.kudos += 1
+            flash('You were the first to give ' + entry.get('author') + ' Kudos for this post.')
+        ul.saveuserlist()
+        g.db.execute('UPDATE entries SET plusOned = ? WHERE ID = ?', [entry.get('plusoned'), ident])
+        g.db.commit()
     return redirect(url_for('show_entries'))
 
 
@@ -134,10 +150,15 @@ def plusone(ident):
 def add_entry():
     if not session.get('logged_in'):
         abort(401)
-    g.db.execute('INSERT INTO entries (author, title, text) VALUES (?, ?, ?)',
-                 [session.get('user'), request.form['title'], request.form['text']])
-    g.db.commit()
-    flash('New entry was successfully posted')
+
+    global token
+    if token[session['user']] != request.form['token']:
+        flash("invalid token!")
+    else:
+        g.db.execute('INSERT INTO entries (author, title, text) VALUES (?, ?, ?)',
+                     [session.get('user'), request.form['title'], request.form['text']])
+        g.db.commit()
+        flash('New entry was successfully posted')
     return redirect(url_for('show_entries'))
 
 
@@ -150,31 +171,35 @@ def add_funds():
     if not keyprovided:
         keyprovided = None
     if request.method == 'POST':
-        try:
-            amount = int(request.form['amount'])
-            if amount > 0:
-                key = int(time.time())
-                key = generate_password_hash(str(key))
-                print("user: ", u.username)
-                print("amount: ", amount)
-                print("key: ", key)
-                session['key'] = key[-10:]
-                session['amount'] = amount
-                keyprovided = True
-            else:
-                error = 'need positive amount'
-        except Exception as inst:
+        global token
+        if token[session['user']] != request.form['token']:
+            flash("invalid token!")
+        else:
             try:
-                key = request.form['key'][-10:]
-                if key == session.pop('key'):
-                    flash('Transfer of ' + str(session.get('amount')) + ' Credits was successfull!')
-                    u.funds += int(session.pop('amount'))
+                amount = int(request.form['amount'])
+                if amount > 0:
+                    key = int(time.time())
+                    key = generate_password_hash(str(key))
+                    print("user: ", u.username)
+                    print("amount: ", amount)
+                    print("key: ", key)
+                    session['key'] = key[-10:]
+                    session['amount'] = amount
+                    keyprovided = True
                 else:
-                    error = 'wrong key, transaction invalidated.'
-                    session.pop('amount')
-                    session.pop('key')
-            except Exception as ins:
-                error = 'invalid transaction'
+                    error = 'need positive amount'
+            except Exception as inst:
+                try:
+                    key = request.form['key'][-10:]
+                    if key == session.pop('key'):
+                        flash('Transfer of ' + str(session.get('amount')) + ' Credits was successfull!')
+                        u.funds += int(session.pop('amount'))
+                    else:
+                        error = 'wrong key, transaction invalidated.'
+                        session.pop('amount')
+                        session.pop('key')
+                except Exception as ins:
+                    error = 'invalid transaction'
 
     ul.saveuserlist()
     return render_template('funds.html', user=u, error=error, keyprovided=keyprovided)
@@ -207,7 +232,7 @@ def register():
     return render_template('register.html', error=error)
 
 
-#TODO: HOLY SHIT IMPLEMENT FORM TOKENS
+# TODO: HOLY SHIT IMPLEMENT FORM TOKENS
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
@@ -253,9 +278,9 @@ def show_user_profile(username):
     msgs = []
     if username == session.get('user'):  # get messages for this user if looking at own page
         cur = g.db.execute(
-                'SELECT author,recipient,title,text,value,lock,honored, id FROM messages '
-                'WHERE ? IN (recipient, author) ' + ' ORDER BY id DESC',
-                [session.get('user')])
+            'SELECT author,recipient,title,text,value,lock,honored, id FROM messages '
+            'WHERE ? IN (recipient, author) ' + ' ORDER BY id DESC',
+            [session.get('user')])
         for row in cur.fetchall():
             msg = dict(author=row[0], recipient=row[1], title=row[2], text=row[3], value=row[4],
                        lock=row[5], honored=row[6], id=row[7])
@@ -285,7 +310,9 @@ def show_user_profile(username):
     ownkudos = 0
     if session.get('logged_in', False):
         ownkudos = ul.getuserbyname(session.get('user')).kudos
-    site = render_template('userinfo.html', ownkudos=ownkudos, user=u, msgs=msgs)
+    else:
+        token[session['user']] = generate_token(session)  # set token
+    site = render_template('userinfo.html', ownkudos=ownkudos, user=u, msgs=msgs, token=token[session['user']])
     return site
 
 
@@ -296,15 +323,28 @@ def impressum():
 
 @app.route('/sendmsg/<username>', methods=['POST'])
 def send_msg(username):
-    error = None
-    if not session.get('logged_in'):
-        error = 'You are not logged in!'
-        return redirect(url_for('login'))
-    g.db.execute('INSERT INTO messages (author,recipient,title,text,value,lock,honored) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                 [session.get('user'), username, request.form['title'], request.form['text'], request.form['value'],
-                  not check0(request.form['value']), check0(request.form['value'])])
-    g.db.commit()
-    flash('Message sent')
+    global token
+    if token[session['user']] != request.form['token']:
+        flash("invalid token!")
+    else:
+        error = None
+        print(request.form)
+        if not session.get('logged_in'):
+            error = 'You are not logged in!'
+            return redirect(url_for('login'))
+        print("works")
+        g.db.execute('INSERT INTO messages (author,recipient,title,text,value,lock,honored)'
+                     ' VALUES (?, ?, ?, ?, ?, ?, ?)',  # 7
+                     [session.get('user'),  # 1 -author
+                      username,  # 2 -recipient
+                      request.form['title'],  # 3 title
+                      request.form['text'],  # 4 text
+                      request.form['price'],  # 5 value
+                      not check0(request.form['price']),  # 6 lock
+                      check0(request.form['price'])])  # 7 honored
+        print("still")
+        g.db.commit()
+        flash('Message sent')
     return redirect(url_for('show_entries'))  # , error = error)
 
 
@@ -375,7 +415,7 @@ def unlock(ident):
         else:
             u.funds -= value
             uescrow = int(
-                    0.1 * u.kudos + value)  # (10% of the total Kudos now + twice the value)will be paid upon redemption
+                0.1 * u.kudos + value)  # (10% of the total Kudos now + twice the value)will be paid upon redemption
             u.addkudos(-uescrow)  # but 10% and the value are deducted now
             uescrow += value
             aftertax = int(value * 0.99)
@@ -433,7 +473,6 @@ def payout():
             flash('ERROR')
     ul.saveuserlist()
     return render_template('payout.html', user=u, error=error)
-
 
 
 @app.route('/deathanddestruction/')

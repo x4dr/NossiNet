@@ -11,7 +11,8 @@
                     Remaining on Loan: {{ entry.remaining }}
                 {% else %}
                     <form action="{{ url_for('kudosloan') }}" , method="post" , class="add-entry">
-                        <input type="hidden" value={{ entry.id }} name=id>
+                        <input type="hidden" value={{ token }} name="token">
+                        <input type="hidden" value={{ entry.id }} name="id">
                         <input class=leeet type=submit value="Accept">
                         <br> This will cost {{ entry.loaner }} 20% ({{ entry.currentkudos // 5 }}) of their current
                         Kudos ({{ entry.currentkudos }}) and will grant you half of that. You

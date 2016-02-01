@@ -60,7 +60,8 @@ class User(object):
             if len(tmp) == 5:
                 entries.append(dict(loaner=tmp[0], state=tmp[1], remaining=tmp[2], original=tmp[3], id=tmp[4]))
             else:
-                print("kudos error with: ", tmp)
+                if tmp != ['']: #sometimes deleted entries persist as empty entries, this is not problematic
+                    print("kudos error with: ", tmp)
         return entries
 
     def set_kudosdebts(self, entries):
