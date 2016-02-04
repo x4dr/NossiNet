@@ -1,5 +1,6 @@
 # source: http://pyunit.sourceforge.net/notes/reloading.html
 import sys
+import __builtin__
 
 class RollbackImporter:
     def __init__(self):
