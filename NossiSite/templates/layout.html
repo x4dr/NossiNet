@@ -22,8 +22,9 @@
       <a href="{{ url_for('login') }}">log in</a>
       <a href="{{ url_for('register') }}">register</a>
   {% else %}
+      <a href="{{ url_for('chat') }}">CHAT</a>  &nbsp
       <a href="{{ url_for('show_user_profile',username=session.user) }}">{{ session.user }}</a>  &nbsp
-      <a href="{{ url_for('logout') }}">log out</a>
+      <a href="{{ url_for('logout') }}">LOG OUT</a>
   {% endif %}
   </div>
     {% if error %}<p class=error><strong>Error:</strong> {{ error }}{% endif %}
