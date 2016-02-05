@@ -1,0 +1,211 @@
+${message}
+<form action="{{ url_for(modify_sheet) }}" method="post">
+<input type="hidden" name="sheet[id]" value="${sheetid}" />
+<table class="leet">
+	<tr>
+		<td>
+			<br />
+			<table width="725" class="leet">
+				<tr>
+					<td>
+						<table width="100%">
+							<tr>
+								{{ character.Meta.Name }}
+								{{ character.Meta.Nature }}
+								{{ character.Meta.Generation }}
+							</tr>
+							<tr>
+								{{ character.Meta.Player }}
+								{{ character.Meta.Demeanor }}
+								{{ character.Meta.Haven }}
+							</tr>
+							<tr>
+								{{ character.Meta.Chronicle }}
+								{{ character.Meta.Clan }}
+								{{ character.Meta.Concept }}
+							</tr>
+						</table>
+						<br />
+						<table width="100%">
+							<tr>
+								<td colspan="6" style="text-align: center;" class="section_header td_grey">Attributes</td>
+							</tr>
+							<tr>
+								<td colspan="2" style="text-align: center; width: 33%;" class="section_header">Physical</td>
+								<td colspan="2" style="text-align: center; width: 34%;" class="section_header">Social</td>
+								<td colspan="2" style="text-align: center; width: 33%;" class="section_header">Mental</td>
+							</tr>
+							<tr>
+								{{ character.Attributes.Strength }}
+								{{ character.Attributes.Charisma }}
+								{{ character.Attributes.Perception }}
+							</tr>
+							<tr>
+								{{ character.Attributes.Dexterity }}
+								{{ character.Attributes.Manipulation }}
+								{{ character.Attributes.Intelligence }}
+							</tr>
+							<tr>
+								{{ character.Attributes.Stamina }}
+								{{ character.Attributes.Appearance }}
+								{{ character.Attributes.Wits }}
+							</tr>
+							<tr>
+								<td colspan="6" style="text-align: center;" class="section_header td_grey">Abilities</td>
+							</tr>
+							<tr>
+								<td colspan="2" style="text-align: center; width: 33%;" class="section_header">Talents</td>
+								<td colspan="2" style="text-align: center; width: 34%;" class="section_header">Skills</td>
+								<td colspan="2" style="text-align: center; width: 33%;" class="section_header">Knowledges</td>
+							</tr>
+							<tr>
+								{{ character.Abilities.Talents.Alertness }}
+								{{ character.Abilities.Skills.AnimalKen }}
+								{{ character.Abilities.Talents.Academics }}
+
+							</tr>
+							<tr>
+								{{ character.Abilities.Talents.Athletics }}
+								{{ character.Abilities.Skills.Crafts }}
+								{{ character.Abilities.Talents.Computer }}
+
+							</tr>
+							<tr>
+								{{ character.Abilities.Talents.Brawl }}
+								{{ character.Abilities.Skills.Drive }}
+								{{ character.Abilities.Talents.Finance }}
+
+							</tr>
+							<tr>
+								{{ character.Abilities.Talents.Dodge }}
+								{{ character.Abilities.Skills.Etiquette }}
+								{{ character.Abilities.Talents.Investigation }}
+
+							</tr>
+							<tr>
+								{{ character.Abilities.Talents.Empathy }}
+								{{ character.Abilities.Skills.Firearms }}
+								{{ character.Abilities.Talents.Law }}
+
+							</tr>
+							<tr>
+								{{ character.Abilities.Talents.Expression }}
+								{{ character.Abilities.Skills.Melee }}
+								{{ character.Abilities.Talents.Linguistics }}
+
+							</tr>
+							<tr>
+								{{ character.Abilities.Talents.Intimidation }}
+								{{ character.Abilities.Skills.Performance }}
+								{{ character.Abilities.Talents.Medicine }}
+
+							</tr>
+							<tr>
+								{{ character.Abilities.Talents.Leadership }}
+								{{ character.Abilities.Skills.Security }}
+								{{ character.Abilities.Talents.Occult }}
+
+							</tr>
+							<tr>
+								{{ character.Abilities.Talents.Streetwise }}
+								{{ character.Abilities.Skills.Stealth }}
+								{{ character.Abilities.Talents.Politics }}
+
+							</tr>
+							<tr>
+								{{ character.Abilities.Talents.Subterfuge }}
+								{{ character.Abilities.Skills.Survival }}
+								{{ character.Abilities.Talents.Science }}
+
+							</tr>
+							<tr>
+								<td colspan="6" style="text-align: center;" class="section_header td_grey">Advantages</td>
+							</tr>
+							<tr>
+								<td colspan="2" style="text-align: center; width: 33%;" class="section_header">Backgrounds</td>
+								<td colspan="2" style="text-align: center; width: 34%;" class="section_header">Disciplines</td>
+								<td colspan="2" style="text-align: center; width: 33%;" class="section_header">Virtues</td>
+							</tr>
+                            {% for i in range(max(len(character.Backgrounds),len(character.Disciplines),3)) %}
+							<tr>
+								{{ character.Backgrounds[i] }}
+								{{ character.Disciplines[i] }}
+								{{ character.Virtues[i] }}
+							</tr>
+                            {% endfor %}
+
+							<tr>
+								<td colspan="2" style="text-align: center; width: 33%;" class="section_header td_grey">Merits/Flaws</td>
+								<td colspan="2" style="text-align: center; width: 34%;" class="section_header td_grey">Humanity/Path</td>
+								<td colspan="2" style="text-align: center; width: 33%;" class="section_header td_grey">Health</td>
+							</tr>
+							<tr>
+								${Merits1}
+								${Humanitystring}
+								${Bruised}
+							</tr>
+							<tr>
+								${Merits2}
+								${Humanity}
+								${Hurt}
+							</tr>
+							<tr>
+								${Merits3}
+								<td colspan="2"></td>
+								${Injured}
+							</tr>
+							<tr>
+								${Merits4}
+								<td colspan="2" style="text-align: center; width: 34%;" class="section_header td_grey">Willpower</td>
+								${Wounded}
+							</tr>
+							<tr>
+								${Merits5}
+								${Willpowerdots}
+								${Mauled}
+							</tr>
+							<tr>
+								${Merits6}
+								${Willpowercheck}
+								${Crippled}
+							</tr>
+							<tr>
+								${Merits7}
+								<td colspan="2"></td>
+								${Incapacitated}
+							</tr>
+							<tr>
+								${Merits8}
+								<td colspan="2" style="text-align: center; width: 34%;" class="section_header td_grey">Blood Pool</td>
+								<td colspan="2" style="text-align: center; width: 34%;" class="section_header td_grey">Experience</td>
+							</tr>
+							<tr>
+								${Merits9}
+								${Bloodpool1}
+								${Experience}
+							</tr>
+							<tr>
+								${Merits10}
+								${Bloodpool2}
+								<td colspan="2"></td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+				<tr><td colspan="6" style="text-align: center;" class="section_header td_grey">Description</td></tr>
+				<tr>
+					${ExtraInfo}
+				</tr>
+				<tr>
+					<td style="padding: 0px; background-color: #000000;"><img src="images/0.gif" width="1"></td>
+				</tr>
+				<tr>
+					<td align="right">
+						${buttons}
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+</table>
+</form>

@@ -1,8 +1,10 @@
 from NossiSite import app
 from NossiSite.helpers import g, session, render_template, generate_token, request, redirect, url_for, abort, \
-    render_template, flash, connect_db, generate_password_hash, init_db
+    render_template, flash, connect_db, generate_password_hash, init_db, send_from_directory
 from NossiPack.User import Userlist, User
+from NossiPack import Character
 import random
+import os
 import time
 
 token = {}
@@ -26,8 +28,12 @@ def kudosloan():
     u = ul.getuserbyname(session.get('user'))
     entries = u.get_kudosdebts()
     if request.method == 'POST':
-        if token[session['user']] != request.form['token']:
+        print("entered kudosloan")
+        if token.get(session.get('user', None), None) != request.form.get('token', "None"):
+            # so that None != "None" but a forged token with just "None" inside never matches
             flash("invalid token!")
+            print("Token received:" + request.form.get('token', "None") + " Token expected:",
+                  token.get(session.get('user', None), "INVALID"))
         else:
             token[session['user']].pop()
             id = request.form['id']
@@ -72,6 +78,11 @@ def show_entries():
     return render_template('show_entries.html', entries=entries, token=sendouttoken)
 
 
+@app.route('/modify_sheet/', methods=['POST'])
+def modify_sheet():
+    pass
+
+
 @app.route('/timestep/', methods=['GET', 'POST'])
 def timestep():
     ul = Userlist()
@@ -80,47 +91,62 @@ def timestep():
     if not keyprovided:
         keyprovided = None
     if request.method == 'POST':
-        try:
-            amount = int(request.form['amount'])
-            if amount > 0:
-                key = int(time.time())
-                key = generate_password_hash(str(key))
-                print(timestep)
-                print(amount)
-                print(key)
-                session['timekey'] = key[-10:]
-                session['timeamount'] = amount
-                keyprovided = True
-            else:
-                error = 'need positive amount'
-        except Exception as inst:
+        global token
+        print("entered plusone")
+        if token.get(session.get('user', None), None) != request.form.get('token', "None"):
+            # so that None != "None" but a forged token with just "None" inside never matches
+            flash("invalid token!")
+            print("Token received:" + request.form.get('token', "None") + " Token expected:",
+                  token.get(session.get('user', None), "INVALID"))
+        else:
+
             try:
-                key = request.form['key'][-10:]
-                if key == session.pop('timekey'):
-                    flash('Passing ' + str(session.get('timeamount')) + ' Days!')
-                    for d in range(int(session.pop('timeamount'))):
-                        for u in ul.userlist:
-                            u.kudos += -int((u.kudos + 70) ** 1.1 * 0.0035)
-                            # ^30 ~= 0.9 => 10% tax per month scaling up more harshly, stabilizing at 100
-
+                amount = int(request.form['amount'])
+                if amount > 0:
+                    key = int(time.time())
+                    key = generate_password_hash(str(key))
+                    print(timestep)
+                    print(amount)
+                    print(key)
+                    session['timekey'] = key[-10:]
+                    session['timeamount'] = amount
+                    keyprovided = True
                 else:
-                    error = 'wrong key, TimeMagic fizzled...'
-                    session.pop('timeamount')
-                    session.pop('timekey')
-            except Exception as ins:
+                    error = 'need positive amount'
+            except Exception as inst:
+                try:
+                    key = request.form['key'][-10:]
+                    if key == session.pop('timekey'):
+                        flash('Passing ' + str(session.get('timeamount')) + ' Days!')
+                        for d in range(int(session.pop('timeamount'))):
+                            for u in ul.userlist:
+                                u.kudos += -int((u.kudos + 70) ** 1.1 * 0.0035)
+                                # ^30 ~= 0.9 => 10% tax per month scaling up more harshly, stabilizing at 100
 
-                error = 'invalid transaction'
+                    else:
+                        error = 'wrong key, TimeMagic fizzled...'
+                        session.pop('timeamount')
+                        session.pop('timekey')
+                except Exception as ins:
 
+                    error = 'invalid transaction'
     ul.saveuserlist()
-    return render_template('timestep.html', user=u, error=error, keyprovided=keyprovided)
+    return render_template('timestep.html', user=Userlist.getuserbyname(session.get('user')),
+                           error=error, keyprovided=keyprovided)
 
 
 @app.route('/plusone/<ident>', methods=['POST'])
 def plusone(ident):
     global token
-    if token[session['user']] != request.form['token']:
+    print("entered plusone")
+    if token.get(session.get('user', None), None) != request.form.get('token', "None"):
+        # so that None != "None" but a forged token with just "None" inside never matches
         flash("invalid token!")
+        print("Token received:" + request.form.get('token', "None") + " Token expected:",
+              token.get(session.get('user', None), "INVALID"))
     else:
+        print("passed token")
+        entry = {}
         cur = g.db.execute('SELECT author, title, text, plusOned, id FROM entries WHERE id = ?', [ident])
         for row in cur.fetchall():  # SHOULD only run once
             entry = dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4])
@@ -266,7 +292,7 @@ def logout():
 @app.route('/nn')
 def start():
     print("nncalled")
-    return render_template('show_entries.html', \
+    return render_template('show_entries.html',
                            entries=[
                                dict(author='the NOSFERATU NETWORK', title='WeLcOmE tO tHe NoSfErAtU nEtWoRk', text='')],
                            heads=['<META HTTP-EQUIV="refresh" CONTENT="5;url=/">'])
@@ -362,6 +388,7 @@ def honor(ident):
     honored = 1
     ul = Userlist()
     error = None
+    author = None
     lock = 0
     u = ul.getuserbyname(session.get('user'))
     cur = g.db.execute('SELECT author, value, lock, honored FROM messages WHERE id = ?', [ident])
@@ -370,11 +397,16 @@ def honor(ident):
         # value = row[1]
         lock = row[2]
         honored = row[3]
+    if author is None:
+        error = "The message to be honored seems to be missing"
+        return render_template('userinfo.html', user=u, error=error)
     n = ul.getuserbyname(author)
     if lock != 1:
         if honored != 0:
             error = "This agreement has already been honored."
         else:
+            kudosaut = 0
+            kudosrep = 0
             cur = g.db.execute('SELECT kudosrep, kudosaut FROM messages WHERE id = ?', [ident])
             for row in cur.fetchall():
                 kudosrep = row[0]
@@ -402,7 +434,7 @@ def unlock(ident):
     error = None
     lock = 0
     author = ''
-    value = sys.maxsize
+    value = 0
     u = ul.getuserbyname(session.get('user'))
     cur = g.db.execute('SELECT author, value, lock FROM messages WHERE id = ?', [ident])
     for row in cur.fetchall():
@@ -501,11 +533,19 @@ def deldb(key="None"):
             db.execute('DROP TABLE IF EXISTS users')
             db.commit()
             init_db()
-            session.clear
-            return "<link rel=stylesheet type=text/css href=\"/static/style.css\"> death and destruction has been brought forth"
+            session.clear()
+            return "<link rel=stylesheet type=text/css href=\"/static/style.css\"> " + \
+                   "death and destruction has been brought forth"
     return "<link rel=stylesheet type=text/css href=\"/static/style.css\"> DO YOU HAVE THE KEY"
 
 
 @app.route('/chargen/<mini>,<maxi>,<a>,<b>,<c>')
 def chargen(mini, maxi, a, b, c):
-    return render_template("chargen.html", char=makechar(int(mini), int(maxi), int(a), int(b), int(c)).getstringrepr())
+    return render_template("chargen.html",
+                           char=Character.makechar(int(mini), int(maxi), int(a), int(b), int(c)).getstringrepr())
+
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'),
+                               'favicon.ico', mimetype='image/vnd.microsoft.icon')

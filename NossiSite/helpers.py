@@ -2,7 +2,7 @@ from NossiSite import app
 import sqlite3
 from contextlib import closing
 from flask import Flask, request, session, g, redirect, url_for, \
-    abort, render_template, flash
+    abort, render_template, flash, send_from_directory
 from werkzeug.security import generate_password_hash
 import time
 

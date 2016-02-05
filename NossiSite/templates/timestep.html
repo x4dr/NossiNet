@@ -4,6 +4,7 @@
     by Nova.
     <br>
     <form action="{{ url_for('timestep') }}" method=post>
+        <input type="hidden" name="token" value="{{ token }}">
         {% if keyprovided %}
 
             <dt>Key:

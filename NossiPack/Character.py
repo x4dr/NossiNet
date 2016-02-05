@@ -10,8 +10,10 @@ import collections
 
 
 class Character(object):
-    def __init__(self, name="", strength=0, dexterity=0, stamina=0, charisma=0, manipulation=0, appearance=0,
-                 perception=0, intelligence=0, wits=0, abilities=[]):
+    def __init__(self, name="", strength=0, dexterity=0, stamina=0, charisma=0, manipulation=0,
+                 appearance=0, perception=0, intelligence=0, wits=0, meta=None, abilities=None,
+                 virtues=None, backgrounds=[], disciplines={}, humanity=0, bloodmax=0, blood=0,
+                 merits = []):
         self.name = name
         self.strength = strength
         self.dexterity = dexterity
@@ -22,7 +24,21 @@ class Character(object):
         self.perception = perception
         self.intelligence = intelligence
         self.wits = wits
-        self.abilities = abilities
+        if abilities is None:
+            self.abilities = self.zero_abilities()
+        else:
+            self.abilities = abilities
+        if meta is None:
+            self.meta = self.zero_meta()
+        else:
+            self.meta = meta
+        self.backgrounds = backgrounds
+        self.disciplines = disciplines
+        self.virtues = virtues
+        self.humanity = humanity
+        self.bloodmax = bloodmax
+        self.blood = blood
+        self.merits = merits
 
     def getattributes(self):
         result = collections.OrderedDict()
@@ -106,6 +122,69 @@ class Character(object):
                 str(list(self.getattributes().values())[i + 6]) + "\t  " + "\n"
         return result
 
+    def getdictrepr(self):
+        character = {}
+        character['Meta'] = self.meta
+        character['Attributes'] = self.getattributes()
+        character['Abilities'] = self.abilities
+        character['Disciplines'] = self.disciplines
+        character['Virtues'] = self.virtues
+        character['Backgrounds'] = self.backgrounds
+
+
+    @staticmethod
+    def zero_abilities():
+        abilities = {}
+        abilities['Talents']['Alertness'] = 0
+        abilities['Skills']['AnimalKen'] = 0
+        abilities['Knowledges']['Academics'] = 0
+        abilities['Talents']['Athletics'] = 0
+        abilities['Skills']['Crafts'] = 0
+        abilities['Knowledges']['Computer'] = 0
+        abilities['Talents']['Brawl'] = 0
+        abilities['Skills']['Drive'] = 0
+        abilities['Knowledges']['Finance'] = 0
+        abilities['Talents']['Dodge'] = 0
+        abilities['Skills']['Etiquette'] = 0
+        abilities['Knowledges']['Investigation'] = 0
+        abilities['Talents']['Empathy'] = 0
+        abilities['Skills']['Firearms'] = 0
+        abilities['Knowledges']['Law'] = 0
+        abilities['Talents']['Expression'] = 0
+        abilities['Skills']['Melee'] = 0
+        abilities['Knowledges']['Linguistics'] = 0
+        abilities['Talents']['Intimidation'] = 0
+        abilities['Skills']['Performance'] = 0
+        abilities['Knowledges']['Medicine'] = 0
+        abilities['Talents']['Leadership'] = 0
+        abilities['Skills']['Security'] = 0
+        abilities['Knowledges']['Occult'] = 0
+        abilities['Talents']['Streetwise'] = 0
+        abilities['Skills']['Stealth'] = 0
+        abilities['Knowledges']['Politics'] = 0
+        abilities['Talents']['Subterfuge'] = 0
+        abilities['Skills']['Survival'] = 0
+        abilities['Knowledges']['Science'] = 0
+        return abilities
+
+    @staticmethod
+    def zero_meta():
+        meta = {}
+        meta['Name'] = ""
+        meta['Nature'] = ""
+        meta['Generation'] = ""
+        meta['Player'] = ""
+        meta['Demeanor'] = ""
+        meta['Haven'] = ""
+        meta['Chronicle'] = ""
+        meta['Clan'] = ""
+        meta['Concept'] = ""
+        return meta
+
+    @staticmethod
+    def zero_virtues():
+        return {'Conscience/Conviction': 0, 'Self Control/Instinct': 0, 'Courage': 0}
+
 
 def makechar(min, cap, prioa, priob, prioc):
     response = urllib.request.urlopen(
@@ -132,7 +211,6 @@ def makechar(min, cap, prioa, priob, prioc):
 
 
 if __name__ == '__main__':
-    pass
     for x in range(100):
-        test = chargen(0, 3, 5, 7)
+        test = makechar(0, 5, 3, 5, 7)
         print(test.getstringrepr())
