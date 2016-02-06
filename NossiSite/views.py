@@ -1,5 +1,5 @@
 from NossiSite import app
-from NossiSite.helpers import g, session, render_template, generate_token, request, redirect, url_for, abort, \
+from NossiSite.helpers import g, session, generate_token, request, redirect, url_for, abort, \
     render_template, flash, connect_db, generate_password_hash, init_db, send_from_directory
 from NossiPack.User import Userlist, User
 from NossiPack import Character
@@ -10,31 +10,31 @@ import time
 token = {}
 
 
-@app.route('/kudosloan/<user>', methods=['GET'])
+@app.route('/kudosloan/<user>', methods=['POST'])
 def loankudos(user):
-    ul = Userlist()
-    loaner = ul.getuserbyname(session.get('user'))
-    loanee = ul.getuserbyname(user)
-    loanee.add_kudosoffer(loaner.username)
-    ul.saveuserlist()
-    flash("Extended offer for vouching")
+    if checktoken():
+        if not session.get('logged_in'):
+            flash('You are not logged in!')
+            return redirect(url_for('login'))
+        ul = Userlist()
+        loaner = ul.getuserbyname(session.get('user'))
+        loanee = ul.getuserbyname(user)
+        loanee.add_kudosoffer(loaner.username)
+        ul.saveuserlist()
+        flash("Extended offer for vouching")
     return redirect(url_for('kudosloan'))
 
 
 @app.route('/kudosloan/', methods=['GET', 'POST'])
 def kudosloan():
+    if not session.get('logged_in'):
+        flash('You are not logged in!')
+        return redirect(url_for('login'))
     ul = Userlist()
-    global token
     u = ul.getuserbyname(session.get('user'))
     entries = u.get_kudosdebts()
     if request.method == 'POST':
-        print("entered kudosloan")
-        if token.get(session.get('user', None), None) != request.form.get('token', "None"):
-            # so that None != "None" but a forged token with just "None" inside never matches
-            flash("invalid token!")
-            print("Token received:" + request.form.get('token', "None") + " Token expected:",
-                  token.get(session.get('user', None), "INVALID"))
-        else:
+        if checktoken():
             token[session['user']].pop()
             id = request.form['id']
             entry = None
@@ -55,8 +55,8 @@ def kudosloan():
     for e in entries:
         e['currentkudos'] = ul.getuserbyname(e.get('loaner')).kudos
 
-    token[session['user']] = generate_token(session)
-    return render_template('loankudos.html', entries=entries, token=token[session['user']])
+    gentoken()
+    return render_template('loankudos.html', entries=entries)
 
 
 @app.route('/')
@@ -64,18 +64,14 @@ def show_entries():
     cur = g.db.execute('SELECT author, title, text, plusOned, id FROM entries ORDER BY id DESC')
     entries = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4]) for row in cur.fetchall()]
     for e in entries:
-        print(e.get('author') + " " + e.get('text') + " " + str(e.get('id')))
+        #   print(e.get('author') + " " + e.get('text') + " " + str(e.get('id')))
         if e.get('plusoned') is not None:
             esplit = e.get('plusoned').split(' ')
             e['plusoned'] = ((session.get('user') in esplit) or (session.get('user') == e.get('author')))
         else:
             e['plusoned'] = (session.get('user') == e.get('author'))
-    sendouttoken = ''
-    if session.get('user'):
-        token[session['user']] = generate_token(session)
-        sendouttoken = token[session['user']]
-
-    return render_template('show_entries.html', entries=entries, token=sendouttoken)
+    gentoken()
+    return render_template('show_entries.html', entries=entries)
 
 
 @app.route('/modify_sheet/', methods=['POST'])
@@ -85,21 +81,16 @@ def modify_sheet():
 
 @app.route('/timestep/', methods=['GET', 'POST'])
 def timestep():
+    if not session.get('logged_in'):
+        flash('You are not logged in!')
+        return redirect(url_for('login'))
     ul = Userlist()
     error = None
     keyprovided = session.get('amount') is not None
     if not keyprovided:
         keyprovided = None
     if request.method == 'POST':
-        global token
-        print("entered plusone")
-        if token.get(session.get('user', None), None) != request.form.get('token', "None"):
-            # so that None != "None" but a forged token with just "None" inside never matches
-            flash("invalid token!")
-            print("Token received:" + request.form.get('token', "None") + " Token expected:",
-                  token.get(session.get('user', None), "INVALID"))
-        else:
-
+        if checktoken():
             try:
                 amount = int(request.form['amount'])
                 if amount > 0:
@@ -128,24 +119,16 @@ def timestep():
                         session.pop('timeamount')
                         session.pop('timekey')
                 except Exception as ins:
-
                     error = 'invalid transaction'
     ul.saveuserlist()
-    return render_template('timestep.html', user=Userlist.getuserbyname(session.get('user')),
+    gentoken()
+    return render_template('timestep.html', user=ul.getuserbyname(session.get('user')),
                            error=error, keyprovided=keyprovided)
 
 
 @app.route('/plusone/<ident>', methods=['POST'])
 def plusone(ident):
-    global token
-    print("entered plusone")
-    if token.get(session.get('user', None), None) != request.form.get('token', "None"):
-        # so that None != "None" but a forged token with just "None" inside never matches
-        flash("invalid token!")
-        print("Token received:" + request.form.get('token', "None") + " Token expected:",
-              token.get(session.get('user', None), "INVALID"))
-    else:
-        print("passed token")
+    if checktoken():
         entry = {}
         cur = g.db.execute('SELECT author, title, text, plusOned, id FROM entries WHERE id = ?', [ident])
         for row in cur.fetchall():  # SHOULD only run once
@@ -174,22 +157,22 @@ def plusone(ident):
         ul.saveuserlist()
         g.db.execute('UPDATE entries SET plusOned = ? WHERE ID = ?', [entry.get('plusoned'), ident])
         g.db.commit()
+        gentoken()
     return redirect(url_for('show_entries'))
 
 
 @app.route('/add', methods=['POST'])
 def add_entry():
     if not session.get('logged_in'):
-        abort(401)
-
-    global token
-    if token[session['user']] != request.form['token']:
-        flash("invalid token!")
-    else:
+        flash('You are not logged in!')
+        return redirect(url_for('login'))
+    print(session.get('user','?'), "adding", request.form)
+    if checktoken():
         g.db.execute('INSERT INTO entries (author, title, text) VALUES (?, ?, ?)',
                      [session.get('user'), request.form['title'], request.form['text']])
         g.db.commit()
         flash('New entry was successfully posted')
+    gentoken()
     return redirect(url_for('show_entries'))
 
 
@@ -202,10 +185,7 @@ def add_funds():
     if not keyprovided:
         keyprovided = None
     if request.method == 'POST':
-        global token
-        if token[session['user']] != request.form['token']:
-            flash("invalid token!")
-        else:
+        if checktoken():
             try:
                 amount = int(request.form['amount'])
                 if amount > 0:
@@ -237,7 +217,7 @@ def add_funds():
 
 
 @app.route('/register', methods=['GET', 'POST'])
-def register():
+def register():  # this is not clrs secure because it does not need to be
     error = None
     u = Userlist(None)
     if request.method == 'POST':
@@ -250,7 +230,6 @@ def register():
                     print("creating user", username)
                     error = u.adduser(User(username, password))
                     print(password)
-                    print("error is", error)
                     if error is None:
                         flash('User successfully created.')
                         return redirect(url_for('start'))
@@ -263,9 +242,8 @@ def register():
     return render_template('register.html', error=error)
 
 
-# TODO: HOLY SHIT IMPLEMENT FORM TOKENS
 @app.route('/login', methods=['GET', 'POST'])
-def login():
+def login():  # this is not clrs secure because it does not need to be
     error = None
     u = Userlist()
     if request.method == 'POST':
@@ -278,7 +256,7 @@ def login():
             session['user'] = user
             flash('You were logged in')
             return redirect(url_for('show_entries'))
-
+    gentoken()
     return render_template('login.html', error=error)
 
 
@@ -291,7 +269,6 @@ def logout():
 
 @app.route('/nn')
 def start():
-    print("nncalled")
     return render_template('show_entries.html',
                            entries=[
                                dict(author='the NOSFERATU NETWORK', title='WeLcOmE tO tHe NoSfErAtU nEtWoRk', text='')],
@@ -342,8 +319,8 @@ def show_user_profile(username):
     if session.get('logged_in', False):
         ownkudos = ul.getuserbyname(session.get('user')).kudos
     else:
-        token[session['user']] = generate_token(session)  # set token
-    site = render_template('userinfo.html', ownkudos=ownkudos, user=u, msgs=msgs, token=token[session['user']])
+        gentoken()
+    site = render_template('userinfo.html', ownkudos=ownkudos, user=u, msgs=msgs)
     return site
 
 
@@ -352,18 +329,39 @@ def impressum():
     return render_template('Impressum.html')
 
 
+@app.context_processor
+def gettoken():
+    return dict(token=token.get(session.get('user', None), ''))
+
+
+def gentoken():
+    if session.get('user'):
+        token[session['user']] = generate_token(session)
+        return token[session['user']]
+    else:
+        return ''
+
+
+def checktoken():
+    global token
+    if token.get(session.get('user', None), None) != request.form.get('token', "None"):
+        # so that None != "None" but a forged token with just "None" inside never matches
+        flash("invalid token!")
+        print("Token received:" + request.form.get('token', "None") + " Token expected:",
+              token.get(session.get('user', None), "INVALID"))
+        return False
+    else:
+        if session.get('user', False):
+            token.pop(session.get('user', ''))
+        return True
+
 @app.route('/sendmsg/<username>', methods=['POST'])
 def send_msg(username):
-    global token
-    if token[session['user']] != request.form['token']:
-        flash("invalid token!")
-    else:
-        error = None
-        print(request.form)
+    error = None
+    if checktoken():
         if not session.get('logged_in'):
             error = 'You are not logged in!'
             return redirect(url_for('login'))
-        print("works")
         g.db.execute('INSERT INTO messages (author,recipient,title,text,value,lock,honored)'
                      ' VALUES (?, ?, ?, ?, ?, ?, ?)',  # 7
                      [session.get('user'),  # 1 -author
@@ -373,56 +371,56 @@ def send_msg(username):
                       request.form['price'],  # 5 value
                       not check0(request.form['price']),  # 6 lock
                       check0(request.form['price'])])  # 7 honored
-        print("still")
         g.db.commit()
         flash('Message sent')
-    return redirect(url_for('show_entries'))  # , error = error)
+    return redirect(url_for('show_entries', error=error))
 
 
 def check0(a):  # used in sendmsg because typecasts in THAT line would make things even worse
     return int(a) == 0
 
 
-@app.route('/honor/<ident>')
+@app.route('/honor/<ident>', methods=['POST'])
 def honor(ident):
-    honored = 1
-    ul = Userlist()
-    error = None
-    author = None
-    lock = 0
-    u = ul.getuserbyname(session.get('user'))
-    cur = g.db.execute('SELECT author, value, lock, honored FROM messages WHERE id = ?', [ident])
-    for row in cur.fetchall():
-        author = row[0]
-        # value = row[1]
-        lock = row[2]
-        honored = row[3]
-    if author is None:
-        error = "The message to be honored seems to be missing"
-        return render_template('userinfo.html', user=u, error=error)
-    n = ul.getuserbyname(author)
-    if lock != 1:
-        if honored != 0:
-            error = "This agreement has already been honored."
+    if checktoken():
+        honored = 1
+        ul = Userlist()
+        error = None
+        author = None
+        lock = 0
+        u = ul.getuserbyname(session.get('user'))
+        cur = g.db.execute('SELECT author, value, lock, honored FROM messages WHERE id = ?', [ident])
+        for row in cur.fetchall():
+            author = row[0]
+            # value = row[1]
+            lock = row[2]
+            honored = row[3]
+        if author is None:
+            error = "The message to be honored seems to be missing"
+            return render_template('userinfo.html', user=u, error=error)
+        n = ul.getuserbyname(author)
+        if lock != 1:
+            if honored != 0:
+                error = "This agreement has already been honored."
+            else:
+                kudosaut = 0
+                kudosrep = 0
+                cur = g.db.execute('SELECT kudosrep, kudosaut FROM messages WHERE id = ?', [ident])
+                for row in cur.fetchall():
+                    kudosrep = row[0]
+                    kudosaut = row[1]
+                u.addkudos(kudosrep)
+                n.addkudos(kudosaut)
+                g.db.execute('UPDATE messages SET honored = 1 WHERE id = ?', [ident])
+                cur = g.db.execute('SELECT * FROM messages')
+                # for row in cur.fetchall():
+                #    print(row)
+                flash("Transfer complete. Check the received messsage and "
+                      "press the Honor Button if is was what you ordered.")
+                g.db.commit()
+                ul.saveuserlist()
         else:
-            kudosaut = 0
-            kudosrep = 0
-            cur = g.db.execute('SELECT kudosrep, kudosaut FROM messages WHERE id = ?', [ident])
-            for row in cur.fetchall():
-                kudosrep = row[0]
-                kudosaut = row[1]
-            u.addkudos(kudosrep)
-            n.addkudos(kudosaut)
-            g.db.execute('UPDATE messages SET honored = 1 WHERE id = ?', [ident])
-            cur = g.db.execute('SELECT * FROM messages')
-            for row in cur.fetchall():
-                print(row)
-            flash("Transfer complete. Check the received messsage and "
-                  "press the Honor Button if is was what you ordered.")
-            g.db.commit()
-            ul.saveuserlist()
-    else:
-        flash('already unlocked!')
+            error = 'already unlocked!'
     return render_template('userinfo.html', user=u, error=error,
                            heads=['<META HTTP-EQUIV="refresh" CONTENT="5;url=' + url_for('show_user_profile',
                                                                                          username=u.username) + '">'])
@@ -481,6 +479,7 @@ def unlock(ident):
 
 @app.route('/ADMINCHEAT/')
 def cheat():
+    return "DEFUNCT"
     ul = Userlist()
     u = ul.getuserbyname("LOCKE")
     u.funds = 1000
@@ -495,19 +494,24 @@ def cheat():
 
 @app.route('/payout/', methods=['GET', 'POST'])
 def payout():
+    error = None
+    if not session.get('logged_in'):
+        error = 'You are not logged in!'
+        return redirect(url_for('login'))
     ul = Userlist()
     u = ul.getuserbyname(session.get('user'))
     error = None
     if request.method == 'POST':
-        try:
-            amount = int(request.form['amount'])
-            u.funds += -amount
-            print('DEDUCT')
-            print(session.get('user'))
-            print(amount)
-            flash('Deduct successfull')
-        except:
-            flash('ERROR')
+        if checktoken():
+            try:
+                amount = int(request.form['amount'])
+                u.funds += -amount
+                print('DEDUCT')
+                print(session.get('user'))
+                print(amount)
+                flash('Deduct successfull')
+            except:
+                error = "Error deducting \"" + request.form.get('amount', 'nothing') + "\"."
     ul.saveuserlist()
     return render_template('payout.html', user=u, error=error)
 
