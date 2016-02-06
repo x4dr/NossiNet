@@ -9,6 +9,7 @@ import time
 
 token = {}
 
+init_db()
 
 @app.route('/kudosloan/<user>', methods=['POST'])
 def loankudos(user):
@@ -166,7 +167,7 @@ def add_entry():
     if not session.get('logged_in'):
         flash('You are not logged in!')
         return redirect(url_for('login'))
-    print(session.get('user','?'), "adding", request.form)
+    print(session.get('user', '?'), "adding", request.form)
     if checktoken():
         g.db.execute('INSERT INTO entries (author, title, text) VALUES (?, ?, ?)',
                      [session.get('user'), request.form['title'], request.form['text']])
@@ -355,6 +356,7 @@ def checktoken():
             token.pop(session.get('user', ''))
         return True
 
+
 @app.route('/sendmsg/<username>', methods=['POST'])
 def send_msg(username):
     error = None
@@ -382,10 +384,11 @@ def check0(a):  # used in sendmsg because typecasts in THAT line would make thin
 
 @app.route('/honor/<ident>', methods=['POST'])
 def honor(ident):
+    error = None
+    u = None
     if checktoken():
         honored = 1
         ul = Userlist()
-        error = None
         author = None
         lock = 0
         u = ul.getuserbyname(session.get('user'))
@@ -422,8 +425,8 @@ def honor(ident):
         else:
             error = 'already unlocked!'
     return render_template('userinfo.html', user=u, error=error,
-                           heads=['<META HTTP-EQUIV="refresh" CONTENT="5;url=' + url_for('show_user_profile',
-                                                                                         username=u.username) + '">'])
+                           heads=['<META HTTP-EQUIV="refresh" CONTENT="5;url=' +
+                                  url_for('show_user_profile', username=u.username) + '">'])
 
 
 @app.route('/unlock/<ident>')
@@ -480,16 +483,16 @@ def unlock(ident):
 @app.route('/ADMINCHEAT/')
 def cheat():
     return "DEFUNCT"
-    ul = Userlist()
-    u = ul.getuserbyname("LOCKE")
-    u.funds = 1000
-    u.kudos = 4200
-    ul.saveuserlist()
-    g.db.execute('UPDATE messages DELETE WHERE id = 8')
-    g.db.commit()
+    #   ul = Userlist()
+    #   u = ul.getuserbyname("LOCKE")
+    #   u.funds = 1000
+    #   u.kudos = 4200
+    #   ul.saveuserlist()
+    #   g.db.execute('UPDATE messages DELETE WHERE id = 8')
+    #   g.db.commit()
 
-    print('/ADMINCHEAT/ done!')
-    return 'OK'
+    #   print('/ADMINCHEAT/ done!')
+    #   return 'OK'
 
 
 @app.route('/payout/', methods=['GET', 'POST'])

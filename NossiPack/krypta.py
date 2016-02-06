@@ -1,12 +1,12 @@
-__author__ = 'maric'
-'''original from Eli Bendersky'''
+
 
 import os
 import random
 import struct
 
 from Crypto.Cipher import AES
-
+__author__ = 'maric'
+'''original encrypt and decrypt from Eli Bendersky'''
 
 def encrypt_file(key, in_filename, out_filename=None, chunksize=64 * 1024):
     """ Encrypts a file using AES (CBC mode) with the
