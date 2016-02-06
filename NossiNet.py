@@ -9,4 +9,4 @@ except:
     port = 5000
 
 
-socketio.run(app, "0.0.0.0", debug=True, port=port)
+socketio.run(app, "0.0.0.0", debug=False, port=port)
