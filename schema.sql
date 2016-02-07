@@ -27,4 +27,11 @@ CREATE TABLE IF NOT EXISTS users (
   kudos        INTEGER          NOT NULL,
   funds        INTEGER          NOT NULL,
   kudosdebt    TEXT             NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS chatlogs (
+  linenr        INTEGER             NOT NULL,
+  line          TEXT                NOT NULL,
+  room          TEXT                NOT NULL,
+  CONSTRAINT unq UNIQUE (linenr, room)
 )

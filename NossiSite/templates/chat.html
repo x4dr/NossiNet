@@ -18,6 +18,11 @@
                 document.getElementById('statusmessage').innerHTML = msg.status
             });
 
+            socket.on('SetCmd', function(msg) {
+                $('#message_data').val(msg.data)
+                alert('HI')
+            });
+
             socket.on('Exec', function(msg){
                 eval(msg.command)
 
@@ -31,38 +36,39 @@
             var keyCount = 0;
 
             $('form#message').submit(function(event) {
+                message_data=$('#message_data').val()
                 if(document.getElementById('message_data').value != ''){
                 socket.emit('ClientServerEvent',
-                        {data: $('#message_data').val()});
+                        {data: message_data});
                 commandCount++;
                 keyCount = 0;
-                prevCommand[commandCount] = $('#message_data').val();
+                prevCommand[commandCount] = message_data;
                 document.getElementById('message_data').value = ''}
                 return false;
             });
 
             $(document).keydown(function(event){
-                var msgdata = $('#message_data')
+                var msgdata = $('#message_data');
+                var index;
                 if(event.which == 38){
                     keyCount++;
                     if(typeof prevCommand[keyCount] !== "undefined") {
-                        var index = prevCommand.length-keyCount;
+                        index = prevCommand.length-keyCount;
                         msgdata.val(prevCommand[index]);
                     } else {
-                        keyCount = 1
-                        var index = prevCommand.length-keyCount;
+                        keyCount = 1;
+                        index = prevCommand.length-keyCount;
                         msgdata.val(prevCommand[index]);
                     }
                     return false;
                 }else if(event.which == 40) {
                     keyCount--;
                         if(typeof prevCommand[keyCount] !== "undefined") {
-                        var index = prevCommand.length-keyCount;
+                        index = prevCommand.length-keyCount;
                         msgdata.val(prevCommand[index]);
                       //  moveCursorToEnd(msgdata)
                     } else {
-                            keyCount = 0
-                            var index = prevCommand.length-keyCount;
+                            keyCount = 0;
                         msgdata.val('');
                         }
                     return false;

@@ -5,6 +5,7 @@ import string
 
 from flask_socketio import SocketIO
 
+
 async_mode = 'eventlet'
 eventlet.monkey_patch()
 
@@ -14,7 +15,6 @@ DATABASE = './NN.db'
 SECRET_KEY = ''.join(random.SystemRandom().choice(string.printable) for _ in range(48))  #should invalidate cookies
 app.config.from_object(__name__)
 socketio = SocketIO(app, async_mode=async_mode)
-
 
 
 import NossiSite.views

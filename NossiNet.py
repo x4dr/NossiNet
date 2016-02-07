@@ -1,13 +1,10 @@
 # from NossiPack.RollbackImporter import RollbackImporter
 import sys
-import os
 from NossiSite import app, socketio
-from flask.helpers import url_for
-
 # print(os.getcwd()) this is where the database will be, allowing for multiple servers to run on different databases
 try:
     port = int(sys.argv[1])
 except:
     port = 5000
 
-socketio.run(app, "0.0.0.0", debug=False, port=port)
+socketio.run(app, "0.0.0.0", debug=True, port=port)

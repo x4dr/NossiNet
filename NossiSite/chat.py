@@ -1,7 +1,7 @@
 from NossiSite import app, socketio
 import time
 import threading
-from flask import render_template, session, abort, request
+from flask import render_template, session, abort, request, flash, url_for, redirect
 from flask_socketio import emit, join_room, leave_room, disconnect
 from NossiPack.Chatrooms import Chatroom
 
@@ -37,7 +37,7 @@ def decider(message):
         if session['activeroom'] is None:
             emit('Message', {'data': 'you are talking to a wall'})
         else:
-            print('... in room: ' +session['activeroom'].name)
+            print('... in room: ' + session['activeroom'].name)
             session['activeroom'].addline(session['user'] + ": " + message)
             # emit('Message', {'data': session['user'] + ": " + message}, room=session['activeroom'].name)
     statusupdate()
@@ -58,16 +58,16 @@ def menucmds(message):
         session['chatmode'] = 'menu'
     elif message == 'log':
         if session['activeroom'] is not None:
-            emit('Message', {'data': '\n#####START###LOG#####\n' + \
-                                     session['activeroom'].getlog(session['user'])+ \
-                             '######END####LOG#####\n'})
+            emit('Message', {'data': '\n#####START###LOG#####\n' +
+                                     session['activeroom'].getlog(session['user']) +
+                                     '######END####LOG#####\n'})
         else:
             emit('Message', {'data': 'no room to get log from!'})
     elif message == 'userlist':
         if session['activeroom'] is not None:
-            emit('Message', {'data': '\n#####START###LIST####\n' + \
-                                     session['activeroom'].getuserlist_text()+ \
-                             '######END####LIST####\n'})
+            emit('Message', {'data': '\n#####START###LIST####\n' +
+                                     session['activeroom'].getuserlist_text() +
+                                     '######END####LIST####\n'})
         else:
             emit('Message', {'data': 'no room to get list from!'})
     elif message.split(' ')[0] == 'room':
@@ -91,7 +91,7 @@ def menucmds(message):
         try:
             room = message.split(' ')[1]
         except:
-            emit('Message', {'data': 'what room?'})
+            emit('Message', {'data': 'join where?'})
             room = None
         if room is not None:
             emit('Message', {'data': 'subscribing to ' + room + '...'})
@@ -111,7 +111,7 @@ def menucmds(message):
                     joining.userjoin(session['user'])
                     session['rooms'].append(joining)
                     rooms.append(joining)
-                    session['activeroom'] = joining                        
+                    session['activeroom'] = joining
                 leave_room(session['activeroom'].name)
                 session['activeroom'] = joining
                 join_room(session['activeroom'].name)
@@ -132,7 +132,28 @@ def menucmds(message):
 
                 emit('Message', {'data': 'removed ' + room})
         if not left:
-            emit('Message', {'data': 'not subsrcribed to' + room + '!'})
+            emit('Message', {'data': 'not subsrcribed to ' + room + '!'})
+
+    elif message.split(' ')[0] == 'mailbox':
+        emit('Message', {'data': '\n#####START###LOG#####\n' +
+                                 session['rooms'][0].getlog(session['user']) +
+                                 '######END####LOG#####\n'})
+    elif message.split(' ')[0] == 'msg':
+        try:
+            recipient = message.split(' ')[1]
+        except:
+            emit('Message', {'data': 'message who?'})
+            recipient = None
+        recipient_message = " ".join(message.split(' ')[2:])
+        if (recipient_message == "") or recipient_message.isspace():
+            emit('Message', {'data': 'message what?'})
+            recipient = None
+        if recipient is not None:
+            for r in rooms:
+                if r.name == recipient + "_mailbox":
+                    r.addline(session['user'] + "->" + recipient + ": " + recipient_message)
+            emit('Message', {'data': session['user'] + "->" + recipient + ": " + recipient_message})
+            emit('SetCmd', {'data': "/msg " + recipient_message + " "})
 
     elif message.split(' ')[0] == 'switch':
         room = message.split(' ')[1]
@@ -149,7 +170,7 @@ def menucmds(message):
                 break
 
         if not switched:
-            emit('Message', {'data': 'not subscribed to' + room + '!'})
+            emit('Message', {'data': 'not subscribed to ' + room + '!'})
 
     elif message == 'talk':
         emit('Message', {'data': '\nentering talk mode, prefix further commands with "/"'
@@ -166,7 +187,8 @@ def menucmds(message):
 @app.route('/chat/')
 def chatsite():
     if not session.get('logged_in'):
-        abort(401)
+        flash('You are not logged in!')
+        return redirect(url_for('login'))
     global thread
     # if thread is None:
     # thread = threading.Thread(target=background_thread)
@@ -196,11 +218,9 @@ def chat_connect():
         return False
     global userlist
     session['id'] = request.sid
-    if session['user']:
+    if session.get('user', False):
         userlist[session['user'].upper()] = session['id']
-        mailbox = Chatroom(request.sid)
-        mailbox.mailbox = True
-        mailbox.users = ''
+        mailbox = Chatroom(session['user'], True)
         rooms.append(mailbox)
         session['rooms'] = [mailbox, rooms[0]]
 
