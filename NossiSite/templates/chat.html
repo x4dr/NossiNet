@@ -20,7 +20,6 @@
 
             socket.on('SetCmd', function(msg) {
                 $('#message_data').val(msg.data)
-                alert('HI')
             });
 
             socket.on('Exec', function(msg){

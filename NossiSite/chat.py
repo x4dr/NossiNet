@@ -22,29 +22,29 @@ def statusupdate():
         emit('Status', {'status': 'Currently talking.'})
 
 
-def echo(message):
-    emit('Message', {'data': session['user'] + ": " + message})
+def echo(message, sep=": "):
+    emit('Message', {'data': session['user'] + sep + message})
 
 
 def decider(message):
     if message[0] == '/':
-        echo(message)
-        menucmds(message[1:])
+        if menucmds(message[1:], "/"):
+            echo(message)
     elif session['chatmode'] == 'menu':
-        echo(message)
-        menucmds(message)
+        if menucmds(message):
+            echo(message)
     elif session['chatmode'] == 'talk':
         if session['activeroom'] is None:
             emit('Message', {'data': 'you are talking to a wall'})
         else:
             print('... in room: ' + session['activeroom'].name)
             session['activeroom'].addline(session['user'] + ": " + message)
-            # emit('Message', {'data': session['user'] + ": " + message}, room=session['activeroom'].name)
     statusupdate()
 
 
-def menucmds(message):
+def menucmds(message,stripped=""):
     if message == 'help':
+        echo(message, ": /")
         emit('Message', {'data': '\navailable subscripts:'
                                  '\nwidth  <n>: adjusts page width (35 is standart)'
                                  '\nheight <n>: adjusts height of this box (in pixel)'
@@ -53,10 +53,15 @@ def menucmds(message):
                                  '\nswitch <s>: makes the specified room active'
                                  '\nmenu      : to switch to menu mode'
                                  '\ntalk      : to begin talking'
+                                 '\nmailbox   : to check the log of messages send to you'
                                  '\nlog       : to get the log of the room you are in \n'})
+        if session['chatmode']=='menu':
+            emit('SetCmd', {'data': '/talk'})
     elif message == 'menu':
+        echo(message, ": /")
         session['chatmode'] = 'menu'
     elif message == 'log':
+        echo(message, ": /")
         if session['activeroom'] is not None:
             emit('Message', {'data': '\n#####START###LOG#####\n' +
                                      session['activeroom'].getlog(session['user']) +
@@ -64,6 +69,7 @@ def menucmds(message):
         else:
             emit('Message', {'data': 'no room to get log from!'})
     elif message == 'userlist':
+        echo(message, ": /")
         if session['activeroom'] is not None:
             emit('Message', {'data': '\n#####START###LIST####\n' +
                                      session['activeroom'].getuserlist_text() +
@@ -71,8 +77,10 @@ def menucmds(message):
         else:
             emit('Message', {'data': 'no room to get list from!'})
     elif message.split(' ')[0] == 'room':
+        echo(message, ": /")
         emit('Message', {'data': " ".join(x.name for x in session['rooms'] if x != session['rooms'][0])})
     elif message.split(' ')[0] == 'width':
+        echo(message, ": /")
         try:
             width = int(message.split(' ')[1])
         except:
@@ -80,6 +88,7 @@ def menucmds(message):
         emit('Message', {'data': '\nadjusting width...\n'})
         emit('Exec', {'command': 'document.getElementById("page_complete").style.width = "' + str(width) + 'em";'})
     elif message.split(' ')[0] == 'height':
+        echo(message, ": /")
         try:
             height = int(message.split(' ')[1])
         except:
@@ -92,6 +101,7 @@ def menucmds(message):
             room = message.split(' ')[1]
         except:
             emit('Message', {'data': 'join where?'})
+            emit('SetCmd', {'data': '/join '})
             room = None
         if room is not None:
             emit('Message', {'data': 'subscribing to ' + room + '...'})
@@ -118,6 +128,7 @@ def menucmds(message):
                 emit('Message', {'data': 'done joining!'})
 
     elif message.split(' ')[0] == 'leave':
+        echo(message, ": /")
         try:
             room = message.split(' ')[1]
         except:
@@ -135,10 +146,12 @@ def menucmds(message):
             emit('Message', {'data': 'not subsrcribed to ' + room + '!'})
 
     elif message.split(' ')[0] == 'mailbox':
+        echo(message, ": /")
         emit('Message', {'data': '\n#####START###LOG#####\n' +
                                  session['rooms'][0].getlog(session['user']) +
                                  '######END####LOG#####\n'})
     elif message.split(' ')[0] == 'msg':
+        echo(message, ": /")
         try:
             recipient = message.split(' ')[1]
         except:
@@ -153,9 +166,10 @@ def menucmds(message):
                 if r.name == recipient + "_mailbox":
                     r.addline(session['user'] + "->" + recipient + ": " + recipient_message)
             emit('Message', {'data': session['user'] + "->" + recipient + ": " + recipient_message})
-            emit('SetCmd', {'data': "/msg " + recipient_message + " "})
+            emit('SetCmd', {'data': "/msg " + recipient + " "})
 
     elif message.split(' ')[0] == 'switch':
+        echo(message, ": /")
         room = message.split(' ')[1]
         emit('Message', {'data': 'switching to ' + room + '...'})
         switched = False
@@ -179,9 +193,11 @@ def menucmds(message):
         join_room(session['activeroom'].name)
 
     elif message == 'connection established':
-        pass
+        emit('SetCmd', {'data': '/help'})
+        return True
     else:
         emit('Message', {'data': 'command not found. Type help for help.'})
+    return False
 
 
 @app.route('/chat/')
@@ -198,9 +214,8 @@ def chatsite():
 
 
 @socketio.on('ClientServerEvent', namespace='/chat')
-def test_message(message):
-    print(session.get('user', "NoUser"), "\t", message)
-    # emit('Message', {'data': session['user'] + ": " + message['data']})
+def receive(message):
+    print(session.get('user', "NoUser"), ":\t", message)
     decider(message['data'])
 
 

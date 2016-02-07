@@ -4,6 +4,13 @@ from helpers import connect_db
 import re
 
 
+def echo(message):
+    try:
+        emit('Message', {'data': session['user']  + message})
+    except:
+        pass
+
+
 class Chatroom(object):
     def __init__(self, name, mailbox=False):
         self.name = re.sub(r'_+', '', name)
@@ -18,16 +25,19 @@ class Chatroom(object):
 
     def loadchatlog(self):  # converts the SQL table into a list for easier access
         db = connect_db()
-        db.set_trace_callback(print)
+        db.set_trace_callback(echo)
         rows = db.execute("SELECT linenr, line  FROM chatlogs WHERE room = ? ORDER BY linenr ASC",
-                         [self.name]).fetchall()
+                            [self.name]).fetchall()
+        db.close()
+
         self.chatlog = [[int(row[0]), row[1]] for row in rows[-1000:]]
         for row in self.chatlog:  # only the last 1000 lines will be loaded
             if self.newestlineindb < int(row[0]):
                 self.newestlineindb = int(row[0])
         if not self.chatlog:
             self.chatlog = [[0, "start of " + self.name]]
-        db.close()
+            if self.mailbox:
+                self.userjoin(session['user'])
         self.savechatlog()
 
     def savechatlog(self):
@@ -69,6 +79,8 @@ class Chatroom(object):
                 self.addline(u + ' left the room!')
 
     def userjoin(self, user):
+        if self.mailbox and not (re.match(r'(.*)_.*', self.name).group(1) == session.get('user')):
+            return False
         for u in self.users:
             if u == user:
                 return False
@@ -79,9 +91,9 @@ class Chatroom(object):
     def userleave(self, user):
         actuallyleft = False
         for u in self.users:
-            if u == user:
-                self.addline(user + ' left the room!')
-                actuallyleft = True
+                if u == user:
+                    self.addline(user + ' left the room!')
+                    actuallyleft = True
         self.users = [x for x in self.users if x != user]
         return actuallyleft
 
@@ -90,6 +102,13 @@ class Chatroom(object):
         result = ''
         if self.mailbox and not (re.match(r'(.*)_.*', self.name).group(1) == session.get('user')):
             return "####UNAUTHORIZED####"
+
+        ###debug
+        if self.mailbox:
+            result+= "mailbox"
+        result+="\n"+self.name+"\n"
+        ###debug
+
         for l in [x[1] for x in self.chatlog]:
             if l == user + ' joined the room!':
                 present = True
