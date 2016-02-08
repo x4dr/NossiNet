@@ -1,6 +1,6 @@
 from flask_socketio import emit
 from flask import session
-from helpers import connect_db
+from NossiSite.helpers import connect_db
 import re
 
 
