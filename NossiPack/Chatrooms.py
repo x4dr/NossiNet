@@ -6,7 +6,7 @@ import re
 
 def echo(message):
     try:
-        emit('Message', {'data': session['user']  + message})
+        emit('Message', {'data': session['user'] + message})
     except:
         pass
 
@@ -25,9 +25,9 @@ class Chatroom(object):
 
     def loadchatlog(self):  # converts the SQL table into a list for easier access
         db = connect_db()
-        db.set_trace_callback(echo)
+        #db.set_trace_callback(echo)
         rows = db.execute("SELECT linenr, line  FROM chatlogs WHERE room = ? ORDER BY linenr ASC",
-                            [self.name]).fetchall()
+                          [self.name]).fetchall()
         db.close()
 
         self.chatlog = [[int(row[0]), row[1]] for row in rows[-1000:]]
@@ -91,9 +91,9 @@ class Chatroom(object):
     def userleave(self, user):
         actuallyleft = False
         for u in self.users:
-                if u == user:
-                    self.addline(user + ' left the room!')
-                    actuallyleft = True
+            if u == user:
+                self.addline(user + ' left the room!')
+                actuallyleft = True
         self.users = [x for x in self.users if x != user]
         return actuallyleft
 
@@ -105,8 +105,8 @@ class Chatroom(object):
 
         ###debug
         if self.mailbox:
-            result+= "mailbox"
-        result+="\n"+self.name+"\n"
+            result += "mailbox"
+        result += "\n" + self.name + "\n"
         ###debug
 
         for l in [x[1] for x in self.chatlog]:

@@ -13,7 +13,7 @@ class Character(object):
     def __init__(self, name="", strength=0, dexterity=0, stamina=0, charisma=0, manipulation=0,
                  appearance=0, perception=0, intelligence=0, wits=0, meta=None, abilities=None,
                  virtues=None, backgrounds=[], disciplines={}, humanity=0, bloodmax=0, blood=0,
-                 merits = []):
+                 merits=[]):
         self.name = name
         self.strength = strength
         self.dexterity = dexterity
@@ -130,11 +130,11 @@ class Character(object):
         character['Disciplines'] = self.disciplines
         character['Virtues'] = self.virtues
         character['Backgrounds'] = self.backgrounds
-
+        return character
 
     @staticmethod
     def zero_abilities():
-        abilities = {}
+        abilities = {'Talents': {}, 'Skills': {}, 'Knowledges': {}}
         abilities['Talents']['Alertness'] = 0
         abilities['Skills']['AnimalKen'] = 0
         abilities['Knowledges']['Academics'] = 0

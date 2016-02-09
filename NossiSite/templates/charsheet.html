@@ -1,5 +1,6 @@
-${message}
-<form action="{{ url_for(modify_sheet) }}" method="post">
+{% extends "layout.html" %}
+{% block body %}
+<form action="{{ url_for('charsheet') }}" method="post">
 <input type="hidden" name="sheet[id]" value="${sheetid}" />
 <table class="leet">
 	<tr>
@@ -126,7 +127,7 @@ ${message}
 								<td colspan="2" style="text-align: center; width: 34%;" class="section_header">Disciplines</td>
 								<td colspan="2" style="text-align: center; width: 33%;" class="section_header">Virtues</td>
 							</tr>
-                            {% for i in range(max(len(character.Backgrounds),len(character.Disciplines),3)) %}
+                            {% for i in range(max(character.Backgrounds|length,character.Disciplines|length,3)) %}
 							<tr>
 								{{ character.Backgrounds[i] }}
 								{{ character.Disciplines[i] }}
@@ -209,3 +210,5 @@ ${message}
 	</tr>
 </table>
 </form>
+
+{% endblock %}

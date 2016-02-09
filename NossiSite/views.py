@@ -2,7 +2,7 @@ from NossiSite import app
 from NossiSite.helpers import g, session, generate_token, request, redirect, url_for, abort, \
     render_template, flash, connect_db, generate_password_hash, init_db, send_from_directory
 from NossiPack.User import Userlist, User
-from NossiPack import Character
+from NossiPack.Character import Character
 import random
 import os
 import time
@@ -25,6 +25,10 @@ def loankudos(user):
         flash("Extended offer for vouching")
     return redirect(url_for('kudosloan'))
 
+
+@app.route('/charactersheet/')
+def charsheet():
+    return render_template('charsheet.html', character=Character().getdictrepr())
 
 @app.route('/kudosloan/', methods=['GET', 'POST'])
 def kudosloan():
