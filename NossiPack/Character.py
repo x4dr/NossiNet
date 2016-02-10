@@ -2,7 +2,7 @@ from random import Random
 import urllib
 import re
 
-from NossiPack.krypta import randomlyspend
+# from NossiPack.krypta import randomlyspend
 
 __author__ = 'maric'
 
@@ -34,23 +34,46 @@ class Character(object):
             self.meta = meta
         self.backgrounds = backgrounds
         self.disciplines = disciplines
-        self.virtues = virtues
+        if virtues is None:
+            self.virtues = self.zero_virtues()
+        else:
+            self.virtues = virtues
         self.humanity = humanity
         self.bloodmax = bloodmax
         self.blood = blood
         self.merits = merits
 
+    @staticmethod
+    def converttodots(inp):
+        res = ""
+        for i in range(inp):
+            res += "●"
+        for i in range(5-len(res)):
+            res += "○"
+        return res
+
+    @staticmethod
+    def convertdicttodots(inp):
+        try:
+            return Character.converttodots(inp)
+        except Exception as inst:
+            print(inst)
+            for i in inp.keys():
+                inp[i] = Character.convertdicttodots(inp[i])
+        return inp
+
+
     def getattributes(self):
         result = collections.OrderedDict()
-        result['strength'] = self.strength
-        result['dexterity'] = self.dexterity
-        result['stamina'] = self.stamina
-        result['charisma'] = self.charisma
-        result['manipulation'] = self.manipulation
-        result['appearance'] = self.appearance
-        result['perception'] = self.perception
-        result['intelligence'] = self.intelligence
-        result['wits'] = self.wits
+        result['strength'] = self.converttodots(self.dexterity)
+        result['dexterity'] = self.converttodots(self.dexterity)
+        result['stamina'] = self.converttodots(self.stamina)
+        result['charisma'] = self.converttodots(self.charisma)
+        result['manipulation'] = self.converttodots(self.manipulation)
+        result['appearance'] = self.converttodots(self.appearance)
+        result['perception'] = self.converttodots(self.perception)
+        result['intelligence'] = self.converttodots(self.intelligence)
+        result['wits'] = self.converttodots(self.wits)
         return result
 
     def setattributes(self, strength=-1, dexterity=-1, stamina=-1, charisma=-1, manipulation=-1, appearance=-1,
@@ -126,11 +149,30 @@ class Character(object):
         character = {}
         character['Meta'] = self.meta
         character['Attributes'] = self.getattributes()
-        character['Abilities'] = self.abilities
+        character['Abilities'] = Character.convertdicttodots(self.abilities)
         character['Disciplines'] = self.disciplines
         character['Virtues'] = self.virtues
         character['Backgrounds'] = self.backgrounds
+        character['BGVDSCP_combined'] = self.combine_BGVDSCP()
         return character
+
+    def combine_BGVDSCP(self):
+        combined = []
+        for i in range(max(len(self.backgrounds), len(self.disciplines.keys()), len(self.virtues.keys()))):
+            combined.append({})
+            try:
+                combined[i]['Background'] = self.backgrounds[i]
+            except:
+                combined[i]['Background'] = ""
+            try:
+                combined[i]['Discipline'] = self.disciplines[self.disciplines.keys()[i]]
+            except:
+                combined[i]['Discipline'] = ""
+            try:
+                combined[i]['Virtue'] = self.virtues[self.virtues.keys()[i]]
+            except:
+                combined[i]['Virtue'] = ""
+        return combined
 
     @staticmethod
     def zero_abilities():
@@ -170,15 +212,15 @@ class Character(object):
     @staticmethod
     def zero_meta():
         meta = {}
-        meta['Name'] = ""
-        meta['Nature'] = ""
-        meta['Generation'] = ""
-        meta['Player'] = ""
-        meta['Demeanor'] = ""
-        meta['Haven'] = ""
-        meta['Chronicle'] = ""
-        meta['Clan'] = ""
-        meta['Concept'] = ""
+        meta['Name'] = "Nametest"
+        meta['Nature'] = "Naturetest"
+        meta['Generation'] = "Gentest"
+        meta['Player'] = "Playertest"
+        meta['Demeanor'] = "Demeanortest"
+        meta['Haven'] = "Haventest"
+        meta['Chronicle'] = "Chronicletest"
+        meta['Clan'] = "Clantest"
+        meta['Concept'] = "Concepttest"
         return meta
 
     @staticmethod

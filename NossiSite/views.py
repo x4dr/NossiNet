@@ -30,6 +30,7 @@ def loankudos(user):
 def charsheet():
     return render_template('charsheet.html', character=Character().getdictrepr())
 
+
 @app.route('/kudosloan/', methods=['GET', 'POST'])
 def kudosloan():
     if not session.get('logged_in'):
@@ -79,9 +80,9 @@ def show_entries():
     return render_template('show_entries.html', entries=entries)
 
 
-@app.route('/modify_sheet/', methods=['POST'])
+@app.route('/modify_sheet/')
 def modify_sheet():
-    pass
+    return render_template('charsheet_editor.html', character=Character().getdictrepr())
 
 
 @app.route('/timestep/', methods=['GET', 'POST'])

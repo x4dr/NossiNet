@@ -121,16 +121,4 @@ def roll(low=0, high=0, attribute=0, ability=0):
     return output
 
 
-def randomlyspend(count, start, maximum, points):
-    tmp = []
-    for i in range(count):
-        tmp.append(start)
-    while points > 0:
-        i = random.Random().randrange(0, len(tmp))
-        if tmp[i] >= maximum:
-            if all([t >= maximum for t in tmp]):
-                break
-            continue
-        tmp[i] += 1
-        points += -1
-    return tmp
+

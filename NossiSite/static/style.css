@@ -1,5 +1,7 @@
 html * {
     color: #00f700;
+    background: #000000;
+     overflow-x: hidden;
     font-family: "Lucida Console", Monaco, monospace;
 !important;
 }
@@ -12,7 +14,8 @@ a, h1, h2       { color: #00f700; }
 
 
 h1              { border-bottom: 2px solid #000000;  }
-h2              { font-size: 1.2em; }
+h2              {
+                font-size: 1.2em; }
 
 h3 {
     font-size: 1.0em;
@@ -22,7 +25,7 @@ h3 {
     color: #007700
 }
 
-.page           { margin: 2em auto; width: 35em; border: 5px solid #00f700;
+.page           { margin: 1em auto; width: 45em; border: 5px solid #00f700;
                   padding: 0.8em; background: #000; color: #00f700; }
 .leet {
     background-color: black;
@@ -38,8 +41,8 @@ h3 {
     border: 1px solid #00f700
 }
 .entries        { list-style: none; margin: 0; padding: 0; background: #000000;color:#00f700 }
-.entries li     { margin: 0.8em 1.2em; }
-.entries li h2  { margin-left: -1em; }
+.entries li     { margin: 0.8em ; }
+.entries li h2  { margin-left: 0; }
 
 .add-entry {
     font-size: 0.9em;
