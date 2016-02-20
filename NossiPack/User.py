@@ -5,6 +5,7 @@ __author__ = 'maric'
 
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
+from Character import  Character
 
 DATABASE = './NN.db'
 
@@ -14,7 +15,8 @@ def connect_db():
 
 
 class User(object):
-    def __init__(self, username, password="", passwordhash=None, kudos=10, funds=0, kudosdebt=""):
+    def __init__(self, username, password="", passwordhash=None, kudos=10, funds=0, kudosdebt="",
+                 sheet=Character().serialize()):
         self.kudosdebt = kudosdebt
         self.username = username.strip()
         self.pw_hash = generate_password_hash(password)
@@ -22,6 +24,7 @@ class User(object):
             self.pw_hash = passwordhash
         self.kudos = kudos
         self.funds = funds
+        self.sheet = Character.deserialize(sheet)
 
     def set_password(self, newpassword):
         self.pw_hash = generate_password_hash(newpassword)
@@ -60,7 +63,7 @@ class User(object):
             if len(tmp) == 5:
                 entries.append(dict(loaner=tmp[0], state=tmp[1], remaining=tmp[2], original=tmp[3], id=tmp[4]))
             else:
-                if tmp != ['']: #sometimes deleted entries persist as empty entries, this is not problematic
+                if tmp != ['']:  # sometimes deleted entries persist as empty entries, this is not problematic
                     print("kudos error with: ", tmp)
         return entries
 
@@ -90,9 +93,9 @@ class Userlist(object):
 
     def loaduserlist(self):  # converts the SQL table into a list for easier access
         db = connect_db()
-        cur = db.execute('SELECT username, passwordhash, kudos, funds, kudosdebt FROM users')
+        cur = db.execute('SELECT username, passwordhash, kudos, funds, kudosdebt, sheet FROM users')
         self.userlist = [User(username=row[0], passwordhash=row[1],
-                              kudos=row[2], funds=row[3], kudosdebt=row[4]) for row in cur.fetchall()]
+                              kudos=row[2], funds=row[3], kudosdebt=row[4], sheet=row[5]) for row in cur.fetchall()]
         db.close()
 
     def saveuserlist(
@@ -102,9 +105,10 @@ class Userlist(object):
         for u in self.userlist:
             test = u.kudos
             test = u.kudosdebt
-            d = dict(username=u.username, pwhash=u.pw_hash, kudos=u.kudos, funds=u.funds, kudosdebt=u.kudosdebt)
-            db.execute("INSERT OR REPLACE INTO users (username, passwordhash, kudos, funds, kudosdebt) "
-                       "VALUES (:username,:pwhash,:kudos, :funds, :kudosdebt)", d)
+            d = dict(username=u.username, pwhash=u.pw_hash, kudos=u.kudos, funds=u.funds, kudosdebt=u.kudosdebt,
+                     sheet=u.sheet.serialize())
+            db.execute("INSERT OR REPLACE INTO users (username, passwordhash, kudos, funds, kudosdebt, sheet) "
+                       "VALUES (:username,:pwhash,:kudos, :funds, :kudosdebt, :sheet)", d)
         db.commit()
         db.close()
 

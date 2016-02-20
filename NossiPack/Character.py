@@ -2,28 +2,20 @@ from random import Random
 import urllib
 import re
 
-# from NossiPack.krypta import randomlyspend
-
 __author__ = 'maric'
 
-import collections
+import pickle
 
 
 class Character(object):
-    def __init__(self, name="", strength=0, dexterity=0, stamina=0, charisma=0, manipulation=0,
-                 appearance=0, perception=0, intelligence=0, wits=0, meta=None, abilities=None,
-                 virtues=None, backgrounds=[], disciplines={}, humanity=0, bloodmax=0, blood=0,
-                 merits=[]):
+    def __init__(self, name="", attributes=None, meta=None, abilities=None,
+                 virtues=None, backgrounds=None, disciplines=None, discipline_values=None,
+                 humanity=0, bloodmax=0, blood=0, merits=None):
         self.name = name
-        self.strength = strength
-        self.dexterity = dexterity
-        self.stamina = stamina
-        self.charisma = charisma
-        self.manipulation = manipulation
-        self.appearance = appearance
-        self.perception = perception
-        self.intelligence = intelligence
-        self.wits = wits
+        if attributes is None:
+            self.attributes = self.zero_attributes()
+        else:
+            self.attributes = attributes
         if abilities is None:
             self.abilities = self.zero_abilities()
         else:
@@ -32,8 +24,18 @@ class Character(object):
             self.meta = self.zero_meta()
         else:
             self.meta = meta
-        self.backgrounds = backgrounds
-        self.disciplines = disciplines
+        if backgrounds is None:
+            self.backgrounds = ["", "", ""]
+        else:
+            self.backgrounds = backgrounds
+        if disciplines is None:
+            self.disciplines = ["Discipline 1","Discipline 2","Discipline 3"]
+        else:
+            self.disciplines = disciplines
+        if disciplines is None:
+            self.discipline_values = [0,0,0]
+        else:
+            self.discipline_values = discipline_values
         if virtues is None:
             self.virtues = self.zero_virtues()
         else:
@@ -41,14 +43,55 @@ class Character(object):
         self.humanity = humanity
         self.bloodmax = bloodmax
         self.blood = blood
-        self.merits = merits
+        if merits is None:
+            self.merits = []
+        else:
+            self.merits = merits
+
+    def dictlist(self):
+        return [self.attributes, self.abilities['Skills'],
+                self.abilities['Talents'], self.abilities['Knowledges'],
+                self.virtues, self.disciplines]
+
+    def access(self, field, value=None):  # accesses internal dicts
+        if field in self.meta.keys():
+            if value is not None:
+                self.meta[field] = value
+            return self.meta[field]
+        if field in self.attributes.keys():
+            if value is not None:
+                self.attributes[field] = intdef(value)
+            return self.attributes[field]
+        if field in self.abilities['Skills'].keys():
+            if value is not None:
+                self.abilities['Skills'][field] = intdef(value)
+            return self.abilities['Skills'][field]
+        if field in self.abilities['Talents'].keys():
+            if value is not None:
+                self.abilities['Talents'][field] = intdef(value)
+            return self.abilities['Talents'][field]
+        if field in self.abilities['Knowledges'].keys():
+            if value is not None:
+                self.abilities['Knowledges'][field] = intdef(value)
+            return self.abilities['Knowledges'][field]
+        if "background_" in field:
+            if value is not None:
+                self.backgrounds = upsert(self.backgrounds,
+                                          int(re.match(r'background_(.*)', field).group(1)), value)
+            return self.backgrounds
+ # TODO:       if "discipline_" in field:
+ #           if value is not None:
+ #               self.disciplines = upsert(self.disciplines,
+ #                                         int(re.match(r'discipline_(.*)_', field).group(1)), value)
+ #           return self.disciplines
+        print("error inserting a key!", field, value, self.dictlist())
 
     @staticmethod
     def converttodots(inp):
         res = ""
         for i in range(inp):
             res += "●"
-        for i in range(5-len(res)):
+        for i in range(5 - len(res)):
             res += "○"
         return res
 
@@ -56,108 +99,28 @@ class Character(object):
     def convertdicttodots(inp):
         try:
             return Character.converttodots(inp)
-        except Exception as inst:
-            print(inst)
+        except:
+            inp = inp.copy()
             for i in inp.keys():
                 inp[i] = Character.convertdicttodots(inp[i])
         return inp
 
-
-    def getattributes(self):
-        result = collections.OrderedDict()
-        result['strength'] = self.converttodots(self.dexterity)
-        result['dexterity'] = self.converttodots(self.dexterity)
-        result['stamina'] = self.converttodots(self.stamina)
-        result['charisma'] = self.converttodots(self.charisma)
-        result['manipulation'] = self.converttodots(self.manipulation)
-        result['appearance'] = self.converttodots(self.appearance)
-        result['perception'] = self.converttodots(self.perception)
-        result['intelligence'] = self.converttodots(self.intelligence)
-        result['wits'] = self.converttodots(self.wits)
-        return result
-
-    def setattributes(self, strength=-1, dexterity=-1, stamina=-1, charisma=-1, manipulation=-1, appearance=-1,
-                      perception=-1, intelligence=-1, wits=-1):
-        if strength >= 0:
-            self.strength = strength
-        if dexterity >= 0:
-            self.dexterity = dexterity
-        if stamina >= 0:
-            self.stamina = stamina
-        if charisma >= 0:
-            self.charisma = charisma
-        if manipulation >= 0:
-            self.manipulation = manipulation
-        if appearance >= 0:
-            self.appearance = appearance
-        if perception >= 0:
-            self.perception = perception
-        if intelligence >= 0:
-            self.intelligence = intelligence
-        if wits >= 0:
-            self.wits = wits
-
-    def getabilityscore(self, ability):
-        for a in self.abilities:
-            if a[0] == ability:
-                return a[1]
-        return 0
-
-    def setabilityscore(self, ability, score):
-        for a in self.abilities:
-            if a[0] == ability:
-                a[1] = score
-                return
-        a.append([ability, score])
-        return
-
-    def getphysical(self):
-        return collections.OrderedDict(strength=self.strength, dexterity=self.dexterity, stamina=self.stamina)
-
-    def setphysical(self, attributes):
-        self.setattributes(strength=attributes[0], dexterity=attributes[1], stamina=attributes[2])
-
-    def getsocial(self):
-        return collections.OrderedDict(charisma=self.charisma, manipulation=self.manipulation,
-                                       appearance=self.appearance)
-
-    def setsocial(self, attributes):
-        self.setattributes(charisma=attributes[0], manipulation=attributes[1], appearance=attributes[2])
-
-    def getmental(self):
-        return collections.OrderedDict(perception=self.perception, intelligence=self.intelligence, wits=self.wits)
-
-    def setmental(self, attributes):
-        self.setattributes(perception=attributes[0], intelligence=attributes[1], wits=attributes[2])
-
-    def getabilities(self):
-        return self.abilities
-
-    def getstringrepr(self):
-        result = "Name ideas: " + self.name + "\n"
-        for i in range(len(self.getattributes()) // 3):
-            result += \
-                str(list(self.getattributes().keys())[i]).rjust(12) + ": " + \
-                str(list(self.getattributes().values())[i]) + "\t   " + \
-                str(list(self.getattributes().keys())[i + 3]).rjust(12) + ": " + \
-                str(list(self.getattributes().values())[i + 3]) + "\t  " + \
-                str(list(self.getattributes().keys())[i + 6]).rjust(12) + ": " + \
-                str(list(self.getattributes().values())[i + 6]) + "\t  " + "\n"
-        return result
-
     def getdictrepr(self):
-        character = {}
-        character['Meta'] = self.meta
-        character['Attributes'] = self.getattributes()
-        character['Abilities'] = Character.convertdicttodots(self.abilities)
-        character['Disciplines'] = self.disciplines
-        character['Virtues'] = self.virtues
-        character['Backgrounds'] = self.backgrounds
-        character['BGVDSCP_combined'] = self.combine_BGVDSCP()
+        character = {'Meta': self.meta,
+                     'Attributes': Character.convertdicttodots(self.attributes),
+                     'Attributes_numbers': self.attributes,
+                     'Abilities': Character.convertdicttodots(self.abilities),
+                     'Abilities_numbers': self.abilities,
+                     'Disciplines': Character.convertdicttodots(self.disciplines),
+                     'Disciplines_numbers': self.disciplines,
+                     'Virtues': self.virtues,
+                     'Backgrounds': self.backgrounds,
+                     'BGVDSCP_combined': self.combine_BGVDSCP()}
         return character
 
     def combine_BGVDSCP(self):
         combined = []
+        lastdiscipline = False
         for i in range(max(len(self.backgrounds), len(self.disciplines.keys()), len(self.virtues.keys()))):
             combined.append({})
             try:
@@ -165,14 +128,49 @@ class Character(object):
             except:
                 combined[i]['Background'] = ""
             try:
-                combined[i]['Discipline'] = self.disciplines[self.disciplines.keys()[i]]
+                combined[i]['Discipline'] = self.disciplines.keys()[i]
             except:
-                combined[i]['Discipline'] = ""
+                if lastdiscipline:
+                    combined[i]['Discipline'] = ""
+                else:
+                    combined[i]['Discipline'] = " "
+                    lastdiscipline = True
             try:
-                combined[i]['Virtue'] = self.virtues[self.virtues.keys()[i]]
+                combined[i]['Discipline_Value'] = Character.convertdicttodots(self.disciplines[self.disciplines.keys()[i]])
+            except:
+                combined[i]['Discipline_Value'] = ""
+            try:
+                combined[i]['Discipline_Value_number'] = self.disciplines[self.disciplines.keys()[i]]
+            except:
+                combined[i]['Discipline_Value_number'] = ""
+            try:
+                combined[i]['Virtue'] = self.virtues.keys()[i]
             except:
                 combined[i]['Virtue'] = ""
+            try:
+                combined[i]['Virtue_Value'] = Character.convertdicttodots(self.virtues[self.virtues.keys()[i]])
+            except:
+                combined[i]['Virtue_Value'] = ""
+            try:
+                combined[i]['Virtue_Value_number'] = self.virtues[self.virtues.keys()[i]]
+            except:
+                combined[i]['Virtue_Value_number'] = ""
+
         return combined
+
+    @staticmethod
+    def zero_attributes():
+        attributes = {
+            'strength': 0,
+            'dexterity': 0,
+            'stamina': 0,
+            'charisma': 0,
+            'manipulation': 0,
+            'appearance': 0,
+            'perception': 0,
+            'intelligence': 0,
+            'wits': 0}
+        return attributes
 
     @staticmethod
     def zero_abilities():
@@ -211,21 +209,27 @@ class Character(object):
 
     @staticmethod
     def zero_meta():
-        meta = {}
-        meta['Name'] = "Nametest"
-        meta['Nature'] = "Naturetest"
-        meta['Generation'] = "Gentest"
-        meta['Player'] = "Playertest"
-        meta['Demeanor'] = "Demeanortest"
-        meta['Haven'] = "Haventest"
-        meta['Chronicle'] = "Chronicletest"
-        meta['Clan'] = "Clantest"
-        meta['Concept'] = "Concepttest"
+        meta = {'Name': "",
+                'Nature': "",
+                'Generation': "",
+                'Player': "",
+                'Demeanor': "",
+                'Haven': "",
+                'Chronicle': "",
+                'Clan': "",
+                'Concept': ""}
         return meta
 
     @staticmethod
     def zero_virtues():
         return {'Conscience/Conviction': 0, 'Self Control/Instinct': 0, 'Courage': 0}
+
+    def serialize(self):
+        return pickle.dumps(self)
+
+    @staticmethod
+    def deserialize(serialized):
+        return pickle.loads(serialized)
 
 
 def makechar(min, cap, prioa, priob, prioc):
@@ -237,9 +241,6 @@ def makechar(min, cap, prioa, priob, prioc):
     prio = [prioa, priob, prioc]
     Random().shuffle(prio)
     print(prio)
-    char.setphysical(randomlyspend(3, min, cap, prio[0]))
-    char.setsocial(randomlyspend(3, min, cap, prio[1]))
-    char.setmental(randomlyspend(3, min, cap, prio[2]))
 
     names = re.compile('<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......')
     a = str(response.read())
@@ -252,7 +253,21 @@ def makechar(min, cap, prioa, priob, prioc):
     return char
 
 
-if __name__ == '__main__':
-    for x in range(100):
-        test = makechar(0, 5, 3, 5, 7)
-        print(test.getstringrepr())
+def intdef(s, default=0):
+    try:
+        return int(s)
+    except Exception as inst:
+        return default
+
+
+def upsert(list, index, value, min=3):
+    if index >= len(list):
+        list.append("")
+        index = len(list) - 1
+    if value != "":
+        list[index] = value
+    else:
+        list.pop(index)
+    if not ("".join(list[(-1 * min):]) == ""):
+        list.append("")
+    return list

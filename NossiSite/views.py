@@ -11,6 +11,7 @@ token = {}
 
 init_db()
 
+
 @app.route('/kudosloan/<user>', methods=['POST'])
 def loankudos(user):
     if checktoken():
@@ -24,11 +25,6 @@ def loankudos(user):
         ul.saveuserlist()
         flash("Extended offer for vouching")
     return redirect(url_for('kudosloan'))
-
-
-@app.route('/charactersheet/')
-def charsheet():
-    return render_template('charsheet.html', character=Character().getdictrepr())
 
 
 @app.route('/kudosloan/', methods=['GET', 'POST'])
@@ -80,9 +76,31 @@ def show_entries():
     return render_template('show_entries.html', entries=entries)
 
 
-@app.route('/modify_sheet/')
+@app.route('/charactersheet/')
+def charsheet():
+    if not session.get('logged_in'):
+        flash('You are not logged in!')
+        return redirect(url_for('login'))
+    ul = Userlist()
+    u = ul.getuserbyname(session.get('user'))
+    return render_template('charsheet.html', character=u.sheet.getdictrepr())
+
+
+@app.route('/modify_sheet/', methods=['GET', 'POST'])
 def modify_sheet():
-    return render_template('charsheet_editor.html', character=Character().getdictrepr())
+    if not session.get('logged_in'):
+        flash('You are not logged in!')
+        return redirect(url_for('login'))
+    ul = Userlist()
+    u = ul.getuserbyname(session.get('user'))
+    if request.method == 'POST':
+        print(request.form)
+        u.sheet.abilities=u.sheet.zero_abilities()
+        u.sheet.attributes=u.sheet.zero_attributes()
+        for entry in request.form.keys():
+            u.sheet.access(entry, request.form[entry])
+    ul.saveuserlist()
+    return render_template('charsheet_editor.html', character=u.sheet.getdictrepr())
 
 
 @app.route('/timestep/', methods=['GET', 'POST'])

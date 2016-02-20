@@ -3,6 +3,7 @@ import sqlite3
 from contextlib import closing
 from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash, send_from_directory
+from jinja2 import Environment
 from werkzeug.security import generate_password_hash
 import time
 
