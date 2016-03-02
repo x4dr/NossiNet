@@ -11,7 +11,7 @@ import pickle
 class Character(object):
     def __init__(self, name="", attributes=None, meta=None, abilities=None,
                  virtues=None, backgrounds=None, disciplines=None,
-                 humanity=0, bloodmax=0, blood=0, merits=None):
+                 merits=None, special=None):
         self.name = name
         if attributes is None:
             self.attributes = self.zero_attributes()
@@ -37,9 +37,11 @@ class Character(object):
             self.virtues = self.zero_virtues()
         else:
             self.virtues = virtues
-        self.humanity = humanity
-        self.bloodmax = bloodmax
-        self.blood = blood
+        if special is None:
+            self.special = self.zero_special()
+        else:
+            self.special = special
+
         if merits is None:
             self.merits = []
         else:
@@ -119,7 +121,8 @@ class Character(object):
                      'Disciplines': self.disciplines,
                      'Virtues': self.virtues,
                      'Backgrounds': self.backgrounds,
-                     'BGVDSCP_combined': self.combine_BGVDSCP()}
+                     'BGVDSCP_combined': self.combine_BGVDSCP(),
+                     'Special': self.special}
         print("dictrepresentation compiled")
         return character
 
@@ -202,6 +205,18 @@ class Character(object):
         abilities['Skills']['Survival'] = 0
         abilities['Knowledges']['Science'] = 0
         return abilities
+
+    @staticmethod
+    def zero_special():
+        special = {'Humanity': 0,
+                   'Willpower': 0,
+                   'Willmax': 0,
+                   'Bloodpool': 0,
+                   'Bloodmax': 10,
+                   'Bashing': 0,
+                   'Lethal': 0,
+                   'Aggravated': 0}
+        return special
 
     @staticmethod
     def zero_meta():

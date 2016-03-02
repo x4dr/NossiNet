@@ -217,15 +217,77 @@
         {% endfor %}
 
     </table>
-    <table>
+    <table width="100%">
     <tr>
 
         <td colspan="2" style="text-align: center; width: 33%;" class="leeet">Merits/Flaws</td>
-        <td colspan="2" style="text-align: center; width: 34%;" class="leeet">Humanity/Path</td>
+        <td colspan="2" style="text-align: center; width: 34%;" class="leeet">Humanity</td>
         <td colspan="2" style="text-align: center; width: 33%;" class="leeet">Health</td>
     </tr>
-        </table>
+
     <tr>
+        <td rowspan="999" colspan="2">merits and flaws</td>
+
+        <td colspan="2">&nbsp</td>
+
+    </tr>
+    <tr>
+        <td colspan="2" align="center" style="font-weight: bolder;
+         letter-spacing: 3px">{{ dots(character.Special.Humanity,10) }}</td>
+        <td>e</td>
+        <td>f</td>
+    </tr>
+    <tr>
+        <td colspan="2"> </td>
+
+        <td>f</td>
+    </tr>
+
+    <tr>
+        <td colspan="2" style="text-align: center; width: 34%;" class="leeet">Willpower</td>
+        <td>e</td>
+        <td>f</td>
+    </tr>
+        <tr>
+        <td colspan="2"> </td>
+
+        <td>f</td>
+    </tr>
+        <tr>
+        <td colspan="2" align="center" style="font-weight: bolder;
+         letter-spacing: 3px">{{ dots(character.Special.Willpower,10) }}</td>
+
+        <td>f</td>
+    </tr>
+        </tr>
+        </tr>
+        <td colspan="2"> </td>
+
+        <td>f</td>
+    </tr>
+    <tr>
+        <td colspan="2" style="text-align: center; width: 34%;" class="leeet">Blood</td>
+        <td>e</td>
+        <td>f</td>
+    </tr>
+        <tr>
+        <td colspan="2"> </td>
+
+        <td>f</td>
+    </tr>
+        <tr>
+        <td colspan="2" align="center" style="font-weight: bolder;
+         letter-spacing: 3px">{{ dots(character.Special.Blood,character.Special.Bloodmax) }}</td>
+
+        <td>f</td>
+    </tr>
+        </tr>
+        </tr>
+        <td colspan="2"> </td>
+
+        <td>f</td>
+    </tr>
+    </table>
         <!--Merits1}
         <!--Humanitystring}
         <!--Bruised}

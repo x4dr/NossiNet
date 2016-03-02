@@ -2,15 +2,20 @@
 {% macro chooser(name, value) -%}
     <td  style="alignment: left" nowrap> <input
        style="width: 10px" ondblclick="resetDot(this)" type="radio" name="{{ name }}"
-       value="1"{% if value == 1 %} checked {% endif %}><input
+       value="1" id="{{ name }}_1"{% if value == 1 %} checked {% endif %}><label for="{{ name }}_1"
+    >&nbsp;</label><input
        style="width: 10px" ondblclick="resetDot(this)" type="radio" name="{{ name }}"
-       value="2"{% if value == 2 %} checked {% endif %}><input
+       value="2" id="{{ name }}_2"{% if value == 2 %} checked {% endif %}><label for="{{ name }}_2"
+        >&nbsp;</label><input
        style="width: 10px" ondblclick="resetDot(this)" type="radio" name="{{ name }}"
-       value="3"{% if value == 3 %} checked {% endif %}><input
+       value="3" id="{{ name }}_3"{% if value == 3 %} checked {% endif %}><label for="{{ name }}_3"
+        >&nbsp;</label><input
        style="width: 10px" ondblclick="resetDot(this)" type="radio" name="{{ name }}"
-       value="4"{% if value == 4 %} checked {% endif %}><input
+       value="4" id="{{ name }}_4"{% if value == 4 %} checked {% endif %}><label for="{{ name }}_4"
+        >&nbsp;</label><input
        style="width: 10px" ondblclick="resetDot(this)" type="radio" name="{{ name }}"
-       value="5"{% if value == 5 %} checked {% endif %}>
+       value="5" id="{{ name }}_5"{% if value == 5 %} checked {% endif %}><label for="{{ name }}_5"
+        >&nbsp;</label>
     </td>
 {%- endmacro %}
 {% block head %}
@@ -19,7 +24,16 @@
             {
                 el.checked = '';
             }
+
+            if($.browser.mozilla) {
+              $(document).on('click', 'label', function(e) {
+                if(e.currentTarget === this && e.target.nodeName !== 'INPUT') {
+                  $(this.control).click();
+            }
+          });
+        }
     </script>
+
 {% endblock %}
 {% block body %}
     <form action="{{ url_for('del_sheet') }}"><input class="leet" type="submit" value="DELETE"></form>
