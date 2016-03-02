@@ -5,7 +5,7 @@ __author__ = 'maric'
 
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
-from Character import  Character
+from NossiPack.Character import Character
 
 DATABASE = './NN.db'
 
