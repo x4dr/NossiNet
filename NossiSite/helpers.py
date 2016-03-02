@@ -42,9 +42,5 @@ def page_not_found(error):
 
 def openupdb():
     db = connect_db()
-    # db.execute('DELETE FROM entries WHERE ID = 3')
-    # cur = db.execute('SELECT  FROM entries ORDER BY id DESC')
-    # print (cur.fetchall())
-    # cur =
     if db is not None:
         db.close()

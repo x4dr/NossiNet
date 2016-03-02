@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 {% macro chooser(name, value) -%}
-    <td nowrap> <input
+    <td  style="alignment: left" nowrap> <input
        style="width: 10px" ondblclick="resetDot(this)" type="radio" name="{{ name }}"
        value="1"{% if value == 1 %} checked {% endif %}><input
        style="width: 10px" ondblclick="resetDot(this)" type="radio" name="{{ name }}"
@@ -22,260 +22,295 @@
     </script>
 {% endblock %}
 {% block body %}
-<form action="{{ url_for('modify_sheet') }}" method="post">
-    <table width="100%">
-        <tr>
-            <td colspan="6" style="text-align: center; font-size: 1.5em" class="leeet">
-                Charactersheet&nbspfor&nbsp{{ session.user }}</td>
-        </tr>
-        <tr>
-            <td style="text-align: right; ">Name:</td>
-            <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Name" type="text" value="{{ character.Meta.Name }}"> </td>
-            <td style="text-align: right; ">Nature:</td>
-            <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Nature" type="text" value="{{ character.Meta.Nature }}"></td>
-            <td style="text-align: right; ">Generation:</td>
-            <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Generation" type="text" value="{{ character.Meta.Generation }}"></td>
-        </tr>
+    <form action="{{ url_for('del_sheet') }}"><input class="leet" type="submit" value="DELETE"></form>
+
+    <form action="{{ url_for('modify_sheet') }}" method="post">
+        <table width="100%">
+            <tr>
+                <td colspan="6" style="text-align: center; font-size: 1.5em" class="leeet">
+                    Charactersheet&nbspfor&nbsp{{ session.user }}</td>
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Name:</td>
+                <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Name" type="text" value="{{ character.Meta.Name }}"> </td>
+                <td style="text-align: right; ">Nature:</td>
+                <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Nature" type="text" value="{{ character.Meta.Nature }}"></td>
+                <td style="text-align: right; ">Generation:</td>
+                <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Generation" type="text" value="{{ character.Meta.Generation }}"></td>
+            </tr>
+            <br>
+            <tr>
+                <td style="text-align: right; ">Player:</td>
+                <td style="text-align: left; "><input title="Player" style="width: 80%;" class="leet" id="Player" name="Player" type="text" value="{{ character.Meta.Player }}"></td>
+                <td style="text-align: right; ">Demeanor:</td>
+                <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Demeanor" type="text" value="{{ character.Meta.Demeanor }}"></td>
+                <td style="text-align: right; ">Haven:</td>
+                <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Haven" type="text" value="{{ character.Meta.Haven }}"></td>
+            <tr>
+                <td style="text-align: right; ">Chronicle:</td>
+                <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Chronicle" type="text" value="{{ character.Meta.Chronicle }}"></td>
+                <td style="text-align: right; ">Clan:</td>
+                <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Clan" type="text" value="{{ character.Meta.Clan }}"></td>
+                <td style="text-align: right; ">Concept:</td>
+                <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Concept" type="text" value="{{ character.Meta.Concept }}"></td>
+            </tr>
+        </table>
         <br>
-        <tr>
-            <td style="text-align: right; ">Player:</td>
-            <td style="text-align: left; "><input title="Player" style="width: 80%;" class="leet" id="Player" name="Player" type="text" value="{{ character.Meta.Player }}"></td>
-            <td style="text-align: right; ">Demeanor:</td>
-            <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Demeanor" type="text" value="{{ character.Meta.Demeanor }}"></td>
-            <td style="text-align: right; ">Haven:</td>
-            <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Haven" type="text" value="{{ character.Meta.Haven }}"></td>
-        <tr>
-            <td style="text-align: right; ">Chronicle:</td>
-            <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Chronicle" type="text" value="{{ character.Meta.Chronicle }}"></td>
-            <td style="text-align: right; ">Clan:</td>
-            <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Clan" type="text" value="{{ character.Meta.Clan }}"></td>
-            <td style="text-align: right; ">Concept:</td>
-            <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Concept" type="text" value="{{ character.Meta.Concept }}"></td>
-        </tr>
-    </table>
-    <br>
-    <table width="100%">
-        <tr>
-            <td colspan="6" style="text-align: center;" class="leeet">Attributes</td>
-        </tr>
-        <tr>
-            <td colspan="2" style="text-align: center; width: 33%;" class="leet">Physical</td>
-            <td colspan="2" style="text-align: center; width: 34%;" class="leet">Social</td>
-            <td colspan="2" style="text-align: center; width: 33%;" class="leet">Mental</td>
-        </tr>
-    </table>
-    <table width="100%">
-        <tr>
-            <td style="text-align: right; ">Strength:</td>
-            <td style="text-align: Left; ">{{ chooser("strength",character.Attributes_numbers.strength) }}</td>
-            <td style="text-align: right; ">Charisma:</td>
-            <td style="text-align: Left; ">{{ chooser("charisma", character.Attributes_numbers.charisma) }}</td>
-            <td style="text-align: right; ">Perception:</td>
-            <td style="text-align: Left; ">{{ chooser("perception", character.Attributes_numbers.perception) }}</td>
-        </tr>
-        <tr>
-            <td style="text-align: right; ">Dexterity:</td>
-            <td style="text-align: Left; ">{{ chooser("dexterity", character.Attributes_numbers.dexterity) }}</td>
-            <td style="text-align: right; ">Manipulation:</td>
-            <td style="text-align: Left; ">{{ chooser("manipulation", character.Attributes_numbers.manipulation) }}</td>
-            <td style="text-align: right; ">Intelligence:</td>
-            <td style="text-align: Left; ">{{ chooser("intelligence", character.Attributes_numbers.intelligence) }}</td>
-        </tr>
-        <tr>
-            <td style="text-align: right; ">Stamina:</td>
-            <td style="text-align: Left; ">{{ chooser("stamina", character.Attributes_numbers.stamina) }}</td>
-            <td style="text-align: right; ">Appearance:</td>
-            <td style="text-align: Left; ">{{ chooser("appearance", character.Attributes_numbers.appearance) }}</td>
-            <td style="text-align: right; ">Wits:</td>
-            <td style="text-align: Left; ">{{ chooser("wits", character.Attributes_numbers.wits) }}</td>
-        </tr>
-    </table>
-    <br>
-    <table width="100%">
-        <tr>
-            <td colspan="6" style="text-align: center;" class="leeet">Abilities</td>
-        </tr>
-        <tr>
-            <td colspan="2" style="text-align: center; width: 33%;" class="leet">Talents</td>
-            <td colspan="2" style="text-align: center; width: 34%;" class="leet">Skills</td>
-            <td colspan="2" style="text-align: center; width: 33%;" class="leet">Knowledges</td>
-        </tr>
-    </table>
-    <table width="100%">
-        <tr>
-            <td style="text-align: right; ">Alertness:</td>
-            <td style="text-align: Left; ">{{ chooser("Alertness", character.Abilities_numbers.Talents.Alertness) }}</td>
-            <td style="text-align: right; ">AnimalKen:</td>
-            <td style="text-align: Left; ">{{ chooser("AnimalKen", character.Abilities_numbers.Skills.AnimalKen) }}</td>
-            <td style="text-align: right; ">Academics:</td>
-            <td style="text-align: Left; ">{{ chooser("Academics", character.Abilities_numbers.Knowledges.Academics) }}</td>
+        <table width="100%">
+            <tr>
+                <td colspan="6" style="text-align: center;" class="leeet">Attributes</td>
+            </tr>
+            <tr>
+                <td colspan="2" style="text-align: center; width: 33%;" class="leet">Physical</td>
+                <td colspan="2" style="text-align: center; width: 34%;" class="leet">Social</td>
+                <td colspan="2" style="text-align: center; width: 33%;" class="leet">Mental</td>
+            </tr>
+        </table>
+        <table width="100%">
+            <tr>
+                <td style="text-align: right; ">Strength:</td>
+                <td style="text-align: Left; ">{{ chooser("strength",character.Attributes.strength) }}</td>
+                <td style="text-align: right; ">Charisma:</td>
+                <td style="text-align: Left; ">{{ chooser("charisma", character.Attributes.charisma) }}</td>
+                <td style="text-align: right; ">Perception:</td>
+                <td style="text-align: Left; ">{{ chooser("perception", character.Attributes.perception) }}</td>
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Dexterity:</td>
+                <td style="text-align: Left; ">{{ chooser("dexterity", character.Attributes.dexterity) }}</td>
+                <td style="text-align: right; ">Manipulation:</td>
+                <td style="text-align: Left; ">{{ chooser("manipulation", character.Attributes.manipulation) }}</td>
+                <td style="text-align: right; ">Intelligence:</td>
+                <td style="text-align: Left; ">{{ chooser("intelligence", character.Attributes.intelligence) }}</td>
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Stamina:</td>
+                <td style="text-align: Left; ">{{ chooser("stamina", character.Attributes.stamina) }}</td>
+                <td style="text-align: right; ">Appearance:</td>
+                <td style="text-align: Left; ">{{ chooser("appearance", character.Attributes.appearance) }}</td>
+                <td style="text-align: right; ">Wits:</td>
+                <td style="text-align: Left; ">{{ chooser("wits", character.Attributes.wits) }}</td>
+            </tr>
+        </table>
+        <br>
+        <table width="100%">
+            <tr>
+                <td colspan="6" style="text-align: center;" class="leeet">Abilities</td>
+            </tr>
+            <tr>
+                <td colspan="2" style="text-align: center; width: 33%;" class="leet">Talents</td>
+                <td colspan="2" style="text-align: center; width: 34%;" class="leet">Skills</td>
+                <td colspan="2" style="text-align: center; width: 33%;" class="leet">Knowledges</td>
+            </tr>
+        </table>
+        <table width="100%">
+            <tr>
+                <td style="text-align: right; ">Alertness:</td>
+                <td style="text-align: Left; ">{{ chooser("Alertness", character.Abilities.Talents.Alertness) }}</td>
+                <td style="text-align: right; ">AnimalKen:</td>
+                <td style="text-align: Left; ">{{ chooser("AnimalKen", character.Abilities.Skills.AnimalKen) }}</td>
+                <td style="text-align: right; ">Academics:</td>
+                <td style="text-align: Left; ">{{ chooser("Academics", character.Abilities.Knowledges.Academics) }}</td>
 
-        </tr>
-        <tr>
-            <td style="text-align: right; ">Athletics:</td>
-            <td style="text-align: Left; ">{{ chooser("Athletics", character.Abilities_numbers.Talents.Athletics) }}</td>
-            <td style="text-align: right; ">Crafts:</td>
-            <td style="text-align: Left; ">{{ chooser("Crafts", character.Abilities_numbers.Skills.Crafts) }}</td>
-            <td style="text-align: right; ">Computer:</td>
-            <td style="text-align: Left; ">{{ chooser("Computer", character.Abilities_numbers.Knowledges.Computer) }}</td>
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Athletics:</td>
+                <td style="text-align: Left; ">{{ chooser("Athletics", character.Abilities.Talents.Athletics) }}</td>
+                <td style="text-align: right; ">Crafts:</td>
+                <td style="text-align: Left; ">{{ chooser("Crafts", character.Abilities.Skills.Crafts) }}</td>
+                <td style="text-align: right; ">Computer:</td>
+                <td style="text-align: Left; ">{{ chooser("Computer", character.Abilities.Knowledges.Computer) }}</td>
 
-        </tr>
-        <tr>
-            <td style="text-align: right;overflow: hidden; width: 1px; ">Brawl:</td>
-            <td style="text-align: Left; ">{{ chooser("Brawl", character.Abilities_numbers.Talents.Brawl) }}</td>
-            <td style="text-align: right; ">Drive:</td>
-            <td style="text-align: Left; ">{{ chooser("Drive", character.Abilities_numbers.Skills.Drive) }}</td>
-            <td style="text-align: right; ">Finance:</td>
-            <td style="text-align: Left; ">{{ chooser("Finance", character.Abilities_numbers.Knowledges.Finance) }}</td>
+            </tr>
+            <tr>
+                <td style="text-align: right;overflow: hidden; width: 1px; ">Brawl:</td>
+                <td style="text-align: Left; ">{{ chooser("Brawl", character.Abilities.Talents.Brawl) }}</td>
+                <td style="text-align: right; ">Drive:</td>
+                <td style="text-align: Left; ">{{ chooser("Drive", character.Abilities.Skills.Drive) }}</td>
+                <td style="text-align: right; ">Finance:</td>
+                <td style="text-align: Left; ">{{ chooser("Finance", character.Abilities.Knowledges.Finance) }}</td>
 
-        </tr>
-        <tr>
-            <td style="text-align: right; ">Dodge:</td>
-            <td style="text-align: Left; ">{{ chooser("Dodge", character.Abilities_numbers.Talents.Dodge) }}</td>
-            <td style="text-align: right; ">Etiquette:</td>
-            <td style="text-align: Left; ">{{ chooser("Etiquette", character.Abilities_numbers.Skills.Etiquette) }}</td>
-            <td style="text-align: right; ">Investigation:</td>
-            <td style="text-align: Left; ">{{ chooser("Investigation", character.Abilities_numbers.Knowledges.Investigation) }}</td>
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Dodge:</td>
+                <td style="text-align: Left; ">{{ chooser("Dodge", character.Abilities.Talents.Dodge) }}</td>
+                <td style="text-align: right; ">Etiquette:</td>
+                <td style="text-align: Left; ">{{ chooser("Etiquette", character.Abilities.Skills.Etiquette) }}</td>
+                <td style="text-align: right; ">Investigation:</td>
+                <td style="text-align: Left; ">{{ chooser("Investigation", character.Abilities.Knowledges.Investigation) }}</td>
 
-        </tr>
-        <tr>
-            <td style="text-align: right;">Empathy:</td>
-            <td style="text-align: Left; ">{{ chooser("Empathy", character.Abilities_numbers.Talents.Empathy) }}</td>
-            <td style="text-align: right; ">Firearms:</td>
-            <td style="text-align: Left; ">{{ chooser("Firearms", character.Abilities_numbers.Skills.Firearms) }}</td>
-            <td style="text-align: right; ">Law:</td>
-            <td style="text-align: Left; ">{{ chooser("Law", character.Abilities_numbers.Knowledges.Law) }}</td>
+            </tr>
+            <tr>
+                <td style="text-align: right;">Empathy:</td>
+                <td style="text-align: Left; ">{{ chooser("Empathy", character.Abilities.Talents.Empathy) }}</td>
+                <td style="text-align: right; ">Firearms:</td>
+                <td style="text-align: Left; ">{{ chooser("Firearms", character.Abilities.Skills.Firearms) }}</td>
+                <td style="text-align: right; ">Law:</td>
+                <td style="text-align: Left; ">{{ chooser("Law", character.Abilities.Knowledges.Law) }}</td>
 
-        </tr>
-        <tr>
-            <td style="text-align: right; ">Expression:</td>
-            <td style="text-align: Left; ">{{ chooser("Expression", character.Abilities_numbers.Talents.Expression) }}</td>
-            <td style="text-align: right; ">Melee:</td>
-            <td style="text-align: Left; ">{{ chooser("Melee", character.Abilities_numbers.Skills.Melee) }}</td>
-            <td style="text-align: right; ">Linguistics:</td>
-            <td style="text-align: Left; ">{{ chooser("Linguistics", character.Abilities_numbers.Knowledges.Linguistics) }}</td>
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Expression:</td>
+                <td style="text-align: Left; ">{{ chooser("Expression", character.Abilities.Talents.Expression) }}</td>
+                <td style="text-align: right; ">Melee:</td>
+                <td style="text-align: Left; ">{{ chooser("Melee", character.Abilities.Skills.Melee) }}</td>
+                <td style="text-align: right; ">Linguistics:</td>
+                <td style="text-align: Left; ">{{ chooser("Linguistics", character.Abilities.Knowledges.Linguistics) }}</td>
 
-        </tr>
-        <tr>
-            <td style="text-align: right; ">Intimidation:</td>
-            <td style="text-align: Left; ">{{ chooser("Intimidation", character.Abilities_numbers.Talents.Intimidation) }}</td>
-            <td style="text-align: right; ">Performance:</td>
-            <td style="text-align: Left; ">{{ chooser("Performance", character.Abilities_numbers.Skills.Performance) }}</td>
-            <td style="text-align: right; ">Medicine:</td>
-            <td style="text-align: Left; ">{{ chooser("Medicine", character.Abilities_numbers.Knowledges.Medicine) }}</td>
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Intimidation:</td>
+                <td style="text-align: Left; ">{{ chooser("Intimidation", character.Abilities.Talents.Intimidation) }}</td>
+                <td style="text-align: right; ">Performance:</td>
+                <td style="text-align: Left; ">{{ chooser("Performance", character.Abilities.Skills.Performance) }}</td>
+                <td style="text-align: right; ">Medicine:</td>
+                <td style="text-align: Left; ">{{ chooser("Medicine", character.Abilities.Knowledges.Medicine) }}</td>
 
-        </tr>
-        <tr>
-            <td style="text-align: right; ">Leadership:</td>
-            <td style="text-align: Left; ">{{ chooser("Leadership", character.Abilities_numbers.Talents.Leadership) }}</td>
-            <td style="text-align: right; ">Security:</td>
-            <td style="text-align: Left; ">{{ chooser("Security", character.Abilities_numbers.Skills.Security) }}</td>
-            <td style="text-align: right; ">Occult:</td>
-            <td style="text-align: Left; ">{{ chooser("Occult", character.Abilities_numbers.Knowledges.Occult) }}</td>
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Leadership:</td>
+                <td style="text-align: Left; ">{{ chooser("Leadership", character.Abilities.Talents.Leadership) }}</td>
+                <td style="text-align: right; ">Security:</td>
+                <td style="text-align: Left; ">{{ chooser("Security", character.Abilities.Skills.Security) }}</td>
+                <td style="text-align: right; ">Occult:</td>
+                <td style="text-align: Left; ">{{ chooser("Occult", character.Abilities.Knowledges.Occult) }}</td>
 
-        </tr>
-        <tr>
-            <td style="text-align: right; ">Streetwise:</td>
-            <td style="text-align: Left; ">{{ chooser("Streetwise", character.Abilities_numbers.Talents.Streetwise) }}</td>
-            <td style="text-align: right; ">Stealth:</td>
-            <td style="text-align: Left; ">{{ chooser("Stealth", character.Abilities_numbers.Skills.Stealth) }}</td>
-            <td style="text-align: right; ">Politics:</td>
-            <td style="text-align: Left; ">{{ chooser("Politics", character.Abilities_numbers.Knowledges.Politics) }}</td>
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Streetwise:</td>
+                <td style="text-align: Left; ">{{ chooser("Streetwise", character.Abilities.Talents.Streetwise) }}</td>
+                <td style="text-align: right; ">Stealth:</td>
+                <td style="text-align: Left; ">{{ chooser("Stealth", character.Abilities.Skills.Stealth) }}</td>
+                <td style="text-align: right; ">Politics:</td>
+                <td style="text-align: Left; ">{{ chooser("Politics", character.Abilities.Knowledges.Politics) }}</td>
 
-        </tr>
-        <tr>
-            <td style="text-align: right; ">Subterfuge:</td>
-            <td style="text-align: Left; ">{{ chooser("Subterfuge", character.Abilities_numbers.Talents.Subterfuge) }}</td>
-            <td style="text-align: right; ">Survival:</td>
-            <td style="text-align: Left; ">{{ chooser("Survival", character.Abilities_numbers.Skills.Survival) }}</td>
-            <td style="text-align: right; ">Science:</td>
-            <td style="text-align: Left; ">{{ chooser("Science", character.Abilities_numbers.Knowledges.Science) }}</td>
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Subterfuge:</td>
+                <td style="text-align: Left; ">{{ chooser("Subterfuge", character.Abilities.Talents.Subterfuge) }}</td>
+                <td style="text-align: right; ">Survival:</td>
+                <td style="text-align: Left; ">{{ chooser("Survival", character.Abilities.Skills.Survival) }}</td>
+                <td style="text-align: right; ">Science:</td>
+                <td style="text-align: Left; ">{{ chooser("Science", character.Abilities.Knowledges.Science) }}</td>
 
-        </tr>
-    </table>
-    <table width="100%">
-        <tr>
-            <td colspan="6" style="text-align: center;" class="leeet">Advantages</td>
-        </tr>
-        <tr>
-            <td colspan="2" style="text-align: center; width: 33%;" class="leet">Backgrounds</td>
-            <td colspan="2" style="text-align: center; width: 34%;" class="leet">Disciplines</td>
-            <td colspan="2" style="text-align: center; width: 33%;" class="leet">Virtues</td>
-        </tr>
+            </tr>
+        </table>
+
+        <table style="border-collapse: collapse;
+    width: 100%;" name="bgvdscp_table">
+            <tr>
+                <td colspan="8" style="text-align: center;" class="leeet">Advantages</td>
+            </tr>
+            <tr>
+                <td colspan="2" style="text-align: center; width: 32%;" class="leet">Backgrounds</td>
+                <td style="width: 2%;"> </td>
+                <td colspan="2" style="text-align: center; width: 32%;" class="leet">Disciplines</td>
+                <td style="width: 2%;"> </td>
+                <td colspan="2" style="text-align: center; width: 32%" class="leet">Virtues</td>
+            </tr>
+            {% set bgnew = 0 %}
+            {% set dscpnew = 0 %}
+        {% if character.BGVDSCP_combined.append('') %}{% endif %}
+        {% if character.BGVDSCP_combined.append('') %}{% endif %}
+        {% if character.BGVDSCP_combined.append('') %}{% endif %}
         {% for bgvdscp in character.BGVDSCP_combined %}
             <tr>
-
-                <td colspan="2"><input  class="leet" name="background_{{ loop.index0 }}" value="{{ bgvdscp.Background }}"></td>
+                {% if bgvdscp.Background %}
+                    <td><input  style="width: 99%" class="leet" name="background_name_{{ bgvdscp.Background }}" value="{{ bgvdscp.Background }}"></td>
+                    {{ chooser("background_value_"+bgvdscp.Background, bgvdscp.Background_Value) }}
+                {% else %}
+                    {% if bgnew < 3 %}
+                        <td><input  class="leet" style="width: 99%" name="background_name_New{{ bgnew }}" value=""></td>
+                        {{ chooser("background_value_New"+bgnew|string, 0) }}
+                        {% set bgnew = bgnew + 1 %}
+                    {% else %}
+                        <td colspan="2">&nbsp</td>
+                    {% endif %}
+                {% endif %}
+                <td style="width: 2%;"> </td>
                 {% if bgvdscp.Discipline %}
-                <td><input  class="leet" name="discipline_{{ loop.index0 }}" value="{{ bgvdscp.Discipline }}"></td>
-                <td>{{ chooser("discipline_"+ {{ loop.index0 }} +"_value",bgvdscp.Discipline_Value_number) }}</td>
-                {% endif %}{% if bgvdscp.Virtue %}
-                <td>{{ bgvdscp.Virtue }}</td>
-                <td>{{ chooser(bgvdscp.Virtue,bgvdscp.Virtue_Value_number) }}</td>
+                    <td><input  style="width: 99%" class="leet" name="discipline_name_{{ bgvdscp.Discipline }}" value="{{ bgvdscp.Discipline }}"> </td>
+                    {{ chooser("discipline_value_"+bgvdscp.Discipline, bgvdscp.Discipline_Value) }}
+                {% else %}
+                    {% if dscpnew < 3 %}
+                        <td><input  style="width: 99%" class="leet" name="discipline_name_New{{ dscpnew }}" value=""></td>
+                        {{ chooser("discipline_value_New"+dscpnew|string, 0) }}
+                        {% set dscpnew = dscpnew + 1 %}
+                    {% else %}
+                        <td colspan="2">&nbsp</td>
+                    {% endif %}
+                {% endif %}
+                <td style="width: 2%;"> </td>
+                {% if bgvdscp %}
+                    {% if bgvdscp.Virtue %}
+                    <td>{{ bgvdscp.Virtue }} <input hidden value="{{ bgvdscp.Virtue }}" name="virtue_name_{{ bgvdscp.Virtue }}"></td>
+                    {{ chooser("virtue_value_"+bgvdscp.Virtue,bgvdscp.Virtue_Value) }}
+                    {% else %}
+                        <td colspan="2">&nbsp</td>
+                    {% endif %}
                 {% endif %}
             </tr>
         {% endfor %}
+        </table>
+        <!--tr>
 
-    </table>
-    <!--tr>
-
-        <td colspan="2" style="text-align: center; width: 33%;" class="section_header td_grey">Merits/Flaws</td>
-        <td colspan="2" style="text-align: center; width: 34%;" class="section_header td_grey">Humanity/Path</td>
-        <td colspan="2" style="text-align: center; width: 33%;" class="section_header td_grey">Health</td>
-    </tr>
-    <tr>
-        <!--Merits1}
-        <!--Humanitystring}
-        <!--Bruised}
-    </tr>
-    <tr>
-        <!--Merits2}
-        <!--Humanity}
-        <!--Hurt}
-    </tr>
-    <tr>
-        <!--Merits3}
-        <td colspan="2"></td>
-        <!--Injured}
-    </tr>
-    <tr>
-        <!--Merits4}
-        <td colspan="2" style="text-align: center; width: 34%;" class="section_header td_grey">Willpower</td>
-        <!--Wounded}
-    </tr>
-    <tr>
-        <!--Merits5}
-        <!--Willpowerdots}
-        <!--Mauled}
-    </tr>
-    <tr>
-        <!--Merits6}
-        <!--Willpowercheck}
-        <!--Crippled}
-    </tr>
-    <tr>
-        <!--Merits7}
-        <td colspan="2"></td>
-        <!--Incapacitated}
-    </tr>
-    <tr>
-        <!--Merits8}
-        <td colspan="2" style="text-align: center; width: 34%;" class="section_header td_grey">Blood Pool</td>
-        <td colspan="2" style="text-align: center; width: 34%;" class="section_header td_grey">Experience</td>
-    </tr>
-    <tr>
-        <!--Merits9}
-        <!--Bloodpool1}
-        <!--Experience}
-    </tr>
-    <tr>
-        <!--Merits10}
-        <!--Bloodpool2}
-        <td colspan="2"></td>
-    </tr>
-</table>-->
-            <dd><input type="submit" style="float: right; " class="leet" value="edit">
-</form>
+            <td colspan="2" style="text-align: center; width: 33%;" class="section_header td_grey">Merits/Flaws</td>
+            <td colspan="2" style="text-align: center; width: 34%;" class="section_header td_grey">Humanity/Path</td>
+            <td colspan="2" style="text-align: center; width: 33%;" class="section_header td_grey">Health</td>
+        </tr>
+        <tr>
+            <!--Merits1}
+            <!--Humanitystring}
+            <!--Bruised}
+        </tr>
+        <tr>
+            <!--Merits2}
+            <!--Humanity}
+            <!--Hurt}
+        </tr>
+        <tr>
+            <!--Merits3}
+            <td colspan="2"></td>
+            <!--Injured}
+        </tr>
+        <tr>
+            <!--Merits4}
+            <td colspan="2" style="text-align: center; width: 34%;" class="section_header td_grey">Willpower</td>
+            <!--Wounded}
+        </tr>
+        <tr>
+            <!--Merits5}
+            <!--Willpowerdots}
+            <!--Mauled}
+        </tr>
+        <tr>
+            <!--Merits6}
+            <!--Willpowercheck}
+            <!--Crippled}
+        </tr>
+        <tr>
+            <!--Merits7}
+            <td colspan="2"></td>
+            <!--Incapacitated}
+        </tr>
+        <tr>
+            <!--Merits8}
+            <td colspan="2" style="text-align: center; width: 34%;" class="section_header td_grey">Blood Pool</td>
+            <td colspan="2" style="text-align: center; width: 34%;" class="section_header td_grey">Experience</td>
+        </tr>
+        <tr>
+            <!--Merits9}
+            <!--Bloodpool1}
+            <!--Experience}
+        </tr>
+        <tr>
+            <!--Merits10}
+            <!--Bloodpool2}
+            <td colspan="2"></td>
+        </tr>
+    </table>-->
+                <dd><input type="submit" style="float: right; " class="leet" value="edit">
+    </form>
 
 
 

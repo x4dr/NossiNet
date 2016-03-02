@@ -1,6 +1,7 @@
 from random import Random
 import urllib
 import re
+import collections
 
 __author__ = 'maric'
 
@@ -9,7 +10,7 @@ import pickle
 
 class Character(object):
     def __init__(self, name="", attributes=None, meta=None, abilities=None,
-                 virtues=None, backgrounds=None, disciplines=None, discipline_values=None,
+                 virtues=None, backgrounds=None, disciplines=None,
                  humanity=0, bloodmax=0, blood=0, merits=None):
         self.name = name
         if attributes is None:
@@ -25,17 +26,13 @@ class Character(object):
         else:
             self.meta = meta
         if backgrounds is None:
-            self.backgrounds = ["", "", ""]
+            self.backgrounds = collections.OrderedDict({"Background": 0})
         else:
             self.backgrounds = backgrounds
         if disciplines is None:
-            self.disciplines = ["Discipline 1","Discipline 2","Discipline 3"]
+            self.disciplines = collections.OrderedDict({"Discipline": 0})
         else:
             self.disciplines = disciplines
-        if disciplines is None:
-            self.discipline_values = [0,0,0]
-        else:
-            self.discipline_values = discipline_values
         if virtues is None:
             self.virtues = self.zero_virtues()
         else:
@@ -53,66 +50,72 @@ class Character(object):
                 self.abilities['Talents'], self.abilities['Knowledges'],
                 self.virtues, self.disciplines]
 
-    def access(self, field, value=None):  # accesses internal dicts
-        if field in self.meta.keys():
-            if value is not None:
-                self.meta[field] = value
-            return self.meta[field]
-        if field in self.attributes.keys():
-            if value is not None:
-                self.attributes[field] = intdef(value)
-            return self.attributes[field]
-        if field in self.abilities['Skills'].keys():
-            if value is not None:
-                self.abilities['Skills'][field] = intdef(value)
-            return self.abilities['Skills'][field]
-        if field in self.abilities['Talents'].keys():
-            if value is not None:
-                self.abilities['Talents'][field] = intdef(value)
-            return self.abilities['Talents'][field]
-        if field in self.abilities['Knowledges'].keys():
-            if value is not None:
-                self.abilities['Knowledges'][field] = intdef(value)
-            return self.abilities['Knowledges'][field]
-        if "background_" in field:
-            if value is not None:
-                self.backgrounds = upsert(self.backgrounds,
-                                          int(re.match(r'background_(.*)', field).group(1)), value)
-            return self.backgrounds
- # TODO:       if "discipline_" in field:
- #           if value is not None:
- #               self.disciplines = upsert(self.disciplines,
- #                                         int(re.match(r'discipline_(.*)_', field).group(1)), value)
- #           return self.disciplines
-        print("error inserting a key!", field, value, self.dictlist())
+    def setfromform(self, form):  # accesses internal dicts
+        self.attributes = self.zero_attributes()
+        self.abilities = self.zero_abilities()
+        self.disciplines = collections.OrderedDict()
+        self.backgrounds = collections.OrderedDict()
+        for field in form:
+            value = form[field]
+            if field in self.meta.keys():
+                if value is not None:
+                    self.meta[field] = value
+                continue
+            if field in self.attributes.keys():
+                if value is not None:
+                    self.attributes[field] = intdef(value)
+                continue
+            if field in self.abilities['Skills'].keys():
+                if value is not None:
+                    self.abilities['Skills'][field] = intdef(value)
+                continue
+            if field in self.abilities['Talents'].keys():
+                if value is not None:
+                    self.abilities['Talents'][field] = intdef(value)
+                continue
+            if field in self.abilities['Knowledges'].keys():
+                if value is not None:
+                    self.abilities['Knowledges'][field] = intdef(value)
+                continue
+            if "background_name_" in field:
+                if (value is not None) and (field != "background_name_"):  # no empty submits
+                    try:
+                        self.backgrounds[value] = \
+                            int(form["background_value_" + re.match(r'background_name_(.*)', field).group(1)])
+                    except:
+                        self.backgrounds[value] = 0
+                continue
+            if "discipline_name_" in field:
+                if (value is not None) and (field != "discipline_name_"):  # no empty submits
+                    try:
+                        self.disciplines[value] = \
+                            int(form["discipline_value_" + re.match(r'discipline_name_(.*)', field).group(1)])
+                    except:
+                        self.disciplines[value] = 0
+                continue
+            if "virtue_name_" in field:
+                if (value is not None) and (field != "virtue_name_"):  # no empty submits
+                    try:
+                        self.virtues[value] = \
+                            int(form["virtue_value_" + re.match(r'virtue_name_(.*)', field).group(1)])
+                    except:
+                        self.virtues[value] = 0
+                continue
+            if "discipline_value_" in field:
+                continue
+            if "background_value_" in field:
+                continue
 
-    @staticmethod
-    def converttodots(inp):
-        res = ""
-        for i in range(inp):
-            res += "●"
-        for i in range(5 - len(res)):
-            res += "○"
-        return res
+            print("error inserting a key!", field + ":", value)
 
-    @staticmethod
-    def convertdicttodots(inp):
-        try:
-            return Character.converttodots(inp)
-        except:
-            inp = inp.copy()
-            for i in inp.keys():
-                inp[i] = Character.convertdicttodots(inp[i])
-        return inp
+        self.disciplines = collections.OrderedDict(x for x in sorted(self.disciplines.items()) if x[0] != "")
+        self.backgrounds = collections.OrderedDict(x for x in sorted(self.backgrounds.items()) if x[0] != "")
 
     def getdictrepr(self):
         character = {'Meta': self.meta,
-                     'Attributes': Character.convertdicttodots(self.attributes),
-                     'Attributes_numbers': self.attributes,
-                     'Abilities': Character.convertdicttodots(self.abilities),
-                     'Abilities_numbers': self.abilities,
-                     'Disciplines': Character.convertdicttodots(self.disciplines),
-                     'Disciplines_numbers': self.disciplines,
+                     'Attributes': self.attributes,
+                     'Abilities': self.abilities,
+                     'Disciplines': self.disciplines,
                      'Virtues': self.virtues,
                      'Backgrounds': self.backgrounds,
                      'BGVDSCP_combined': self.combine_BGVDSCP()}
@@ -120,41 +123,32 @@ class Character(object):
 
     def combine_BGVDSCP(self):
         combined = []
-        lastdiscipline = False
         for i in range(max(len(self.backgrounds), len(self.disciplines.keys()), len(self.virtues.keys()))):
             combined.append({})
             try:
-                combined[i]['Background'] = self.backgrounds[i]
+                combined[i]['Background'] = list(self.backgrounds.keys())[i]
             except:
                 combined[i]['Background'] = ""
             try:
-                combined[i]['Discipline'] = self.disciplines.keys()[i]
+                combined[i]['Background_Value'] = self.backgrounds[list(self.backgrounds.keys())[i]]
             except:
-                if lastdiscipline:
-                    combined[i]['Discipline'] = ""
-                else:
-                    combined[i]['Discipline'] = " "
-                    lastdiscipline = True
+                combined[i]['Background_Value'] = 0
             try:
-                combined[i]['Discipline_Value'] = Character.convertdicttodots(self.disciplines[self.disciplines.keys()[i]])
+                combined[i]['Discipline'] = list(self.disciplines.keys())[i]
             except:
-                combined[i]['Discipline_Value'] = ""
+                combined[i]['Discipline'] = ""
             try:
-                combined[i]['Discipline_Value_number'] = self.disciplines[self.disciplines.keys()[i]]
+                combined[i]['Discipline_Value'] = self.disciplines[list(self.disciplines.keys())[i]]
             except:
-                combined[i]['Discipline_Value_number'] = ""
+                combined[i]['Discipline_Value'] = 0
             try:
-                combined[i]['Virtue'] = self.virtues.keys()[i]
+                combined[i]['Virtue'] = list(self.virtues.keys())[i]
             except:
                 combined[i]['Virtue'] = ""
             try:
-                combined[i]['Virtue_Value'] = Character.convertdicttodots(self.virtues[self.virtues.keys()[i]])
+                combined[i]['Virtue_Value'] = self.virtues[list(self.virtues.keys())[i]]
             except:
-                combined[i]['Virtue_Value'] = ""
-            try:
-                combined[i]['Virtue_Value_number'] = self.virtues[self.virtues.keys()[i]]
-            except:
-                combined[i]['Virtue_Value_number'] = ""
+                combined[i]['Virtue_Value'] = 0
 
         return combined
 
@@ -222,7 +216,7 @@ class Character(object):
 
     @staticmethod
     def zero_virtues():
-        return {'Conscience/Conviction': 0, 'Self Control/Instinct': 0, 'Courage': 0}
+        return collections.OrderedDict({'Conscience': 0, 'Self Control': 0, 'Courage': 0})
 
     def serialize(self):
         return pickle.dumps(self)
@@ -240,7 +234,6 @@ def makechar(min, cap, prioa, priob, prioc):
     char = Character()
     prio = [prioa, priob, prioc]
     Random().shuffle(prio)
-    print(prio)
 
     names = re.compile('<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......')
     a = str(response.read())

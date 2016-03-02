@@ -1,5 +1,5 @@
 from NossiSite import app
-from NossiSite.helpers import g, session, generate_token, request, redirect, url_for, abort, \
+from NossiSite.helpers import g, session, generate_token, request, redirect, url_for, \
     render_template, flash, connect_db, generate_password_hash, init_db, send_from_directory
 from NossiPack.User import Userlist, User
 from NossiPack.Character import Character
@@ -86,6 +86,18 @@ def charsheet():
     return render_template('charsheet.html', character=u.sheet.getdictrepr())
 
 
+@app.route('/deletesheet/')
+def del_sheet():
+    if not session.get('logged_in'):
+        flash('You are not logged in!')
+        return redirect(url_for('login'))
+    ul = Userlist()
+    u = ul.getuserbyname(session.get('user'))
+    u.sheet=Character()
+    ul.saveuserlist()
+    return redirect(url_for('modify_sheet'))
+
+
 @app.route('/modify_sheet/', methods=['GET', 'POST'])
 def modify_sheet():
     if not session.get('logged_in'):
@@ -95,10 +107,7 @@ def modify_sheet():
     u = ul.getuserbyname(session.get('user'))
     if request.method == 'POST':
         print(request.form)
-        u.sheet.abilities=u.sheet.zero_abilities()
-        u.sheet.attributes=u.sheet.zero_attributes()
-        for entry in request.form.keys():
-            u.sheet.access(entry, request.form[entry])
+        u.sheet.setfromform(request.form)
     ul.saveuserlist()
     return render_template('charsheet_editor.html', character=u.sheet.getdictrepr())
 
@@ -572,7 +581,7 @@ def deldb(key="None"):
 @app.route('/chargen/<mini>,<maxi>,<a>,<b>,<c>')
 def chargen(mini, maxi, a, b, c):
     return render_template("chargen.html",
-                           char=Character.makechar(int(mini), int(maxi), int(a), int(b), int(c)).getstringrepr())
+                           char=None)  # makechar(int(mini), int(maxi), int(a), int(b), int(c)).getstringrepr())
 
 
 @app.route('/favicon.ico')
