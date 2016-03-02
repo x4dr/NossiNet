@@ -1,6 +1,6 @@
 from NossiSite import app
 from NossiSite.helpers import g, session, generate_token, request, redirect, url_for, \
-    render_template, flash, connect_db, generate_password_hash, init_db, send_from_directory
+    render_template, flash, connect_db, generate_password_hash, init_db, send_from_directory, Response, stream_template
 from NossiPack.User import Userlist, User
 from NossiPack.Character import Character
 import random
@@ -109,11 +109,9 @@ def modify_sheet():
         print(request.form)
         u.sheet.setfromform(request.form)
     ul.saveuserlist()
-    print("starting rendering...")
-    a = render_template('charsheet_editor.html', character=u.sheet.getdictrepr())
-    print (a)
-    print("render complete")
-    return a
+
+    return  Response(stream_template('charsheet_editor.html', character=u.sheet.getdictrepr()))
+
 
 
 @app.route('/timestep/', methods=['GET', 'POST'])

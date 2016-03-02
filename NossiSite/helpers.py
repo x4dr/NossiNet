@@ -2,11 +2,18 @@ from NossiSite import app
 import sqlite3
 from contextlib import closing
 from flask import Flask, request, session, g, redirect, url_for, \
-    abort, render_template, flash, send_from_directory
+    abort, render_template, flash, send_from_directory, Response
 from jinja2 import Environment
 from werkzeug.security import generate_password_hash
 import time
 
+
+def stream_template(template_name, **context):
+    app.update_template_context(context)
+    t = app.jinja_env.get_template(template_name)
+    rv = t.stream(context)
+    rv.enable_buffering(5)
+    return rv
 
 def generate_token(seed):
     return generate_password_hash(str(seed) + str(time.clock()))
