@@ -93,7 +93,7 @@ def del_sheet():
         return redirect(url_for('login'))
     ul = Userlist()
     u = ul.getuserbyname(session.get('user'))
-    u.sheet=Character()
+    u.sheet = Character()
     ul.saveuserlist()
     return redirect(url_for('modify_sheet'))
 
@@ -109,7 +109,10 @@ def modify_sheet():
         print(request.form)
         u.sheet.setfromform(request.form)
     ul.saveuserlist()
-    return render_template('charsheet_editor.html', character=u.sheet.getdictrepr())
+    print("starting rendering...")
+    a = render_template('charsheet_editor.html', character=u.sheet.getdictrepr())
+    print("render complete")
+    return a
 
 
 @app.route('/timestep/', methods=['GET', 'POST'])

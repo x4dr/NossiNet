@@ -112,6 +112,7 @@ class Character(object):
         self.backgrounds = collections.OrderedDict(x for x in sorted(self.backgrounds.items()) if x[0] != "")
 
     def getdictrepr(self):
+        print("compiling dict")
         character = {'Meta': self.meta,
                      'Attributes': self.attributes,
                      'Abilities': self.abilities,
@@ -119,6 +120,7 @@ class Character(object):
                      'Virtues': self.virtues,
                      'Backgrounds': self.backgrounds,
                      'BGVDSCP_combined': self.combine_BGVDSCP()}
+        print("dictrepresentation compiled")
         return character
 
     def combine_BGVDSCP(self):
