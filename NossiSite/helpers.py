@@ -16,6 +16,7 @@ def stream_template(template_name, **context):
     return rv
 
 
+
 def stream_string(s):
     for l in s:
         yield l

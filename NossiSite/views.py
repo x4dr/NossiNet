@@ -108,6 +108,12 @@ def testest():
     return a
 
 
+@app.route('/map')
+def berlinmap():
+    return send_from_directory(os.path.join(app.root_path, 'static'),
+                               'berlin.png', mimetype='image/png')
+
+
 @app.route('/modify_sheet/', methods=['GET', 'POST'])
 def modify_sheet():
     if not session.get('logged_in'):
