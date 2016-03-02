@@ -103,6 +103,8 @@ def testest():
     a = ""
     for i in range(1000000):
         a = a+ str(i)+"\n"
+        if i mod 10000 == 0:
+            print(i,"%")
     return a
 
 
