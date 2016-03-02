@@ -1,6 +1,6 @@
 from NossiSite import app
 from NossiSite.helpers import g, session, generate_token, request, redirect, url_for, \
-    render_template, flash, connect_db, generate_password_hash, init_db, send_from_directory, Response, stream_template
+    render_template, flash, connect_db, generate_password_hash, init_db, send_from_directory
 from NossiPack.User import Userlist, User
 from NossiPack.Character import Character
 import random
@@ -98,6 +98,15 @@ def del_sheet():
     return redirect(url_for('modify_sheet'))
 
 
+@app.route('/test/')
+def testest():
+    a = ""
+    for i in range(1000000):
+        a = a+ str(i)+"\n"
+    return a
+
+
+
 @app.route('/modify_sheet/', methods=['GET', 'POST'])
 def modify_sheet():
     if not session.get('logged_in'):
@@ -109,9 +118,10 @@ def modify_sheet():
         print(request.form)
         u.sheet.setfromform(request.form)
     ul.saveuserlist()
-
-    return  Response(stream_template('charsheet_editor.html', character=u.sheet.getdictrepr()))
-
+    print("starting rendering...")
+    a = render_template('charsheet_editor.html', character=u.sheet.getdictrepr())
+    print("render complete")
+    return a
 
 
 @app.route('/timestep/', methods=['GET', 'POST'])
