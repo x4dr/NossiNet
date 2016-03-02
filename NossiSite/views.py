@@ -111,6 +111,7 @@ def modify_sheet():
     ul.saveuserlist()
     print("starting rendering...")
     a = render_template('charsheet_editor.html', character=u.sheet.getdictrepr())
+    print (a)
     print("render complete")
     return a
 
