@@ -1,6 +1,16 @@
 {% extends "layout.html" %}
 {% macro chooser(name, value) -%}
-    <td  style="alignment: left" nowrap> <input>
+    <td  style="alignment: left" nowrap> <input
+       style="width: 10px" ondblclick="resetDot(this)" type="radio" name="{{ name }}"
+       value="1"{% if value == 1 %} checked {% endif %}><input
+       style="width: 10px" ondblclick="resetDot(this)" type="radio" name="{{ name }}"
+       value="2"{% if value == 2 %} checked {% endif %}><input
+       style="width: 10px" ondblclick="resetDot(this)" type="radio" name="{{ name }}"
+       value="3"{% if value == 3 %} checked {% endif %}><input
+       style="width: 10px" ondblclick="resetDot(this)" type="radio" name="{{ name }}"
+       value="4"{% if value == 4 %} checked {% endif %}><input
+       style="width: 10px" ondblclick="resetDot(this)" type="radio" name="{{ name }}"
+       value="5"{% if value == 5 %} checked {% endif %}>
     </td>
 {%- endmacro %}
 {% block head %}
