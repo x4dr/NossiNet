@@ -101,12 +101,11 @@ def del_sheet():
 @app.route('/test/')
 def testest():
     a = ""
-    for i in range(1000000):
-        a = a+ str(i)+"\n"
+    for i in range(100000):
+        a = a + str(i) + "\n"
         if i % 10000 == 0:
-            print(i,"%")
+            print(i // 1000, "%")
     return a
-
 
 
 @app.route('/modify_sheet/', methods=['GET', 'POST'])
