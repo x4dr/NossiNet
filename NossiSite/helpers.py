@@ -15,6 +15,12 @@ def stream_template(template_name, **context):
     rv.enable_buffering(5)
     return rv
 
+
+def stream_string(s):
+    for l in s:
+        yield l
+
+
 def generate_token(seed):
     return generate_password_hash(str(seed) + str(time.clock()))
 

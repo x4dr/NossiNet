@@ -1,6 +1,6 @@
 from NossiSite import app
 from NossiSite.helpers import g, session, generate_token, request, redirect, url_for, \
-    render_template, flash, connect_db, generate_password_hash, init_db, send_from_directory
+    render_template, flash, connect_db, generate_password_hash, init_db, send_from_directory, stream_string, Response
 from NossiPack.User import Userlist, User
 from NossiPack.Character import Character
 import random
@@ -103,7 +103,7 @@ def testest():
     a = ""
     for i in range(100000):
         a = a + str(i) + "\n"
-        if i % 10000 == 0:
+        if i % 1000 == 0:
             print(i // 1000, "%")
     return a
 
@@ -122,7 +122,7 @@ def modify_sheet():
     print("starting rendering...")
     a = render_template('charsheet_editor.html', character=u.sheet.getdictrepr())
     print("render complete")
-    return a
+    return Response(stream_string(a))
 
 
 @app.route('/timestep/', methods=['GET', 'POST'])
