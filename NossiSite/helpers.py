@@ -22,6 +22,11 @@ def stream_string(s):
         yield l
 
 
+def stream_pic(s):
+    print(s.data)
+
+
+
 def generate_token(seed):
     return generate_password_hash(str(seed) + str(time.clock()))
 

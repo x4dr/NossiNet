@@ -1,6 +1,7 @@
 from NossiSite import app
 from NossiSite.helpers import g, session, generate_token, request, redirect, url_for, \
-    render_template, flash, connect_db, generate_password_hash, init_db, send_from_directory, stream_string, Response
+    render_template, flash, connect_db, generate_password_hash, init_db, send_from_directory, stream_string, \
+    Response, stream_pic
 from NossiPack.User import Userlist, User
 from NossiPack.Character import Character
 import random
@@ -110,8 +111,7 @@ def testest():
 
 @app.route('/map')
 def berlinmap():
-    return send_from_directory(os.path.join(app.root_path, 'static'),
-                               'berlin.png', mimetype='image/png')
+    return "<img src='/static/berlin.png'>"
 
 
 @app.route('/modify_sheet/', methods=['GET', 'POST'])
