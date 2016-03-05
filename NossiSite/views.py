@@ -6,6 +6,7 @@ from NossiPack.User import Userlist, User
 from NossiPack.Character import Character
 import random
 import os
+import base64
 import time
 
 token = {}
@@ -111,7 +112,11 @@ def testest():
 
 @app.route('/map')
 def berlinmap():
-    return "<img src='/static/berlin.png'>"
+    with open(os.path.dirname(os.path.realpath(__file__)) + "/static/berlin.png", 'rb') as image_file:
+        encoded_string = base64.b64encode(image_file.read())
+        encoded_string = str(encoded_string)[2:-1]
+
+    return Response(stream_string('<img src="data:image/png;base64,{0}'.format(encoded_string) + '">'))
 
 
 @app.route('/modify_sheet/', methods=['GET', 'POST'])
