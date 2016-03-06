@@ -120,7 +120,7 @@ def berlinmap():
 
 
 @app.route('/maplarge')
-def berlinmap():
+def berlinlargemap():
     with open(os.path.dirname(os.path.realpath(__file__)) + "/static/berlin.png", 'rb') as image_file:
         encoded_string = base64.b64encode(image_file.read())
         encoded_string = str(encoded_string)[2:-1]
