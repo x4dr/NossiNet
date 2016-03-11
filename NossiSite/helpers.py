@@ -16,15 +16,9 @@ def stream_template(template_name, **context):
     return rv
 
 
-
 def stream_string(s):
     for l in s:
         yield l
-
-
-def stream_pic(s):
-    print(s.data)
-
 
 
 def generate_token(seed):
