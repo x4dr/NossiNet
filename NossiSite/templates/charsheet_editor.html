@@ -1,22 +1,10 @@
 {% extends "layout.html" %}
-{% macro chooser(name, value) -%}
-    <td  style="alignment: left" nowrap> <input
-       style="width: 10px" ondblclick="resetDot(this)" type="radio" name="{{ name }}"
-       value="1" id="{{ name }}_1"{% if value == 1 %} checked {% endif %}><label for="{{ name }}_1"
-    >&nbsp;</label><input
-       style="width: 10px" ondblclick="resetDot(this)" type="radio" name="{{ name }}"
-       value="2" id="{{ name }}_2"{% if value == 2 %} checked {% endif %}><label for="{{ name }}_2"
-        >&nbsp;</label><input
-       style="width: 10px" ondblclick="resetDot(this)" type="radio" name="{{ name }}"
-       value="3" id="{{ name }}_3"{% if value == 3 %} checked {% endif %}><label for="{{ name }}_3"
-        >&nbsp;</label><input
-       style="width: 10px" ondblclick="resetDot(this)" type="radio" name="{{ name }}"
-       value="4" id="{{ name }}_4"{% if value == 4 %} checked {% endif %}><label for="{{ name }}_4"
-        >&nbsp;</label><input
-       style="width: 10px" ondblclick="resetDot(this)" type="radio" name="{{ name }}"
-       value="5" id="{{ name }}_5"{% if value == 5 %} checked {% endif %}><label for="{{ name }}_5"
-        >&nbsp;</label>
-    </td>
+{% macro chooser(name, value, max=5) -%}
+        {% for count in range(1,max+1) -%}<input
+                style="width: 10px" ondblclick="resetDot(this)" type="radio" name="{{ name }}"
+                value="{{ count|string }}" id="{{ name }}_{{ count|string }}"{% if value == count -%}
+                checked {%- endif %} xmlns="http://www.w3.org/1999/html"><label for="{{ name }}_{{ count|string }}"
+    >&nbsp;</label>{%- endfor %}
 {%- endmacro %}
 {% block head %}
     <script>
@@ -211,7 +199,7 @@
         </table>
 
         <table style="border-collapse: collapse;
-    width: 100%;" name="bgvdscp_table">
+    width: 100%;">
             <tr>
                 <td colspan="8" style="text-align: center;" class="leeet">Advantages</td>
             </tr>
@@ -231,11 +219,11 @@
             <tr>
                 {% if bgvdscp.Background %}
                     <td><input  style="width: 99%" class="leet" name="background_name_{{ bgvdscp.Background }}" value="{{ bgvdscp.Background }}"></td>
-                    {{ chooser("background_value_"+bgvdscp.Background, bgvdscp.Background_Value) }}
+                    <td>{{ chooser("background_value_"+bgvdscp.Background, bgvdscp.Background_Value) }}</td>
                 {% else %}
                     {% if bgnew < 3 %}
                         <td><input  class="leet" style="width: 99%" name="background_name_New{{ bgnew }}" value=""></td>
-                        {{ chooser("background_value_New"+bgnew|string, 0) }}
+                       <td>{{ chooser("background_value_New"+bgnew|string, 0) }}</td>
                         {% set bgnew = bgnew + 1 %}
                     {% else %}
                         <td colspan="2">&nbsp</td>
@@ -244,11 +232,11 @@
                 <td style="width: 2%;"> </td>
                 {% if bgvdscp.Discipline %}
                     <td><input  style="width: 99%" class="leet" name="discipline_name_{{ bgvdscp.Discipline }}" value="{{ bgvdscp.Discipline }}"> </td>
-                    {{ chooser("discipline_value_"+bgvdscp.Discipline, bgvdscp.Discipline_Value) }}
+                    <td>{{ chooser("discipline_value_"+bgvdscp.Discipline, bgvdscp.Discipline_Value) }}</td>
                 {% else %}
                     {% if dscpnew < 3 %}
                         <td><input  style="width: 99%" class="leet" name="discipline_name_New{{ dscpnew }}" value=""></td>
-                        {{ chooser("discipline_value_New"+dscpnew|string, 0) }}
+                        <td>{{ chooser("discipline_value_New"+dscpnew|string, 0) }}
                         {% set dscpnew = dscpnew + 1 %}
                     {% else %}
                         <td colspan="2">&nbsp</td>
@@ -258,7 +246,7 @@
                 {% if bgvdscp %}
                     {% if bgvdscp.Virtue %}
                     <td>{{ bgvdscp.Virtue }} <input hidden value="{{ bgvdscp.Virtue }}" name="virtue_name_{{ bgvdscp.Virtue }}"></td>
-                    {{ chooser("virtue_value_"+bgvdscp.Virtue,bgvdscp.Virtue_Value) }}
+                    <td>{{ chooser("virtue_value_"+bgvdscp.Virtue,bgvdscp.Virtue_Value) }}
                     {% else %}
                         <td colspan="2">&nbsp</td>
                     {% endif %}
@@ -266,64 +254,63 @@
             </tr>
         {% endfor %}
         </table>
-        <!--tr>
+        stuff below here does not work yet
+        <table width="100%">
+            <tr>
 
-            <td colspan="2" style="text-align: center; width: 33%;" class="section_header td_grey">Merits/Flaws</td>
-            <td colspan="2" style="text-align: center; width: 34%;" class="section_header td_grey">Humanity/Path</td>
-            <td colspan="2" style="text-align: center; width: 33%;" class="section_header td_grey">Health</td>
-        </tr>
-        <tr>
-            <!--Merits1}
-            <!--Humanitystring}
-            <!--Bruised}
-        </tr>
-        <tr>
-            <!--Merits2}
-            <!--Humanity}
-            <!--Hurt}
-        </tr>
-        <tr>
-            <!--Merits3}
-            <td colspan="2"></td>
-            <!--Injured}
-        </tr>
-        <tr>
-            <!--Merits4}
-            <td colspan="2" style="text-align: center; width: 34%;" class="section_header td_grey">Willpower</td>
-            <!--Wounded}
-        </tr>
-        <tr>
-            <!--Merits5}
-            <!--Willpowerdots}
-            <!--Mauled}
-        </tr>
-        <tr>
-            <!--Merits6}
-            <!--Willpowercheck}
-            <!--Crippled}
-        </tr>
-        <tr>
-            <!--Merits7}
-            <td colspan="2"></td>
-            <!--Incapacitated}
-        </tr>
-        <tr>
-            <!--Merits8}
-            <td colspan="2" style="text-align: center; width: 34%;" class="section_header td_grey">Blood Pool</td>
-            <td colspan="2" style="text-align: center; width: 34%;" class="section_header td_grey">Experience</td>
-        </tr>
-        <tr>
-            <!--Merits9}
-            <!--Bloodpool1}
-            <!--Experience}
-        </tr>
-        <tr>
-            <!--Merits10}
-            <!--Bloodpool2}
-            <td colspan="2"></td>
-        </tr>
-    </table>-->
-                <dd><input type="submit" style="float: right; " class="leet" value="edit">
+                <td colspan="2" style="text-align: center; width: 33%;" class="leeet">Merits/Flaws</td>
+                <td colspan="1" style="text-align: center; width: 34%;" class="leeet">Humanity</td>
+                <td colspan="1" style="text-align: center; width: 33%;" class="leeet">Health</td>
+            </tr>
+
+            <tr>
+                <td rowspan="999" colspan="2">merits and flaws</td>
+
+                <td>&nbsp</td>
+                <td rowspan="999">&nbsp</td>
+
+            </tr>
+            <tr>
+
+                 <td align="center" style="font-weight: bolder;
+                 letter-spacing: 3px">{{ chooser("Humanity",character.Special.Humanity,10) }}</td>
+            </tr>
+            <tr>
+                <td>&nbsp</td>
+            </tr>
+
+            <tr>
+                <td style="text-align: center; width: 34%;" class="leeet">Willpower</td>
+            </tr>
+            <tr>
+                <td>&nbsp</td>
+            </tr>
+                <tr>
+                <td align="center" style="font-weight: bolder;
+                 letter-spacing: 3px">{{ chooser("Willpower",character.Special.Willpower,10) }}</td>
+
+            </tr>
+            <tr>
+                <td>&nbsp</td>
+            </tr>
+            <tr>
+                <td style="text-align: center; width: 34%;" class="leeet">Blood</td>
+            </tr>
+            <tr>
+                <td>&nbsp</td>
+            </tr>
+                <tr>
+                <td align="center" style="font-weight: bolder;
+                 letter-spacing: 3px">{{ chooser("Blood",character.Special.Blood,character.Special.Bloodmax) }}</td>
+            </tr>
+            <tr>
+                <td>&nbsp</td>
+            </tr>
+            </table>
+            <table width="100%">
+                <textarea style="width: 99%; height: 300px" class="leeet", name="notes"></textarea>
+            </table>
+        <input type="submit" style="float: right; " class="leet" value="edit">
     </form>
 
 
