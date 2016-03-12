@@ -115,8 +115,8 @@ def berlinmap():
     with open(os.path.dirname(os.path.realpath(__file__)) + "/static/berlin.png", 'rb') as image_file:
         encoded_string = base64.b64encode(image_file.read())
         encoded_string = str(encoded_string)[2:-1]
-
-    return Response(stream_string('<img src="data:image/png;base64,{0}'.format(encoded_string) + '">'))
+    return Response(
+        stream_string('<img alt="loading" src="data:image/png;base64,{0}'.format(encoded_string) + '"> done.'))
 
 
 @app.route('/modify_sheet/', methods=['GET', 'POST'])
