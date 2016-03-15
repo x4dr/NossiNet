@@ -21,6 +21,18 @@ def stream_string(s):
         yield l
 
 
+def stream_file(f):
+    o = open(f, 'rb')
+    try:
+        bytes = o.read(500)
+        while bytes != "":
+            yield bytes
+            bytes = o.read(500)
+        yield bytes
+    finally:
+        o.close()
+
+
 def generate_token(seed):
     return generate_password_hash(str(seed) + str(time.clock()))
 

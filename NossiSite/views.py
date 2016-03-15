@@ -1,7 +1,7 @@
 from NossiSite import app
 from NossiSite.helpers import g, session, generate_token, request, redirect, url_for, \
     render_template, flash, connect_db, generate_password_hash, init_db, send_from_directory, stream_string, \
-    Response
+    Response, stream_file
 from NossiPack.User import Userlist, User
 from NossiPack.Character import Character
 import random
@@ -112,11 +112,7 @@ def testest():
 
 @app.route('/map')
 def berlinmap():
-#    with open(os.path.dirname(os.path.realpath(__file__)) + "/static/berlin.png", 'rb') as image_file:
-#        encoded_string = base64.b64encode(image_file.read())
-#        encoded_string = str(encoded_string)[2:-1]
-    g = open(os.path.dirname(os.path.realpath(__file__)) + "/static/berlin.png", 'rb') # or any generator
-    return Response(g, direct_passthrough=True, mimetype="png")
+    return Response(stream_file(os.path.dirname(os.path.realpath(__file__)) + "/static/berlin.png"), direct_passthrough=True, mimetype="png")
     #return Response(
     #    stream_string('<img alt="loading" src="data:image/png;base64,{0}'.format(encoded_string) + '"> done.'))
 
