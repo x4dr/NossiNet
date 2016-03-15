@@ -25,7 +25,7 @@ def stream_file(f):
     o = open(f, 'rb')
     try:
         bytes = o.read(500)
-        while bytes != "":
+        while bytes != b'':
             yield bytes
             bytes = o.read(500)
         yield bytes

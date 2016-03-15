@@ -112,7 +112,7 @@ def testest():
 
 @app.route('/map')
 def berlinmap():
-    return Response(stream_file(os.path.dirname(os.path.realpath(__file__)) + "/static/berlin.png"), direct_passthrough=True, mimetype="png")
+    return Response(stream_file(os.path.dirname(os.path.realpath(__file__)) + "/static/berlin.png"), mimetype="png")
     #return Response(
     #    stream_string('<img alt="loading" src="data:image/png;base64,{0}'.format(encoded_string) + '"> done.'))
 
