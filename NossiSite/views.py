@@ -112,7 +112,7 @@ def testest():
 
 @app.route('/map')
 def berlinmap():
-    return "<img src=/static/berlin.png>")
+    return render_template('map.html')
 
 
 @app.route('/modify_sheet/', methods=['GET', 'POST'])
@@ -606,5 +606,4 @@ def chargen(mini, maxi, a, b, c):
 
 @app.route('/favicon.ico')
 def favicon():
-    return send_from_directory(os.path.join(app.root_path, 'static'),
-                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
+    return redirect("/static/favicon.ico")
