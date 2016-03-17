@@ -8,7 +8,7 @@ html * {
 
 body {
     font-family: "Lucida Console", Monaco, monospace;
-    background: #000000;
+    background: transparent;
 }
 a, h1, h2       { color: #00f700; }
 
@@ -64,6 +64,7 @@ label { white-space: nowrap}
                   border: 1px solid #00f700; }
 
 .imovr {
+    background: transparent;
     position: absolute;
     left: 0;
     top: 0;
