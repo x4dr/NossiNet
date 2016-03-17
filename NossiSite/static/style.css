@@ -8,7 +8,7 @@ html * {
 
 body {
     font-family: "Lucida Console", Monaco, monospace;
-    background: transparent;
+    background: black;
 }
 a, h1, h2       { color: #00f700; }
 
@@ -63,7 +63,7 @@ label { white-space: nowrap}
 .flash          { background:#000; padding: 0.5em;
                   border: 1px solid #00f700; }
 
-.imovr {
+.imgover {
     background: #cf0012;
     position: absolute;
     left: 0;
