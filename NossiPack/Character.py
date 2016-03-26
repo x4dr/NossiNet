@@ -2,6 +2,7 @@ from random import Random
 import urllib
 import re
 import collections
+import time
 
 __author__ = 'maric'
 
@@ -11,7 +12,7 @@ import pickle
 class Character(object):
     def __init__(self, name="", attributes=None, meta=None, abilities=None,
                  virtues=None, backgrounds=None, disciplines=None,
-                 merits=None, special=None):
+                 special=None, notes=None):
         self.name = name
         if attributes is None:
             self.attributes = self.zero_attributes()
@@ -38,14 +39,150 @@ class Character(object):
         else:
             self.virtues = virtues
         if special is None:
-            self.special = self.zero_special()
+            self.special = self.zero_specials()
         else:
             self.special = special
 
-        if merits is None:
-            self.merits = []
-        else:
-            self.merits = merits
+        self.timestamp = time.strftime("%c")
+
+    @staticmethod
+    def calc_cost(val1, val2, cost, cost0):
+        lower = min(val1, val2)
+        higher = max(val1, val2)
+        result = 0
+        while (higher - lower) > 0:
+            if lower == 0:
+                result += cost0
+                lower += 1
+                continue
+            result += cost * lower
+            lower += 1
+        return result
+
+    def get_clandisciplines(self):
+        return {
+            "Assamite": "Celerity, Obfuscate, Quietus",
+            "Brujah": "Celerity, Potence, Presence",
+            "Setite": "Obfuscate, Presence, Serpentis",
+            "Gangrel": "Animalism, Fortitude, Protean",
+            "Giovanni": "Dominate, Necromancy, Potence",
+            "Lasombra": "Dominate, Obtenebration, Potence",
+            "Malkavian": "Auspex, Dementation, Obfuscate",
+            "Nosferatu": "Animalism, Obfuscate, Potence",
+            "Ravnos": "Animalism, Chimerstry, Fortitude",
+            "Toreador": "Auspex, Celerity, Presence",
+            "Tremere": "Auspex, Dominate, Thaumaturgy",
+            "Tzimisce": "Animalism, Auspex, Vicissitude",
+            "Ventrue": "Dominate, Fortitude, Presence",
+            "Daughter of Cacophony": "Fortitude, Melpominee, Presence",
+            "Gargoyle": "Flight, Fortitude, Potence, Visceratika",
+            "Kiasyd": "Dominate, Mytherceria, Obtenebration",
+            "Salubri": "Auspex, Fortitude, Obeah",
+            "Sage": "Potence, Presence, Temporis",
+            "Cappadocian": "Auspex,Fortutude,Necromancy"
+        }.get(self.meta["Clan"], 'No Clan')
+
+    @property
+    def validate_char(self):
+        comment = ""
+        if self.meta["Clan"] == "Nosferatu":
+            self.attributes['appearance'] = 0
+        att = [self.attributes['strength'] + self.attributes['dexterity'] + self.attributes['stamina'],
+               self.attributes['charisma'] + self.attributes['manipulation'] + self.attributes['appearance'],
+               self.attributes['perception'] + self.attributes['intelligence'] + self.attributes['wits']]
+        if self.meta["Clan"] == "Nosferatu":
+            att[1] += 1  # clan weakness
+        att.sort()
+        attgrphigh = att[0] - 10
+        attgrpmedium = att[1] - 8
+        attgrplow = att[2] - 6
+        if attgrphigh < 0:
+            comment += "highest priority attribute group still needs %d points allocated. \n" % (-attgrphigh)
+        if attgrpmedium < 0:
+            comment += "medium priority attribute group still needs %d points allocated. \n" % (-attgrpmedium)
+        if attgrplow < 0:
+            comment += "lowpriority attribute group still needs %d points allocated. \n" % (-attgrplow)
+
+        ski = 0
+        for i in self.abilities["Skills"].values():
+            ski += i
+        kno = 0
+        for i in self.abilities["Knowledges"].values():
+            ski += i
+        tal = 0
+        for i in self.abilities["Talents"].values():
+            tal += i
+        abi = [ski, kno, tal]
+        abi.sort()
+        abigrphigh = abi[0] - 13
+        abigrpmedium = abi[1] - 9
+        abigrplow = abi[2] - 5
+        if abigrphigh < 0:
+            comment += "highest priority ability group still needs %d points allocated. \n" % (-abigrphigh)
+        if abigrpmedium < 0:
+            comment += "medium priority ability group still needs %d points allocated. \n" % (-abigrpmedium)
+        if abigrplow < 0:
+            comment += "lowpriority ability group still needs %d points allocated. \n" % (-abigrplow)
+        bac = 0
+        vir = 0
+        dis = 0
+        for b in self.backgrounds.values():
+            bac += b
+        for v in self.virtues.values():
+            vir += v
+        for d in self.disciplines.values():
+            dis += d
+        bac -= 5
+        vir -= 10
+        dis -= 3
+        if bac < 0:
+            comment += "backgrounds still need %d points allocated" % bac
+        if vir < 0:
+            comment += "virtues still need %d points allocated" % vir
+        if dis < 0:
+            comment += "disciplines still need %d points allocated" % dis
+        hum = self.special["Humanity"] - self.virtues["Conscience"] - self.virtues["Self Control"]
+        wil = self.special["Willmax"] - self.virtues["Courage"]
+
+        if hum < 0:
+            comment += "humanity still needs %d points allocated" % hum
+        if wil < 0:
+            comment += "willpower still needs %d points allocated" % wil
+
+        if comment == "":
+            freebs = 15 - attgrphigh * 5 - attgrpmedium * 5 - attgrplow * 5 - abigrphigh * 2 - abigrpmedium * 2 - attgrplow * 2 \
+                     - bac * 1 - vir * 2 - dis * 7 - hum * 1 - wil * 1
+            if freebs < 0:
+                comment = "You have spend %d Freebies too many!" % freebs
+            if freebs > 0:
+                comment = "You have spend %d Freebies to few!" % freebs
+        return comment
+
+    def get_diff(self, old=None):
+        xpdiff = 0
+        if old is None:
+            return self.validate_char
+
+        for a in self.attributes.keys():
+            xpdiff += self.calc_cost(self.attributes[a],
+                                     old.attributes[a],
+                                     4, 1000)
+        for b in self.abilities.keys():
+            for a in self.abilities[b].keys():
+                xpdiff += self.calc_cost(self.abilities[b][a],
+                                         old.abilities[b][a],
+                                         2, 3)
+        for a in self.disciplines.keys():
+            cost = 7
+            b = self.get_clandisciplines()
+            if b == "No Clan":
+                c = 6
+            elif a in b:
+                c = 5
+            xpdiff += self.calc_cost(self.disciplines[a], old.disciplines[a], c, 10)
+
+            xpdiff += self.calc_cost(self.special["Willmax"], old.special["Willmax"], 1, 1000)
+        return xpdiff
 
     def dictlist(self):
         return [self.attributes, self.abilities['Skills'],
@@ -57,6 +194,7 @@ class Character(object):
         self.abilities = self.zero_abilities()
         self.disciplines = collections.OrderedDict()
         self.backgrounds = collections.OrderedDict()
+        self.special = self.zero_specials()
         for field in form:
             value = form[field]
             if field in self.meta.keys():
@@ -107,6 +245,12 @@ class Character(object):
                 continue
             if "background_value_" in field:
                 continue
+            if "virtue_value_" in field:
+                continue
+            if field in self.special.keys():
+                if value is not None:
+                    self.special[field] = intdef(value)
+                    continue
 
             print("error inserting a key!", field + ":", value)
 
@@ -114,7 +258,6 @@ class Character(object):
         self.backgrounds = collections.OrderedDict(x for x in sorted(self.backgrounds.items()) if x[0] != "")
 
     def getdictrepr(self):
-        print("compiling dict")
         character = {'Meta': self.meta,
                      'Attributes': self.attributes,
                      'Abilities': self.abilities,
@@ -123,7 +266,6 @@ class Character(object):
                      'Backgrounds': self.backgrounds,
                      'BGVDSCP_combined': self.combine_BGVDSCP(),
                      'Special': self.special}
-        print("dictrepresentation compiled")
         return character
 
     def combine_BGVDSCP(self):
@@ -207,7 +349,7 @@ class Character(object):
         return abilities
 
     @staticmethod
-    def zero_special():
+    def zero_specials():
         special = {'Humanity': 0,
                    'Willpower': 0,
                    'Willmax': 0,
@@ -228,7 +370,10 @@ class Character(object):
                 'Haven': "",
                 'Chronicle': "",
                 'Clan': "",
-                'Concept': ""}
+                'Concept': "",
+                'Notes': "notes",
+                'Merits': "merits and flaws",
+                'Gear': "Gear"}
         return meta
 
     @staticmethod

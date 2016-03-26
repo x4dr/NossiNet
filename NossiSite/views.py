@@ -88,31 +88,55 @@ def charsheet():
     return render_template('charsheet.html', character=u.sheet.getdictrepr())
 
 
-@app.route('/deletesheet/')
+@app.route('/deletesheet/', methods=["POST"])
 def del_sheet():
     if not session.get('logged_in'):
         flash('You are not logged in!')
         return redirect(url_for('login'))
+    x = int(request.form["sheetnum"])
     ul = Userlist()
     u = ul.getuserbyname(session.get('user'))
-    u.sheet = Character()
+    u.oldsheets.pop(x)
     ul.saveuserlist()
-    return redirect(url_for('modify_sheet'))
-
-
-@app.route('/test/')
-def testest():
-    a = ""
-    for i in range(100000):
-        a = a + str(i) + "\n"
-        if i % 1000 == 0:
-            print(i // 1000, "%")
-    return a
+    flash("Sheet deleted from history!")
+    return redirect(url_for('oldsheets'))
 
 
 @app.route('/map')
 def berlinmap():
     return render_template('map.html')
+
+
+@app.route('/oldsheets/')
+def oldsheets():
+    if not session.get('logged_in'):
+        flash('You are not logged in!')
+        return redirect(url_for('login'))
+    ul = Userlist()
+    u = ul.getuserbyname(session.get('user'))
+    oldsheets = []
+    xpdiffs = []
+    for i in range(len(u.oldsheets)):
+        oldsheets.append(u.oldsheets[i].timestamp)
+        if i > 0:
+            xpdiffs.append(u.oldsheets[i].get_diff(u.oldsheets[i - 1]))
+        else:
+            xpdiffs.append(u.oldsheets[i].get_diff(None))
+    return render_template('oldsheets.html', oldsheets=oldsheets)
+
+
+@app.route('/showoldsheets/<x>')
+def showoldsheets(x):
+    if not session.get('logged_in'):
+        flash('You are not logged in!')
+        return redirect(url_for('login'))
+    ul = Userlist()
+    u = ul.getuserbyname(session.get('user'))
+    try:
+        sheetnum = int(x)
+    except:
+        return redirect(url_for('/oldsheets/'))
+    return render_template('charsheet.html', character=u.oldsheets[sheetnum].getdictrepr(), oldsheet=x)
 
 
 @app.route('/modify_sheet/', methods=['GET', 'POST'])
@@ -123,12 +147,11 @@ def modify_sheet():
     ul = Userlist()
     u = ul.getuserbyname(session.get('user'))
     if request.method == 'POST':
-        print(request.form)
-        u.sheet.setfromform(request.form)
+        u.update_sheet(request.form)
+        ul.saveuserlist()
+        return redirect('/charactersheet/')
     ul.saveuserlist()
-    print("starting rendering...")
     a = render_template('charsheet_editor.html', character=u.sheet.getdictrepr())
-    print("render complete")
     return Response(stream_string(a))
 
 

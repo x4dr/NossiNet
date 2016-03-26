@@ -1,11 +1,12 @@
 import os
 import sys
-
-__author__ = 'maric'
+import pickle
 
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 from NossiPack.Character import Character
+
+__author__ = 'maric'
 
 DATABASE = './NN.db'
 
@@ -16,7 +17,7 @@ def connect_db():
 
 class User(object):
     def __init__(self, username, password="", passwordhash=None, kudos=10, funds=0, kudosdebt="",
-                 sheet=Character().serialize()):
+                 sheet=Character().serialize(), oldsheets=b''):
         self.kudosdebt = kudosdebt
         self.username = username.strip()
         self.pw_hash = generate_password_hash(password)
@@ -25,13 +26,35 @@ class User(object):
         self.kudos = kudos
         self.funds = funds
         self.sheet = Character.deserialize(sheet)
+        self.oldsheets = self.deserialize_old_sheets(oldsheets)
 
     def set_password(self, newpassword):
         self.pw_hash = generate_password_hash(newpassword)
         return True
 
+    def serialize_old_sheets(self):
+        oldsheetserialized = []
+        for s in self.oldsheets:
+            if s is None:
+                continue
+            oldsheetserialized.append(s)
+        return pickle.dumps(oldsheetserialized)
+
+    @staticmethod
+    def deserialize_old_sheets(inp):
+        if inp == b'':
+            return []
+
+        return pickle.loads(inp)
+
     def check_password(self, password):
         return check_password_hash(self.pw_hash, password)
+
+    def update_sheet(self, form):
+        if "newsheet" in form.keys():
+            self.oldsheets.append(Character())
+            self.oldsheets[-1].setfromform(form)
+        self.sheet.setfromform(form)
 
     def addkudos(self, kudos):
         if kudos == 0:
@@ -93,9 +116,10 @@ class Userlist(object):
 
     def loaduserlist(self):  # converts the SQL table into a list for easier access
         db = connect_db()
-        cur = db.execute('SELECT username, passwordhash, kudos, funds, kudosdebt, sheet FROM users')
+        cur = db.execute('SELECT username, passwordhash, kudos, funds, kudosdebt, sheet, oldsheets FROM users')
         self.userlist = [User(username=row[0], passwordhash=row[1],
-                              kudos=row[2], funds=row[3], kudosdebt=row[4], sheet=row[5]) for row in cur.fetchall()]
+                              kudos=row[2], funds=row[3], kudosdebt=row[4], sheet=row[5], oldsheets=row[6]) for row in
+                         cur.fetchall()]
         db.close()
 
     def saveuserlist(
@@ -103,12 +127,11 @@ class Userlist(object):
         db = connect_db()
 
         for u in self.userlist:
-            test = u.kudos
-            test = u.kudosdebt
             d = dict(username=u.username, pwhash=u.pw_hash, kudos=u.kudos, funds=u.funds, kudosdebt=u.kudosdebt,
-                     sheet=u.sheet.serialize())
-            db.execute("INSERT OR REPLACE INTO users (username, passwordhash, kudos, funds, kudosdebt, sheet) "
-                       "VALUES (:username,:pwhash,:kudos, :funds, :kudosdebt, :sheet)", d)
+                     sheet=u.sheet.serialize(), oldsheets=u.serialize_old_sheets())
+            db.execute(
+                "INSERT OR REPLACE INTO users (username, passwordhash, kudos, funds, kudosdebt, sheet, oldsheets) "
+                "VALUES (:username,:pwhash,:kudos, :funds, :kudosdebt, :sheet, :oldsheets)", d)
         db.commit()
         db.close()
 
@@ -116,7 +139,7 @@ class Userlist(object):
         if self.contains(user.username):
             return 'Name is taken!'
         self.userlist.append(user)
-        print(user.kudosdebt)
+        print("kudosdebt:", user.kudosdebt)
         print(self.userlist[-1].kudosdebt)
         self.saveuserlist()
         return None

@@ -27,7 +27,8 @@ CREATE TABLE IF NOT EXISTS users (
   kudos        INTEGER          NOT NULL,
   funds        INTEGER          NOT NULL,
   kudosdebt    TEXT             NOT NULL,
-  sheet        TEXT             NOT NULL
+  sheet        TEXT             NOT NULL,
+  oldsheets    TEXT
 );
 
 CREATE TABLE IF NOT EXISTS chatlogs (

@@ -222,127 +222,70 @@
 
         <td colspan="2" style="text-align: center; width: 33%;" class="leeet">Merits/Flaws</td>
         <td colspan="2" style="text-align: center; width: 34%;" class="leeet">Humanity</td>
-        <td colspan="2" style="text-align: center; width: 33%;" class="leeet">Health</td>
+        <td colspan="2" style="text-align: center; width: 33%;" class="leeet">Gear</td>
     </tr>
 
     <tr>
-        <td rowspan="999" colspan="2">merits and flaws</td>
-
+        <td rowspan="999" colspan="2">{{ character.Meta.Merits }}</td>
         <td colspan="2">&nbsp</td>
+        <td rowspan="999" colspan="2">{{ character.Meta.Gear}}</td>
 
     </tr>
     <tr>
         <td colspan="2" align="center" style="font-weight: bolder;
          letter-spacing: 3px">{{ dots(character.Special.Humanity,10) }}</td>
-        <td>e</td>
-        <td>f</td>
     </tr>
     <tr>
-        <td colspan="2"> </td>
-
-        <td>f</td>
+        <td colspan="2">&nbsp</td>
     </tr>
 
     <tr>
         <td colspan="2" style="text-align: center; width: 34%;" class="leeet">Willpower</td>
-        <td>e</td>
-        <td>f</td>
+
     </tr>
         <tr>
-        <td colspan="2"> </td>
+        <td colspan="2">&nbsp;</td>
 
-        <td>f</td>
     </tr>
         <tr>
         <td colspan="2" align="center" style="font-weight: bolder;
-         letter-spacing: 3px">{{ dots(character.Special.Willpower,10) }}</td>
+         letter-spacing: 3px">{{ dots(character.Special.Willpower,character.Special.Willmax) }}</td>
 
-        <td>f</td>
     </tr>
-        </tr>
-        </tr>
-        <td colspan="2"> </td>
-
-        <td>f</td>
+    <tr>
+        <td colspan="2">&nbsp</td>
     </tr>
     <tr>
         <td colspan="2" style="text-align: center; width: 34%;" class="leeet">Blood</td>
-        <td>e</td>
-        <td>f</td>
+
     </tr>
         <tr>
-        <td colspan="2"> </td>
-
-        <td>f</td>
+        <td colspan="2">&nbsp</td>
     </tr>
         <tr>
         <td colspan="2" align="center" style="font-weight: bolder;
          letter-spacing: 3px">{{ dots(character.Special.Blood,character.Special.Bloodmax) }}</td>
 
-        <td>f</td>
     </tr>
-        </tr>
-        </tr>
-        <td colspan="2"> </td>
-
-        <td>f</td>
+    <tr>
+        <td colspan="2">&nbsp</td>
     </tr>
     </table>
-        <!--Merits1}
-        <!--Humanitystring}
-        <!--Bruised}
-    </tr>
-    <tr>
-        <!--Merits2}
-        <!--Humanity}
-        <!--Hurt}
-    </tr>
-    <tr>
-        <!--Merits3}
-        <td colspan="2"></td>
-        <!--Injured}
-    </tr>
-    <tr>
-        <!--Merits4}
-        <td colspan="2" style="text-align: center; width: 34%;" class="section_header td_grey">Willpower</td>
-        <!--Wounded}
-    </tr>
-    <tr>
-        <!--Merits5}
-        <!--Willpowerdots}
-        <!--Mauled}
-    </tr>
-    <tr>
-        <!--Merits6}
-        <!--Willpowercheck}
-        <!--Crippled}
-    </tr>
-    <tr>
-        <!--Merits7}
-        <td colspan="2"></td>
-        <!--Incapacitated}
-    </tr>
-    <tr>
-        <!--Merits8}
-        <td colspan="2" style="text-align: center; width: 34%;" class="section_header td_grey">Blood Pool</td>
-        <td colspan="2" style="text-align: center; width: 34%;" class="section_header td_grey">Experience</td>
-    </tr>
-    <tr>
-        <!--Merits9}
-        <!--Bloodpool1}
-        <!--Experience}
-    </tr>
-    <tr>
-        <!--Merits10}
-        <!--Bloodpool2}
-        <td colspan="2"></td>
-    </tr>
-</table>-->
+    <div>{{ character.Meta.Notes }}</div>
     <div >
+    {% if oldsheet %}
+    <form action="{{ url_for('del_sheet')}}" method="POST" >
+    <input hidden name="sheetnum" value="{{ oldsheet }}">
+                    <dd><input type="submit" style="float: right" class="leet" value="delete">
+        </form>
+    {% else %}
         <form action="{{ url_for('modify_sheet') }}" >
             <dd><input type="submit" style="float: right" class="leet" value="edit">
         </form>
+    {% endif %}
     </div>
+    <br>
+    <a href="{{ url_for('oldsheets') }}">History</a>
 
 
 
