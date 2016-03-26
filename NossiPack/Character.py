@@ -79,7 +79,7 @@ class Character(object):
                 "Kiasyd": "Dominate, Mytherceria, Obtenebration",
                 "Salubri": "Auspex, Fortitude, Obeah",
                 "Sage": "Potence, Presence, Temporis",
-                "Cappadocian": "Auspex,Fortutude,Necromancy"
+                "Cappadocian": "Auspex, Fortutude, Necromancy"
                 }
 
     def get_clandisciplines(self):

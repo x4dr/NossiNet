@@ -35,6 +35,8 @@ h3 {
     border: 1px solid #00f700;
     margin: 1px;
         }
+.chr_background{}
+.chr_discipline{}
 
 input[type="text"], textarea {
     background-color: black;

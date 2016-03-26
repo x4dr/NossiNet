@@ -11,6 +11,12 @@
 {% block head %}
     <script>
      $(document).ready(function() {
+         $(window).keydown(function(event){
+        if(event.keyCode == 13) {
+            event.preventDefault();
+            return false;
+        }
+    });
           var namespace = '/character';
 
           var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
@@ -34,24 +40,32 @@
          });
      })
 
-    function resetDot(el)
-            {
-                el.checked = '';
-                if (window.getSelection) {
-                  if (window.getSelection().empty) {  // Chrome
-                    window.getSelection().empty();
-                  } else if (window.getSelection().removeAllRanges) {  // Firefox
-                    window.getSelection().removeAllRanges();
-                  }
-                } else if (document.selection) {  // IE?
-                  document.selection.empty();
+    function resetDot(el){
+        el.checked = '';
+        if (window.getSelection) {
+            if (window.getSelection().empty) {  // Chrome
+                window.getSelection().empty();
+                } else if (window.getSelection().removeAllRanges) {  // Firefox
+                window.getSelection().removeAllRanges();
                 }
-            }
-            function textAreaAdjust(el) {
-                if (el.scrollHeight > el.clientHeight) {
-                    el.style.height = el.scrollHeight  + "px"
-                }
-            }
+            } else if (document.selection) {  // IE?
+                document.selection.empty();
+        }
+        }
+    function textAreaAdjust(el) {
+        if (el.scrollHeight > el.clientHeight) {
+            el.style.height = el.scrollHeight  + "px"
+        }
+        }
+
+    function setdisciplines(){
+        var disci_inputs = document.getElementsByClassName("chr_discipline");
+        var disc = document.getElementById('Clan').value
+        for(var i = 0; i < disci_inputs.length; i++)
+        {
+            disci_inputs[i].setAttribute('list', disc);
+        }
+    }
             if($.browser.mozilla) {
               $(document).on('click', 'label', function(e) {
                 if(e.currentTarget === this && e.target.nodeName !== 'INPUT') {
@@ -60,13 +74,31 @@
                 });
             }
 
+    window.onload = function() {
+    setdisciplines();
+    }
+
     </script>
 
 {% endblock %}
 {% block body %}
+
+    <datalist id="Clans">
+        {%- for c in Clans %}
+        <option value="{{ c }}">{{ c }}</option>
+        {%- endfor %}
+    </datalist>
+    {% for c in Clans %}
+    <datalist id="{{ c }}">
+        {%- set discilist = Clans[c].split(", ") %}
+        {%- for d in discilist %}
+        <option value="{{ d }}">{{ d }}</option>
+        {%- endfor %}
+    </datalist>
+    {% endfor %}
     <pre id="comments" name="comments"></pre>
 
-    <form id="sheet" action="{{ url_for('modify_sheet') }}" method="post">
+    <form id="sheet" action="{{ url_for('modify_sheet') }}" method="post" >
         <table width="100%">
             <tr>
                 <td colspan="6" style="text-align: center; font-size: 1.5em" class="leeet">
@@ -74,32 +106,27 @@
             </tr>
             <tr>
                 <td style="text-align: right; ">Name:</td>
-                <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Name" type="text" value="{{ character.Meta.Name }}"> </td>
+                <td style="text-align: left; "><input title="Name" style="width: 80%;" class="leet"  name="Name" type="text" value="{{ character.Meta.Name }}"> </td>
                 <td style="text-align: right; ">Nature:</td>
-                <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Nature" type="text" value="{{ character.Meta.Nature }}"></td>
+                <td style="text-align: left; "><input title="Nature" style="width: 80%;" class="leet"  name="Nature" type="text" value="{{ character.Meta.Nature }}"></td>
                 <td style="text-align: right; ">Generation:</td>
-                <td style="text-align: left; "><input disabled style="width: 80%; border: 2px solid #003700;" name="Gen_dud" type="text" value="{{ character.Meta.Generation }}"></td>
+                <td style="text-align: left; "><input title="Generation" disabled style="width: 80%; border: 2px solid #003700;" name="Gen_dud" type="text" value="{{ character.Meta.Generation }}"></td>
             </tr>
             <br>
             <tr>
                 <td style="text-align: right; ">Player:</td>
                 <td style="text-align: left; "><input title="Player" style="width: 80%;" class="leet" id="Player" name="Player" type="text" value="{{ character.Meta.Player }}"></td>
                 <td style="text-align: right; ">Demeanor:</td>
-                <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Demeanor" type="text" value="{{ character.Meta.Demeanor }}"></td>
+                <td style="text-align: left; "><input title="Demeanor" style="width: 80%;" class="leet"  name="Demeanor" type="text" value="{{ character.Meta.Demeanor }}"></td>
                 <td style="text-align: right; ">Haven:</td>
-                <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Haven" type="text" value="{{ character.Meta.Haven }}"></td>
+                <td style="text-align: left; "><input title="Haven" style="width: 80%;" class="leet"  name="Haven" type="text" value="{{ character.Meta.Haven }}"></td>
             <tr>
                 <td style="text-align: right; ">Chronicle:</td>
-                <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Chronicle" type="text" value="{{ character.Meta.Chronicle }}"></td>
+                <td style="text-align: left; "><input title="Chronicle" style="width: 80%;" class="leet"  name="Chronicle" type="text" value="{{ character.Meta.Chronicle }}"></td>
                 <td style="text-align: right; ">Clan:</td>
-                <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Clan" type="text" value="{{ character.Meta.Clan }}" list="Clans"></td>
-                <datalist id="Clans">
-                    {% for c in Clans %}
-                    <option value="{{ c }}">{{ c }}</option>
-                    {% endfor %}
-                </datalist>
+                <td style="text-align: left; "><input title="Clan" id="Clan"  oninput="setdisciplines()" style="width: 80%;" class="leet"  name="Clan" type="text" value="{{ character.Meta.Clan }}" list="Clans"></td>
                 <td style="text-align: right; ">Concept:</td>
-                <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Concept" type="text" value="{{ character.Meta.Concept }}"></td>
+                <td style="text-align: left; "><input title="Concept" style="width: 80%;" class="leet"  name="Concept" type="text" value="{{ character.Meta.Concept }}"></td>
             </tr>
         </table>
         <br>
@@ -266,7 +293,7 @@
                     <td>{{ chooser("background_value_"+bgvdscp.Background, bgvdscp.Background_Value, ([5,bgvdscp.Background_Value] | sort)[1] ) }}</td>
                 {% else %}
                     {% if bgnew < 3 %}
-                        <td><input  class="leet" style="width: 99%" name="background_name_New{{ bgnew }}" value=""></td>
+                        <td><input  class="leet chr_background" style="width: 99%" name="background_name_New{{ bgnew }}" value=""></td>
                        <td>{{ chooser("background_value_New"+bgnew|string, 0) }}</td>
                         {% set bgnew = bgnew + 1 %}
                     {% else %}
@@ -275,11 +302,11 @@
                 {% endif %}
                 <td style="width: 2%;"> </td>
                 {% if bgvdscp.Discipline %}
-                    <td><input  style="width: 99%" class="leet" name="discipline_name_{{ bgvdscp.Discipline }}" value="{{ bgvdscp.Discipline }}"> </td>
+                    <td><input  style="width: 99%" class="leet chr_discipline" name="discipline_name_{{ bgvdscp.Discipline }}" value="{{ bgvdscp.Discipline }}"> </td>
                     <td>{{ chooser("discipline_value_"+bgvdscp.Discipline, bgvdscp.Discipline_Value) }}</td>
                 {% else %}
                     {% if dscpnew < 3 %}
-                        <td><input  style="width: 99%" class="leet" name="discipline_name_New{{ dscpnew }}" value=""></td>
+                        <td><input list="disciplines" style="width: 99%" class="leet" name="discipline_name_New{{ dscpnew }}" value=""></td>
                         <td>{{ chooser("discipline_value_New"+dscpnew|string, 0) }}
                         {% set dscpnew = dscpnew + 1 %}
                     {% else %}
