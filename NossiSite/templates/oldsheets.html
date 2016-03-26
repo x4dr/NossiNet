@@ -2,10 +2,14 @@
 {% block body %}
 
     Older Versions:
+    <table>
 {% for foo in oldsheets %}
-    <br><a href="{{ url_for('showoldsheets', x=loop.index0) }}">{{ foo }}</a>
-
+    <tr>
+    <td nowrap=""><a href="{{ url_for('showoldsheets', x=loop.index0) }}">{{ foo }}</a><br>
+    <div align="right"><pre>{{ xpdiffs[loop.index0] }} </pre> </div></td>
+    </tr>
 {% endfor %}
+    </table>
 
 
 {% endblock %}

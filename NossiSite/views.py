@@ -122,7 +122,7 @@ def oldsheets():
             xpdiffs.append(u.oldsheets[i].get_diff(u.oldsheets[i - 1]))
         else:
             xpdiffs.append(u.oldsheets[i].get_diff(None))
-    return render_template('oldsheets.html', oldsheets=oldsheets)
+    return render_template('oldsheets.html', oldsheets=oldsheets, xpdiffs=xpdiffs)
 
 
 @app.route('/showoldsheets/<x>')
@@ -141,6 +141,7 @@ def showoldsheets(x):
 
 @app.route('/modify_sheet/', methods=['GET', 'POST'])
 def modify_sheet():
+
     if not session.get('logged_in'):
         flash('You are not logged in!')
         return redirect(url_for('login'))

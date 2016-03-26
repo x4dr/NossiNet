@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 {% macro chooser(name, value, max=5) -%}
-        {% for count in range(1,max+1) -%}{%- if loop.index0 > 1 and loop.index0 % 10 == 0 %}<br>{% endif -%}<input
+        {% for count in range(1,max + 1) -%}{%- if loop.index0 > 1 and loop.index0 % 10 == 0 %}<br>{% endif -%}<input
                 style="width: 10px"  type="radio" name="{{ name }}"
                 value="{{ count|string }}" id="{{ name }}_{{ count|string }}"{% if value == count -%}
                 checked {%- endif %} xmlns="http://www.w3.org/1999/html"><label ondblclick="resetDot(this.control)"
@@ -10,7 +10,31 @@
 {%- endmacro %}
 {% block head %}
     <script>
-            function resetDot(el)
+     $(document).ready(function() {
+          var namespace = '/character';
+
+          var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+
+         socket.on('comments', function (msg) {
+             var box = $('pre#comments');
+             box.html(msg.data);
+             window.scrollTo(0,0);
+         });
+
+         socket.on('connect', function () {
+
+             socket.emit('ClientServerEvent', {data: 'editing charcter'})
+         });
+
+
+         $('form#checkchar').submit(function (event) {
+             var message_data = $('form#sheet').serializeArray()
+             socket.emit('ClientServerEvent', {data: message_data});
+             return false;
+         });
+     })
+
+    function resetDot(el)
             {
                 el.checked = '';
                 if (window.getSelection) {
@@ -23,28 +47,26 @@
                   document.selection.empty();
                 }
             }
-
             function textAreaAdjust(el) {
                 if (el.scrollHeight > el.clientHeight) {
                     el.style.height = el.scrollHeight  + "px"
                 }
-
             }
-
             if($.browser.mozilla) {
               $(document).on('click', 'label', function(e) {
                 if(e.currentTarget === this && e.target.nodeName !== 'INPUT') {
                   $(this.control).click();
+                }
+                });
             }
-          });
-        }
+
     </script>
 
 {% endblock %}
 {% block body %}
-    <form action="{{ url_for('del_sheet') }}"><input class="leet" type="submit" value="DELETE"></form>
+    <pre id="comments" name="comments"></pre>
 
-    <form action="{{ url_for('modify_sheet') }}" method="post">
+    <form id="sheet" action="{{ url_for('modify_sheet') }}" method="post">
         <table width="100%">
             <tr>
                 <td colspan="6" style="text-align: center; font-size: 1.5em" class="leeet">
@@ -331,6 +353,9 @@
             </table>
         <input type="checkbox" name="newsheet" value="newsheet"><label for="newsheet">Save a copy into history</label>
         <input type="submit" style="float: right; " class="leet" value="edit">
+    </form>
+    <form id="checkchar" name="checkchar">
+    <input id="check" type="submit" style="float: right; " class="leet" value="check">
     </form>
 
 

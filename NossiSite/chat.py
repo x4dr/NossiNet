@@ -4,6 +4,7 @@ import threading
 from flask import render_template, session, abort, request, flash, url_for, redirect
 from flask_socketio import emit, join_room, leave_room, disconnect
 from NossiPack.Chatrooms import Chatroom
+import NossiPack.Character
 
 thread = None
 
@@ -42,7 +43,7 @@ def decider(message):
     statusupdate()
 
 
-def menucmds(message,stripped=""):
+def menucmds(message, stripped=""):
     if message == 'help':
         echo(message, ": /")
         emit('Message', {'data': '\navailable subscripts:'
@@ -55,7 +56,7 @@ def menucmds(message,stripped=""):
                                  '\ntalk      : to begin talking'
                                  '\nmailbox   : to check the log of messages send to you'
                                  '\nlog       : to get the log of the room you are in \n'})
-        if session['chatmode']=='menu':
+        if session['chatmode'] == 'menu':
             emit('SetCmd', {'data': '/talk'})
     elif message == 'menu':
         echo(message, ": /")
@@ -217,6 +218,19 @@ def chatsite():
 def receive(message):
     print(session.get('user', "NoUser"), ":\t", message)
     decider(message['data'])
+
+
+@socketio.on('ClientServerEvent', namespace='/character')
+def receive(message):
+    print(session.get('user', "NoUser"), ":\t", message)
+    if len(message['data']) > 50:  # short messages are malformed
+        formdata = {}
+        for f in message['data']:
+            formdata[f['name']] = f['value']
+        test = NossiPack.Character.Character()
+        test.setfromform(formdata)
+        print(test.get_diff())
+        emit('comments', {'data': test.get_diff()})
 
 
 @socketio.on('Disconnect', namespace='/chat')

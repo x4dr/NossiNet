@@ -84,6 +84,9 @@ class Character(object):
 
     @property
     def validate_char(self):
+        def need(comment, name, number):
+            return name + " still needs %d points allocated. \n" % abs(int(number))
+
         comment = ""
         if self.meta["Clan"] == "Nosferatu":
             self.attributes['appearance'] = 0
@@ -93,36 +96,38 @@ class Character(object):
         if self.meta["Clan"] == "Nosferatu":
             att[1] += 1  # clan weakness
         att.sort()
-        attgrphigh = att[0] - 10
+        print(att)
+        attgrphigh = att[2] - 10
         attgrpmedium = att[1] - 8
-        attgrplow = att[2] - 6
+        attgrplow = att[0] - 6
         if attgrphigh < 0:
-            comment += "highest priority attribute group still needs %d points allocated. \n" % (-attgrphigh)
+            comment += need(comment, "The highest priority attribute group", attgrphigh)
         if attgrpmedium < 0:
-            comment += "medium priority attribute group still needs %d points allocated. \n" % (-attgrpmedium)
+            comment += need(comment, "The medium priority attribute group", attgrpmedium)
         if attgrplow < 0:
-            comment += "lowpriority attribute group still needs %d points allocated. \n" % (-attgrplow)
+            comment += need(comment, "The lowest priority attribute group", attgrplow)
 
         ski = 0
         for i in self.abilities["Skills"].values():
             ski += i
         kno = 0
         for i in self.abilities["Knowledges"].values():
-            ski += i
+            kno += i
         tal = 0
         for i in self.abilities["Talents"].values():
             tal += i
         abi = [ski, kno, tal]
         abi.sort()
-        abigrphigh = abi[0] - 13
-        abigrpmedium = abi[1] - 9
-        abigrplow = abi[2] - 5
+        print(abi)
+        abigrphigh = abi[2] - 13
+        abigrpmedium = abi[0] - 9
+        abigrplow = abi[1] - 5
         if abigrphigh < 0:
-            comment += "highest priority ability group still needs %d points allocated. \n" % (-abigrphigh)
+            comment += need(comment, "The highest priority ability group", abigrphigh)
         if abigrpmedium < 0:
-            comment += "medium priority ability group still needs %d points allocated. \n" % (-abigrpmedium)
+            comment += need(comment, "The medium priority ability group", abigrpmedium)
         if abigrplow < 0:
-            comment += "lowpriority ability group still needs %d points allocated. \n" % (-abigrplow)
+            comment += need(comment, "The lowest priority ability group", abigrplow)
         bac = 0
         vir = 0
         dis = 0
@@ -136,26 +141,25 @@ class Character(object):
         vir -= 10
         dis -= 3
         if bac < 0:
-            comment += "backgrounds still need %d points allocated" % bac
+            comment += need(comment, "The Background section", bac)
         if vir < 0:
-            comment += "virtues still need %d points allocated" % vir
+            comment += need(comment, "The Virtues section", vir)
         if dis < 0:
-            comment += "disciplines still need %d points allocated" % dis
+            comment += need(comment, "The Discipline section", dir)
         hum = self.special["Humanity"] - self.virtues["Conscience"] - self.virtues["Self Control"]
         wil = self.special["Willmax"] - self.virtues["Courage"]
 
         if hum < 0:
-            comment += "humanity still needs %d points allocated" % hum
+            comment += need(comment, "Humanity", hum)
         if wil < 0:
-            comment += "willpower still needs %d points allocated" % wil
-
+            comment += need(comment, "Willpower", wil)
         if comment == "":
             freebs = 15 - attgrphigh * 5 - attgrpmedium * 5 - attgrplow * 5 - abigrphigh * 2 - abigrpmedium * 2 - attgrplow * 2 \
                      - bac * 1 - vir * 2 - dis * 7 - hum * 1 - wil * 1
             if freebs < 0:
-                comment = "You have spend %d Freebies too many!" % freebs
+                comment = "You have spend %d Freebies too many!\n " % -freebs
             if freebs > 0:
-                comment = "You have spend %d Freebies to few!" % freebs
+                comment = "You have spend %d Freebies to few!\n" % freebs
         return comment
 
     def get_diff(self, old=None):
