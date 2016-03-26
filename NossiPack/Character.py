@@ -120,8 +120,8 @@ class Character(object):
         abi.sort()
         print(abi)
         abigrphigh = abi[2] - 13
-        abigrpmedium = abi[0] - 9
-        abigrplow = abi[1] - 5
+        abigrpmedium = abi[1] - 9
+        abigrplow = abi[0] - 5
         if abigrphigh < 0:
             comment += need(comment, "The highest priority ability group", abigrphigh)
         if abigrpmedium < 0:
@@ -154,12 +154,13 @@ class Character(object):
         if wil < 0:
             comment += need(comment, "Willpower", wil)
         if comment == "":
-            freebs = 15 - attgrphigh * 5 - attgrpmedium * 5 - attgrplow * 5 - abigrphigh * 2 - abigrpmedium * 2 - attgrplow * 2 \
+            freebs = 15 - attgrphigh * 5 - attgrpmedium * 5 - attgrplow * 5 \
+                     - abigrphigh * 2 - abigrpmedium * 2 - abigrplow * 2 \
                      - bac * 1 - vir * 2 - dis * 7 - hum * 1 - wil * 1
             if freebs < 0:
                 comment = "You have spend %d Freebies too many!\n " % -freebs
             if freebs > 0:
-                comment = "You have spend %d Freebies to few!\n" % freebs
+                comment = "You have %d Freebies left!\n" % freebs
         return comment
 
     def get_diff(self, old=None):
