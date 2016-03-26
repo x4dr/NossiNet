@@ -23,7 +23,7 @@
 
          socket.on('connect', function () {
 
-             socket.emit('ClientServerEvent', {data: 'editing charcter'})
+             socket.emit('ClientServerEvent', {data: 'editing character'})
          });
 
 
@@ -78,7 +78,7 @@
                 <td style="text-align: right; ">Nature:</td>
                 <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Nature" type="text" value="{{ character.Meta.Nature }}"></td>
                 <td style="text-align: right; ">Generation:</td>
-                <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Generation" type="text" value="{{ character.Meta.Generation }}"></td>
+                <td style="text-align: left; "><input disabled style="width: 80%; border: 2px solid #003700;" name="Gen_dud" type="text" value="{{ character.Meta.Generation }}"></td>
             </tr>
             <br>
             <tr>
@@ -92,7 +92,12 @@
                 <td style="text-align: right; ">Chronicle:</td>
                 <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Chronicle" type="text" value="{{ character.Meta.Chronicle }}"></td>
                 <td style="text-align: right; ">Clan:</td>
-                <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Clan" type="text" value="{{ character.Meta.Clan }}"></td>
+                <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Clan" type="text" value="{{ character.Meta.Clan }}" list="Clans"></td>
+                <datalist id="Clans">
+                    {% for c in Clans %}
+                    <option value="{{ c }}">{{ c }}</option>
+                    {% endfor %}
+                </datalist>
                 <td style="text-align: right; ">Concept:</td>
                 <td style="text-align: left; "><input style="width: 80%;" class="leet"  name="Concept" type="text" value="{{ character.Meta.Concept }}"></td>
             </tr>
@@ -258,7 +263,7 @@
             <tr>
                 {% if bgvdscp.Background %}
                     <td><input  style="width: 99%" class="leet" name="background_name_{{ bgvdscp.Background }}" value="{{ bgvdscp.Background }}"></td>
-                    <td>{{ chooser("background_value_"+bgvdscp.Background, bgvdscp.Background_Value) }}</td>
+                    <td>{{ chooser("background_value_"+bgvdscp.Background, bgvdscp.Background_Value, ([5,bgvdscp.Background_Value] | sort)[1] ) }}</td>
                 {% else %}
                     {% if bgnew < 3 %}
                         <td><input  class="leet" style="width: 99%" name="background_name_New{{ bgnew }}" value=""></td>

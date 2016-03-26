@@ -59,34 +59,38 @@ class Character(object):
             lower += 1
         return result
 
+    @staticmethod
+    def clans():
+        return {"Assamite": "Celerity, Obfuscate, Quietus",
+                "Brujah": "Celerity, Potence, Presence",
+                "Setite": "Obfuscate, Presence, Serpentis",
+                "Gangrel": "Animalism, Fortitude, Protean",
+                "Giovanni": "Dominate, Necromancy, Potence",
+                "Lasombra": "Dominate, Obtenebration, Potence",
+                "Malkavian": "Auspex, Dementation, Obfuscate",
+                "Nosferatu": "Animalism, Obfuscate, Potence",
+                "Ravnos": "Animalism, Chimerstry, Fortitude",
+                "Toreador": "Auspex, Celerity, Presence",
+                "Tremere": "Auspex, Dominate, Thaumaturgy",
+                "Tzimisce": "Animalism, Auspex, Vicissitude",
+                "Ventrue": "Dominate, Fortitude, Presence",
+                "Daughter of Cacophony": "Fortitude, Melpominee, Presence",
+                "Gargoyle": "Flight, Fortitude, Potence, Visceratika",
+                "Kiasyd": "Dominate, Mytherceria, Obtenebration",
+                "Salubri": "Auspex, Fortitude, Obeah",
+                "Sage": "Potence, Presence, Temporis",
+                "Cappadocian": "Auspex,Fortutude,Necromancy"
+                }
+
     def get_clandisciplines(self):
-        return {
-            "Assamite": "Celerity, Obfuscate, Quietus",
-            "Brujah": "Celerity, Potence, Presence",
-            "Setite": "Obfuscate, Presence, Serpentis",
-            "Gangrel": "Animalism, Fortitude, Protean",
-            "Giovanni": "Dominate, Necromancy, Potence",
-            "Lasombra": "Dominate, Obtenebration, Potence",
-            "Malkavian": "Auspex, Dementation, Obfuscate",
-            "Nosferatu": "Animalism, Obfuscate, Potence",
-            "Ravnos": "Animalism, Chimerstry, Fortitude",
-            "Toreador": "Auspex, Celerity, Presence",
-            "Tremere": "Auspex, Dominate, Thaumaturgy",
-            "Tzimisce": "Animalism, Auspex, Vicissitude",
-            "Ventrue": "Dominate, Fortitude, Presence",
-            "Daughter of Cacophony": "Fortitude, Melpominee, Presence",
-            "Gargoyle": "Flight, Fortitude, Potence, Visceratika",
-            "Kiasyd": "Dominate, Mytherceria, Obtenebration",
-            "Salubri": "Auspex, Fortitude, Obeah",
-            "Sage": "Potence, Presence, Temporis",
-            "Cappadocian": "Auspex,Fortutude,Necromancy"
-        }.get(self.meta["Clan"], 'No Clan')
+        return self.clans().get(self.meta["Clan"], 'No Clan')
 
     @property
     def validate_char(self):
         def need(comment, name, number):
             return name + " still needs %d points allocated. \n" % abs(int(number))
 
+        freebs = 15
         comment = ""
         if self.meta["Clan"] == "Nosferatu":
             self.attributes['appearance'] = 0
@@ -108,26 +112,47 @@ class Character(object):
             comment += need(comment, "The lowest priority attribute group", attgrplow)
 
         ski = 0
+        skil = 0
         for i in self.abilities["Skills"].values():
             ski += i
+            skil += min(3, i)
+            if i == 5:
+                comment += "No ability at 5 at the start of the game!\n"
         kno = 0
+        knol = 0
         for i in self.abilities["Knowledges"].values():
             kno += i
+            knol += min(3, i)
         tal = 0
+        tall = 0
         for i in self.abilities["Talents"].values():
             tal += i
+            tall += min(3, i)
+        abil = [skil, knol, tall]
+        abil.sort()
+        print(abil)
+        abilgrphigh = abil[2] - 13
+        abilgrpmedium = abil[1] - 9
+        abilgrplow = abil[0] - 5
         abi = [ski, kno, tal]
         abi.sort()
         print(abi)
         abigrphigh = abi[2] - 13
         abigrpmedium = abi[1] - 9
         abigrplow = abi[0] - 5
-        if abigrphigh < 0:
-            comment += need(comment, "The highest priority ability group", abigrphigh)
-        if abigrpmedium < 0:
-            comment += need(comment, "The medium priority ability group", abigrpmedium)
-        if abigrplow < 0:
-            comment += need(comment, "The lowest priority ability group", abigrplow)
+        if abilgrphigh < 0:
+            comment += need(comment, "The highest priority ability group", abilgrphigh)
+            if abigrphigh - abilgrphigh != 0:
+                comment += "(maximum before freebies is 3)\n"
+        if abilgrpmedium < 0:
+            comment += need(comment, "The medium priority ability group", abilgrpmedium)
+            if abigrpmedium - abilgrpmedium != 0:
+                comment += "(maximum before freebies is 3)\n"
+        if abilgrplow < 0:
+            comment += need(comment, "The lowest priority ability group", abilgrplow)
+            if abigrplow - abilgrplow != 0:
+                comment += "(maximum before freebies is 3)\n"
+
         bac = 0
         vir = 0
         dis = 0
@@ -145,7 +170,7 @@ class Character(object):
         if vir < 0:
             comment += need(comment, "The Virtues section", vir)
         if dis < 0:
-            comment += need(comment, "The Discipline section", dir)
+            comment += need(comment, "The Discipline section", dis)
         hum = self.special["Humanity"] - self.virtues["Conscience"] - self.virtues["Self Control"]
         wil = self.special["Willmax"] - self.virtues["Courage"]
 
@@ -154,13 +179,28 @@ class Character(object):
         if wil < 0:
             comment += need(comment, "Willpower", wil)
         if comment == "":
-            freebs = 15 - attgrphigh * 5 - attgrpmedium * 5 - attgrplow * 5 \
+            freebs = freebs - attgrphigh * 5 - attgrpmedium * 5 - attgrplow * 5 \
                      - abigrphigh * 2 - abigrpmedium * 2 - abigrplow * 2 \
                      - bac * 1 - vir * 2 - dis * 7 - hum * 1 - wil * 1
             if freebs < 0:
                 comment = "You have spend %d Freebies too many!\n " % -freebs
             if freebs > 0:
                 comment = "You have %d Freebies left!\n" % freebs
+            if freebs == 0:
+                comment = "This character is a valid starting character.\n"
+            if freebs < 15:
+                comment += "Freebies spent:\n" \
+                           "High Attribute Group: \t " + str(attgrphigh * 5) + "\n" + \
+                           "Medium Attribute Group:\t " + str(attgrpmedium * 5) + "\n" + \
+                           "Low Attribute Group: \t " + str(attgrplow * 5) + "\n" + \
+                           "High Ability Group: \t " + str(abigrphigh * 2) + "\n" + \
+                           "Medium Ability Group: \t " + str(abigrpmedium * 2) + "\n" + \
+                           "Low Ability Group: \t " + str(abigrplow * 2) + "\n" + \
+                           "Background Section: \t " + str(bac * 1) + "\n" + \
+                           "Discipline Section: \t " + str(dis * 7) + "\n" + \
+                           "Virtues: \t \t " + str(vir * 2) + "\n" + \
+                           "Humanity: \t \t " + str(hum * 1) + "\n" + \
+                           "Willpower: \t \t " + str(wil * 1)
         return comment
 
     def get_diff(self, old=None):
@@ -200,11 +240,19 @@ class Character(object):
         self.disciplines = collections.OrderedDict()
         self.backgrounds = collections.OrderedDict()
         self.special = self.zero_specials()
+        self.meta["Generation"] = 13
         for field in form:
             value = form[field]
             if field in self.meta.keys():
                 if value is not None:
                     self.meta[field] = value
+                    if field == "Merits":
+                        if "Generation 14" in value:
+                            self.meta["Generation"] = 14
+                            self.backgrounds["Generation"] = -1
+                        if "Generation 15" in value:
+                            self.meta["Generation"] = 15
+                            self.backgrounds["Generation"] = -2
                 continue
             if field in self.attributes.keys():
                 if value is not None:
@@ -223,18 +271,31 @@ class Character(object):
                     self.abilities['Knowledges'][field] = intdef(value)
                 continue
             if "background_name_" in field:
-                if (value is not None) and (field != "background_name_"):  # no empty submits
+                if (value is not None) and (value != '') and (field != "background_name_"):  # no empty submits
                     try:
-                        self.backgrounds[value] = \
-                            int(form["background_value_" + re.match(r'background_name_(.*)', field).group(1)])
+                        preval = self.backgrounds[value]
                     except:
+                        preval = 0
+                    try:
+                        self.backgrounds[value] = preval + \
+                                                  int(form["background_value_" + re.match(r'background_name_(.*)',
+                                                                                          field).group(1)])
+                    except Exception as j:
+                        print(j.args)
                         self.backgrounds[value] = 0
+                if value == "Generation":
+                    self.meta[value] = str(int(self.meta[value]) - self.backgrounds[value])
                 continue
             if "discipline_name_" in field:
                 if (value is not None) and (field != "discipline_name_"):  # no empty submits
                     try:
-                        self.disciplines[value] = \
-                            int(form["discipline_value_" + re.match(r'discipline_name_(.*)', field).group(1)])
+                        preval = self.disciplines[value]
+                    except:
+                        preval = 0
+                    try:
+                        self.disciplines[value] = preval + \
+                                                  int(form["discipline_value_" + re.match(r'discipline_name_(.*)',
+                                                                                          field).group(1)])
                     except:
                         self.disciplines[value] = 0
                 continue

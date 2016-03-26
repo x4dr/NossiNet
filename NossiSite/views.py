@@ -152,7 +152,7 @@ def modify_sheet():
         ul.saveuserlist()
         return redirect('/charactersheet/')
     ul.saveuserlist()
-    a = render_template('charsheet_editor.html', character=u.sheet.getdictrepr())
+    a = render_template('charsheet_editor.html', character=u.sheet.getdictrepr(), Clans=u.sheet.clans())
     return Response(stream_string(a))
 
 
