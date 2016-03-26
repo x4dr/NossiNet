@@ -6,6 +6,9 @@ from flask import Flask, request, session, g, redirect, url_for, \
 from jinja2 import Environment
 from werkzeug.security import generate_password_hash
 import time
+import logging
+
+log = logging.Logger("helperlogger")
 
 
 def stream_template(template_name, **context):
@@ -51,6 +54,8 @@ def connect_db():
 @app.before_request
 def before_request():
     g.db = connect_db()
+    print(request.remote_addr, " => ", request.path,
+          ">", session.get('user', '?'), "<")
 
 
 @app.teardown_request

@@ -299,7 +299,7 @@ def register():  # this is not clrs secure because it does not need to be
     error = None
     u = Userlist(None)
     if request.method == 'POST':
-        username = request.form['username']
+        username = request.form['username'].strip()
         if len(username) > 2:
             username = username.upper()
             if request.form['password'] == request.form['passwordcheck']:
