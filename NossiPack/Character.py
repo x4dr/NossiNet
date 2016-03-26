@@ -60,7 +60,7 @@ class Character(object):
         return result
 
     @staticmethod
-    def clans():
+    def get_clans():
         return {"Assamite": "Celerity, Obfuscate, Quietus",
                 "Brujah": "Celerity, Potence, Presence",
                 "Setite": "Obfuscate, Presence, Serpentis",
@@ -83,7 +83,21 @@ class Character(object):
                 }
 
     def get_clandisciplines(self):
-        return self.clans().get(self.meta["Clan"], 'No Clan')
+        return self.get_clans().get(self.meta["Clan"], 'No Clan')
+
+    @staticmethod
+    def get_backgrounds():
+        return ["Allies",
+                "Contacts",
+                "Retainers",
+                "Resources",
+                "Status",
+                "Influence",
+                "Generation",
+                "Domain",
+                "Fame",
+                "Herd",
+                "Mentor"]
 
     @property
     def validate_char(self):

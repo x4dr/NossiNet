@@ -96,6 +96,11 @@
         {%- endfor %}
     </datalist>
     {% endfor %}
+    <datalist id="Backgrounds">
+        {%- for b in Backgrounds %}
+        <option value="{{ b }}">{{ b }}</option>
+        {%- endfor %}
+    </datalist>
     <pre id="comments" name="comments"></pre>
 
     <form id="sheet" action="{{ url_for('modify_sheet') }}" method="post" >
@@ -289,11 +294,11 @@
         {% for bgvdscp in character.BGVDSCP_combined %}
             <tr>
                 {% if bgvdscp.Background %}
-                    <td><input  style="width: 99%" class="leet" name="background_name_{{ bgvdscp.Background }}" value="{{ bgvdscp.Background }}"></td>
+                    <td><input list="Backgrounds"  style="width: 99%" class="leet" name="background_name_{{ bgvdscp.Background }}" value="{{ bgvdscp.Background }}"></td>
                     <td>{{ chooser("background_value_"+bgvdscp.Background, bgvdscp.Background_Value, ([5,bgvdscp.Background_Value] | sort)[1] ) }}</td>
                 {% else %}
                     {% if bgnew < 3 %}
-                        <td><input  class="leet chr_background" style="width: 99%" name="background_name_New{{ bgnew }}" value=""></td>
+                        <td><input list="Backgrounds" class="leet" style="width: 99%" name="background_name_New{{ bgnew }}" value=""></td>
                        <td>{{ chooser("background_value_New"+bgnew|string, 0) }}</td>
                         {% set bgnew = bgnew + 1 %}
                     {% else %}
