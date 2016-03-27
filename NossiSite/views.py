@@ -324,6 +324,7 @@ def register():  # this is not clrs secure because it does not need to be
 @app.route('/login', methods=['GET', 'POST'])
 def login():  # this is not clrs secure because it does not need to be
     error = None
+    u
     u = Userlist()
     if request.method == 'POST':
         user = request.form['username']
@@ -334,9 +335,10 @@ def login():  # this is not clrs secure because it does not need to be
             session['logged_in'] = True
             session['user'] = user
             flash('You were logged in')
+            print("logged in as", user)
             return redirect(url_for('show_entries'))
     gentoken()
-    print("logged in as", user)
+    print("logging in...")
     return render_template('login.html', error=error)
 
 
