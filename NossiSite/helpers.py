@@ -51,9 +51,9 @@ def connect_db():
     return sqlite3.connect(app.config['DATABASE'])
 
 
-#@app.before_request
-#def before_request():
-#    g.db = connect_db()
+@app.before_request
+def before_request():
+    g.db = connect_db()
 #    try:
 #        print(request.remote_addr, " => ", request.path,
 #              ">", session.get('user', '?'), "<")
