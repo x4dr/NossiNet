@@ -1,7 +1,6 @@
 from flask import Flask
 import eventlet
-import random
-import string
+
 
 from flask_socketio import SocketIO
 
@@ -13,7 +12,7 @@ app = Flask(__name__)
 
 DATABASE = './NN.db'
 
-with open('key', 'w') as keyfile:
+with open('key', 'r') as keyfile:
     key = keyfile.read()
 SECRET_KEY = key  #should invalidate cookies
 app.config.from_object(__name__)
