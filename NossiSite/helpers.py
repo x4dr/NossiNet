@@ -51,25 +51,25 @@ def connect_db():
     return sqlite3.connect(app.config['DATABASE'])
 
 
-@app.before_request
-def before_request():
-    g.db = connect_db()
-    try:
-        print(request.remote_addr, " => ", request.path,
-              ">", session.get('user', '?'), "<")
-    except:
-        print("exception while printing before request")
+#@app.before_request
+#def before_request():
+#    g.db = connect_db()
+#    try:
+#        print(request.remote_addr, " => ", request.path,
+#              ">", session.get('user', '?'), "<")
+#    except:
+#        print("exception while printing before request")
 
 
-@app.after_request
-def after_request(x):
-    try:
-        print(x)
-        print(request.remote_addr, " done ", request.path,
-              ">", session.get('user', '?'), "<")
-    except:
-        print("exception while printing after request")
-    return x
+#@app.after_request
+#def after_request(x):
+#    try:
+#        print(x)
+#        print(request.remote_addr, " done ", request.path,
+#              ">", session.get('user', '?'), "<")
+#    except:
+#        print("exception while printing after request")
+#    return x
 
 
 @app.teardown_request

@@ -76,6 +76,7 @@ def show_entries():
         else:
             e['plusoned'] = (session.get('user') == e.get('author'))
     gentoken()
+    print(session)
     return render_template('show_entries.html', entries=entries)
 
 
@@ -336,9 +337,11 @@ def login():  # this is not clrs secure because it does not need to be
             session['user'] = user
             flash('You were logged in')
             print("logged in as", user)
+            print(session)
             return redirect(url_for('show_entries'))
     gentoken()
     print("logging in...")
+    print(session)
     return render_template('login.html', error=error)
 
 
