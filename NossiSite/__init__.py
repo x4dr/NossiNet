@@ -12,7 +12,10 @@ eventlet.monkey_patch()
 app = Flask(__name__)
 
 DATABASE = './NN.db'
-SECRET_KEY = ''.join(random.SystemRandom().choice(string.printable) for _ in range(48))  #should invalidate cookies
+
+with open('key', 'w') as keyfile:
+    key = keyfile.read()
+SECRET_KEY = key  #should invalidate cookies
 app.config.from_object(__name__)
 socketio = SocketIO(app, async_mode=async_mode)
 
