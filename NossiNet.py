@@ -1,3 +1,4 @@
+import os
 import sys
 from NossiSite import app, socketio
 import random
@@ -9,7 +10,7 @@ try:
 except:
     port = 5000
 
-with open('key', 'w') as keyfile:
+with open(os.path.join(os.path.expanduser('~'), 'key'), 'w') as keyfile:
     keyfile.write(''.join(random.SystemRandom().choice(string.printable) for _ in range(48)))
 
 if __name__ == "__main__":

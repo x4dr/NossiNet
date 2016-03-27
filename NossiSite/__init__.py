@@ -1,5 +1,6 @@
 from flask import Flask
 import eventlet
+import os
 
 
 from flask_socketio import SocketIO
@@ -12,7 +13,7 @@ app = Flask(__name__)
 
 DATABASE = './NN.db'
 
-with open('key', 'r') as keyfile:
+with open(os.path.join(os.path.expanduser('~'),'key'), 'r') as keyfile:
     key = keyfile.read()
 SECRET_KEY = key  #should invalidate cookies
 app.config.from_object(__name__)
