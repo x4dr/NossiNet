@@ -69,6 +69,7 @@ def after_request(x):
               ">", session.get('user', '?'), "<")
     except:
         print("exception while printing after request")
+    return x
 
 
 @app.teardown_request
