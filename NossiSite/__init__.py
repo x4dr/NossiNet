@@ -12,7 +12,7 @@ eventlet.monkey_patch()
 app = Flask(__name__)
 
 DATABASE = './NN.db'
-i = 10
+i = 0
 while i < 10:
     key=""
     try:
