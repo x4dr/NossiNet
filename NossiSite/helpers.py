@@ -54,8 +54,20 @@ def connect_db():
 @app.before_request
 def before_request():
     g.db = connect_db()
-    print(request.remote_addr, " => ", request.path,
+    try:
+        print(request.remote_addr, " => ", request.path,
           ">", session.get('user', '?'), "<")
+    except:
+        print("exception while printing before request")
+
+@app.after_request
+def after_request():
+    try:
+        print(request.remote_addr, " done ", request.path,
+          ">", session.get('user', '?'), "<")
+    except:
+        print("exception while printing after request")
+
 
 
 @app.teardown_request

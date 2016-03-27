@@ -83,6 +83,7 @@ def charsheet():
     if not session.get('logged_in'):
         flash('You are not logged in!')
         return redirect(url_for('login'))
+    print('DEBUG:loading charactersheet')
     ul = Userlist()
     u = ul.getuserbyname(session.get('user'))
     return render_template('charsheet.html', character=u.sheet.getdictrepr())

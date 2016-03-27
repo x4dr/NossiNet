@@ -220,6 +220,11 @@ def receive(message):
     decider(message['data'])
 
 
+
+@socketio.on('connect', namespace='/chat')
+def char_connect():
+    emit(101)
+
 @socketio.on('ClientServerEvent', namespace='/character')
 def receive(message):
     print(session.get('user', "NoUser"), ":\t", message)
