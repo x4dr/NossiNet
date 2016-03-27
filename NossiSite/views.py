@@ -65,6 +65,7 @@ def kudosloan():
 
 @app.route('/')
 def show_entries():
+    print(session)
     cur = g.db.execute('SELECT author, title, text, plusOned, id FROM entries ORDER BY id DESC')
     entries = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4]) for row in cur.fetchall()]
     for e in entries:
