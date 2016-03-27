@@ -336,6 +336,7 @@ def login():  # this is not clrs secure because it does not need to be
             flash('You were logged in')
             return redirect(url_for('show_entries'))
     gentoken()
+    print("logged in as", user)
     return render_template('login.html', error=error)
 
 
