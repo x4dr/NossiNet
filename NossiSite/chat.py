@@ -206,7 +206,7 @@ def chatsite():
     if not session.get('logged_in'):
         flash('You are not logged in!')
         return redirect(url_for('login'))
-    global thread
+    # global thread
     # if thread is None:
     # thread = threading.Thread(target=background_thread)
     # thread.daemon = True
@@ -220,10 +220,9 @@ def receive(message):
     decider(message['data'])
 
 
-
-@socketio.on('connect', namespace='/chat')
+@socketio.on('connect', namespace='/character')
 def char_connect():
-    emit(101)
+    emit('comments', {'data':"this sheet is live"})
 
 @socketio.on('ClientServerEvent', namespace='/character')
 def receive(message):
