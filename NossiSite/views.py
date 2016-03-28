@@ -157,7 +157,7 @@ def modify_sheet():
     ul.saveuserlist()
     a = render_template('charsheet_editor.html', character=u.sheet.getdictrepr(), Clans=u.sheet.get_clans(),
                         Backgrounds=u.sheet.get_backgrounds())
-    return Response(stream_string(a))
+    return  a #Response(stream_string(a))
 
 
 @app.route('/timestep/', methods=['GET', 'POST'])
