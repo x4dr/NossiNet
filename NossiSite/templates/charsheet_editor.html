@@ -304,7 +304,7 @@
                     <td>{{ chooser("discipline_value_"+bgvdscp.Discipline, bgvdscp.Discipline_Value) }}</td>
                 {% else %}
                     {% if dscpnew < 3 %}
-                        <td><input list="disciplines" style="width: 99%" class="leet" name="discipline_name_New{{ dscpnew }}" value=""></td>
+                        <td><input list="disciplines" style="width: 99%" class="leet chr_discipline" name="discipline_name_New{{ dscpnew }}" value=""></td>
                         <td>{{ chooser("discipline_value_New"+dscpnew|string, 0) }}
                         {% set dscpnew = dscpnew + 1 %}
                     {% else %}
