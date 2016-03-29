@@ -222,26 +222,29 @@ def receive(message):
 
 @socketio.on('connect', namespace='/character')
 def char_connect():
-    emit('comments', {'data': "this sheet has connected to the server and is probably able to"
-                              "be checked. (DEBUG)"})
+    emit('comments', {'data': "Click \"Check\" down below to check if this sheet \n"
+                              "is a valid starting character. \n"
+                              "It is recommended to have a valid start character as the oldest\n"
+                              "entry in the History."})
 
 
 @socketio.on('ClientServerEvent', namespace='/character')
 def receive(message):
     print(session.get('user', "NoUser"), ":\t", message)
-    print("validating?")
+    #print("validating?")
     if len(message['data']) > 20:  # short messages are malformed
         formdata = {}
-        print("yes")
+    #    print("yes")
         for f in message['data']:
             formdata[f['name']] = f['value']
         test = NossiPack.Character.Character()
-        print("form set up and empty character generated, getting diff")
+    #    print("form set up and empty character generated, getting diff")
         test.setfromform(formdata)
-        print(test.get_diff())
+    #    print(test.get_diff())
         emit('comments', {'data': test.get_diff()})
     else:
-        print("no,",len(message['data']))
+        pass
+    #    print("no,",len(message['data']))
 
 
 @socketio.on('Disconnect', namespace='/chat')
@@ -253,9 +256,11 @@ def disconnect_request():
 
 @socketio.on('connect', namespace='/chat')
 def chat_connect():
+    print("validating chat connection...")
     if not session.get('logged_in'):
         emit('Message', {'prefix': '', 'data': 'Not logged in.'})
         return False
+    print("validated," session.get("user", "ERROR"),"has connected")
     global userlist
     session['id'] = request.sid
     if session.get('user', False):
