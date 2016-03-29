@@ -1,13 +1,10 @@
+import random
+import time
+
+from NossiPack.User import Userlist, User
 from NossiSite import app
 from NossiSite.helpers import g, session, generate_token, request, redirect, url_for, \
-    render_template, flash, connect_db, generate_password_hash, init_db, send_from_directory, stream_string, \
-    Response, stream_file
-from NossiPack.User import Userlist, User
-from NossiPack.Character import Character
-import random
-import os
-import base64
-import time
+    render_template, flash, connect_db, generate_password_hash, init_db
 
 token = {}
 
@@ -157,7 +154,7 @@ def modify_sheet():
     ul.saveuserlist()
     a = render_template('charsheet_editor.html', character=u.sheet.getdictrepr(), Clans=u.sheet.get_clans(),
                         Backgrounds=u.sheet.get_backgrounds())
-    return a #Response(stream_string(a))
+    return a  # Response(stream_string(a))
 
 
 @app.route('/timestep/', methods=['GET', 'POST'])

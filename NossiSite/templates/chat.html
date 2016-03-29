@@ -1,5 +1,6 @@
 {% extends "layout.html" %}
 {% block head %}
+    <!--suppress , JSUnresolvedVariable, JSUnresolvedFunction -->
     <script type="text/javascript" charset="utf-8">
         $(document).ready(function(){
             var namespace = '/chat';
@@ -34,8 +35,8 @@
             var commandCount = 0;
             var keyCount = 0;
 
-            $('form#message').submit(function(event) {
-                message_data=$('#message_data').val()
+            $('form#message').submit(function() {
+                var message_data=$('#message_data').val();
                 if(document.getElementById('message_data').value != ''){
                 socket.emit('ClientServerEvent',
                         {data: message_data});
@@ -89,5 +90,6 @@
                    placeholder="Message" autocomplete="off" style="width: 88%"></span>
         </div>
     </form>
+    </div>
 
 {% endblock %}

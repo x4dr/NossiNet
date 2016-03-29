@@ -3,10 +3,14 @@
 
     Older Versions:
     <table>
+    <tr>
+        <td>Date</td>
+        <td>XP Difference to the sheet above</td>
+    </tr>
 {% for foo in oldsheets %}
     <tr>
-    <td nowrap=""><a href="{{ url_for('showoldsheets', x=loop.index0) }}">{{ foo }}</a><br>
-    <div align="right"><pre>{{ xpdiffs[loop.index0] }} </pre> </div></td>
+        <td nowrap=""><a href="{{ url_for('showoldsheets', x=loop.index0) }}">{{ foo }}</a><br> </td>
+        <td><div align="right"><pre>{{ xpdiffs[loop.index0] }} </pre> </div></td>
     </tr>
 {% endfor %}
     </table>

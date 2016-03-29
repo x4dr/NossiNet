@@ -1,6 +1,8 @@
+            <!--suppress JSUnresolvedVariable, JSUnresolvedFunction -->
 {% extends "layout.html" %}
 {% macro chooser(name, value, max=5) -%}
-        {% for count in range(1,max + 1) -%}{%- if loop.index0 > 1 and loop.index0 % 10 == 0 %}<br>{% endif -%}<input
+        {% for count in range(1,max + 1) -%}{%- if loop.index0 > 1 and loop.index0 % 10 == 0 %}
+    <br>{% endif -%}<input
                 style="width: 10px"  type="radio" name="{{ name }}"
                 value="{{ count|string }}" id="{{ name }}_{{ count|string }}"{% if value == count -%}
                 checked {%- endif %} xmlns="http://www.w3.org/1999/html"><label ondblclick="resetDot(this.control)"
@@ -12,30 +14,30 @@
     <script>
      $(document).ready(function() {
          $('form input').on('keypress', function(e) {
-    return e.which !== 13;
-});
+            return e.which !== 13;
+         });
 
-    });
-    var namespace = '/character';
+            var namespace = '/character';
 
-    var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+            var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
 
-    socket.on('comments', function (msg) {
-     var box = $('pre#comments');
-     box.html(msg.data);
-     window.scrollTo(0,0);
-    });
+            socket.on('comments', function (msg) {
+             var box = $('pre#comments');
+             box.html(msg.data);
+             window.scrollTo(0,0);
+            });
 
-    socket.on('connect', function () {
-     socket.emit('ClientServerEvent', {data: 'editing character'})
-    });
+            socket.on('connect', function () {
+             socket.emit('ClientServerEvent', {data: 'editing character'})
+            });
 
 
-    $('form#checkchar').submit(function (event) {
-     var message_data = $('form#sheet').serializeArray()
-     socket.emit('ClientServerEvent', {data: message_data});
-     return false;
-    });
+            $('form#checkchar').submit(function () {
+             var message_data = $('form#sheet').serializeArray();
+             socket.emit('ClientServerEvent', {data: message_data});
+             return false;
+            });
+         });
 
     function resetDot(el){
         el.checked = '';
@@ -57,7 +59,7 @@
 
     function setdisciplines(){
         var disci_inputs = document.getElementsByClassName("chr_discipline");
-        var disc = document.getElementById('Clan').value
+        var disc = document.getElementById('Clan').value;
         for(var i = 0; i < disci_inputs.length; i++)
         {
             disci_inputs[i].setAttribute('list', disc);
@@ -92,7 +94,7 @@
         <option value="{{ b }}">{{ b }}</option>
         {%- endfor %}
     </datalist>
-    <pre id="comments" name="comments"></pre>
+    <pre id="comments"></pre>
 
     <form id="sheet" action="{{ url_for('modify_sheet') }}" method="post" >
         <table width="100%">
@@ -102,13 +104,12 @@
             </tr>
             <tr>
                 <td style="text-align: right; ">Name:</td>
-                <td style="text-align: left; "><input title="Name" style="width: 80%;" class="leet"  name="Name" type="text" value="{{ character.Meta.Name }}"> </td>
+                <td style="text-align: left; "><input title="Name" style="width: 80%;" class="leet"  name="Name" type="text" value="{{ character.Meta.Name }}"></td>
                 <td style="text-align: right; ">Nature:</td>
                 <td style="text-align: left; "><input title="Nature" style="width: 80%;" class="leet"  name="Nature" type="text" value="{{ character.Meta.Nature }}"></td>
                 <td style="text-align: right; ">Generation:</td>
                 <td style="text-align: left; "><input title="Generation" disabled style="width: 80%; border: 2px solid #003700;" name="Gen_dud" type="text" value="{{ character.Meta.Generation }}"></td>
             </tr>
-            <br>
             <tr>
                 <td style="text-align: right; ">Player:</td>
                 <td style="text-align: left; "><input title="Player" style="width: 80%;" class="leet" id="Player" name="Player" type="text" value="{{ character.Meta.Player }}"></td>
@@ -285,11 +286,11 @@
         {% for bgvdscp in character.BGVDSCP_combined %}
             <tr>
                 {% if bgvdscp.Background %}
-                    <td><input list="Backgrounds"  style="width: 99%" class="leet" name="background_name_{{ bgvdscp.Background }}" value="{{ bgvdscp.Background }}"></td>
+                    <td><input title="bg" list="Backgrounds"  style="width: 99%" class="leet" name="background_name_{{ bgvdscp.Background }}" value="{{ bgvdscp.Background }}"></td>
                     <td>{{ chooser("background_value_"+bgvdscp.Background, bgvdscp.Background_Value, ([5,bgvdscp.Background_Value] | sort)[1] ) }}</td>
                 {% else %}
                     {% if bgnew < 3 %}
-                        <td><input list="Backgrounds" class="leet" style="width: 99%" name="background_name_New{{ bgnew }}" value=""></td>
+                        <td><input title="additional bg" list="Backgrounds" class="leet" style="width: 99%" name="background_name_New{{ bgnew }}" value=""></td>
                        <td>{{ chooser("background_value_New"+bgnew|string, 0) }}</td>
                         {% set bgnew = bgnew + 1 %}
                     {% else %}
@@ -298,11 +299,11 @@
                 {% endif %}
                 <td style="width: 2%;"> </td>
                 {% if bgvdscp.Discipline %}
-                    <td><input  style="width: 99%" class="leet chr_discipline" name="discipline_name_{{ bgvdscp.Discipline }}" value="{{ bgvdscp.Discipline }}"> </td>
+                    <td><input title="dscp" style="width: 99%" class="leet chr_discipline" name="discipline_name_{{ bgvdscp.Discipline }}" value="{{ bgvdscp.Discipline }}"> </td>
                     <td>{{ chooser("discipline_value_"+bgvdscp.Discipline, bgvdscp.Discipline_Value) }}</td>
                 {% else %}
                     {% if dscpnew < 3 %}
-                        <td><input list="disciplines" style="width: 99%" class="leet chr_discipline" name="discipline_name_New{{ dscpnew }}" value=""></td>
+                        <td><input title="additional dscp" style="width: 99%" class="leet chr_discipline" name="discipline_name_New{{ dscpnew }}" value=""></td>
                         <td>{{ chooser("discipline_value_New"+dscpnew|string, 0) }}
                         {% set dscpnew = dscpnew + 1 %}
                     {% else %}
@@ -312,7 +313,7 @@
                 <td style="width: 2%;"> </td>
                 {% if bgvdscp %}
                     {% if bgvdscp.Virtue %}
-                    <td>{{ bgvdscp.Virtue }} <input hidden value="{{ bgvdscp.Virtue }}" name="virtue_name_{{ bgvdscp.Virtue }}"></td>
+                    <td>{{ bgvdscp.Virtue }} <input title="hidden virtue name" hidden value="{{ bgvdscp.Virtue }}" name="virtue_name_{{ bgvdscp.Virtue }}"></td>
                     <td>{{ chooser("virtue_value_"+bgvdscp.Virtue,bgvdscp.Virtue_Value) }}
                     {% else %}
                         <td colspan="2">&nbsp</td>
@@ -330,11 +331,11 @@
             </tr>
 
             <tr>
-                <td rowspan="999" colspan="2"><textarea style="width: 90%; height:90%";  class="leeet",
+                <td rowspan="999" colspan="2"><textarea title="Merits and Flaws" style="width: 90%; height:90%"  class="leeet"
                                                         name="Merits">{{ character.Meta.Merits }}</textarea></td>
 
                 <td>&nbsp</td>
-                <td rowspan="999" colspan="2"><textarea style="width: 90%; height:90%";  class="leeet",
+                <td rowspan="999" colspan="2"><textarea title="Equipment" style="width: 90%; height:90%"  class="leeet"
                                                         name="Gear">{{ character.Meta.Gear }}</textarea></td>
 
             </tr>
@@ -375,11 +376,13 @@
                 <td>&nbsp</td>
             </tr>
             </table>
-            <table width="100%">
-                <textarea style="width: 99%; overflow-y: auto; word-wrap:break-word "
-                          onkeyup="textAreaAdjust(this)" class="leeet", name="Notes">{{ character.Meta.Notes }}</textarea>
-            </table>
-        <input type="checkbox" name="newsheet" value="newsheet"><label for="newsheet">Save a copy into history</label>
+            <div >
+                <textarea title="Notes" style="width: 99%; overflow-y: auto; word-wrap:break-word "
+                          onkeyup="textAreaAdjust(this)" class="leeet" name="Notes">{{ character.Meta.Notes }}</textarea>
+            </div>
+        <label>
+            <input type="checkbox" name="newsheet" value="newsheet"> Save a copy into history
+        </label>
         <input type="submit" style="float: right; " class="leet" value="edit">
     </form>
     <form id="checkchar" name="checkchar">

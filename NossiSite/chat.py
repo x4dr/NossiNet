@@ -1,10 +1,11 @@
 from NossiSite import app, socketio
-import time
-import threading
-from flask import render_template, session, abort, request, flash, url_for, redirect
+# import time
+# import threading
+from flask import render_template, session, request, flash, url_for, redirect
 from flask_socketio import emit, join_room, leave_room, disconnect
 from NossiPack.Chatrooms import Chatroom
 import NossiPack.Character
+from NossiPack.User import Userlist
 
 thread = None
 
@@ -222,29 +223,36 @@ def receive(message):
 
 @socketio.on('connect', namespace='/character')
 def char_connect():
-    emit('comments', {'data': "Click \"Check\" down below to check if this sheet \n"
-                              "is a valid starting character. \n"
-                              "It is recommended to have a valid start character as the oldest\n"
-                              "entry in the History."})
+    if not session.get('user', False):
+        emit('comments', {'prefix': '', 'data': 'Not logged in.'})
+        return False
+    emit('comments', {'data': "Click \"Check\" down below to check if this sheet "
+                              "is a valid starting character Or calculate the difference "
+                              "in XP to the last sheet in your history."})
 
 
 @socketio.on('ClientServerEvent', namespace='/character')
 def receive(message):
     print(session.get('user', "NoUser"), ":\t", message)
-    #print("validating?")
     if len(message['data']) > 20:  # short messages are malformed
+        ul = Userlist()
+        u = ul.getuserbyname(session.get('user', None))
+        try:
+            old = u.oldsheets[-1]
+        except:
+            old = None
         formdata = {}
-    #    print("yes")
+        #    print("yes")
         for f in message['data']:
             formdata[f['name']] = f['value']
         test = NossiPack.Character.Character()
-    #    print("form set up and empty character generated, getting diff")
+        #    print("form set up and empty character generated, getting diff")
         test.setfromform(formdata)
-    #    print(test.get_diff())
-        emit('comments', {'data': test.get_diff(extra=True)})
+        #    print(test.get_diff())
+        emit('comments', {'data': test.get_diff(old=old, extra=True)})
     else:
         pass
-    #    print("no,",len(message['data']))
+        #    print("no,",len(message['data']))
 
 
 @socketio.on('Disconnect', namespace='/chat')
@@ -254,13 +262,12 @@ def disconnect_request():
     disconnect()
 
 
+# noinspection PyUnresolvedReferences
 @socketio.on('connect', namespace='/chat')
 def chat_connect():
-    print("validating chat connection...")
     if not session.get('logged_in'):
         emit('Message', {'prefix': '', 'data': 'Not logged in.'})
         return False
-    print("validated,", session.get("user", "ERROR"), "has connected")
     global userlist
     session['id'] = request.sid
     if session.get('user', False):
@@ -283,6 +290,7 @@ def chat_connect():
         return False
 
 
+# noinspection PyUnresolvedReferences
 @socketio.on('disconnect', namespace='/chat')
 def test_disconnect():
     print('Client disconnected', request.sid)

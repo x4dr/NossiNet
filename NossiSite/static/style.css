@@ -42,6 +42,12 @@ input[type="text"], textarea {
     background-color: black;
     color: #00f700;
 }
+pre {
+    white-space: pre-wrap;       /* CSS 3 */
+    white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+    white-space: -o-pre-wrap;    /* Opera 7 */
+    word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}
 
 .leeet {
     background-color: #101a10;
@@ -138,7 +144,7 @@ input[type='radio'] {
 input[type='radio'] + label {
     margin: 0;
     clear: none;
-    padding: 0px 2px 0 1px;
+    padding: 0 2px 0 1px;
     cursor: pointer;
     background: url(off.png) left center no-repeat;
 }

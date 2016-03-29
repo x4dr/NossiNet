@@ -1,12 +1,11 @@
-from random import Random
-import urllib
+# from random import Random
+# import urllib
 import re
 import collections
 import time
-
-__author__ = 'maric'
-
 import pickle
+
+__author__ = "maric"
 
 
 class Character(object):
@@ -43,7 +42,7 @@ class Character(object):
         else:
             self.special = special
 
-        self.timestamp = time.strftime("%c")
+        self.timestamp = time.strftime("%Y/%m/%d-%H:%M:%S")
 
     @staticmethod
     def calc_cost(val1, val2, cost, cost0):
@@ -99,7 +98,6 @@ class Character(object):
                 "Herd",
                 "Mentor"]
 
-    @property
     def validate_char(self, extra=False):
         def need(comment, name, number):
             return name + " still needs %d points allocated. \n" % abs(int(number))
@@ -220,7 +218,7 @@ class Character(object):
     def get_diff(self, old=None, extra=False):
         xpdiff = 0
         if old is None:
-            return self.validate_char(False)
+            return self.validate_char(extra)
 
         for a in self.attributes.keys():
             xpdiff += self.calc_cost(self.attributes[a],
@@ -232,16 +230,20 @@ class Character(object):
                                          old.abilities[b][a],
                                          2, 3)
         for a in self.disciplines.keys():
-            cost = 7
+            c = 7
             b = self.get_clandisciplines()
             if b == "No Clan":
                 c = 6
             elif a in b:
                 c = 5
-            xpdiff += self.calc_cost(self.disciplines[a], old.disciplines[a], c, 10)
+            xpdiff += self.calc_cost(self.disciplines[a], old.disciplines.get(a, 0), c, 10)
 
-            xpdiff += self.calc_cost(self.special["Willmax"], old.special["Willmax"], 1, 1000)
-        return xpdiff
+        xpdiff += self.calc_cost(self.special["Willmax"], old.special["Willmax"], 1, 1000)
+        if extra:
+            result = "To upgrade the sheet from %s to this one would cost %d XP." % (old.timestamp, xpdiff)
+        else:
+            result = xpdiff
+        return result
 
     def dictlist(self):
         return [self.attributes, self.abilities['Skills'],
@@ -344,11 +346,11 @@ class Character(object):
                      'Disciplines': self.disciplines,
                      'Virtues': self.virtues,
                      'Backgrounds': self.backgrounds,
-                     'BGVDSCP_combined': self.combine_BGVDSCP(),
+                     'BGVDSCP_combined': self.combine_bgvdscp(),
                      'Special': self.special}
         return character
 
-    def combine_BGVDSCP(self):
+    def combine_bgvdscp(self):
         combined = []
         for i in range(max(len(self.backgrounds), len(self.disciplines.keys()), len(self.virtues.keys()))):
             combined.append({})
@@ -468,24 +470,24 @@ class Character(object):
         return pickle.loads(serialized)
 
 
-def makechar(min, cap, prioa, priob, prioc):
-    response = urllib.request.urlopen(
-        "http://www.behindthename.com/random/random.php?number=2&gender=both&surname=&randomsurname=yes&all=no&"
-        "usage_ger=1&usage_myth=1&usage_anci=1&usage_bibl=1&usage_hist=1&usage_lite=1&usage_theo=1&usage_goth=1&"
-        "usage_fntsy=1")
-    char = Character()
-    prio = [prioa, priob, prioc]
-    Random().shuffle(prio)
+# def makechar(min, cap, prioa, priob, prioc):
+#    response = urllib.request.urlopen(
+#        "http://www.behindthename.com/random/random.php?number=2&gender=both&surname=&randomsurname=yes&all=no&"
+#        "usage_ger=1&usage_myth=1&usage_anci=1&usage_bibl=1&usage_hist=1&usage_lite=1&usage_theo=1&usage_goth=1&"
+#        "usage_fntsy=1")
+#    char = Character()
+#    prio = [prioa, priob, prioc]
+#    Random().shuffle(prio)
 
-    names = re.compile('<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......')
-    a = str(response.read())
+#    names = re.compile('<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......')
+#    a = str(response.read())
 
-    result = names.search(a)
-    try:
-        char.name = (result.group(1) + ", " + result.group(2) + ", " + result.group(3))
-    except:
-        char.name = "think for yourself"
-    return char
+#    result = names.search(a)
+#    try:
+#        char.name = (result.group(1) + ", " + result.group(2) + ", " + result.group(3))
+#    except:
+#        char.name = "think for yourself"
+#    return char
 
 
 def intdef(s, default=0):
