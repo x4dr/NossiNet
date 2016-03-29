@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS chatlogs (
   linenr        INTEGER             NOT NULL,
   line          TEXT                NOT NULL,
+  time          INTEGER             NOT NULL,
   room          TEXT                NOT NULL,
   CONSTRAINT unq UNIQUE (linenr, room)
 )
