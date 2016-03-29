@@ -230,7 +230,7 @@ def char_connect():
 def receive(message):
     print(session.get('user', "NoUser"), ":\t", message)
     print("validating?")
-    if len(message['data']) > 50:  # short messages are malformed
+    if len(message['data']) > 20:  # short messages are malformed
         formdata = {}
         print("yes")
         for f in message['data']:
@@ -241,7 +241,7 @@ def receive(message):
         print(test.get_diff())
         emit('comments', {'data': test.get_diff()})
     else:
-        print("no")
+        print("no,",len(message['data']))
 
 
 @socketio.on('Disconnect', namespace='/chat')
