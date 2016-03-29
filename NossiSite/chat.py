@@ -260,7 +260,7 @@ def chat_connect():
     if not session.get('logged_in'):
         emit('Message', {'prefix': '', 'data': 'Not logged in.'})
         return False
-    print("validated,", session.get("user", "ERROR"),"has connected")
+    print("validated,", session.get("user", "ERROR"), "has connected")
     global userlist
     session['id'] = request.sid
     if session.get('user', False):
