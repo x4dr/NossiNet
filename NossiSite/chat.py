@@ -222,19 +222,26 @@ def receive(message):
 
 @socketio.on('connect', namespace='/character')
 def char_connect():
-    emit('comments', {'data':"this sheet is live"})
+    emit('comments', {'data': "this sheet has connected to the server and is probably able to"
+                              "be checked. (DEBUG)"})
+
 
 @socketio.on('ClientServerEvent', namespace='/character')
 def receive(message):
     print(session.get('user', "NoUser"), ":\t", message)
+    print("validating?")
     if len(message['data']) > 50:  # short messages are malformed
         formdata = {}
+        print("yes")
         for f in message['data']:
             formdata[f['name']] = f['value']
         test = NossiPack.Character.Character()
+        print("form set up and empty character generated, getting diff")
         test.setfromform(formdata)
         print(test.get_diff())
         emit('comments', {'data': test.get_diff()})
+    else:
+        print("no")
 
 
 @socketio.on('Disconnect', namespace='/chat')
