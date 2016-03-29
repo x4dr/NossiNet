@@ -113,7 +113,7 @@ class Chatroom(object):
             if l == user + ' joined the room!':
                 present = True
             if present:
-                result = result + time.strftime("%c ", time.gmtime(t)) + l + '\n'
+                result = result + time.strftime("%Y/%m/%d-%H:%M:%S ", time.gmtime(t)) + l + '\n'
             if l == user + ' left the room!':
                 present = False
         return result
