@@ -100,7 +100,7 @@ class Character(object):
                 "Mentor"]
 
     @property
-    def validate_char(self):
+    def validate_char(self, extra=False):
         def need(comment, name, number):
             return name + " still needs %d points allocated. \n" % abs(int(number))
 
@@ -200,9 +200,9 @@ class Character(object):
                 comment = "You have spend %d Freebies too many!\n " % -freebs
             if freebs > 0:
                 comment = "You have %d Freebies left!\n" % freebs
-            if freebs == 0:
+            if freebs == 0 and extra:
                 comment = "This character is a valid starting character.\n"
-            if freebs < 15:
+            if freebs < 15 and extra:
                 comment += "Freebies spent:\n" \
                            "High Attribute Group: \t " + str(attgrphigh * 5) + "\n" + \
                            "Medium Attribute Group:\t " + str(attgrpmedium * 5) + "\n" + \
@@ -217,10 +217,10 @@ class Character(object):
                            "Willpower: \t \t " + str(wil * 1)
         return comment
 
-    def get_diff(self, old=None):
+    def get_diff(self, old=None, extra=False):
         xpdiff = 0
         if old is None:
-            return self.validate_char
+            return self.validate_char(False)
 
         for a in self.attributes.keys():
             xpdiff += self.calc_cost(self.attributes[a],

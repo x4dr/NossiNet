@@ -241,7 +241,7 @@ def receive(message):
     #    print("form set up and empty character generated, getting diff")
         test.setfromform(formdata)
     #    print(test.get_diff())
-        emit('comments', {'data': test.get_diff()})
+        emit('comments', {'data': test.get_diff(extra=True)})
     else:
         pass
     #    print("no,",len(message['data']))

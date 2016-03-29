@@ -11,33 +11,31 @@
 {% block head %}
     <script>
      $(document).ready(function() {
-         $(window).keydown(function(event){
-        if(event.keyCode == 13) {
-            event.preventDefault();
-            return false;
-        }
+         $('form input').on('keypress', function(e) {
+    return e.which !== 13;
+});
+
     });
-          var namespace = '/character';
+    var namespace = '/character';
 
-          var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+    var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
 
-         socket.on('comments', function (msg) {
-             var box = $('pre#comments');
-             box.html(msg.data);
-             window.scrollTo(0,0);
-         });
+    socket.on('comments', function (msg) {
+     var box = $('pre#comments');
+     box.html(msg.data);
+     window.scrollTo(0,0);
+    });
 
-         socket.on('connect', function () {
-             socket.emit('ClientServerEvent', {data: 'editing character'})
-         });
+    socket.on('connect', function () {
+     socket.emit('ClientServerEvent', {data: 'editing character'})
+    });
 
 
-         $('form#checkchar').submit(function (event) {
-             var message_data = $('form#sheet').serializeArray()
-             socket.emit('ClientServerEvent', {data: message_data});
-             return false;
-         });
-     })
+    $('form#checkchar').submit(function (event) {
+     var message_data = $('form#sheet').serializeArray()
+     socket.emit('ClientServerEvent', {data: message_data});
+     return false;
+    });
 
     function resetDot(el){
         el.checked = '';
