@@ -270,7 +270,7 @@
         <td colspan="2">&nbsp</td>
     </tr>
     </table>
-    <div>{{ character.Meta.Notes }}</div>
+    <div><pre>{{ character.Meta.Notes }}</pre></div>
     <div >
     {% if oldsheet %}
         <form action="{{ url_for('del_sheet')}}" method="POST" >
