@@ -324,7 +324,8 @@ def add_funds():
                     error = 'invalid transaction'
 
     ul.saveuserlist()
-    return render_template('funds.html', user=u, error=error, keyprovided=keyprovided)
+    gentoken()
+    return render_template('funds.html', user=u, error=error, keyprovided=keyprovided, token=token)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -630,7 +631,8 @@ def payout():
             except:
                 error = "Error deducting \"" + request.form.get('amount', 'nothing') + "\"."
     ul.saveuserlist()
-    return render_template('payout.html', user=u, error=error)
+    gentoken()
+    return render_template('payout.html', user=u, error=error, token=token)
 
 
 @app.route('/deathanddestruction/')

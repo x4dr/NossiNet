@@ -27,7 +27,7 @@
           {% if entry.plusoned %} {% else %}
               <form action="{{ url_for('plusone',ident=entry.id) }}" , method="post" , class="add-entry">
                   <input class=leeet type=submit value="+1">
-                  <input type="hidden" name="token" value={{ token }}
+                  <input type="hidden" name="token" value={{ token }}>
                   <br>
               </form>
           {% endif %}

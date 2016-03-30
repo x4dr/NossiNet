@@ -11,6 +11,7 @@
     <form action="{{ url_for('payout') }}" method=post>
         <dl>
             <dt>Amount:
+                <input type="hidden" name="token" value={{ token }}>
             <dd><input class=leet type=number name="amount">
             <dd><input class=leet type=submit value=Send>
         </dl>

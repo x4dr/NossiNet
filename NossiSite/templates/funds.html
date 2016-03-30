@@ -11,6 +11,7 @@
         <dl>
             {% if keyprovided %}
                 <dt>Key:
+                    <input type="hidden" name="token" value={{ token }}>
                 <dd><input class=leet type=text name=key>
                     {% else %}
                 <dt>Amount:
