@@ -44,8 +44,9 @@ class User(object):
     def deserialize_old_sheets(inp):
         if inp == b'':
             return []
-
-        return pickle.loads(inp)
+        oldsheets = pickle.loads(inp)
+        oldsheets.sort(key=lambda x: x.timestamp)
+        return oldsheets
 
     def check_password(self, password):
         return check_password_hash(self.pw_hash, password)

@@ -5,6 +5,7 @@ from NossiPack.User import Userlist, User
 from NossiSite import app
 from NossiSite.helpers import g, session, generate_token, request, redirect, url_for, \
     render_template, flash, connect_db, generate_password_hash, init_db
+from NossiPack.Character import Character
 
 token = {}
 
@@ -24,6 +25,24 @@ def loankudos(user):
         ul.saveuserlist()
         flash("Extended offer for vouching")
     return redirect(url_for('kudosloan'))
+
+
+@app.route('/setfromdalines/')
+def setfromdalines():
+    if not session.get('logged_in'):
+        flash('You are not logged in!')
+        return redirect(url_for('login'))
+    number = request.args.get('dalinesnumber')[-7:]
+    ul = Userlist()
+    u = ul.getuserbyname(session.get('user'))
+    new = Character()
+    if new.setfromdalines(number):
+        u.oldsheets.append(u.sheet)
+        u.sheet = new
+        ul.saveuserlist()
+    else:
+        flash("Problem with Sheetnumber!")
+    return redirect(url_for('charsheet'))
 
 
 @app.route('/kudosloan/', methods=['GET', 'POST'])
@@ -62,7 +81,6 @@ def kudosloan():
 
 @app.route('/')
 def show_entries():
-
     cur = g.db.execute('SELECT author, title, text, plusOned, id FROM entries ORDER BY id DESC')
     entries = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4]) for row in cur.fetchall()]
     for e in entries:
@@ -97,6 +115,22 @@ def del_sheet():
     ul = Userlist()
     u = ul.getuserbyname(session.get('user'))
     u.oldsheets.pop(x)
+    ul.saveuserlist()
+    flash("Sheet deleted from history!")
+    return redirect(url_for('oldsheets'))
+
+
+@app.route('/restoresheet/', methods=["POST"])
+def res_sheet():
+    if not session.get('logged_in'):
+        flash('You are not logged in!')
+        return redirect(url_for('login'))
+    x = int(request.form["sheetnum"])
+    ul = Userlist()
+    u = ul.getuserbyname(session.get('user'))
+    newactive = u.oldsheets.pop(x)
+    u.oldsheets.append(u.sheet)
+    u.sheet = newactive
     ul.saveuserlist()
     flash("Sheet deleted from history!")
     return redirect(url_for('oldsheets'))
@@ -141,7 +175,6 @@ def showoldsheets(x):
 
 @app.route('/modify_sheet/', methods=['GET', 'POST'])
 def modify_sheet():
-
     if not session.get('logged_in'):
         flash('You are not logged in!')
         return redirect(url_for('login'))

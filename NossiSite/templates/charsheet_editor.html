@@ -381,12 +381,14 @@
                           onkeyup="textAreaAdjust(this)" class="leeet" name="Notes">{{ character.Meta.Notes }}</textarea>
             </div>
         <label>
-            <input type="checkbox" name="newsheet" value="newsheet"> Save a copy into history
+            <input type="checkbox" name="newsheet" value="newsheet" class="leet"> Save a copy into history
         </label>
         <input type="submit" style="float: right; " class="leet" value="edit">
     </form>
-    <form id="checkchar" name="checkchar">
-    <input id="check" type="submit" style="float: right; " class="leet" value="check">
+    <form style="float: left" action="{{ url_for('setfromdalines') }}"> <input type="text" name="dalinesnumber" class="leet">
+        <input type="submit" class="leet" value="Load Character from Dalines"></form>
+    <form id="checkchar"  style="float: right" name="checkchar">
+        <input id="check" type="submit" style="float: right; " class="leet" value="check">
     </form>
 
 

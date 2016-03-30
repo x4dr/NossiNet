@@ -273,9 +273,14 @@
     <div>{{ character.Meta.Notes }}</div>
     <div >
     {% if oldsheet %}
-    <form action="{{ url_for('del_sheet')}}" method="POST" >
-    <input title="sheetnum" hidden name="sheetnum" value="{{ oldsheet }}">
-                    <input type="submit" style="float: right" class="leet" value="delete">
+        <form action="{{ url_for('del_sheet')}}" method="POST" >
+            <input title="sheetnum" hidden name="sheetnum" value="{{ oldsheet }}">
+            <input type="submit" style="float: right" class="leet" value="delete">
+        </form>
+
+        <form action="{{ url_for('res_sheet')}}" method="POST" >
+            <input title="sheetnum" hidden name="sheetnum" value="{{ oldsheet }}">
+            <input type="submit" style="float: right" class="leet" value="swap out">
         </form>
     {% else %}
         <form action="{{ url_for('modify_sheet') }}" >

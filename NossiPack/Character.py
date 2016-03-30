@@ -4,6 +4,7 @@ import re
 import collections
 import time
 import pickle
+from urllib import request
 
 __author__ = "maric"
 
@@ -112,7 +113,6 @@ class Character(object):
         if self.meta["Clan"] == "Nosferatu":
             att[1] += 1  # clan weakness
         att.sort()
-        print(att)
         attgrphigh = att[2] - 10
         attgrpmedium = att[1] - 8
         attgrplow = att[0] - 6
@@ -142,13 +142,11 @@ class Character(object):
             tall += min(3, i)
         abil = [skil, knol, tall]
         abil.sort()
-        print(abil)
         abilgrphigh = abil[2] - 13
         abilgrpmedium = abil[1] - 9
         abilgrplow = abil[0] - 5
         abi = [ski, kno, tal]
         abi.sort()
-        print(abi)
         abigrphigh = abi[2] - 13
         abigrpmedium = abi[1] - 9
         abigrplow = abi[0] - 5
@@ -250,6 +248,90 @@ class Character(object):
                 self.abilities['Talents'], self.abilities['Knowledges'],
                 self.virtues, self.disciplines]
 
+    def setfromdalines(self, number):
+        dalines = ""
+
+        def getmeta(name):
+            value = re.compile(name + r':.*?">(.*?)</td>', flags=(re.MULTILINE + re.DOTALL + re.IGNORECASE))
+            try:
+                return value.search(dalines).group(1)
+            except:
+                return None
+
+        def getval(name):
+            name = name.replace(" ", "")
+            value = re.compile(name + r'.*?</td>(.*?)</td>', flags=(re.MULTILINE + re.DOTALL + re.IGNORECASE))
+            return value.search(dalines).group().count("checked")
+
+        def getbgdscp():
+            section = re.compile(r'Backgrounds(.*?)Merit',
+                                 flags=(re.MULTILINE + re.DOTALL + re.IGNORECASE))
+            section = section.search(dalines).group(1)
+            teedees = re.compile(r'<td>(?:<b>)?(.*?)(?:</b>)?</td>')
+            teedees = teedees.findall(section)
+            backgroundnames = [0, 3, 5, 7, 10, 12, 14]
+            backgroundnames = [teedees[x] for x in backgroundnames]
+            disciplinenames = [1, 4, 6, 8, 11, 13, 15]
+            disciplinenames = [teedees[x] for x in disciplinenames]
+            return backgroundnames, disciplinenames
+
+        def getmthmwp():
+            section = re.compile(r'Merits(.*?)</table>',
+                                 flags=(re.MULTILINE + re.DOTALL + re.IGNORECASE))
+            section = section.search(dalines).group(1)
+            teedees = re.compile(r'<td .*?>(.*?)?</td>')
+            teedees = teedees.findall(section)
+            merits = ""
+            for i in range(2, 31, 3):
+                merits += teedees[i] + "\n"
+            humanity = teedees[6].count("checked")
+            willpower = teedees[15].count("checked")
+            return merits, humanity, willpower
+
+        try:
+            number = int(number)
+        except:
+            try:
+                number = int(re.search(r'[^0-9]*(.*)', number).group(1))
+            except:
+                return False
+        response = request.urlopen("http://sheetgen.dalines.net/sheet/" + str(number))
+        dalines = response.read().decode()
+
+        for a in self.meta.keys():
+            b = getmeta(a)
+            if b:
+                self.meta[a] = b
+
+        bg, dscp = getbgdscp()
+        self.disciplines = collections.OrderedDict()
+        self.backgrounds = collections.OrderedDict()
+        for b in bg:
+            self.backgrounds[b] = getval(b)
+        for b in dscp:
+            self.disciplines[b] = getval(b)
+        for b in self.virtues.keys():
+            self.virtues[b] = getval(b)
+
+        for a in self.attributes.keys():
+            try:
+                self.attributes[a] = getval(a)
+            except:
+                self.attributes[a] = 0
+
+        for b in self.abilities.keys():
+            for a in self.abilities[b].keys():
+                try:
+                    self.abilities[b][a] = getval(a)
+                except:
+                    self.abilities[b][a] = 0
+        merits, humanity, willpower = getmthmwp()
+        self.meta["Merits"] = merits
+        self.special["Willmax"] = willpower
+        self.special["Humanity"] = humanity
+
+        return True
+
     def setfromform(self, form):  # accesses internal dicts
         self.attributes = self.zero_attributes()
         self.abilities = self.zero_abilities()
@@ -257,6 +339,7 @@ class Character(object):
         self.backgrounds = collections.OrderedDict()
         self.special = self.zero_specials()
         self.meta["Generation"] = 13
+        self.special["Bloodmax"] = 10
         for field in form:
             value = form[field]
             if field in self.meta.keys():
@@ -297,10 +380,25 @@ class Character(object):
                                                   int(form["background_value_" + re.match(r'background_name_(.*)',
                                                                                           field).group(1)])
                     except Exception as j:
-                        print(j.args)
                         self.backgrounds[value] = 0
                 if value == "Generation":
                     self.meta[value] = str(int(self.meta[value]) - self.backgrounds[value])
+                    self.special["Bloodmax"] = int(10 + self.backgrounds[value])
+                    if self.meta[value] == "7":
+                        self.special["Bloodmax"] = 20
+                    if self.meta[value] == "6":
+                        self.special["Bloodmax"] = 30
+                    if self.meta[value] == "5":
+                        self.special["Bloodmax"] = 50
+                    if self.meta[value] == "4":
+                        self.special["Bloodmax"] = 100
+                    if self.meta[value] == "3":
+                        self.special["Bloodmax"] = 250
+                    if self.meta[value] == "2":
+                        self.special["Bloodmax"] = 1000
+                    if self.meta[value] == "1":
+                        self.special["Bloodmax"] = 1
+
                 continue
             if "discipline_name_" in field:
                 if (value is not None) and (field != "discipline_name_"):  # no empty submits
@@ -434,7 +532,7 @@ class Character(object):
     def zero_specials():
         special = {'Humanity': 0,
                    'Willpower': 0,
-                   'Willmax': 0,
+                   'Willmax': 1,
                    'Bloodpool': 0,
                    'Bloodmax': 10,
                    'Bashing': 0,
