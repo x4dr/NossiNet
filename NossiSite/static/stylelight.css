@@ -1,0 +1,154 @@
+html * {
+    color: #000000;
+    background: #ffffff;
+     overflow-x: hidden;
+    font-family: "Lucida Console", Monaco, monospace;
+!important;
+}
+
+body {
+    font-family: "Lucida Console", Monaco, monospace;
+    background: #ffffff;
+    overflow-x: scroll
+}
+a, h1, h2       { color: #000000; }
+
+
+h1              { border-bottom: 2px solid #000000;  }
+h2              {
+                font-size: 1.2em; }
+
+h3 {
+    font-size: 1.0em;
+}
+
+h3 {
+    color: #777777
+}
+
+.page           { margin: 1em auto; width: 45em; border: 5px solid #000000;
+                  padding: 0.8em; background: #fefefe; color: #000000;  }
+.leet {
+    background-color: #ffffff;
+    font-weight: bold;
+    color: #000000;
+    border: 1px solid #000000;
+    margin: 1px;
+        }
+.chr_background{}
+.chr_discipline{}
+
+input[type="text"], textarea {
+    background-color: #ffffff;
+    color: #000000;
+}
+pre {
+    white-space: pre-wrap;       /* CSS 3 */
+    white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+    white-space: -o-pre-wrap;    /* Opera 7 */
+    word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}
+
+.leeet {
+    background-color: #d5c3d5;
+    font-weight: bold;
+    color: #000000;
+    border: 1px solid #000000;
+    margin: 1px;
+}
+.entries        { list-style: none; margin: 0; padding: 0; background: #000000;color:#000000 }
+.entries li     { margin: 0.8em ; }
+.entries li h2  { margin-left: 0; }
+
+label { white-space: nowrap}
+
+.add-entry {
+    font-size: 0.9em;
+    border-bottom: 1px solid #000000;
+}
+.add-entry dl   { font-weight: bold; color: #000000; }
+.metanav        { text-align: right; font-size: 0.8em; padding: 0.3em;
+                  margin-bottom: 1em; background: #f0f0f0;color: #000000; }
+.flash          { background:#000000; padding: 0.5em;
+                  border: 1px solid #000000; }
+
+.imgover {
+    background: transparent;
+    position: absolute;
+    left: 0;
+    top: 0;
+
+}
+
+.error {
+    background: #cf0012;
+    padding: 0.5em;
+    color: #000000
+}
+
+#chatbox {
+    text-align:left;
+    margin-bottom:25px;
+    padding:10px;
+    background:#000000;
+    height:320px;
+    white-space: pre-wrap;
+    border:1px solid #000000;
+    overflow:auto; }
+
+::-webkit-scrollbar {
+     width: auto;
+}
+::-webkit-scrollbar-track {
+      background-color: #000200;
+}
+::-webkit-scrollbar-thumb {
+      background-color: #000000;
+}
+::-webkit-scrollbar-button {
+      background-color: #003300;
+}
+::-webkit-scrollbar-corner{
+    background-color: #003300;
+}
+
+#usermsg {
+    width:395px;
+    border:1px solid #000000; }
+
+#submit { width: 60px; }
+
+
+.formLine {
+    overflow: hidden;
+    background: #cccccc;
+    width: 100%
+}
+.formLine span {
+    display: block;
+    overflow: hidden;
+    padding: 0 5px;
+}
+.formLine input {
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+input[type='radio'] {
+
+    float: right;
+    position:absolute;
+    visibility: hidden;
+}
+input[type='radio'] + label {
+    margin: 0;
+    clear: none;
+    padding: 0 2px 0 1px;
+    cursor: pointer;
+    background: url(off.png) left center no-repeat;
+}
+
+input[type='radio']:checked + label{
+  background: url(radio.png) left center no-repeat;
+}

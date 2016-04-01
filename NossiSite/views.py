@@ -325,7 +325,8 @@ def add_funds():
 
     ul.saveuserlist()
     gentoken()
-    return render_template('funds.html', user=u, error=error, keyprovided=keyprovided, token=token)
+    print(token, "<<<<")
+    return render_template('funds.html', user=u, error=error, keyprovided=keyprovided)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -451,8 +452,9 @@ def gettoken():
 
 
 def gentoken():
-    if session.get('user'):
+    if session.get('user', False):
         token[session['user']] = generate_token(session)
+      #  print("generated token:", token[session['user']])
         return token[session['user']]
     else:
         return ''
@@ -632,12 +634,21 @@ def payout():
                 error = "Error deducting \"" + request.form.get('amount', 'nothing') + "\"."
     ul.saveuserlist()
     gentoken()
-    return render_template('payout.html', user=u, error=error, token=token)
+    return render_template('payout.html', user=u, error=error)
 
 
 @app.route('/deathanddestruction/')
 def deldbredir():
     return deldb()
+
+
+@app.route('/lightswitch/')
+def lightswitch():
+    if session.get('light', False):
+        session.pop('light')
+    else:
+        session["light"] = "ON"
+    return redirect(url_for('show_entries'))
 
 
 @app.route('/deathanddestruction/<key>')
