@@ -17,7 +17,11 @@
     <table width="100%">
         <tr>
             <td colspan="6" style="text-align: center; font-size: 1.5em" class="leeet">
-                Charactersheet&nbspfor&nbsp{{ session.user }}</td>
+            {%- if character.Meta.Name -%}
+                Charactersheet&nbspfor&nbsp{{ character.Meta.Name }}</td>
+            {%- else -%}
+                Charactersheet&nbspfor&nbspUnnamed&nbspCharacter</td>
+            {%- endif -%}
         </tr>
         <tr>
             <td style="text-align: right; ">Name:</td>
@@ -282,7 +286,7 @@
             <input title="sheetnum" hidden name="sheetnum" value="{{ oldsheet }}">
             <input type="submit" style="float: right" class="leet" value="swap out">
         </form>
-    {% else %}
+    {% elif own %}
         <form action="{{ url_for('modify_sheet') }}" >
             <input type="submit" style="float: right" class="leet" value="edit">
         </form>

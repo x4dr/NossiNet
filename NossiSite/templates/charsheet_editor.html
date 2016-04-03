@@ -377,20 +377,24 @@
             </tr>
             </table>
             <div >
-                <textarea title="Notes" style="width: 99%; overflow-y: auto; word-wrap:break-word "
+                <textarea title="Notes" style="width: 99%; overflow-y: auto; word-wrap:break-word " onload="textAreaAdjust(this)"
                           onkeyup="textAreaAdjust(this)" class="leeet" name="Notes">{{ character.Meta.Notes }}</textarea>
             </div>
+    <br><br>
         <label>
-            <input type="checkbox" name="newsheet" value="newsheet" class="leet"> Save a copy into history
+            <input type="checkbox" name="newsheet" value="newsheet" class="leet"> Save this Version into History.
         </label>
-        <input type="submit" style="float: right; " class="leet" value="edit">
+        <input type="submit" style="float: right; " class="leet" value="save">
     </form>
-    <form style="float: left" action="{{ url_for('setfromdalines') }}"> <input type="text" name="dalinesnumber" class="leet">
-        <input type="submit" class="leet" value="Load Character from Dalines"></form>
     <form id="checkchar"  style="float: right" name="checkchar">
         <input id="check" type="submit" style="float: right; " class="leet" value="check">
     </form>
+    <div style="float: left">Checks the Character cost (uses the newest sheet in your history)</div>
 
 
+    <br><br>
+    <form style="float: left" action="{{ url_for('setfromdalines') }}"> <input type="text" name="dalinesnumber" class="leet">
+        <input type="submit" class="leet" value="Load Character from Dalines"><br>(saves the active character into history)
+    </form>
 
 {% endblock %}

@@ -81,7 +81,7 @@ def teardown_request(exception):
 
 @app.errorhandler(404)
 def page_not_found(error):
-    return "error"
+    return str(error)
 
 
 def openupdb():

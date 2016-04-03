@@ -26,13 +26,13 @@
     <h1><a href={{ url_for('show_entries') }}>NOSFERATU NETWORK</a></h1>
   <div class=metanav>
   {% if not session.logged_in %}
-      <a href="{{ url_for('login') }}">log in</a>
-      <a href="{{ url_for('register') }}">register</a>
+      <a class=metanav href="{{ url_for('login') }}">log in</a>
+      <a class=metanav href="{{ url_for('register') }}">register</a>
   {% else %}
-      <a href="{{ url_for('charsheet') }}">SHEET</a>  &nbsp
-      <a href="/chat/">CHAT</a>  &nbsp
-      <a href="{{ url_for('show_user_profile',username=session.user) }}">{{ session.user }}</a>  &nbsp
-      <a href="{{ url_for('logout') }}">LOG OUT</a>
+      <a class=metanav href="{{ url_for('charsheet') }}">SHEET</a>  &nbsp
+      <a class=metanav href="/chat/">CHAT</a>  &nbsp
+      <a class=metanav href="{{ url_for('show_user_profile',username=session.user) }}">{{ session.user }}</a>  &nbsp
+      <a class=metanav href="{{ url_for('logout') }}">LOG OUT</a>
   {% endif %}
   </div>
     {% if error %}<p class=error><strong>Error:</strong> {{ error }}{% endif %}
@@ -45,5 +45,5 @@
     <br>
     <div style="text-align: center"><a href="{{ url_for('impressum') }}" >Impressum</a></div>
 {% endif %}
-    <div style="text-align: center"><a href="{{ url_for('lightswitch') }}" >Light Switch</a></div>
+    <div style="text-align: center"><a href="{{ url_for('lightswitch', x=request.path[1:]) }}" >Light Switch</a></div>
 </body>

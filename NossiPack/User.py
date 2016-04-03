@@ -27,6 +27,7 @@ class User(object):
         self.funds = funds
         self.sheet = Character.deserialize(sheet)
         self.oldsheets = self.deserialize_old_sheets(oldsheets)
+        self.admin = False
 
     def set_password(self, newpassword):
         self.pw_hash = generate_password_hash(newpassword)

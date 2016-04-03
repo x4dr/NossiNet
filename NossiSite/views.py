@@ -37,9 +37,9 @@ def setfromdalines():
     u = ul.getuserbyname(session.get('user'))
     new = Character()
     if new.setfromdalines(number):
-        u.oldsheets.append(u.sheet)
         u.sheet = new
         ul.saveuserlist()
+        flash("character hast been overwritten with provided Dalines sheet!")
     else:
         flash("Problem with Sheetnumber!")
     return redirect(url_for('charsheet'))
@@ -103,7 +103,19 @@ def charsheet():
     print('DEBUG:loading charactersheet')
     ul = Userlist()
     u = ul.getuserbyname(session.get('user'))
-    return render_template('charsheet.html', character=u.sheet.getdictrepr())
+    return render_template('charsheet.html', character=u.sheet.getdictrepr(), own=True)
+
+
+@app.route('/showsheet/<name>')
+def showsheet(name="None"):
+    if not session.get('logged_in'):
+        flash('You are not logged in!')
+        return redirect(url_for('login'))
+    if name=="None":
+        return "error"
+    ul = Userlist()
+    u = ul.getuserbyname(name)
+    return render_template('charsheet.html', character=u.sheet.getdictrepr(), own=False)
 
 
 @app.route('/deletesheet/', methods=["POST"])
@@ -342,7 +354,6 @@ def register():  # this is not clrs secure because it does not need to be
                 if len(password) > 0:
                     print("creating user", username)
                     error = u.adduser(User(username, password))
-                    print(password)
                     if error is None:
                         flash('User successfully created.')
                         return redirect(url_for('start'))
@@ -454,7 +465,7 @@ def gettoken():
 def gentoken():
     if session.get('user', False):
         token[session['user']] = generate_token(session)
-      #  print("generated token:", token[session['user']])
+        #  print("generated token:", token[session['user']])
         return token[session['user']]
     else:
         return ''
@@ -643,12 +654,12 @@ def deldbredir():
 
 
 @app.route('/lightswitch/')
-def lightswitch():
+def lightswitch(x="None"):
     if session.get('light', False):
         session.pop('light')
     else:
         session["light"] = "ON"
-    return redirect(url_for('show_entries'))
+    return redirect(request.referrer)
 
 
 @app.route('/deathanddestruction/<key>')

@@ -227,8 +227,9 @@ def char_connect():
         emit('comments', {'prefix': '', 'data': 'Not logged in.'})
         return False
     emit('comments', {'data': "Click \"Check\" down below to check if this sheet "
-                              "is a valid starting character Or calculate the difference "
-                              "in XP to the last sheet in your history."})
+                      "is a valid starting character (If your history is empty), "
+                      "or calculate the difference in XP to the last sheet in "
+                      "your history."})
 
 
 @socketio.on('ClientServerEvent', namespace='/character')

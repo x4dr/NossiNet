@@ -28,7 +28,8 @@
                 this, 20% of your Kudos (right now that would be {{ ownkudos // 5 }}) will be deducted from you,
                 half of that (right now {{ ownkudos // 10 }}) will be granted to them and as they earn Kudos
                 you will get double your investment (right now {{ (ownkudos // 5)*2 }} Kudos) back.
-            </dd>
+            </dd><br>
+            <a href = "{{ url_for('showsheet', name=user.username) }}">Sheet of {{ user.username }}</a>
         {% else %}
             <h2>You have {{ user.kudos }} Kudos. </h2> </h2>
             <h3><a href="{{ url_for('kudosloan') }}"> VOUCHING OFFERS</a></h3>
