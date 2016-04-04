@@ -27,11 +27,11 @@ class Character(object):
         else:
             self.meta = meta
         if backgrounds is None:
-            self.backgrounds = collections.OrderedDict({"Background": 0})
+            self.backgrounds = collections.OrderedDict()
         else:
             self.backgrounds = backgrounds
         if disciplines is None:
-            self.disciplines = collections.OrderedDict({"Discipline": 0})
+            self.disciplines = collections.OrderedDict()
         else:
             self.disciplines = disciplines
         if virtues is None:
