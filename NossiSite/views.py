@@ -114,7 +114,7 @@ def showsheet(name="None"):
     if name=="None":
         return "error"
     ul = Userlist()
-    u = ul.getuserbyname(name, False)
+    u = ul.getuserbyname(name)
     if u:
         return render_template('charsheet.html', character=u.sheet.getdictrepr(), own=False)
     else:
