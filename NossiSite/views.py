@@ -4,7 +4,7 @@ import time
 from NossiPack.User import Userlist, User
 from NossiSite import app
 from NossiSite.helpers import g, session, generate_token, request, redirect, url_for, \
-    render_template, flash, connect_db, generate_password_hash, init_db
+    render_template, flash, connect_db, generate_password_hash, init_db, abort
 from NossiPack.Character import Character
 
 token = {}
@@ -114,8 +114,11 @@ def showsheet(name="None"):
     if name=="None":
         return "error"
     ul = Userlist()
-    u = ul.getuserbyname(name)
-    return render_template('charsheet.html', character=u.sheet.getdictrepr(), own=False)
+    u = ul.getuserbyname(name, False)
+    if u:
+        return render_template('charsheet.html', character=u.sheet.getdictrepr(), own=False)
+    else:
+        abort(404)
 
 
 @app.route('/deletesheet/', methods=["POST"])
