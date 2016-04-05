@@ -55,11 +55,11 @@ def decider(message):
     statusupdate()
 
 
-def defines(message=None):
-    ul = Userlist()
-    print(session['user'])
-    u = ul.getuserbyname(session['user'])
-    u.sheet.unify()
+def defines(message="="):
+    if message == "=":
+        ul = Userlist()
+        u = ul.getuserbyname(session['user'])
+        session['defines'] = u.sheet.unify()
 
 
 def diceparser(message):

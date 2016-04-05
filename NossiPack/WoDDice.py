@@ -49,9 +49,9 @@ class WoDDice(object):
             if succ <= antisucc:
                 return 0
             else:
-                return succ
+                return succ-antisucc
         else:
-            return antisucc
+            return 0-antisucc
 
     def roll_nv(self):
         return self.botchformat(self.succ, self.antisucc)
