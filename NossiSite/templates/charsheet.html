@@ -14,7 +14,7 @@
 {%- endmacro %}
 {% block body %}
 
-    <table width="100%">
+    <table width="100%" class="leeet" >
         <tr>
             <td colspan="6" style="text-align: center; font-size: 1.5em" class="leeet">
             {%- if character.Meta.Name -%}
@@ -61,27 +61,27 @@
     <table width="100%">
         <tr>
             <td style="text-align: right; ">Strength:</td>
-            <td style="text-align: Left; ">{{ dots(character.Attributes.strength,5) }}</td>
+            <td style="text-align: Left; ">{{ dots(character.Attributes.Strength,5) }}</td>
             <td style="text-align: right; ">Charisma:</td>
-            <td style="text-align: Left; ">{{ dots(character.Attributes.charisma) }}</td>
+            <td style="text-align: Left; ">{{ dots(character.Attributes.Charisma) }}</td>
             <td style="text-align: right; ">Perception:</td>
-            <td style="text-align: Left; ">{{ dots(character.Attributes.perception) }}</td>
+            <td style="text-align: Left; ">{{ dots(character.Attributes.Perception) }}</td>
         </tr>
         <tr>
             <td style="text-align: right; ">Dexterity:</td>
-            <td style="text-align: Left; ">{{ dots(character.Attributes.dexterity) }}</td>
+            <td style="text-align: Left; ">{{ dots(character.Attributes.Dexterity) }}</td>
             <td style="text-align: right; ">Manipulation:</td>
-            <td style="text-align: Left; ">{{ dots(character.Attributes.manipulation) }}</td>
+            <td style="text-align: Left; ">{{ dots(character.Attributes.Manipulation) }}</td>
             <td style="text-align: right; ">Intelligence:</td>
-            <td style="text-align: Left; ">{{ dots(character.Attributes.intelligence) }}</td>
+            <td style="text-align: Left; ">{{ dots(character.Attributes.Intelligence) }}</td>
         </tr>
         <tr>
             <td style="text-align: right; ">Stamina:</td>
-            <td style="text-align: Left; ">{{ dots(character.Attributes.stamina) }}</td>
+            <td style="text-align: Left; ">{{ dots(character.Attributes.Stamina) }}</td>
             <td style="text-align: right; ">Appearance:</td>
-            <td style="text-align: Left; ">{{ dots(character.Attributes.appearance) }}</td>
+            <td style="text-align: Left; ">{{ dots(character.Attributes.Appearance) }}</td>
             <td style="text-align: right; ">Wits:</td>
-            <td style="text-align: Left; ">{{ dots(character.Attributes.wits) }}</td>
+            <td style="text-align: Left; ">{{ dots(character.Attributes.Wits) }}</td>
         </tr>
     </table>
     <br>

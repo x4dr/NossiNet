@@ -1,11 +1,13 @@
 from NossiSite import app, socketio
 # import time
 # import threading
+import re
 from flask import render_template, session, request, flash, url_for, redirect
 from flask_socketio import emit, join_room, leave_room, disconnect
 from NossiPack.Chatrooms import Chatroom
 import NossiPack.Character
 from NossiPack.User import Userlist
+from NossiPack.WoDDice import WoDDice
 
 thread = None
 
@@ -24,12 +26,21 @@ def statusupdate():
         emit('Status', {'status': 'Currently talking.'})
 
 
-def echo(message, sep=": "):
-    emit('Message', {'data': session['user'] + sep + message})
+def echo(message, sep=": ", err=False):
+    if err:
+        emit('Message', {'data': "ERROR:" + message})
+    else:
+        emit('Message', {'data': session['user'] + sep + message})
+
+
+def post(message, sep=": "):
+    session['activeroom'].addline(session['user'] + sep + message)
 
 
 def decider(message):
-    if message[0] == '/':
+    if message[0] == '#':
+        diceparser(message[1:])
+    elif message[0] == '/':
         if menucmds(message[1:], "/"):
             echo(message)
     elif session['chatmode'] == 'menu':
@@ -40,8 +51,73 @@ def decider(message):
             emit('Message', {'data': 'you are talking to a wall'})
         else:
             print('... in room: ' + session['activeroom'].name)
-            session['activeroom'].addline(session['user'] + ": " + message)
+            post(message)
     statusupdate()
+
+def defines(message=None):
+    ul = Userlist()
+    print(session['user'])
+    u = ul.getuserbyname(session['user'])
+    u.sheet.unify()
+
+
+def diceparser(message):
+    subones = 1
+    amountfilter = re.compile(r'(^[0-9]*)')
+    dicefilter = re.compile(r'd([0-9]*)', re.IGNORECASE)
+    explodefilter = re.compile(r'!+')
+    if ("e" in message) or ("E" in message):
+        difffilter = re.compile(r'e([0-9]*)', re.IGNORECASE)
+        subones = 0
+    else:
+        difffilter = re.compile(r'f([0-9]*)', re.IGNORECASE)
+    amount = amountfilter.findall(message, endpos=3)  # max of 999 dice
+    explode = explodefilter.findall(message)
+    dice = dicefilter.findall(message)
+    diff = difffilter.findall(message)
+    if amount[0] == '':
+        if "=" in message:
+            defines(message)
+            return
+        else:
+            echo('Diceroller couldn\'t find number of dice. The number has to be the first thing after the #', err=True)
+            return
+    amount = int(amount[0])
+    if not dice:
+        dice = ['10']
+    elif dice == ['']:
+        echo('Malformed dice code. Thre have to be digits after d.', err=True)
+        return
+    dice = int(dice[0])
+    if not diff:
+        diff = ['6']
+    elif diff == ['']:
+        echo('Malformed difficulty code. There have to be digits after e or f.', err=True)
+        return
+    diff = int(diff[0])
+    if not explode:
+        explode = 0
+    else:
+        explode = dice + 1 - len(explode[0])
+    if subones:
+        onebehaviour = "subtracting"
+    else:
+        onebehaviour = "ignoring"
+    if explode > 0:
+        explodebehaviour = ", exploding on rolls of " + str(explode) + " or more"
+    else:
+        explodebehaviour = ""
+
+    echo("Rolling " + str(amount) + " " + str(dice) + " sided dice against " + str(
+        diff) + ", " + onebehaviour + " ones" + explodebehaviour + ".")
+    roll = WoDDice(dice)
+    roll.roll(amount, diff, subones, explode)
+    if explode > 0:
+        post(roll.roll_vv(), " IS ROLLING, exploding on "+ str(explode) + "+: \n")
+    elif amount > 10:
+        post(str(roll.roll_nv()), " IS ROLLING: [" + str(amount) + " DICEROLLS] ==> ")
+    else:
+        post(roll.roll_v(), " IS ROLLING: ")
 
 
 def menucmds(message, stripped=""):
@@ -56,7 +132,15 @@ def menucmds(message, stripped=""):
                                  '\nmenu      : to switch to menu mode'
                                  '\ntalk      : to begin talking'
                                  '\nmailbox   : to check the log of messages send to you'
-                                 '\nlog       : to get the log of the room you are in \n'})
+                                 '\nlog       : to get the log of the room you are in '
+                                 '\n#         : messages prefixed with # are passed to the diceroller'
+                                 '\n            it expects a number following # and then options '
+                                 '\n            followed by numbers again. Options are'
+                                 '\n            d   : sets sidedness of dice. (standard: 10)'
+                                 '\n            e   : sets difficulty and discards 1s'
+                                 '\n            f   : sets difficulty and subtracts 1s (standard: 6)'
+                                 '\n            !   : sets explosions. use multiple for added effect'
+                                 '\n'})
         if session['chatmode'] == 'menu':
             emit('SetCmd', {'data': '/talk'})
     elif message == 'menu':
@@ -84,19 +168,19 @@ def menucmds(message, stripped=""):
     elif message.split(' ')[0] == 'width':
         echo(message, ": /")
         try:
-            width = int(message.split(' ')[1])
+            width = str(int(message.split(' ')[1]))+"em"
         except:
-            width = 35
+            width = "90%"
         emit('Message', {'data': '\nadjusting width...\n'})
-        emit('Exec', {'command': 'document.getElementById("page_complete").style.width = "' + str(width) + 'em";'})
+        emit('Exec', {'command': 'document.getElementById("page_complete").style.width = "' + width+'";'})
     elif message.split(' ')[0] == 'height':
         echo(message, ": /")
         try:
-            height = int(message.split(' ')[1])
+            height = str(int(message.split(' ')[1]))+"em"
         except:
-            height = 35
+            height = "100%"
         emit('Message', {'data': '\nadjusting height...\n'})
-        emit('Exec', {'command': 'document.getElementById("chatbox").style.height = "' + str(height) + 'em";'})
+        emit('Exec', {'command': 'document.getElementById("page_complete").style.height = "' + height+'";'})
 
     elif message.split(' ')[0] == 'join':
         try:
@@ -190,7 +274,8 @@ def menucmds(message, stripped=""):
 
     elif message == 'talk':
         emit('Message', {'data': '\nentering talk mode, prefix further commands with "/"'
-                                 '\neverything else will be sent to the active chat\n\n'})
+                                 '\nand dice roll codes with #.'
+                                 '\nEverything else will be sent to the active chat!\n\n'})
         session['chatmode'] = 'talk'
         join_room(session['activeroom'].name)
 
@@ -227,9 +312,9 @@ def char_connect():
         emit('comments', {'prefix': '', 'data': 'Not logged in.'})
         return False
     emit('comments', {'data': "Click \"Check\" down below to check if this sheet "
-                      "is a valid starting character (If your history is empty), "
-                      "or calculate the difference in XP to the last sheet in "
-                      "your history."})
+                              "is a valid starting character (If your history is empty), "
+                              "or calculate the difference in XP to the last sheet in "
+                              "your history."})
 
 
 @socketio.on('ClientServerEvent', namespace='/character')

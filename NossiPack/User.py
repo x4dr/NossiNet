@@ -46,6 +46,8 @@ class User(object):
         if inp == b'':
             return []
         oldsheets = pickle.loads(inp)
+        for o in oldsheets:
+            o.legacy_convert()
         oldsheets.sort(key=lambda x: x.timestamp)
         return oldsheets
 

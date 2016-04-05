@@ -106,10 +106,10 @@ class Character(object):
         freebs = 15
         comment = ""
         if self.meta["Clan"] == "Nosferatu":
-            self.attributes['appearance'] = 0
-        att = [self.attributes['strength'] + self.attributes['dexterity'] + self.attributes['stamina'],
-               self.attributes['charisma'] + self.attributes['manipulation'] + self.attributes['appearance'],
-               self.attributes['perception'] + self.attributes['intelligence'] + self.attributes['wits']]
+            self.attributes['Appearance'] = 0
+        att = [self.attributes['Strength'] + self.attributes['Dexterity'] + self.attributes['Stamina'],
+               self.attributes['Charisma'] + self.attributes['Manipulation'] + self.attributes['Appearance'],
+               self.attributes['Perception'] + self.attributes['Intelligence'] + self.attributes['Wits']]
         if self.meta["Clan"] == "Nosferatu":
             att[1] += 1  # clan weakness
         att.sort()
@@ -248,6 +248,15 @@ class Character(object):
                 self.abilities['Talents'], self.abilities['Knowledges'],
                 self.virtues, self.disciplines]
 
+    def unify(self):
+        a = self.dictlist()
+        result = {}
+        for b in a:
+            for i in b.keys():
+                result[i] = b[i]
+        print(result)
+        return result
+
     def setfromdalines(self, number):
         dalines = ""
 
@@ -353,7 +362,7 @@ class Character(object):
                             self.meta["Generation"] = 15
                             self.backgrounds["Generation"] = -2
                 continue
-            if field in self.attributes.keys():
+            if field in [x.lower() for x in self.attributes.keys()]:
                 if value is not None:
                     self.attributes[field] = intdef(value)
                 continue
@@ -448,6 +457,20 @@ class Character(object):
                      'Special': self.special}
         return character
 
+    def legacy_convert(self):
+
+        print("\n", self.timestamp)
+        # Fix: uppercasing attributes
+        newatt = self.zero_attributes()
+        print(self.attributes)
+        for i in self.attributes.keys():
+            newkey = i[0].upper() + i[1:]
+            newatt[newkey] = self.attributes[i]
+        self.attributes = newatt
+        print(self.attributes)
+        # end uppercasing attributes
+
+
     def combine_bgvdscp(self):
         combined = []
         for i in range(max(len(self.backgrounds), len(self.disciplines.keys()), len(self.virtues.keys()))):
@@ -482,15 +505,15 @@ class Character(object):
     @staticmethod
     def zero_attributes():
         attributes = {
-            'strength': 0,
-            'dexterity': 0,
-            'stamina': 0,
-            'charisma': 0,
-            'manipulation': 0,
-            'appearance': 0,
-            'perception': 0,
-            'intelligence': 0,
-            'wits': 0}
+            'Strength': 0,
+            'Dexterity': 0,
+            'Stamina': 0,
+            'Charisma': 0,
+            'Manipulation': 0,
+            'Appearance': 0,
+            'Perception': 0,
+            'Intelligence': 0,
+            'Wits': 0}
         return attributes
 
     @staticmethod
@@ -565,7 +588,9 @@ class Character(object):
 
     @staticmethod
     def deserialize(serialized):
-        return pickle.loads(serialized)
+        tmp = pickle.loads(serialized)
+        tmp.legacy_convert()
+        return tmp
 
 
 # def makechar(min, cap, prioa, priob, prioc):

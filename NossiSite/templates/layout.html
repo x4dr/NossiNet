@@ -1,5 +1,4 @@
 <!doctype html>
-<title>NossiNet</title>
 <link rel=stylesheet type=text/css href="
 {%- if session.light -%}
 {{ url_for('static', filename='stylelight.css') }}
@@ -7,12 +6,10 @@
 {{ url_for('static', filename='style.css') }}
 {%- endif -%}
 ">
-
-    <script type="text/javascript" src="//code.jquery.com/jquery-2.2.2.min.js"></script>
-    <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+<script type="text/javascript" src="//code.jquery.com/jquery-2.2.2.min.js"></script>
+<script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
     <!--<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.5/socket.io.min.js"></script>-->
-    <script type="text/javascript" charset="utf-8">
-    </script>
+<script type="text/javascript" charset="utf-8"></script>
 <head>
 <script>
     function goBack() {
@@ -47,3 +44,4 @@
 {% endif %}
     <div style="text-align: center"><a href="{{ url_for('lightswitch', x=request.path[1:]) }}" >Light Switch</a></div>
 </body>
+<title>NossiNet</title>
