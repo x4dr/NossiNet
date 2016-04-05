@@ -54,6 +54,7 @@ def decider(message):
             post(message)
     statusupdate()
 
+
 def defines(message=None):
     ul = Userlist()
     print(session['user'])
@@ -108,12 +109,12 @@ def diceparser(message):
     else:
         explodebehaviour = ""
 
-    echo("Rolling " + str(amount) + " " + str(dice) + " sided dice against " + str(
-        diff) + ", " + onebehaviour + " ones" + explodebehaviour + ".")
+    post(str(amount) + " " + str(dice) + " sided dice against " + str(
+        diff) + ", " + onebehaviour + " ones" + explodebehaviour + ".", " ROLLS: ")
     roll = WoDDice(dice)
     roll.roll(amount, diff, subones, explode)
     if explode > 0:
-        post(roll.roll_vv(), " IS ROLLING, exploding on "+ str(explode) + "+: \n")
+        post(roll.roll_vv(), " IS ROLLING, exploding on " + str(explode) + "+: \n")
     elif amount > 10:
         post(str(roll.roll_nv()), " IS ROLLING: [" + str(amount) + " DICEROLLS] ==> ")
     else:
@@ -168,19 +169,19 @@ def menucmds(message, stripped=""):
     elif message.split(' ')[0] == 'width':
         echo(message, ": /")
         try:
-            width = str(int(message.split(' ')[1]))+"em"
+            width = str(int(message.split(' ')[1])) + "em"
         except:
             width = "90%"
         emit('Message', {'data': '\nadjusting width...\n'})
-        emit('Exec', {'command': 'document.getElementById("page_complete").style.width = "' + width+'";'})
+        emit('Exec', {'command': 'document.getElementById("page_complete").style.width = "' + width + '";'})
     elif message.split(' ')[0] == 'height':
         echo(message, ": /")
         try:
-            height = str(int(message.split(' ')[1]))+"em"
+            height = str(int(message.split(' ')[1])) + "em"
         except:
             height = "100%"
         emit('Message', {'data': '\nadjusting height...\n'})
-        emit('Exec', {'command': 'document.getElementById("page_complete").style.height = "' + height+'";'})
+        emit('Exec', {'command': 'document.getElementById("page_complete").style.height = "' + height + '";'})
 
     elif message.split(' ')[0] == 'join':
         try:
