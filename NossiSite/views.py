@@ -184,7 +184,7 @@ def showoldsheets(x):
         sheetnum = int(x)
     except:
         return redirect(url_for('/oldsheets/'))
-    print("><><",u.oldsheets[sheetnum].getdictrepr())
+    #print("><><",u.oldsheets[sheetnum].getdictrepr())
     return render_template('charsheet.html', character=u.oldsheets[sheetnum].getdictrepr(), oldsheet=x)
 
 

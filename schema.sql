@@ -28,7 +28,9 @@ CREATE TABLE IF NOT EXISTS users (
   funds        INTEGER          NOT NULL,
   kudosdebt    TEXT             NOT NULL,
   sheet        TEXT             NOT NULL,
-  oldsheets    TEXT
+  oldsheets    TEXT,
+  defines      TEXT,
+  admin        INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS chatlogs (

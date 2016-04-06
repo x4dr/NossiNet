@@ -79,7 +79,7 @@ class Character(object):
                 "Kiasyd": "Dominate, Mytherceria, Obtenebration",
                 "Salubri": "Auspex, Fortitude, Obeah",
                 "Sage": "Potence, Presence, Temporis",
-                "Cappadocian": "Auspex, Fortutude, Necromancy"
+                "Cappadocian": "Auspex, Fortitude, Necromancy"
                 }
 
     def get_clandisciplines(self):
@@ -254,7 +254,7 @@ class Character(object):
         for b in a:
             for i in b.keys():
                 result[i] = b[i]
-        print(result)
+        #print(result)
         return result
 
     def setfromdalines(self, number):
@@ -459,15 +459,15 @@ class Character(object):
 
     def legacy_convert(self):
 
-        print("\n", self.timestamp)
+        #print("\n", self.timestamp)
         # Fix: uppercasing attributes
         newatt = self.zero_attributes()
-        print(self.attributes)
+        #print(self.attributes)
         for i in self.attributes.keys():
             newkey = i[0].upper() + i[1:]
             newatt[newkey] = self.attributes[i]
         self.attributes = newatt
-        print(self.attributes)
+        #print(self.attributes)
         # end uppercasing attributes
 
 
