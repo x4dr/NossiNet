@@ -51,7 +51,7 @@ def decider(message):
         if session['activeroom'] is None:
             emit('Message', {'data': 'you are talking to a wall'})
         else:
-            print('... in room: ' + session['activeroom'].name)
+            print('room: ' + session['activeroom'].name)
             post(message)
     statusupdate()
 
@@ -392,7 +392,7 @@ def chatsite():
 
 @socketio.on('ClientServerEvent', namespace='/chat')
 def receive(message):
-    print(session.get('user', "NoUser"), ":\t", message)
+    print(session.get('user', "NoUser"), ": ", message)
     decider(message['data'])
 
 
