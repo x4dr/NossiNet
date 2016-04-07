@@ -362,7 +362,7 @@ class Character(object):
                             self.meta["Generation"] = 15
                             self.backgrounds["Generation"] = -2
                 continue
-            if field in [x.lower() for x in self.attributes.keys()]:
+            if field in self.attributes.keys():
                 if value is not None:
                     self.attributes[field] = intdef(value)
                 continue
