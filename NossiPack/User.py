@@ -63,6 +63,7 @@ class User(object):
 
     def update_sheet(self, form):
         if "newsheet" in form.keys():
+            form.pop('newsheet')
             self.oldsheets.append(Character())
             self.oldsheets[-1].setfromform(form)
         self.sheet.setfromform(form)
