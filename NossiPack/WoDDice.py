@@ -2,7 +2,7 @@ import random
 
 
 class WoDDice(object):
-    def init(self, maxroll=10, minroll=1):
+    def __init__(self, maxroll=10, minroll=1):
         self.min = minroll
         self.max = maxroll
         self.r = []
