@@ -19,8 +19,8 @@ def loankudos(user):
             flash('You are not logged in!')
             return redirect(url_for('login'))
         ul = Userlist()
-        loaner = ul.getuserbyname(session.get('user'))
-        loanee = ul.getuserbyname(user)
+        loaner = ul.loaduserbyname(session.get('user'))
+        loanee = ul.loaduserbyname(user)
         loanee.add_kudosoffer(loaner.username)
         ul.saveuserlist()
         flash("Extended offer for vouching")
@@ -34,7 +34,7 @@ def setfromdalines():
         return redirect(url_for('login'))
     number = request.args.get('dalinesnumber')[-7:]
     ul = Userlist()
-    u = ul.getuserbyname(session.get('user'))
+    u = ul.loaduserbyname(session.get('user'))
     new = Character()
     if new.setfromdalines(number):
         u.sheet = new
@@ -51,7 +51,7 @@ def kudosloan():
         flash('You are not logged in!')
         return redirect(url_for('login'))
     ul = Userlist()
-    u = ul.getuserbyname(session.get('user'))
+    u = ul.loaduserbyname(session.get('user'))
     entries = u.get_kudosdebts()
     if request.method == 'POST':
         if checktoken():
@@ -64,7 +64,7 @@ def kudosloan():
             if entry is not None:
                 if entry.get('state') == 'unaccepted':
                     entry['state'] = 'accepted'
-                    n = ul.getuserbyname(entry.get('loaner'))
+                    n = ul.loaduserbyname(entry.get('loaner'))
                     amount = int(n.kudos * 0.1)
                     n.kudos += -amount * 2
                     u.kudos += amount
@@ -73,7 +73,7 @@ def kudosloan():
     u.set_kudosdebts(entries)
     ul.saveuserlist()
     for e in entries:
-        e['currentkudos'] = ul.getuserbyname(e.get('loaner')).kudos
+        e['currentkudos'] = ul.loaduserbyname(e.get('loaner')).kudos
 
     gentoken()
     return render_template('loankudos.html', entries=entries)
@@ -101,7 +101,7 @@ def charsheet():
         flash('You are not logged in!')
         return redirect(url_for('login'))
     ul = Userlist()
-    u = ul.getuserbyname(session.get('user'))
+    u = ul.loaduserbyname(session.get('user'))
     return render_template('charsheet.html', character=u.sheet.getdictrepr(), own=True)
 
 
@@ -113,7 +113,7 @@ def showsheet(name="None"):
     if name=="None":
         return "error"
     ul = Userlist()
-    u = ul.getuserbyname(name)
+    u = ul.loaduserbyname(name)
     if u:
         return render_template('charsheet.html', character=u.sheet.getdictrepr(), own=False)
     else:
@@ -127,7 +127,7 @@ def del_sheet():
         return redirect(url_for('login'))
     x = int(request.form["sheetnum"])
     ul = Userlist()
-    u = ul.getuserbyname(session.get('user'))
+    u = ul.loaduserbyname(session.get('user'))
     u.oldsheets.pop(x)
     ul.saveuserlist()
     flash("Sheet deleted from history!")
@@ -141,7 +141,7 @@ def res_sheet():
         return redirect(url_for('login'))
     x = int(request.form["sheetnum"])
     ul = Userlist()
-    u = ul.getuserbyname(session.get('user'))
+    u = ul.loaduserbyname(session.get('user'))
     newactive = u.oldsheets.pop(x)
     u.oldsheets.append(u.sheet)
     u.sheet = newactive
@@ -161,7 +161,7 @@ def oldsheets():
         flash('You are not logged in!')
         return redirect(url_for('login'))
     ul = Userlist()
-    u = ul.getuserbyname(session.get('user'))
+    u = ul.loaduserbyname(session.get('user'))
     oldsheets = []
     xpdiffs = []
     for i in range(len(u.oldsheets)):
@@ -179,7 +179,7 @@ def showoldsheets(x):
         flash('You are not logged in!')
         return redirect(url_for('login'))
     ul = Userlist()
-    u = ul.getuserbyname(session.get('user'))
+    u = ul.loaduserbyname(session.get('user'))
     try:
         sheetnum = int(x)
     except:
@@ -194,7 +194,7 @@ def modify_sheet():
         flash('You are not logged in!')
         return redirect(url_for('login'))
     ul = Userlist()
-    u = ul.getuserbyname(session.get('user'))
+    u = ul.loaduserbyname(session.get('user'))
     if request.method == 'POST':
         u.update_sheet(request.form)
         ul.saveuserlist()
@@ -210,7 +210,7 @@ def timestep():
     if not session.get('logged_in'):
         flash('You are not logged in!')
         return redirect(url_for('login'))
-    ul = Userlist()
+    ul = Userlist(preload=True)
     error = None
     keyprovided = session.get('amount') is not None
     if not keyprovided:
@@ -248,7 +248,7 @@ def timestep():
                     error = 'invalid transaction'
     ul.saveuserlist()
     gentoken()
-    return render_template('timestep.html', user=ul.getuserbyname(session.get('user')),
+    return render_template('timestep.html', user=ul.loaduserbyname(session.get('user')),
                            error=error, keyprovided=keyprovided)
 
 
@@ -260,7 +260,7 @@ def plusone(ident):
         for row in cur.fetchall():  # SHOULD only run once
             entry = dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4])
         ul = Userlist()
-        u = ul.getuserbyname(entry.get('author'))
+        u = ul.loaduserbyname(entry.get('author'))
         if u is None:
             flash("that user is nonexistent, sorry")
             return redirect(url_for('show_entries'))
@@ -305,7 +305,7 @@ def add_entry():
 @app.route('/buy_funds/', methods=['GET', 'POST'])
 def add_funds():
     ul = Userlist()
-    u = ul.getuserbyname(session.get('user'))
+    u = ul.loaduserbyname(session.get('user'))
     error = None
     keyprovided = session.get('amount') is not None
     if not keyprovided:
@@ -372,11 +372,11 @@ def register():  # this is not clrs secure because it does not need to be
 @app.route('/login', methods=['GET', 'POST'])
 def login():  # this is not clrs secure because it does not need to be
     error = None
-    u = Userlist()
+    ul = Userlist(preload=True, sheets=False)
     if request.method == 'POST':
         user = request.form['username']
         user = user.upper()
-        if not u.valid(user, request.form['password']):
+        if not ul.valid(user, request.form['password']):
             error = 'invalid username/password combination'
         else:
             session['logged_in'] = True
@@ -442,13 +442,13 @@ def show_user_profile(username):
 
     ul = Userlist()
     if ul.contains(username):
-        u = ul.getuserbyname(username)
+        u = ul.loaduserbyname(username)
     else:
         u = User(username, "")
         u.kudos = random.randint(0, 10000)
     ownkudos = 0
     if session.get('logged_in', False):
-        ownkudos = ul.getuserbyname(session.get('user')).kudos
+        ownkudos = ul.loaduserbyname(session.get('user')).kudos
     else:
         gentoken()
     site = render_template('userinfo.html', ownkudos=ownkudos, user=u, msgs=msgs)
@@ -522,7 +522,7 @@ def honor(ident):
         ul = Userlist()
         author = None
         lock = 0
-        u = ul.getuserbyname(session.get('user'))
+        u = ul.loaduserbyname(session.get('user'))
         cur = g.db.execute('SELECT author, value, lock, honored FROM messages WHERE id = ?', [ident])
         for row in cur.fetchall():
             author = row[0]
@@ -532,7 +532,7 @@ def honor(ident):
         if author is None:
             error = "The message to be honored seems to be missing"
             return render_template('userinfo.html', user=u, error=error)
-        n = ul.getuserbyname(author)
+        n = ul.loaduserbyname(author)
         if lock != 1:
             if honored != 0:
                 error = "This agreement has already been honored."
@@ -567,13 +567,13 @@ def unlock(ident):
     lock = 0
     author = ''
     value = 0
-    u = ul.getuserbyname(session.get('user'))
+    u = ul.loaduserbyname(session.get('user'))
     cur = g.db.execute('SELECT author, value, lock FROM messages WHERE id = ?', [ident])
     for row in cur.fetchall():
         author = row[0]
         value = row[1]
         lock = row[2]
-    n = ul.getuserbyname(author)  # n because n = u seen from the other side of the table
+    n = ul.loaduserbyname(author)  # n because n = u seen from the other side of the table
     if lock == 1:
         if u.kudos * 0.9 < value:
             error = "You do not have enough kudos for this transaction!"
@@ -615,7 +615,7 @@ def unlock(ident):
 def cheat():
     return "DEFUNCT"
     #   ul = Userlist()
-    #   u = ul.getuserbyname("LOCKE")
+    #   u = ul.loaduserbyname("LOCKE")
     #   u.funds = 1000
     #   u.kudos = 4200
     #   ul.saveuserlist()
@@ -633,7 +633,7 @@ def payout():
         error = 'You are not logged in!'
         return redirect(url_for('login'))
     ul = Userlist()
-    u = ul.getuserbyname(session.get('user'))
+    u = ul.loaduserbyname(session.get('user'))
     error = None
     if request.method == 'POST':
         if checktoken():

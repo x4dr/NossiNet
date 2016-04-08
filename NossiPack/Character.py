@@ -59,6 +59,15 @@ class Character(object):
             lower += 1
         return result
 
+    def checksum(self):
+        result = 0
+        for a in self.unify().values():
+            try:
+                result+=a
+            except:
+                pass
+        return result
+
     @staticmethod
     def get_clans():
         return {"Assamite": "Celerity, Obfuscate, Quietus",

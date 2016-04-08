@@ -114,6 +114,7 @@ class WoDDice(object):
             'subt': '#Subterfuge',
             'surv': '#Survival',
             'scie': '#Science',
+            'soak': '#sta#armor',
             'hack': '#int#comp_',
             'shoot': '#dex#fire_',
             'punch': '#dex#braw_',

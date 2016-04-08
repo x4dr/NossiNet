@@ -34,7 +34,8 @@ class User(object):
         self.defines = {}
         if defines:
             self.defines = pickle.loads(defines)
-      #  print(defines, "><defines><")
+        self.defines = {**self.defines, **self.sheet.unify()}
+        #  print(defines, "><defines><")
 
     def set_password(self, newpassword):
         self.pw_hash = generate_password_hash(newpassword)
@@ -78,7 +79,7 @@ class User(object):
             d = l[i]
             if int(d.get('remaining')) > 0:
                 ul = Userlist()
-                u = ul.getuserbyname(d.get('loaner'))
+                u = ul.loaduserbyname(d.get('loaner'))
                 break
 
         if u is not None:
@@ -120,19 +121,27 @@ class User(object):
 
 
 class Userlist(object):
-    def __init__(self, key=""):
+    def __init__(self, key="", preload=False, sheets=True):
         self.key = key
         self.userlist = []
         self.file = os.path.split(os.path.abspath(os.path.realpath(sys.argv[0])))[0]
-        self.loaduserlist()
+        if preload:
+            self.loaduserlist(sheets)
 
-    def loaduserlist(self):  # converts the SQL table into a list for easier access
+    def loaduserlist(self, sheets=True):  # converts the SQL table into a list for easier access
         db = connect_db()
-        cur = db.execute('SELECT username, passwordhash, kudos, funds, kudosdebt, '
-                         'sheet, oldsheets, defines, admin FROM users')
-        self.userlist = [User(username=row[0], passwordhash=row[1], kudos=row[2], funds=row[3], kudosdebt=row[4],
-                              sheet=row[5], oldsheets=row[6], defines=row[7], admin=row[8]) for row in
-                         cur.fetchall()]
+        if sheets:
+            cur = db.execute('SELECT username, passwordhash, kudos, funds, kudosdebt, '
+                             'sheet, oldsheets, defines, admin FROM users')
+            self.userlist = [User(username=row[0], passwordhash=row[1], kudos=row[2], funds=row[3], kudosdebt=row[4],
+                                  sheet=row[5], oldsheets=row[6], defines=row[7], admin=row[8]) for row in
+                             cur.fetchall()]
+        else:
+            cur = db.execute('SELECT username, passwordhash, kudos, funds, kudosdebt, '
+                             'defines, admin FROM users')
+            self.userlist = [User(username=row[0], passwordhash=row[1], kudos=row[2], funds=row[3], kudosdebt=row[4],
+                                  defines=row[5], admin=row[6]) for row in
+                             cur.fetchall()]
         db.close()
 
     def saveuserlist(
@@ -140,13 +149,25 @@ class Userlist(object):
         db = connect_db()
 
         for u in self.userlist:
-            d = dict(username=u.username, pwhash=u.pw_hash, kudos=u.kudos, funds=u.funds, kudosdebt=u.kudosdebt,
-                     sheet=u.sheet.serialize(), oldsheets=u.serialize_old_sheets(), defines=pickle.dumps(u.defines),
-                     admin=u.admin)
-            db.execute(
-                "INSERT OR REPLACE INTO users (username, passwordhash, kudos, funds, kudosdebt, "
-                "sheet, oldsheets, defines, admin) "
-                "VALUES (:username,:pwhash,:kudos, :funds, :kudosdebt, :sheet, :oldsheets, :defines, :admin)", d)
+            if u.sheet.checksum() != 0:
+                d = dict(username=u.username, pwhash=u.pw_hash, kudos=u.kudos, funds=u.funds, kudosdebt=u.kudosdebt,
+                         sheet=u.sheet.serialize(), oldsheets=u.serialize_old_sheets(), defines=pickle.dumps(u.defines),
+                         admin=u.admin)
+                db.execute(
+                    "INSERT OR REPLACE INTO users (username, passwordhash, kudos, funds, kudosdebt, "
+                    "sheet, oldsheets, defines, admin) "
+                    "VALUES (:username,:pwhash,:kudos, :funds, :kudosdebt, :sheet, :oldsheets, :defines, :admin)", d)
+            else:
+                d = dict(username=u.username, pwhash=u.pw_hash, kudos=u.kudos, funds=u.funds, kudosdebt=u.kudosdebt,
+                         defines=pickle.dumps(u.defines), admin=u.admin, emptysheet=Character().serialize())
+                db.execute(
+                    "INSERT OR REPLACE INTO users (username, passwordhash, kudos, funds, kudosdebt, "
+                    "sheet, oldsheets, defines, admin) "
+                    "VALUES (:username,:pwhash,:kudos, :funds, :kudosdebt,"
+                    "COALESCE((SELECT sheet FROM users WHERE username = :username), :emptysheet),"
+                    "COALESCE((SELECT oldsheets FROM users WHERE username = :username), ''),"
+                    " :defines, :admin)", d)
+
         db.commit()
         db.close()
 
@@ -170,6 +191,16 @@ class Userlist(object):
             if u.username == username:
                 return u
         return None
+
+    def loaduserbyname(self, username):
+        db = connect_db()
+        cur = db.execute('SELECT username, passwordhash, kudos, funds, kudosdebt, '
+                         'sheet, oldsheets, defines, admin FROM users WHERE username = (?)', (username,))
+        self.userlist = [User(username=row[0], passwordhash=row[1], kudos=row[2], funds=row[3], kudosdebt=row[4],
+                              sheet=row[5], oldsheets=row[6], defines=row[7], admin=row[8]) for row in
+                         cur.fetchall()]
+        db.close()
+        return self.getuserbyname(username)
 
     def getfunds(self, user=None, username=None):
         if user is None:

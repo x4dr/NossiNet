@@ -39,7 +39,30 @@ def post(message, sep=": "):
 
 def decider(message):
     if message[0] == '#':
-
+        if message == "#?":
+            echo('\nmessages prefixed with # are passed to the diceroller'
+                 '\nit expects a number following # and then options '
+                 '\nfollowed by numbers again. Options are'
+                 '\ndXX : sets sidedness of dice to XX. (standard: 10)'
+                 '\neXX : sets difficulty to XX and discards 1s'
+                 '\nfXX : sets difficulty to XX and subtracts 1s (standard: 6)'
+                 '\n!   : sets explosions, use multiple for cumulative effect'
+                 '\n#XX : load define named XX'
+                 '\n=XX : command for defines:'
+                 '\n\t =clear  : clears all definitions'
+                 '\n\t =import : imports/reloads the values from the sheet'
+                 '\n\t =setup  : a usefull basic set of definitions'
+                 '\n\t =show   : shows all currently defined Definitions'
+                 '\nA=B : defines #A to resolve to B. B resolves recursively'
+                 '\n      If B is two values they will be added.'
+                 '\n      If there is a _ after something (on the lowest level) '
+                 '\n      it will resolve to -1 instead of 0 (useful for abilities)'
+                 '\nExample: Try: "#=setup<enter> #dmg=#str+2<enter> ##dmg<enter> and see what happens!'
+                 '\nRemember that you can always add ? to a command to inspect what'
+                 ' its doing instead of actually sending it.')
+            return
+        if not (("?" in message) or ("=" in message)):
+            post(message[1:], "'s ROLL: ")
         diceparser(message[1:])
     elif message[0] == '/':
         if menucmds(message[1:], "/"):
@@ -56,18 +79,22 @@ def decider(message):
     statusupdate()
 
 
+def echodict(dict):
+    a = list(dict.keys())
+    a.sort()
+    for i in a:
+        echo(("%s" % i).ljust(15) + " : " + str(dict[i]), "", err=True)
+
+
 def defines(message="="):
     ul = Userlist()
-    u = ul.getuserbyname(session['user'])
+    u = ul.loaduserbyname(session['user'])
     workdef = u.defines
     if message == "=clear":
         workdef = {}
         echo("Definitions reset.")
     elif message == "=show":
-        a = list(workdef.keys())
-        a.sort()
-        for i in a:
-            echo(("%s"%i).ljust(15)+" : "+ str(workdef[i]), "",err=True)
+        echodict(workdef)
 
     elif message == "=import":
         workdef = {**workdef, **u.sheet.unify()}
@@ -86,32 +113,45 @@ def defines(message="="):
     ul.saveuserlist()
 
 
-def resolvedefine(message="", reclvl=0, trace=False):
+def resolvedefine(message, reclvl=0, trace=False, user=None):
     try:
         return int(message)
     except:
         if reclvl > 100:
             echo("Problem resolving " + message, " ERROR:")
             return 0
-
+    finder = re.compile(r'§([A-Za-z]+)')
+    for i in finder.findall(message):
+        if i in session['activeroom'].getuserlist_text():
+            user = i
+            break
+    if user is None:
+        user = session.get('user', '?')
     ul = Userlist()
-    u = ul.getuserbyname(session['user'])
+    u = ul.loaduserbyname(user)
+    if not u:
+        echo("user "+user+" not found!", "NAMEERROR: ", err=True)
+        return
+    workdef = u.defines.copy()
+    if trace:
+        echo(" DEFINITIONS FOR " + user, "", err=True)
+        echodict(workdef)
+    message = message.replace("§" + user, "")
     finder = re.compile(r'#([^ +#]+)_')
     for i in finder.findall(message):
-
-        toreplace = str(resolvedefine(u.defines.get(i, 0), reclvl + 1, trace))
+        toreplace = str(resolvedefine(workdef.get(i, "0"), reclvl + 1, trace, user))
         if toreplace == "0":
             toreplace = "-1"
         if trace:
-            echo(i + ":" + str(u.defines.get(i, "-1")))
+            echo(i + ":" + str(workdef.get(i, "-1")))
         message = message.replace("#" + i, " " + toreplace + " ")
     finder = re.compile(r'#([^ +#]+)')
     while not finder.findall(message) == []:
         for i in finder.findall(message):
 
-            toreplace = str(resolvedefine(u.defines.get(i, "0"), reclvl + 1, trace))
+            toreplace = str(resolvedefine(workdef.get(i, "0"), reclvl + 1, trace, user))
             if trace:
-                echo(i + ":" + str(u.defines.get(i, "0")))
+                echo(i + ":" + str(workdef.get(i, "0")))
             message = message.replace("#" + i, " " + toreplace + " ")
     message = message.replace("+", " + ")
     action = True
@@ -130,31 +170,15 @@ def resolvedefine(message="", reclvl=0, trace=False):
 
 
 def diceparser(message, rec=False, testing=False):
+    if ";" in message:
+        for m in message.split(";"):
+            diceparser(m)
+        return
     subones = 1
     if "?" in message:
         testing = True
         message = message.replace("?", "")
-    if message == "":
-        echo('\nmessages prefixed with # are passed to the diceroller'
-             '\nit expects a number following # and then options '
-             '\nfollowed by numbers again. Options are'
-             '\ndXX : sets sidedness of dice to XX. (standard: 10)'
-             '\neXX : sets difficulty to XX and discards 1s'
-             '\nfXX : sets difficulty to XX and subtracts 1s (standard: 6)'
-             '\n!   : sets explosions, use multiple for cumulative effect'
-             '\n#XX : load define named XX'
-             '\n=XX : command for defines:'
-             '\n\t =clear  : clears all definitions'
-             '\n\t =import : imports/reloads the values from the sheet'
-             '\n\t =setup  : a usefull basic set of definitions'
-             '\n\t =show   : shows all currently defined Definitions'
-             '\nA=B : defines #A to resolve to B. B resolves recursively'
-             '\n      If B is two values they will be added.'
-             '\n      If there is a _ after something (on the lowest level) '
-             '\n      it will resolve to -1 instead of 0 (useful for abilities)'
-             '\nExample: Try: "#=setup<enter> #dmg=#str+2<enter> ##dmg<enter> and see what happens!'
-             '\nRemember that you can always add ? to a command to inspect what'
-             ' its doing instead of actually sending it.')
+
     amountfilter = re.compile(r'(^[0-9]*)')
     dicefilter = re.compile(r'd([0-9]*)', re.IGNORECASE)
     explodefilter = re.compile(r'!+')
@@ -167,6 +191,9 @@ def diceparser(message, rec=False, testing=False):
     explode = explodefilter.findall(message)
     dice = dicefilter.findall(message)
     diff = difffilter.findall(message)
+    if testing:
+        return echo("test complete:" + message)
+
     if amount[0] == '':
         if "=" in message:
             defines(message)
@@ -175,45 +202,46 @@ def diceparser(message, rec=False, testing=False):
             if not rec:
                 return diceparser(str(resolvedefine(message, trace=testing)), rec=True, testing=testing)
             else:
-                return echo(' Diceroller couldn\'t parse: ' + str(message), "ROLLERERROR: ", err=True)
-    amount = int(amount[0])
-    if not dice:
-        dice = ['10']
-    elif dice == ['']:
-        echo('Malformed dice code. Thre have to be digits after d.', "ROLLERERROR: ", err=True)
-        return
-    dice = int(dice[0])
-    if not diff:
-        diff = ['6']
-    elif diff == ['']:
-        echo('Malformed difficulty code. There have to be digits after e or f.', "ROLLERERROR: ", err=True)
-        return
-    diff = int(diff[0])
-    if not explode:
-        explode = 0
-    else:
-        explode = dice + 1 - len(explode[0])
-    if subones:
-        onebehaviour = "subtracting"
-    else:
-        onebehaviour = "ignoring"
-    if explode > 0:
-        explodebehaviour = ", exploding on rolls of " + str(explode) + " or more"
-    else:
-        explodebehaviour = ""
-    if testing:
-        return echo("test complete:" + message)
-    post(message)
-    post(str(amount) + " " + str(dice) + " sided dice against " + str(
-        diff) + ", " + onebehaviour + " ones" + explodebehaviour + ".", " ROLLS: ")
-    roll = WoDDice(dice)
-    roll.roll(amount, diff, subones, explode)
-    if explode > 0:
-        post(roll.roll_vv(), " IS ROLLING, exploding on " + str(explode) + "+: \n")
-    elif amount > 10:
-        post(str(roll.roll_nv()), " IS ROLLING: [" + str(amount) + " DICEROLLS] ==> ")
-    else:
-        post(roll.roll_v(), " IS ROLLING: ")
+                if '\\' not in message:
+                    return echo(' Diceroller couldn\'t parse: ' + str(message), "ROLLERERROR: ", err=True)
+    post(message.replace("\\",""), " RESOLVED TO: ")
+    if '\\' not in message:
+        amount = int(amount[0])
+        print('generating response')
+        if not dice:
+            dice = ['10']
+        elif dice == ['']:
+            echo('Malformed dice code. Thre have to be digits after d.', "ROLLERERROR: ", err=True)
+            return
+        dice = int(dice[0])
+        if not diff:
+            diff = ['6']
+        elif diff == ['']:
+            echo('Malformed difficulty code. There have to be digits after e or f.', "ROLLERERROR: ", err=True)
+            return
+        diff = int(diff[0])
+        if not explode:
+            explode = 0
+        else:
+            explode = dice + 1 - len(explode[0])
+        if subones:
+            onebehaviour = "subtracting"
+        else:
+            onebehaviour = "ignoring"
+        if explode > 0:
+            explodebehaviour = ", exploding on rolls of " + str(explode) + " or more"
+        else:
+            explodebehaviour = ""
+        post(str(amount) + " " + str(dice) + " sided dice against " + str(
+            diff) + ", " + onebehaviour + " ones" + explodebehaviour + ".", " ROLLS: ")
+        roll = WoDDice(dice)
+        roll.roll(amount, diff, subones, explode)
+        if explode > 0:
+            post(roll.roll_vv(), " IS ROLLING, exploding on " + str(explode) + "+: \n")
+        elif amount > 10:
+            post(str(roll.roll_nv()), " IS ROLLING: [" + str(amount) + " DICEROLLS] ==> ")
+        else:
+            post(roll.roll_v(), " IS ROLLING: ")
 
 
 def menucmds(message, stripped=""):
@@ -268,9 +296,9 @@ def menucmds(message, stripped=""):
         try:
             height = str(int(message.split(' ')[1])) + "em"
         except:
-            height = "100%"
+            height = "35em"
         emit('Message', {'data': '\nadjusting height...\n'})
-        emit('Exec', {'command': 'document.getElementById("page_complete").style.height = "' + height + '";'})
+        emit('Exec', {'command': 'document.getElementById("chatbox").style.height = "' + height + '";'})
 
     elif message.split(' ')[0] == 'join':
         try:
@@ -412,7 +440,7 @@ def receive(message):
     print(session.get('user', "NoUser"), ":\t", message)
     if len(message['data']) > 20:  # short messages are malformed
         ul = Userlist()
-        u = ul.getuserbyname(session.get('user', None))
+        u = ul.loaduserbyname(session.get('user', None))
         try:
             old = u.oldsheets[-1]
         except:
