@@ -120,7 +120,7 @@ def resolvedefine(message, reclvl=0, trace=False, user=None):
         if reclvl > 100:
             echo("Problem resolving " + message, " ERROR:")
             return 0
-    finder = re.compile(r'§([A-Za-z]+)')
+    finder = re.compile(r'§([^ ]+)')
     for i in finder.findall(message):
         if i in session['activeroom'].getuserlist_text():
             user = i
