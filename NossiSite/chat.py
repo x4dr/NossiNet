@@ -120,17 +120,17 @@ def resolvedefine(message, reclvl=0, trace=False, user=None):
         if reclvl > 100:
             echo("Problem resolving " + message, " ERROR:")
             return 0
-    finder = re.compile(r'§([^ ]+)')
+    finder = re.compile(r'§([^ ]+)(.*)')
     for i in finder.findall(message):
-        if i in session['activeroom'].getuserlist_text():
-            user = i
+        if i[0] in session['activeroom'].getuserlist_text():
+            message = message.replace("".join(i), resolvedefine(i[1], reclvl=reclvl + 1, trace=trace, user=i[0]))
             break
     if user is None:
         user = session.get('user', '?')
     ul = Userlist()
     u = ul.loaduserbyname(user)
     if not u:
-        echo("user "+user+" not found!", "NAMEERROR: ", err=True)
+        echo("user " + user + " not found!", "NAMEERROR: ", err=True)
         return
     workdef = u.defines.copy()
     if trace:
@@ -179,6 +179,8 @@ def diceparser(message, rec=False, testing=False):
         testing = True
         message = message.replace("?", "")
 
+    print('incoming message:', message)
+
     amountfilter = re.compile(r'(^[0-9]*)')
     dicefilter = re.compile(r'd([0-9]*)', re.IGNORECASE)
     explodefilter = re.compile(r'!+')
@@ -191,23 +193,23 @@ def diceparser(message, rec=False, testing=False):
     explode = explodefilter.findall(message)
     dice = dicefilter.findall(message)
     diff = difffilter.findall(message)
-    if testing:
-        return echo("test complete:" + message)
-
     if amount[0] == '':
         if "=" in message:
             defines(message)
             return
         else:
+            print(message, "<<<")
             if not rec:
                 return diceparser(str(resolvedefine(message, trace=testing)), rec=True, testing=testing)
             else:
                 if '\\' not in message:
                     return echo(' Diceroller couldn\'t parse: ' + str(message), "ROLLERERROR: ", err=True)
-    post(message.replace("\\",""), " RESOLVED TO: ")
+    if testing:
+        return echo("test complete:" + message)
+
+    post(message.replace("\\", ""), " RESOLVED TO: ")
     if '\\' not in message:
         amount = int(amount[0])
-        print('generating response')
         if not dice:
             dice = ['10']
         elif dice == ['']:
