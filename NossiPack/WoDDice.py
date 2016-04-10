@@ -75,9 +75,12 @@ class WoDDice(object):
     @staticmethod
     def shorthand():
         return {
-            'str': '#Strength#Potence',
-            'dex': '#Dexterity#Celerity',
-            'sta': '#Stamina#Fortitude',
+            'str': '#Strength#Potence#strbonus',
+            'dex': '#Dexterity#Celerity#dexbonus',
+            'sta': '#Stamina#Fortitude#stabonus',
+            'strbonus': 0,
+            'dexbonus': 0,
+            'stabonus': 0,
             'cha': '#Charisma',
             'man': '#Manipulation',
             'app': '#Appearance',
