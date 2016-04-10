@@ -12,6 +12,14 @@
     
 
 {%- endmacro %}
+
+{% block title %}
+{%- if character.Meta.Name -%}
+    <title>{{ character.Meta.Name }}</title>
+{%- else -%}
+    <title>Charactrsheet</title>
+{%- endif -%}
+{% endblock %}
 {% block body %}
 
     <table width="100%" class="leeet" >

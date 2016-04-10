@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS users (
   sheet        TEXT             NOT NULL,
   oldsheets    TEXT,
   defines      TEXT,
+  ip           TEXT,
   admin        INTEGER
 );
 

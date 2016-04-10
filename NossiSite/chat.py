@@ -63,7 +63,7 @@ def decider(message):
             return
         if not (("?" in message) or ("=" in message)):
             post(message[1:], "'s ROLL: ")
-        diceparser(message[1:])
+        printroll(diceparser(message[1:]))
     elif message[0] == '/':
         if menucmds(message[1:], "/"):
             echo(message)
@@ -204,10 +204,9 @@ def diceparser(message, rec=False, testing=False):
             else:
                 if '\\' not in message:
                     return echo(' Diceroller couldn\'t parse: ' + str(message), "ROLLERERROR: ", err=True)
-    if testing:
-        return echo("test complete:" + message)
 
-    post(message.replace("\\", ""), " RESOLVED TO: ")
+    if not testing:
+        post(message.replace("\\", ""), " RESOLVED TO: ")
     if '\\' not in message:
         amount = int(amount[0])
         if not dice:
@@ -238,12 +237,22 @@ def diceparser(message, rec=False, testing=False):
             diff) + ", " + onebehaviour + " ones" + explodebehaviour + ".", " ROLLS: ")
         roll = WoDDice(dice)
         roll.roll(amount, diff, subones, explode)
-        if explode > 0:
-            post(roll.roll_vv(), " IS ROLLING, exploding on " + str(explode) + "+: \n")
-        elif amount > 10:
-            post(str(roll.roll_nv()), " IS ROLLING: [" + str(amount) + " DICEROLLS] ==> ")
-        else:
-            post(roll.roll_v(), " IS ROLLING: ")
+        if testing:
+            return echo("test complete:" + message)
+        return roll
+
+
+def printroll(roll):
+    if not roll:
+        return
+    print(roll.roll_nv())
+    if roll.explode > 0:
+        post(roll.roll_vv(), " IS ROLLING, exploding on " + str(roll.explode) + "+: \n")
+    elif len(roll.r) > 50:
+        post(str(roll.roll_nv()), " IS ROLLING: [" + str(len(roll.r)) + " DICEROLLS] ==> ")
+    else:
+        post(roll.roll_v(), " IS ROLLING: ")
+
 
 
 def menucmds(message, stripped=""):

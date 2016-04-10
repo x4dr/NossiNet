@@ -2,46 +2,44 @@ import random
 
 
 class WoDDice(object):
-    def __init__(self, maxroll=10, minroll=1):
+    def __init__(self, maxroll=10, difficulty=6, subone=1, explodeon=0, minroll=1):
         self.min = minroll
         self.max = maxroll
+        self.difficulty = difficulty
+        self.subone = subone
+        self.explodeon = explodeon
         self.r = []
         self.log = ""
         self.succ = 0
         self.antisucc = 0
         self.infinity = max(100, maxroll * 10)
+        if self.explodeon <= self.min:
+            self.explodeon = self.max + 1
 
-    def roll_next(self, amount, difficulty=6, subone=1, explodeon=0):
-        if explodeon <= self.min:
-            explodeon = self.max + 1
+    def roll_next(self, amount):
         if self.infinity < amount:
             self.infinity = amount
         i = 0
-        log = ""
-        r = []
-        successes = 0
-        antisuccess = 0
+        self.log = ""
+        self.r = []
+        self.succ = 0
+        self.antisucc = 0
         while i < amount:
-            r.append(random.randint(self.min, self.max))
-            log += str(r[-1]) + ": "
-            if r[-1] >= difficulty:
-                successes += 1
-                log += "success"
-            elif r[-1] <= subone:
-                antisuccess += 1
-                log += "subtract"
-            if r[-1] >= explodeon:
+            self.r.append(random.randint(self.min, self.max))
+            self.log += str(self.r[-1]) + ": "
+            if self.r[-1] >= self.difficulty:
+                self.succ += 1
+                self.log += "success"
+            elif self.r[-1] <= self.subone:
+                self.antisucc += 1
+                self.log += "subtract"
+            if self.r[-1] >= self.explodeon:
                 amount += 1
-                log += ", exploding!"
-            log += "\n"
+                self.log += ", exploding!"
+            self.log += "\n"
             if i >= self.infinity:
                 break
             i += 1
-
-            self.r = r
-            self.log = log
-            self.succ = successes
-            self.antisucc = antisuccess
 
     @staticmethod
     def botchformat(succ, antisucc):
