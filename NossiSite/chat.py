@@ -120,6 +120,11 @@ def resolvedefine(message, reclvl=0, trace=False, user=None):
         if reclvl > 100:
             echo("Problem resolving " + message, " ERROR:")
             return 0
+
+    finder = re.compile(r'\((.*?)\)(.*)')
+    for i in finder.findall(message):
+        print("match:", i)
+        message = message.replace("("+"".join(i)+")", resolvedefine(i[0], reclvl=reclvl + 1, trace=trace))
     finder = re.compile(r'§([^ ]+)(.*)')
     for i in finder.findall(message):
         if i[0] in session['activeroom'].getuserlist_text():
@@ -179,8 +184,6 @@ def diceparser(message, rec=False, testing=False):
         testing = True
         message = message.replace("?", "")
 
-    print('incoming message:', message)
-
     amountfilter = re.compile(r'(^[0-9]*)')
     dicefilter = re.compile(r'd([0-9]*)', re.IGNORECASE)
     explodefilter = re.compile(r'!+')
@@ -198,7 +201,6 @@ def diceparser(message, rec=False, testing=False):
             defines(message)
             return
         else:
-            print(message, "<<<")
             if not rec:
                 return diceparser(str(resolvedefine(message, trace=testing)), rec=True, testing=testing)
             else:

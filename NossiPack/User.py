@@ -171,13 +171,18 @@ class Userlist(object):
         db.commit()
         db.close()
 
-    def adduser(self, user):
+    def adduser(self, user, password):
         if self.contains(user.username):
             return 'Name is taken!'
-        self.userlist.append(user)
-        print("kudosdebt:", user.kudosdebt)
-        print(self.userlist[-1].kudosdebt)
-        self.saveuserlist()
+        u = User(username=user, password=password)
+        d = dict(username=u.username, pwhash=u.pw_hash, kudos=u.kudos, funds=u.funds, kudosdebt=u.kudosdebt,
+                 sheet=u.sheet.serialize(), oldsheets=u.serialize_old_sheets(), defines=pickle.dumps(u.defines),
+                 admin=u.admin)
+        db = connect_db()
+        db.execute(
+            "INSERT OR REPLACE INTO users (username, passwordhash, kudos, funds, kudosdebt, "
+            "sheet, oldsheets, defines, admin) "
+            "VALUES (:username,:pwhash,:kudos, :funds, :kudosdebt, :sheet, :oldsheets, :defines, :admin)", d)
         return None
 
     def contains(self, user):
