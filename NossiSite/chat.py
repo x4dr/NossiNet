@@ -123,7 +123,7 @@ def resolvedefine(message, reclvl=0, trace=False, user=None):
     finder = re.compile(r'§([^ ]+)(.*)')
     for i in finder.findall(message):
         if i[0] in session['activeroom'].getuserlist_text():
-            message = message.replace("".join(i), resolvedefine(i[1], reclvl=reclvl + 1, trace=trace, user=i[0]))
+            message = message.replace("§"+"".join(i), resolvedefine(i[1], reclvl=reclvl + 1, trace=trace, user=i[0]))
             break
     if user is None:
         user = session.get('user', '?')
@@ -235,8 +235,8 @@ def diceparser(message, rec=False, testing=False):
             explodebehaviour = ""
         post(str(amount) + " " + str(dice) + " sided dice against " + str(
             diff) + ", " + onebehaviour + " ones" + explodebehaviour + ".", " ROLLS: ")
-        roll = WoDDice(dice)
-        roll.roll(amount, diff, subones, explode)
+        roll = WoDDice(dice, diff, subones, explode)
+        roll.roll(amount)
         if testing:
             return echo("test complete:" + message)
         return roll
@@ -246,13 +246,12 @@ def printroll(roll):
     if not roll:
         return
     print(roll.roll_nv())
-    if roll.explode > 0:
-        post(roll.roll_vv(), " IS ROLLING, exploding on " + str(roll.explode) + "+: \n")
+    if roll.explodeon <= roll.max:
+        post(roll.roll_vv(), " IS ROLLING, exploding on " + str(roll.explodeon) + "+: \n")
     elif len(roll.r) > 50:
         post(str(roll.roll_nv()), " IS ROLLING: [" + str(len(roll.r)) + " DICEROLLS] ==> ")
     else:
         post(roll.roll_v(), " IS ROLLING: ")
-
 
 
 def menucmds(message, stripped=""):

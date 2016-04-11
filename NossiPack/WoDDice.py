@@ -66,8 +66,8 @@ class WoDDice(object):
         log += "==> " + str(self.botchformat(self.succ, self.antisucc))
         return log
 
-    def roll(self, amount, difficulty=6, subone=1, explodeon=0):
-        self.roll_next(amount, difficulty, subone, explodeon)
+    def roll(self, amount):
+        self.roll_next(amount)
         return self.roll_v()
 
     @staticmethod
