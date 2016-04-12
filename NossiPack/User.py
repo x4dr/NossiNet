@@ -172,7 +172,7 @@ class Userlist(object):
         db.close()
 
     def adduser(self, user, password):
-        if self.contains(user.username):
+        if self.contains(user):
             return 'Name is taken!'
         u = User(username=user, password=password)
         d = dict(username=u.username, pwhash=u.pw_hash, kudos=u.kudos, funds=u.funds, kudosdebt=u.kudosdebt,
