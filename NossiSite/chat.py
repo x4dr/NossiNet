@@ -1,3 +1,5 @@
+import time
+
 from NossiSite import app, socketio
 # import time
 # import threading
@@ -121,10 +123,15 @@ def resolvedefine(message, reclvl=0, trace=False, user=None):
             echo("Problem resolving " + message, " ERROR:")
             return 0
 
-    finder = re.compile(r'\((.*?)\)(.*)')
+    finder = re.compile(r'(.*?)\((.*?)\)(.*)')
     for i in finder.findall(message):
         print("match:", i)
-        message = message.replace("("+"".join(i)+")", resolvedefine(i[0], reclvl=reclvl + 1, trace=trace))
+        roll = diceparser(i[1]).roll_nv()
+        if not roll:
+            roll = ""
+        # else:
+            # post(str(roll), " RESOLVED ("+i[1]+") TO: ")
+        message = i[0]+str(roll)+i[2]
     finder = re.compile(r'§([^ ]+)(.*)')
     for i in finder.findall(message):
         if i[0] in session['activeroom'].getuserlist_text():
@@ -249,7 +256,10 @@ def printroll(roll):
         return
     print(roll.roll_nv())
     if roll.explodeon <= roll.max:
-        post(roll.roll_vv(), " IS ROLLING, exploding on " + str(roll.explodeon) + "+: \n")
+        post("", " IS ROLLING, exploding on " + str(roll.explodeon) + "+: \n")
+        for i in roll.roll_vv().split("\n"):
+            post(i, " ROLL: ")
+            time.sleep(0.5)
     elif len(roll.r) > 50:
         post(str(roll.roll_nv()), " IS ROLLING: [" + str(len(roll.r)) + " DICEROLLS] ==> ")
     else:
