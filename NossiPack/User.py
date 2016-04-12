@@ -183,6 +183,8 @@ class Userlist(object):
             "INSERT OR REPLACE INTO users (username, passwordhash, kudos, funds, kudosdebt, "
             "sheet, oldsheets, defines, admin) "
             "VALUES (:username,:pwhash,:kudos, :funds, :kudosdebt, :sheet, :oldsheets, :defines, :admin)", d)
+        db.commit()
+        db.close()
         return None
 
     def contains(self, user):

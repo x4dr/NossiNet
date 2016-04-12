@@ -356,7 +356,7 @@ def register():  # this is not clrs secure because it does not need to be
                 password = request.form['password']
                 if len(password) > 0:
                     print("creating user", username)
-                    error = u.adduser(username,password)
+                    error = u.adduser(username, password)
                     if error is None:
                         flash('User successfully created.')
                         return redirect(url_for('start'))
