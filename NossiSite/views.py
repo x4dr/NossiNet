@@ -346,28 +346,31 @@ def add_funds():
 
 @app.route('/blog/<x>')
 def filerender(x):
-    with open("thoughts.txt") as file:
-        text = file.read()
     try:
-        x = int(x) - 1
-        if x < 0:
+        with open("thoughts.txt") as file:
+            text = file.read()
+        try:
+            x = int(x) - 1
+            if x < 0:
+                x = 0
+        except:
             x = 0
-    except:
-        x = 0
 
-    entries = text.split("ÄÄ")
+        entries = text.split("ÄÄ")
 
-    entries = [i for i in entries if i != ""]
-    if x >= len(entries):
-        x = len(entries) - 1
-    entries.reverse()
-    entry = entries[x]
+        entries = [i for i in entries if i != ""]
+        if x >= len(entries):
+            x = len(entries) - 1
+        entries.reverse()
+        entry = entries[x]
 
-    print(entry)
-    text = entry
-    title = entry.split("\n")[0]
+        print(entry)
+        text = entry
+        title = entry.split("\n")[0]
 
-    return render_template('renderfile.html', title=title, torender=text)
+        return render_template('renderfile.html', title=title, torender=text)
+    except Exception as j:
+        return str(j)
 
 
 @app.route('/register', methods=['GET', 'POST'])
