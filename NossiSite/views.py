@@ -110,7 +110,7 @@ def showsheet(name="None"):
     if not session.get('logged_in'):
         flash('You are not logged in!')
         return redirect(url_for('login'))
-    if name=="None":
+    if name == "None":
         return "error"
     ul = Userlist()
     u = ul.loaduserbyname(name)
@@ -184,7 +184,7 @@ def showoldsheets(x):
         sheetnum = int(x)
     except:
         return redirect(url_for('/oldsheets/'))
-    #print("><><",u.oldsheets[sheetnum].getdictrepr())
+    # print("><><",u.oldsheets[sheetnum].getdictrepr())
     return render_template('charsheet.html', character=u.oldsheets[sheetnum].getdictrepr(), oldsheet=x)
 
 
@@ -342,6 +342,31 @@ def add_funds():
     gentoken()
     print(token, "<<<<")
     return render_template('funds.html', user=u, error=error, keyprovided=keyprovided)
+
+
+@app.route('/blog/<x>')
+def filerender(x):
+    with open("thoughts.txt") as file:
+        text = file.read()
+    try:
+        x = int(x) - 1
+        if x < 0:
+            x = 0
+    except:
+        x = 0
+
+    entries = text.split("ÄÄ")
+    entries = [i for i in entries if i != ""]
+    if x >= len(entries):
+        x = len(entries) - 1
+    entries.reverse()
+    entry = entries[x]
+
+    print(entry)
+    text = entry
+    title = entry.split("\n")[0]
+
+    return render_template('renderfile.html', title=title, torender=text)
 
 
 @app.route('/register', methods=['GET', 'POST'])
