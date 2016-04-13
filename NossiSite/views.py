@@ -356,6 +356,7 @@ def filerender(x):
         x = 0
 
     entries = text.split("ÄÄ")
+
     entries = [i for i in entries if i != ""]
     if x >= len(entries):
         x = len(entries) - 1
