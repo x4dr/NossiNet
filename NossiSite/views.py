@@ -119,7 +119,7 @@ def showsheet(name="None"):
         if u.sheetpublic:
             return render_template('charsheet.html', character=u.sheet.getdictrepr(), own=False)
         else:
-            return render_template('charsheet.html', character=Character(), own=False)
+            return render_template('charsheet.html', character=Character().getdictrepr(), own=False)
     else:
         abort(404)
 
