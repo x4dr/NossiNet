@@ -69,6 +69,10 @@ class User(object):
             self.oldsheets[-1].setfromform(form)
         self.sheet.setfromform(form)
 
+    @property
+    def sheetpublic(self):
+        return "public" in self.sheet.meta["Notes"][:22]
+
     def addkudos(self, kudos):
         if kudos == 0:
             return  # so that if two people both owe each other it will not create an endless loop
@@ -186,6 +190,7 @@ class Userlist(object):
         db.commit()
         db.close()
         return None
+
 
     def contains(self, user):
         for u in self.userlist:
