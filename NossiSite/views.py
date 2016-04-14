@@ -114,8 +114,12 @@ def showsheet(name="None"):
         return "error"
     ul = Userlist()
     u = ul.loaduserbyname(name)
+
     if u:
-        return render_template('charsheet.html', character=u.sheet.getdictrepr(), own=False)
+        if u.sheetpublic:
+            return render_template('charsheet.html', character=u.sheet.getdictrepr(), own=False)
+        else:
+            return render_template('charsheet.html', character=Character(), own=False)
     else:
         abort(404)
 
@@ -363,8 +367,6 @@ def filerender(x):
             x = len(entries) - 1
         entries.reverse()
         entry = entries[x]
-
-        print(entry)
         text = entry
         title = entry.split("\n")[0]
 
