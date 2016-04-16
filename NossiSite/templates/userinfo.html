@@ -44,7 +44,7 @@
                 {% else %}
                  by <a href="{{ url_for('show_user_profile', username=msg.author) }}">{{ msg.author }} {% endif %}</a>
             </h2>{{ msg.text|safe }}
-            {% if msg.value > 0 %}
+            {% if msg.value != 0 %}
                 <br><h3>This message has a price of {{ msg.value }} Credit{% if msg.value!=1 %}s{% endif %}{% if msg.honored=="irrelevant" %}{% else %}
                    and is{% if msg.lock %} locked{% else %} unlocked{% endif %}{% endif %}.
 
@@ -63,8 +63,9 @@
                 {% else %}
                     {% if msg.honored %}
                     {% else %}<br>
-                        <form action="{{ url_for('honor', ident=msg.id) }}">
+                        <form action="{{ url_for('honor', ident=msg.id) }}" method="post">
                             <br>
+                            <input type="hidden" name="token" value="{{ token }}">
                              If you liked this deal, honor it and you will gain {{ msg.kudosrep }} Kudos
                                 and {{ msg.author }} will gain {{ msg.kudosaut }} Kudos.
                             <br>

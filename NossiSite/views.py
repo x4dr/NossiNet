@@ -116,7 +116,7 @@ def showsheet(name="None"):
     u = ul.loaduserbyname(name)
 
     if u:
-        if u.sheetpublic:
+        if u.sheetpublic or session.get('admin', False):
             return render_template('charsheet.html', character=u.sheet.getdictrepr(), own=False)
         else:
             return render_template('charsheet.html', character=Character().getdictrepr(), own=False)
@@ -321,9 +321,9 @@ def add_funds():
                 if amount > 0:
                     key = int(time.time())
                     key = generate_password_hash(str(key))
-                    print("user: ", u.username)
-                    print("amount: ", amount)
-                    print("key: ", key)
+                    print("REQUEST BY", u.username, end=" FOR")
+                    print(amount, "CREDITS.")
+                    print("KEY: ", key)
                     session['key'] = key[-10:]
                     session['amount'] = amount
                     keyprovided = True
@@ -344,7 +344,6 @@ def add_funds():
 
     ul.saveuserlist()
     gentoken()
-    print(token, "<<<<")
     return render_template('funds.html', user=u, error=error, keyprovided=keyprovided)
 
 
@@ -412,13 +411,12 @@ def login():  # this is not clrs secure because it does not need to be
         else:
             session['logged_in'] = True
             session['user'] = user
+            session['admin'] = (ul.loaduserbyname(session.get('user')).admin == "Administrator")
             flash('You were logged in')
             print("logged in as", user)
 
             return redirect(url_for('show_entries'))
     gentoken()
-    print("logging in...")
-
     return render_template('login.html', error=error)
 
 
@@ -450,7 +448,7 @@ def show_user_profile(username):
         cur = g.db.execute(
             'SELECT author,recipient,title,text,value,lock,honored, id FROM messages '
             'WHERE ? IN (recipient, author) ' + ' ORDER BY id DESC',
-            [session.get('user')])
+            (session.get('user'),))
         for row in cur.fetchall():
             msg = dict(author=row[0], recipient=row[1], title=row[2], text=row[3], value=row[4],
                        lock=row[5], honored=row[6], id=row[7])
@@ -465,23 +463,19 @@ def show_user_profile(username):
                     msg['honored'] = "irrelevant"
                 else:
                     msg['text'] = '[locked until you pay]'
-            if msg['value'] <= 0:  # usually we dont need the special stuff
-                msg.pop('honored')
-                msg.pop('lock')
             msgs.append(msg)
             #  else:
 
-    ul = Userlist()
+    ul = Userlist(preload=True)
     if ul.contains(username):
-        u = ul.loaduserbyname(username)
+        u = ul.getuserbyname(username)
     else:
         u = User(username, "")
-        u.kudos = random.randint(0, 10000)
+        u.kudos = random.randint(0, 100000)
     ownkudos = 0
     if session.get('logged_in', False):
-        ownkudos = ul.loaduserbyname(session.get('user')).kudos
-    else:
-        gentoken()
+        ownkudos = ul.getuserbyname(session.get('user')).kudos
+    gentoken()
     site = render_template('userinfo.html', ownkudos=ownkudos, user=u, msgs=msgs)
     return site
 
@@ -514,8 +508,7 @@ def checktoken():
               token.get(session.get('user', None), "INVALID"))
         return False
     else:
-        if session.get('user', False):
-            token.pop(session.get('user', ''))
+        token.pop(session.get('user', ''))
         return True
 
 
@@ -548,6 +541,7 @@ def check0(a):  # used in sendmsg because typecasts in THAT line would make thin
 def honor(ident):
     error = None
     u = None
+    u = ul.loaduserbyname(session.get('user'))
     if checktoken():
         honored = 1
         ul = Userlist()
@@ -586,6 +580,7 @@ def honor(ident):
                 ul.saveuserlist()
         else:
             error = 'already unlocked!'
+    gentoken()
     return render_template('userinfo.html', user=u, error=error,
                            heads=['<META HTTP-EQUIV="refresh" CONTENT="5;url=' +
                                   url_for('show_user_profile', username=u.username) + '">'])
@@ -593,50 +588,54 @@ def honor(ident):
 
 @app.route('/unlock/<ident>')
 def unlock(ident):
+
     ul = Userlist()
     error = None
     lock = 0
     author = ''
     value = 0
-    u = ul.loaduserbyname(session.get('user'))
-    cur = g.db.execute('SELECT author, value, lock FROM messages WHERE id = ?', [ident])
-    for row in cur.fetchall():
-        author = row[0]
-        value = row[1]
-        lock = row[2]
-    n = ul.loaduserbyname(author)  # n because n = u seen from the other side of the table
-    if lock == 1:
-        if u.kudos * 0.9 < value:
-            error = "You do not have enough kudos for this transaction!"
-        elif n.kudos * 0.9 < value:
-            error = "Your partner has not enough kudos for this transaction!"
-        elif u.funds < value:
-            error = "Not enough funds."
+    if checktoken():
+        u = ul.loaduserbyname(session.get('user'))
+        cur = g.db.execute('SELECT author, value, lock FROM messages WHERE id = ?', [ident])
+        for row in cur.fetchall():
+            author = row[0]
+            value = row[1]
+            lock = row[2]
+        n = ul.loaduserbyname(author)  # n because n = u seen from the other side of the table
+        if lock == 1:
+            if u.kudos * 0.9 < abs(value):
+                error = "You do not have enough kudos for this transaction!"
+            elif n.kudos * 0.9 < abs(value):
+                error = "Your partner has not enough kudos for this transaction!"
+            elif u.funds < value:
+                error = "Not enough funds."
+            else:
+                u.funds -= value
+                uescrow = int(
+                    0.1 * u.kudos + abs(
+                        value))  # (10% of the total Kudos now + twice the value)will be paid upon redemption
+                u.addkudos(-uescrow)  # but 10% and the value are deducted now
+                uescrow += value
+                aftertax = int(value * 0.99)
+                tax = value - aftertax  # TAX
+                print('taxed')
+                print(tax)
+                n.funds = int((n.funds + aftertax))
+                nescrow = int(0.1 * n.kudos + abs(value))
+                n.addkudos(-nescrow)
+                nescrow += value
+                g.db.execute('UPDATE messages SET lock = 0, kudosrep=?, kudosaut=? WHERE id = ?',
+                             [uescrow, nescrow, ident])
+                # cur = g.db.execute('SELECT * FROM messages')
+                # for row in cur.fetchall():
+                #    print(row)
+                flash("Transfer complete. Check the received message and "
+                      "press the Honor Button if it was what you ordered.")
+                g.db.commit()
+                ul.saveuserlist()
         else:
-            u.funds -= value
-            uescrow = int(
-                0.1 * u.kudos + value)  # (10% of the total Kudos now + twice the value)will be paid upon redemption
-            u.addkudos(-uescrow)  # but 10% and the value are deducted now
-            uescrow += value
-            aftertax = int(value * 0.99)
-            tax = value - aftertax  # TAX
-            print('taxed')
-            print(tax)
-            n.funds = int((n.funds + aftertax))
-            nescrow = int(0.1 * n.kudos + value)
-            n.addkudos(-nescrow)
-            nescrow += value
-            g.db.execute('UPDATE messages SET lock = 0, kudosrep=?, kudosaut=? WHERE id = ?',
-                         [uescrow, nescrow, ident])
-            # cur = g.db.execute('SELECT * FROM messages')
-            # for row in cur.fetchall():
-            #    print(row)
-            flash("Transfer complete. Check the received message and "
-                  "press the Honor Button if it was what you ordered.")
-            g.db.commit()
-            ul.saveuserlist()
-    else:
-        flash('already unlocked!')
+            flash('already unlocked!')
+    gentoken()
     return render_template('userinfo.html', user=u, error=error,
                            heads=['<META HTTP-EQUIV="refresh" CONTENT="5;url=' + url_for('show_user_profile',
                                                                                          username=u.username) + '">'])
@@ -671,8 +670,8 @@ def payout():
             try:
                 amount = int(request.form['amount'])
                 u.funds += -amount
-                print('DEDUCT')
-                print(session.get('user'))
+                print('DEDUCT BY', end=" ")
+                print(session.get('user'), end=": ")
                 print(amount)
                 flash('Deduct successfull')
             except:
