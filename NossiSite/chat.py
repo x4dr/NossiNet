@@ -141,7 +141,10 @@ def resolvedefine(message, reclvl=0, trace=False, user=None):
 
     if user is None:
         u = ul.loaduserbyname(session.get('user', '?'))
-    elif not u.sheetpublic:
+    else:
+        u = ul.loaduserbyname(user)
+
+    if not (u.sheetpublic or session.get('admin', False)):
         u = NossiPack.Character.Character()
 
     u = ul.loaduserbyname(user)

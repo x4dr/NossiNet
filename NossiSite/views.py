@@ -590,6 +590,7 @@ def honor(ident):
 def unlock(ident):
     ul = Userlist()
     error = None
+    u = None
     lock = 0
     author = ''
     value = 0
@@ -665,14 +666,13 @@ def resetpassword():
     if request.method == 'POST':
         if checktoken():
             try:
-                admin = (u.admin == "Administrator":)
                 username = request.form['username']
                 password = request.form['password']
                 newpassword = request.form['newpassword']
-                if admin
+                if session.get('admin', False):
                     u = ul.loaduserbyname(username)
                 if u.username == username:
-                    if u.check_password(password) or admin:
+                    if u.check_password(password) or session.get('admin', False):
                         u.set_password(newpassword)
                         flash('Password change successfull!')
                     else:
