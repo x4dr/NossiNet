@@ -41,6 +41,9 @@ class User(object):
         self.pw_hash = generate_password_hash(newpassword)
         return True
 
+    def check_password(self, password):
+        return self.pw_hash == generate_password_hash(password)
+
     def serialize_old_sheets(self):
         oldsheetserialized = []
         for s in self.oldsheets:

@@ -137,9 +137,13 @@ def resolvedefine(message, reclvl=0, trace=False, user=None):
         if i[0] in session['activeroom'].getuserlist_text():
             message = message.replace("§"+"".join(i), resolvedefine(i[1], reclvl=reclvl + 1, trace=trace, user=i[0]))
             break
-    if user is None:
-        user = session.get('user', '?')
     ul = Userlist()
+
+    if user is None:
+        u = ul.loaduserbyname(session.get('user', '?'))
+    elif not u.sheetpublic:
+        u = NossiPack.Character.Character()
+
     u = ul.loaduserbyname(user)
     if not u:
         echo("user " + user + " not found!", "NAMEERROR: ", err=True)

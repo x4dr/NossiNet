@@ -540,7 +540,7 @@ def check0(a):  # used in sendmsg because typecasts in THAT line would make thin
 @app.route('/honor/<ident>', methods=['POST'])
 def honor(ident):
     error = None
-    u = None
+    ul = Userlist(preload=True)
     u = ul.loaduserbyname(session.get('user'))
     if checktoken():
         honored = 1
@@ -588,7 +588,6 @@ def honor(ident):
 
 @app.route('/unlock/<ident>')
 def unlock(ident):
-
     ul = Userlist()
     error = None
     lock = 0
@@ -654,6 +653,37 @@ def cheat():
 
     #   print('/ADMINCHEAT/ done!')
     #   return 'OK'
+
+
+@app.route('/resetpassword/', methods=['GET', 'POST'])
+def resetpassword():
+    if not session.get('logged_in'):
+        flash('You are not logged in!')
+        return redirect(url_for('login'))
+    ul = Userlist()
+    u = ul.loaduserbyname(session.get('user'))
+    if request.method == 'POST':
+        if checktoken():
+            try:
+                admin = (u.admin == "Administrator":)
+                username = request.form['username']
+                password = request.form['password']
+                newpassword = request.form['newpassword']
+                if admin
+                    u = ul.loaduserbyname(username)
+                if u.username == username:
+                    if u.check_password(password) or admin:
+                        u.set_password(newpassword)
+                        flash('Password change successfull!')
+                    else:
+                        flash('Wrong password!')
+                else:
+                    flash('You are not ' + username)
+            except:
+                flash('You seem to not exist. Huh...')
+    ul.saveuserlist()
+    gentoken()
+    return render_template('resetpassword.html')
 
 
 @app.route('/payout/', methods=['GET', 'POST'])
