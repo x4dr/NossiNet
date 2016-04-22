@@ -537,7 +537,7 @@ def check0(a):  # used in sendmsg because typecasts in THAT line would make thin
     return int(a) == 0
 
 
-@app.route('/honor/<ident>', methods=['POST'])
+@app.route('/honor/<ident>', methods=['POST', 'GET'])
 def honor(ident):
     error = None
     ul = Userlist(preload=True)
@@ -681,6 +681,7 @@ def resetpassword():
                     flash('You are not ' + username)
             except:
                 flash('You seem to not exist. Huh...')
+                return render_template('resetpassword.html')
     ul.saveuserlist()
     gentoken()
     return render_template('resetpassword.html')

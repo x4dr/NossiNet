@@ -279,7 +279,11 @@ class Character(object):
         def getval(name):
             name = name.replace(" ", "")
             value = re.compile(name + r'.*?</td>(.*?)</td>', flags=(re.MULTILINE + re.DOTALL + re.IGNORECASE))
-            return value.search(dalines).group().count("checked")
+            try:
+                return value.search(dalines).group().count("checked")
+            except:
+                print("not found in sheet:", name, "!")
+                return 0
 
         def getbgdscp():
             section = re.compile(r'Backgrounds(.*?)Merit',
