@@ -8,7 +8,7 @@ from flask import render_template, session, request, flash, url_for, redirect
 from flask_socketio import emit, join_room, leave_room, disconnect
 from NossiPack.Chatrooms import Chatroom
 import NossiPack.Character
-from NossiPack.User import Userlist
+from NossiPack.User import Userlist, User
 from NossiPack.WoDDice import WoDDice
 
 thread = None
@@ -129,13 +129,13 @@ def resolvedefine(message, reclvl=0, trace=False, user=None):
         roll = diceparser(i[1]).roll_nv()
         if not roll:
             roll = ""
-        # else:
+            # else:
             # post(str(roll), " RESOLVED ("+i[1]+") TO: ")
-        message = i[0]+str(roll)+i[2]
+        message = i[0] + str(roll) + i[2]
     finder = re.compile(r'§([^ ]+)(.*)')
     for i in finder.findall(message):
         if i[0] in session['activeroom'].getuserlist_text():
-            message = message.replace("§"+"".join(i), resolvedefine(i[1], reclvl=reclvl + 1, trace=trace, user=i[0]))
+            message = message.replace("§" + "".join(i), resolvedefine(i[1], reclvl=reclvl + 1, trace=trace, user=i[0]))
             break
     ul = Userlist()
 
@@ -144,10 +144,11 @@ def resolvedefine(message, reclvl=0, trace=False, user=None):
     else:
         u = ul.loaduserbyname(user)
 
-    if not (u.sheetpublic or session.get('admin', False)):
-        u = NossiPack.Character.Character()
+    if not (u.sheetpublic or u.username == session.get('user', '?') or session.get('admin', False)):
+        u = User()
+        u.sheet = NossiPack.Character.Character()
+        u.defines = {}
 
-    u = ul.loaduserbyname(user)
     if not u:
         echo("user " + user + " not found!", "NAMEERROR: ", err=True)
         return
@@ -155,6 +156,8 @@ def resolvedefine(message, reclvl=0, trace=False, user=None):
     if trace:
         echo(" DEFINITIONS FOR " + user, "", err=True)
         echodict(workdef)
+    if user is None:
+        user = ""
     message = message.replace("§" + user, "")
     finder = re.compile(r'#([^ +#]+)_')
     for i in finder.findall(message):
