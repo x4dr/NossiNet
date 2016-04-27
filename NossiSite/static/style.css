@@ -1,47 +1,45 @@
-html * {
+* {
     color: #00f700;
-    background: #000000;
-     overflow-x: hidden;
     font-family: "Lucida Console", Monaco, monospace;
-!important;
 }
 
 body {
-    font-family: "Lucida Console", Monaco, monospace;
     background: black;
-    overflow-x: scroll
-}
-a, h1, h2       { color: #00f700; }
-
-
-h1              { border-bottom: 2px solid #000000;  }
-h2              {
-                font-size: 1.2em; }
-
-h3 {
-    font-size: 1.0em;
+    overflow-x: scroll;
 }
 
-h3 {
-    color: #007700
+a, h1, h2 { color: #00f700; }
+
+h1 { border-bottom: 2px solid #000000; }
+h2 { font-size: 1.2em; } 
+h3 { font-size: 1.0em; }
+
+h3 { color: #007700; }
+
+.page {
+  margin: 1em auto;
+  width: 95%;
+  min-width: 35em;
+  border: 5px solid #00f700;
+  padding: 0.8em;
+  background: #010101;
+  color: #00f700;
 }
 
-.page           { margin: 1em auto; width: 95%; min-width: 35em; border: 5px solid #00f700;
-                  padding: 0.8em; background: #010101; color: #00f700;  }
 .leet {
     background-color: black;
     font-weight: bold;
     color: #00f700;
     border: 1px solid #00f700;
     margin: 1px;
-        }
-.chr_background{}
-.chr_discipline{}
+}
 
-input[type="text"], textarea {
+input[type="text"],
+textarea {
     background-color: black;
     color: #00f700;
 }
+
 pre {
     white-space: pre-wrap;       /* CSS 3 */
     white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
@@ -56,8 +54,16 @@ pre {
     border: 1px solid #00f700;
     margin: 1px;
 }
-.entries        { list-style: none; margin: 0; padding: 0; background: #000000;color:#00f700 }
-.entries li     { margin: 0.8em ; }
+
+.entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: #000000;
+  color:#00f700
+}
+
+.entries li { margin: 0.8em ; }
 .entries li h2  { margin-left: 0; }
 
 label { white-space: nowrap}
@@ -66,18 +72,29 @@ label { white-space: nowrap}
     font-size: 0.9em;
     border-bottom: 1px solid #000000;
 }
-.add-entry dl   { font-weight: bold; color: #00f700; }
-.metanav        { text-align: right; font-size: 0.8em; padding: 0.3em;
-                  margin-bottom: 1em; background: #000;color: #00f700; }
-.flash          { background:#000; padding: 0.5em;
-                  border: 1px solid #00f700; }
+
+.add-entry dl { font-weight: bold; color: #00f700; }
+
+.metanav {
+  text-align: right;
+  font-size: 0.8em;
+  padding: 0.3em;
+  margin-bottom: 1em;
+  background: #000;
+  color: #00f700;
+}
+
+.flash {
+  background:#000;
+  padding: 0.5em;
+  border: 1px solid #00f700;
+}
 
 .imgover {
     background: transparent;
     position: absolute;
     left: 0;
     top: 0;
-
 }
 
 .error {
@@ -94,41 +111,48 @@ label { white-space: nowrap}
     height:320px;
     white-space: pre-wrap;
     border:1px solid #00f700;
-    overflow:auto; }
+    overflow:auto;
+}
 
 ::-webkit-scrollbar {
      width: auto;
 }
+
 ::-webkit-scrollbar-track {
       background-color: #000200;
 }
+
 ::-webkit-scrollbar-thumb {
       background-color: #00f700;
 }
+
 ::-webkit-scrollbar-button {
       background-color: #003300;
 }
-::-webkit-scrollbar-corner{
+
+::-webkit-scrollbar-corner {
     background-color: #003300;
 }
 
 #usermsg {
     width:395px;
-    border:1px solid #00f700; }
+    border:1px solid #00f700;
+}
 
 #submit { width: 60px; }
-
 
 .formLine {
     overflow: hidden;
     background: #ccc;
     width: 100%
 }
+
 .formLine span {
     display: block;
     overflow: hidden;
     padding: 0 5px;
 }
+
 .formLine input {
     -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;
@@ -136,11 +160,11 @@ label { white-space: nowrap}
 }
 
 input[type='radio'] {
-
     float: right;
     position:absolute;
     visibility: hidden;
 }
+
 input[type='radio'] + label {
     margin: 0;
     clear: none;
@@ -149,6 +173,6 @@ input[type='radio'] + label {
     background: url(off.png) left center no-repeat;
 }
 
-input[type='radio']:checked + label{
+input[type='radio']:checked + label {
   background: url(radio.png) left center no-repeat;
 }
