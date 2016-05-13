@@ -25,7 +25,7 @@ $(document).ready(function(){
             });
 
             socket.on('connect', function() {
-                socket.emit('ClientServerEvent', {data: 'connection established'});
+                socket.emit('ClientServerEvent', {data: '/connection established'});
             });
             var prevCommand = [];
             var commandCount = 0;
@@ -46,6 +46,7 @@ $(document).ready(function(){
             $(document).keydown(function(event){
                 var msgdata = $('#message_data');
                 var index;
+                msgdata.focus()
                 if(event.which == 38){
                     keyCount++;
                     if(typeof prevCommand[keyCount] !== "undefined") {

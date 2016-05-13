@@ -9,8 +9,17 @@
     {%- for i in range(max-val) -%}
         ○
     {%- endfor %}
-    
+{%- endmacro %}
 
+{% macro chooser(name, value, max=5) -%}
+        {% for count in range(1,max + 1) -%}{%- if loop.index0 > 1 and loop.index0 % 10 == 0 %}
+    <br>{% endif -%}<input
+                style="width: 10px"  type="radio" name="{{ name }}"
+                value="{{ count|string }}" id="{{ name }}_{{ count|string }}"{% if value == count -%}
+                checked {%- endif %} xmlns="http://www.w3.org/1999/html"><label ondblclick="resetDot(this.control)"
+                style="user-select: none;"
+                for="{{ name }}_{{ count|string }}"
+    >&nbsp</label>{%- endfor %}
 {%- endmacro %}
 
 {% block title %}
@@ -19,6 +28,47 @@
 {%- else -%}
     <title>Charactersheet</title>
 {%- endif -%}
+{% endblock %}
+
+{% block head %}
+    <script>
+     $(document).ready(function() {
+         $('form input').on('keypress', function(e) {
+            return e.which !== 13;
+         });
+
+            var namespace = '/character';
+
+            var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+
+
+            socket.on('connect', function () {
+             socket.emit('ClientServerEvent', {data: 'accessing character'})
+            });
+
+
+            $('form#commit').submit(function () {
+             var message_data = $('form#sheet').serializeArray();
+             socket.emit('ClientServerEvent', {data: message_data});
+             return false;
+            });
+         });
+
+    function resetDot(el){
+        el.checked = '';
+        if (window.getSelection) {
+            if (window.getSelection().empty) {  // Chrome
+                window.getSelection().empty();
+                } else if (window.getSelection().removeAllRanges) {  // Firefox
+                window.getSelection().removeAllRanges();
+                }
+            } else if (document.selection) {  // IE?
+                document.selection.empty();
+        }
+        }
+
+    </script>
+
 {% endblock %}
 {% block body %}
 
@@ -228,6 +278,7 @@
         {% endfor %}
 
     </table>
+    <form>
     <table width="100%">
     <tr>
 
@@ -260,7 +311,7 @@
     </tr>
         <tr>
         <td colspan="2" align="center" style="font-weight: bolder;
-         letter-spacing: 3px">{{ dots(character.Special.Willpower,character.Special.Willmax) }}</td>
+         letter-spacing: 3px">{{ chooser("Willpower", character.Special.Willpower,character.Special.Willmax) }}</td>
 
     </tr>
     <tr>
@@ -282,6 +333,7 @@
         <td colspan="2">&nbsp</td  >
     </tr>
     </table>
+    </form> 
     <div><pre>{{ character.Meta.Notes }}</pre></div>
     <div >
     {% if oldsheet %}

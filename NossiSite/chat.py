@@ -5,7 +5,7 @@ from NossiSite import app, socketio
 # import threading
 import re
 from flask import render_template, session, request, flash, url_for, redirect
-from flask_socketio import emit, join_room, leave_room, disconnect
+from flask_socketio import emit, join_room, leave_room, disconnect, rooms
 from NossiPack.Chatrooms import Chatroom
 import NossiPack.Character
 from NossiPack.User import Userlist, User
@@ -14,13 +14,13 @@ from NossiPack.WoDDice import WoDDice
 thread = None
 
 userlist = {}
-rooms = [Chatroom('lobby')]
+roomlist = [Chatroom('lobby')]
 
 
 def statusupdate():
     if session['chatmode'] == 'menu':
         emit('Status', {'status': 'Current Mode: Menu. Type "help" for help.'})
-    elif session['activeroom'] not in session['rooms']:
+    elif session['activeroom'] not in session['roomlist']:
         emit('Status', {'status': 'currently not in any room.'})
     elif session['activeroom'].name not in [x for x in userlist.values()]:
         emit('Status', {'status': 'Currently talking in: "' + session['activeroom'].name + '".'})
@@ -67,6 +67,7 @@ def decider(message):
             post(message[1:], "'s ROLL: ")
         printroll(diceparser(message[1:]))
     elif message[0] == '/':
+        print("received", message)
         if menucmds(message[1:], "/"):
             echo(message)
     elif session['chatmode'] == 'menu':
@@ -86,6 +87,24 @@ def echodict(dict):
     a.sort()
     for i in a:
         echo(("%s" % i).ljust(15) + " : " + str(dict[i]), "", err=True)
+
+
+def parseadd(message, trace=False):
+    message = message.replace("+", " + ")
+    action = True
+    adder = re.compile(r'((\b-?\d+) +\+? +(-?[0-9]+\b))')
+
+    if trace:
+        if len(message.strip()) > 2:
+            echo("adding: " + message)
+    while action:
+        a = adder.findall(message)
+        try:
+            a = a[0]
+            message = message.replace(a[0], str(int(a[1]) + int(a[2])))
+        except:
+            action = False
+    return message
 
 
 def defines(message="="):
@@ -115,15 +134,21 @@ def defines(message="="):
     ul.saveuserlist()
 
 
-def resolvedefine(message, reclvl=0, trace=False, user=None):
+def resolvedefine(message, reclvl=0, trace=False, user=""):
     try:
+
         return int(message)
     except:
-        if reclvl > 100:
-            echo("Problem resolving " + message, " ERROR:")
-            return 0
+        try:
+            if message[0] == "#":
+                return int(message[1:])
+        except:
+            if reclvl > 100:
+                echo("Problem resolving " + message, " ERROR:")
+                return 0
 
     finder = re.compile(r'(.*?)\((.*?)\)(.*)')
+    print("'" + message + "'")
     for i in finder.findall(message):
         print("match:", i)
         roll = diceparser(i[1]).roll_nv()
@@ -139,7 +164,7 @@ def resolvedefine(message, reclvl=0, trace=False, user=None):
             break
     ul = Userlist()
 
-    if user is None:
+    if user == "":
         u = ul.loaduserbyname(session.get('user', '?'))
     else:
         u = ul.loaduserbyname(user)
@@ -153,11 +178,9 @@ def resolvedefine(message, reclvl=0, trace=False, user=None):
         echo("user " + user + " not found!", "NAMEERROR: ", err=True)
         return
     workdef = u.defines.copy()
-    if trace:
-        echo(" DEFINITIONS FOR " + user, "", err=True)
-        echodict(workdef)
-    if user is None:
-        user = ""
+    # if trace:
+    #    echo(" DEFINITIONS FOR " + user, "", err=True)
+    #    echodict(workdef)
     message = message.replace("§" + user, "")
     finder = re.compile(r'#([^ +#]+)_')
     for i in finder.findall(message):
@@ -170,28 +193,20 @@ def resolvedefine(message, reclvl=0, trace=False, user=None):
     finder = re.compile(r'#([^ +#]+)')
     while not finder.findall(message) == []:
         for i in finder.findall(message):
-
-            toreplace = str(resolvedefine(workdef.get(i, "0"), reclvl + 1, trace, user))
             if trace:
                 echo(i + ":" + str(workdef.get(i, "0")))
+            toreplace = str(resolvedefine(workdef.get(i, "0"), reclvl + 1, trace, user))
+
             message = message.replace("#" + i, " " + toreplace + " ")
-    message = message.replace("+", " + ")
-    action = True
-    adder = re.compile(r'((\b-?\d+) +\+? +(-?[0-9]+\b))')
-    if trace:
-        echo("adding: " + message)
-    while action:
-        a = adder.findall(message)
-        try:
-            a = a[0]
-            message = message.replace(a[0], str(int(a[1]) + int(a[2])))
-        except:
-            action = False
-    message = message.replace(" ", "").replace("_", "")
+
+    message = parseadd(message, trace)
+
+    message = message.replace("_", "")
     return message
 
 
 def diceparser(message, rec=False, testing=False):
+    message=message.strip()
     if ";" in message:
         for m in message.split(";"):
             diceparser(m)
@@ -221,44 +236,56 @@ def diceparser(message, rec=False, testing=False):
             if not rec:
                 return diceparser(str(resolvedefine(message, trace=testing)), rec=True, testing=testing)
             else:
-                if '\\' not in message:
+                message = message.split(" ")
+                change = False
+                for m in range(len(message)):
+                    if message[m] != "":
+                        n = str(resolvedefine("#" + message[m]))
+                        print("lastditch:'" + message[m] + "'==>'" + n + "'")
+                        if n.strip(" ") != message[m]:
+                            change = True
+                            message[m] = n
+                message = [m for m in message if m != ""]
+                message = " ".join(message)
+                message = parseadd(message)
+                if change:
+                    print(message)
+                    return diceparser(message, rec, testing)
+                else:
                     return echo(' Diceroller couldn\'t parse: ' + str(message), "ROLLERERROR: ", err=True)
 
-    if not testing:
-        post(message.replace("\\", ""), " RESOLVED TO: ")
-    if '\\' not in message:
-        amount = int(amount[0])
-        if not dice:
-            dice = ['10']
-        elif dice == ['']:
-            echo('Malformed dice code. Thre have to be digits after d.', "ROLLERERROR: ", err=True)
-            return
-        dice = int(dice[0])
-        if not diff:
-            diff = ['6']
-        elif diff == ['']:
-            echo('Malformed difficulty code. There have to be digits after e or f.', "ROLLERERROR: ", err=True)
-            return
-        diff = int(diff[0])
-        if not explode:
-            explode = 0
-        else:
-            explode = dice + 1 - len(explode[0])
-        if subones:
-            onebehaviour = "subtracting"
-        else:
-            onebehaviour = "ignoring"
-        if explode > 0:
-            explodebehaviour = ", exploding on rolls of " + str(explode) + " or more"
-        else:
-            explodebehaviour = ""
-        post(str(amount) + " " + str(dice) + " sided dice against " + str(
-            diff) + ", " + onebehaviour + " ones" + explodebehaviour + ".", " ROLLS: ")
-        roll = WoDDice(dice, diff, subones, explode)
-        roll.roll(amount)
-        if testing:
-            return echo("test complete:" + message)
-        return roll
+    amount = int(amount[0])
+    if not dice:
+        dice = ['10']
+    elif dice == ['']:
+        echo('Malformed dice code. Thre have to be digits after d.', "ROLLERERROR: ", err=True)
+        return
+    dice = int(dice[0])
+    if not diff:
+        diff = ['6']
+    elif diff == ['']:
+        echo('Malformed difficulty code. There have to be digits after e or f.', "ROLLERERROR: ", err=True)
+        return
+    diff = int(diff[0])
+    if not explode:
+        explode = 0
+    else:
+        explode = dice + 1 - len(explode[0])
+    if subones:
+        onebehaviour = "subtracting"
+    else:
+        onebehaviour = "ignoring"
+    if explode > 0:
+        explodebehaviour = ", exploding on rolls of " + str(explode) + " or more"
+    else:
+        explodebehaviour = ""
+    post(str(amount) + " " + str(dice) + " sided dice against " + str(
+        diff) + ", " + onebehaviour + " ones" + explodebehaviour + ".", " ROLLS: ")
+    roll = WoDDice(dice, diff, subones, explode)
+    roll.roll(amount)
+    if testing:
+        return echo("test complete:" + message)
+    return roll
 
 
 def printroll(roll):
@@ -314,7 +341,7 @@ def menucmds(message, stripped=""):
             emit('Message', {'data': 'no room to get list from!'})
     elif message.split(' ')[0] == 'room':
         echo(message, ": /")
-        emit('Message', {'data': " ".join(x.name for x in session['rooms'] if x != session['rooms'][0])})
+        emit('Message', {'data': " ".join(x.name for x in session['roomlist'] if x != session['roomlist'][0])})
     elif message.split(' ')[0] == 'width':
         echo(message, ": /")
         try:
@@ -342,21 +369,21 @@ def menucmds(message, stripped=""):
         if room is not None:
             emit('Message', {'data': 'subscribing to ' + room + '...'})
             joined = False
-            if room in [x.name for x in session['rooms']]:
+            if room in [x.name for x in session['roomlist']]:
                 emit('Message', {'data': 'already in there!'})
             else:
-                joining = rooms[0]
-                for r in rooms:
+                joining = roomlist[0]
+                for r in roomlist:
                     if (room == r.name) and (not r.mailbox):
                         r.userjoin(session['user'])
-                        session['rooms'].append(r)
+                        session['roomlist'].append(r)
                         joined = True
                         joining = r
                 if not joined:
                     joining = Chatroom(room)
                     joining.userjoin(session['user'])
-                    session['rooms'].append(joining)
-                    rooms.append(joining)
+                    session['roomlist'].append(joining)
+                    roomlist.append(joining)
 
                 leave_room(session['activeroom'].name)
                 session['activeroom'] = joining
@@ -371,10 +398,10 @@ def menucmds(message, stripped=""):
             room = session['activeroom'].name
         emit('Message', {'data': 'unsubscribing from ' + room + '...'})
         left = False
-        for r in session['rooms']:
+        for r in session['roomlist']:
             if (room == r.name) and (not r.mailbox):
                 r.userleave(session['user'])
-                session['rooms'].remove(r)
+                session['roomlist'].remove(r)
                 left = True
 
                 emit('Message', {'data': 'removed ' + room})
@@ -384,7 +411,7 @@ def menucmds(message, stripped=""):
     elif message.split(' ')[0] == 'mailbox':
         echo(message, ": /")
         emit('Message', {'data': '\n#####START###LOG#####\n' +
-                                 session['rooms'][0].getlog(session['user']) +
+                                 session['roomlist'][0].getlog(session['user']) +
                                  '######END####LOG#####\n'})
     elif message.split(' ')[0] == 'msg':
         echo(message, ": /")
@@ -398,7 +425,7 @@ def menucmds(message, stripped=""):
             emit('Message', {'data': 'message what?'})
             recipient = None
         if recipient is not None:
-            for r in rooms:
+            for r in roomlist:
                 if r.name == recipient + "_mailbox":
                     r.addline(session['user'] + "->" + recipient + ": " + recipient_message)
             emit('Message', {'data': session['user'] + "->" + recipient + ": " + recipient_message})
@@ -409,7 +436,7 @@ def menucmds(message, stripped=""):
         room = message.split(' ')[1]
         emit('Message', {'data': 'switching to ' + room + '...'})
         switched = False
-        for r in session['rooms']:
+        for r in session['roomlist']:
             if (room == r.name) and (not r.mailbox):
                 leave_room(session['activeroom'].name)
                 session['activeroom'] = r
@@ -430,8 +457,8 @@ def menucmds(message, stripped=""):
         join_room(session['activeroom'].name)
 
     elif message == 'connection established':
-        emit('SetCmd', {'data': '/help'})
-        return True
+        echo("You can talk now. Type /help for help.")
+        return False
     else:
         emit('Message', {'data': 'command not found. Type help for help.'})
     return False
@@ -503,19 +530,19 @@ def chat_connect():
     if session.get('user', False):
         userlist[session['user'].upper()] = session['id']
         mailbox = Chatroom(session['user'], True)
-        rooms.append(mailbox)
-        session['rooms'] = [mailbox, rooms[0]]
+        roomlist.append(mailbox)
+        session['roomlist'] = [mailbox, roomlist[0]]
 
         try:
             prevmode = session['chatmode']
         except:
             prevmode = 'talk'
-            session['activeroom'] = session['rooms'][1]
+            session['activeroom'] = session['roomlist'][1]
             join_room(session['activeroom'].name)
         session['chatmode'] = prevmode
-        session['activeroom'] = rooms[0]
-        rooms[0].userjoin(session['user'])
-        join_room(rooms[0])
+        session['activeroom'] = roomlist[0]
+        roomlist[0].userjoin(session['user'])
+        join_room(roomlist[0])
         emit('Message', {'data': 'Hello and Welcome to the NosferatuNetwork Chatserver.\n'})
     else:
         disconnect()
@@ -525,6 +552,6 @@ def chat_connect():
 # noinspection PyUnresolvedReferences
 @socketio.on('disconnect', namespace='/chat')
 def test_disconnect():
-    print('Client disconnected', request.sid)
-    for r in session['rooms']:
+    print('Client disconnected', rooms())
+    for r in session['roomlist']:
         r.userleave(session['user'])

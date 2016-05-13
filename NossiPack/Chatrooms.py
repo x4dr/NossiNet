@@ -62,7 +62,7 @@ class Chatroom(object):
     def addline(self, line):
         self.chatlog.append([self.chatlog[-1][0] + 1, line, time.time()])
         try:
-            emit("Message", {'data':  time.strftime("%H:%M") +" "+ line}, room=self.name)
+            emit("Message", {'data': time.strftime("%H:%M") + " " + line}, room=self.name)
         except:
             pass  # probably initializing
         self.savechatlog()
@@ -77,26 +77,31 @@ class Chatroom(object):
             if t:
                 presentusers[t.group(1)] = False
         for u in presentusers.keys():
-            if presentusers[u] and (u not in self.users):
+            if presentusers[u] and (u not in [x[0] for x in self.users]):
                 self.addline(u + ' left the room!')
+                print("terminated trailing:", u)
 
     def userjoin(self, user):
         if self.mailbox and not (re.match(r'(.*)_.*', self.name).group(1) == session.get('user')):
             return False
         for u in self.users:
-            if u == user:
+            if u[0] == user:
+                u[1] += 1
                 return False
-        self.users.append(user)
+        self.users.append([user, 0])
         self.addline(user + ' joined the room!')
         return True
 
     def userleave(self, user):
         actuallyleft = False
         for u in self.users:
-            if u == user:
-                self.addline(user + ' left the room!')
-                actuallyleft = True
-        self.users = [x for x in self.users if x != user]
+            if u[0] == user:
+                print(u)
+                u[1] -= 1
+                if u[1] < 0:
+                    self.addline(user + ' left the room!')
+                    actuallyleft = True
+                    self.users = [x for x in self.users if x[0] != user]
         return actuallyleft
 
     def getlog(self, user):
@@ -120,6 +125,6 @@ class Chatroom(object):
 
     def getuserlist_text(self):
         result = ''
-        for u in sorted(self.users):
+        for u in sorted([x[0] for x in sorted(self.users) and len(x)>0]):
             result = result + u + '\n'
         return result
