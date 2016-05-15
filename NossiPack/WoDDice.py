@@ -56,7 +56,6 @@ class WoDDice(object):
 
     def roll_v(self):
         res = ""
-        roll_nv();
         for i in self.r:
             res += str(i) + ", "
         res = res[:-2] + " ==> " + str(self.botchformat(self.succ, self.antisucc))
