@@ -72,7 +72,7 @@
 {% endblock %}
 {% block body %}
 
-    <table width="100%" class="leeet" >
+    <table width="100%" class="leet dividedtable" border="1">
         <tr>
             <td colspan="6" style="text-align: center; font-size: 1.5em" class="leeet">
             {%- if character.Meta.Name -%}
@@ -333,7 +333,7 @@
         <td colspan="2">&nbsp</td  >
     </tr>
     </table>
-    </form> 
+    </form>
     <div><pre>{{ character.Meta.Notes }}</pre></div>
     <div >
     {% if oldsheet %}

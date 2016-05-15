@@ -656,6 +656,7 @@ def cheat():
     #   return 'OK'
 
 
+
 @app.route('/resetpassword/', methods=['GET', 'POST'])
 def resetpassword():
     if not session.get('logged_in'):

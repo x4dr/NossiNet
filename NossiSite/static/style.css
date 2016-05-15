@@ -34,6 +34,25 @@ h3 { color: #007700; }
     margin: 1px;
 }
 
+.leeet {
+    background-color: #101a10;
+    font-weight: bold;
+    color: #00f700;
+    border: 1px solid #00f700;
+    margin: 1px;
+}
+
+.dividedtable {
+    border-collapse: collapse;
+    border-color: #101a10;
+}
+
+.dividedtable:last-child {
+    border-color: #00f700;
+    border-bottom: #00f700;
+}
+
+
 input[type="text"],
 textarea {
     background-color: black;
@@ -45,14 +64,6 @@ pre {
     white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
     white-space: -o-pre-wrap;    /* Opera 7 */
     word-wrap: break-word;       /* Internet Explorer 5.5+ */
-}
-
-.leeet {
-    background-color: #101a10;
-    font-weight: bold;
-    color: #00f700;
-    border: 1px solid #00f700;
-    margin: 1px;
 }
 
 .entries {
