@@ -129,15 +129,18 @@ class WoDDice(object):
         result = {}
         Animalism = char.get('Animalism', 0)
         if Animalism > 0:
-            result['Animalism1'] = "1d1e1"
+            result['Animalism1'] = "#Manipulation#AnimalKen"
         if Animalism > 1:
-            result['Animalism2'] = "1d1e1"
+            result['Animalism2'] = "#Charisma#Survival"
         if Animalism > 2:
-            result['Animalism3'] = "1d1e1"
+            if char.get('Intimidation' , 0) > char.get('Empathy', 0):
+                result['Animalism3'] = "#Manipulation#Intimidation"
+            else:
+                result['Animalism3'] = "#Manipulation#Empathy"
         if Animalism > 3:
-            result['Animalism4'] = "1d1e1"
+            result['Animalism4'] = "#Manipulation#AnimalKen"
         if Animalism > 4:
-            result['Animalism5'] = "1d1e1"
+            result['Animalism5'] = "#Manipulation#SelfControl"
 
         Auspex = char.get('Auspex', 0)
         if Auspex > 0:

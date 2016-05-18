@@ -253,9 +253,15 @@ class Character(object):
         return result
 
     def dictlist(self):
+        special = {}
+        for i in self.special.keys:
+            try:
+                special[i] = int(self.special.keys[i])
+            except:
+                pass  # sort all numeric values into special
         return [self.attributes, self.abilities['Skills'],
                 self.abilities['Talents'], self.abilities['Knowledges'],
-                self.virtues, self.disciplines]
+                self.virtues, self.disciplines, special]
 
     def unify(self):
         a = self.dictlist()
