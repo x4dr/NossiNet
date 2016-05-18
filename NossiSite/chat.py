@@ -201,7 +201,7 @@ def resolvedefine(message, reclvl=0, trace=False, user=""):
 
     message = parseadd(message, trace)
 
-    message = message.replace("_", "")
+    #message = message.replace("_", "")
     return message
 
 
@@ -209,7 +209,7 @@ def diceparser(message, rec=False, testing=False):
     message=message.strip()
     if ";" in message:
         for m in message.split(";"):
-            diceparser(m)
+            post(diceparser(m), " IS ROLLING ")
         return
     subones = 1
     if "?" in message:
@@ -236,12 +236,14 @@ def diceparser(message, rec=False, testing=False):
             if not rec:
                 return diceparser(str(resolvedefine(message, trace=testing)), rec=True, testing=testing)
             else:
+
                 message = message.split(" ")
+                print(message)
                 change = False
                 for m in range(len(message)):
                     if message[m] != "":
                         n = str(resolvedefine("#" + message[m]))
-                        print("lastditch:'" + message[m] + "'==>'" + n + "'")
+                      #  print("lastditch:'" + message[m] + "'==>'" + n + "'")
                         if n.strip(" ") != message[m]:
                             change = True
                             message[m] = n
@@ -249,7 +251,7 @@ def diceparser(message, rec=False, testing=False):
                 message = " ".join(message)
                 message = parseadd(message)
                 if change:
-                    print(message)
+                  #  print(message)
                     return diceparser(message, rec, testing)
                 else:
                     return echo(' Diceroller couldn\'t parse: ' + str(message), "ROLLERERROR: ", err=True)
