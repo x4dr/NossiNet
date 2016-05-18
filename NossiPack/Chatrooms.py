@@ -125,6 +125,6 @@ class Chatroom(object):
 
     def getuserlist_text(self):
         result = ''
-        for u in sorted([x[0] for x in sorted(self.users) and len(x)>0]):
+        for u in sorted([x[0] for x in sorted(self.users) if len(x) > 0]):
             result = result + u + '\n'
         return result
