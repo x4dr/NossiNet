@@ -209,7 +209,7 @@ def diceparser(message, rec=False, testing=False):
     message=message.strip()
     if ";" in message:
         for m in message.split(";"):
-            post(diceparser(m), " IS ROLLING ")
+            printroll(diceparser(m))
         return
     subones = 1
     if "?" in message:
