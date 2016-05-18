@@ -254,9 +254,9 @@ class Character(object):
 
     def dictlist(self):
         special = {}
-        for i in self.special.keys:
+        for i in self.special.keys():
             try:
-                special[i] = int(self.special.keys[i])
+                special[i] = int(self.special.keys()[i])
             except:
                 pass  # sort all numeric values into special
         return [self.attributes, self.abilities['Skills'],
