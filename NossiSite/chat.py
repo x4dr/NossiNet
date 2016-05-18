@@ -254,6 +254,8 @@ def diceparser(message, rec=False, testing=False):
                   #  print(message)
                     return diceparser(message, rec, testing)
                 else:
+                    if "-" in message:
+                        amount[0] = "0"
                     return echo(' Diceroller couldn\'t parse: ' + str(message), "ROLLERERROR: ", err=True)
 
     amount = int(amount[0])
