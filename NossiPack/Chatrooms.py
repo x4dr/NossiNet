@@ -42,9 +42,11 @@ class Chatroom(object):
         self.savechatlog()
 
     def savechatlog(self):
-        self.terminate_trailing_users()
+        self.cleanup()
         db = connect_db()
-        if len(self.chatlog) - self.newestlineindb > 0:
+        print(len(self.chatlog) )
+        print(self.newestlineindb )
+        if self.chatlog[-1][0] - self.newestlineindb > 0:
             for i in reversed(range(len(self.chatlog))):
                 if self.chatlog[i][0] <= self.newestlineindb:
                     break
@@ -57,17 +59,33 @@ class Chatroom(object):
                     print("writing", d, "to database failed", inst.args)
             self.newestlineindb = self.chatlog[-1][0]
             db.commit()
+            print("db commited")
         db.close()
 
-    def addline(self, line):
+    def addline(self, line, supresssave=False):
         self.chatlog.append([self.chatlog[-1][0] + 1, line, time.time()])
         try:
-            emit("Message", {'data': time.strftime("%H:%M") + " " + line}, room=self.name)
+            emit("Message", {'data': time.strftime("%H:%M") + " " + str(self.chatlog[-1][0]) + " " + line}, room=self.name)
         except:
             pass  # probably initializing
-        self.savechatlog()
+        if not supresssave:
+            self.savechatlog()
 
-    def terminate_trailing_users(self):
+    def cleanup(self):
+        def join_spam_remover(seq):
+            iterable = iter(seq)
+            prev = next(iterable)
+            skip = False
+            for element in iterable:
+                if not ":" in element:
+                    if ("joined the room!" in element[1] or "left the room!" in element[1]) and \
+                                    "joined the room!" in prev[1] or "connection established" in element[1]:
+                        pass
+                    else:
+                        yield element
+                else:
+                    yield element
+                prev = element
         presentusers = {}
         for l in [x[1] for x in self.chatlog]:
             t = re.match(r'(.*) joined the room!', l)
@@ -76,10 +94,14 @@ class Chatroom(object):
             t = re.match(r'(.*) left the room!', l)
             if t:
                 presentusers[t.group(1)] = False
+
+        self.chatlog = [x for x in join_spam_remover(self.chatlog)]
         for u in presentusers.keys():
             if presentusers[u] and (u not in [x[0] for x in self.users]):
-                self.addline(u + ' left the room!')
-                print("terminated trailing:", u)
+                self.addline(u + ' left the room!',True)
+                print("terminated trailing:", u, "from ", self.name)
+        print("done terminating")
+
 
     def userjoin(self, user):
         if self.mailbox and not (re.match(r'(.*)_.*', self.name).group(1) == session.get('user')):
