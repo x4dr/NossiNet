@@ -59,13 +59,12 @@ class Chatroom(object):
                     print("writing", d, "to database failed", inst.args)
             self.newestlineindb = self.chatlog[-1][0]
             db.commit()
-            print("db commited")
         db.close()
 
     def addline(self, line, supresssave=False):
         self.chatlog.append([self.chatlog[-1][0] + 1, line, time.time()])
         try:
-            emit("Message", {'data': time.strftime("%H:%M") + " " + str(self.chatlog[-1][0]) + " " + line}, room=self.name)
+            emit("Message", {'data': time.strftime("%H:%M") + " " + line}, room=self.name)
         except:
             pass  # probably initializing
         if not supresssave:
@@ -100,7 +99,6 @@ class Chatroom(object):
             if presentusers[u] and (u not in [x[0] for x in self.users]):
                 self.addline(u + ' left the room!',True)
                 print("terminated trailing:", u, "from ", self.name)
-        print("done terminating")
 
 
     def userjoin(self, user):
