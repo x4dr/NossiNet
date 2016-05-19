@@ -241,7 +241,7 @@ def diceparser(message, rec=False, testing=False):
                 print(message)
                 change = False
                 for m in range(len(message)):
-                    if message[m] != "":
+                    if (message[m] != "") and message[m][0] in ["d", "e", "f"]:
                         n = str(resolvedefine("#" + message[m]))
                       #  print("lastditch:'" + message[m] + "'==>'" + n + "'")
                         if n.strip(" ") != message[m]:
