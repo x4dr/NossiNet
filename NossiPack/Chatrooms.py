@@ -65,7 +65,7 @@ class Chatroom(object):
         try:
             self.chatlog.append([self.chatlog[-1][0] + 1, line, time.time()])
         except Exception as inst: ##DEBUG! DUMP SHOULDNT BE NECESSARY
-            print("self.chatlog:",self.chatlog, "\n\nline:",line")
+            print("self.chatlog:",self.chatlog, "\n\nline:","line")
             emit("Message", {'data': "a fun little error occured, please inform maric"}, room=self.name)
         try:
             emit("Message", {'data': time.strftime("%H:%M") + " " + line}, room=self.name)
