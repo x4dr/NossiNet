@@ -144,15 +144,15 @@ class WoDDice(object):
 
         Auspex = char.get('Auspex', 0)
         if Auspex > 0:
-            result['Auspex1'] = "1d1e1"
+            result['Auspex1'] = "#Auspex"
         if Auspex > 1:
-            result['Auspex2'] = "1d1e1"
+            result['Auspex2'] = "#Perception#Empathy f8"
         if Auspex > 2:
-            result['Auspex3'] = "1d1e1"
+            result['Auspex3'] = "#Perception#Empathy"
         if Auspex > 3:
-            result['Auspex4'] = "1d1e1"
+            result['Auspex4'] = "Intelligence#Subterfuge"
         if Auspex > 4:
-            result['Auspex5'] = "1d1e1"
+            result['Auspex5'] = "#Perception#Alertness"
 
         Celerity = char.get('Celerity', 0)
         if Celerity > 0:
@@ -176,31 +176,31 @@ class WoDDice(object):
         if Chimerstry > 3:
             result['Chimerstry4'] = "1d1e1"
         if Chimerstry > 4:
-            result['Chimerstry5'] = "1d1e1"
+            result['Chimerstry5'] = "#Manipulation#Subterfuge"
 
         Dementation = char.get('Dementation', 0)
         if Dementation > 0:
-            result['Dementation1'] = "1d1e1"
+            result['Dementation1'] = "#Charisma#Empathy"
         if Dementation > 1:
-            result['Dementation2'] = "1d1e1"
+            result['Dementation2'] = "#Manipulation#Subterfuge"
         if Dementation > 2:
-            result['Dementation3'] = "1d1e1"
+            result['Dementation3'] = "#Perception#Occult"
         if Dementation > 3:
-            result['Dementation4'] = "1d1e1"
+            result['Dementation4'] = "#Manipulation#Empathy f7"
         if Dementation > 4:
-            result['Dementation5'] = "1d1e1"
+            result['Dementation5'] = "#Manipulation#Intimidation"
 
         Dominate = char.get('Dominate', 0)
         if Dominate > 0:
-            result['Dominate1'] = "1d1e1"
+            result['Dominate1'] = "#Manipulation#Intimidation"
         if Dominate > 1:
-            result['Dominate2'] = "1d1e1"
+            result['Dominate2'] = "#Manipulation#Leadership"
         if Dominate > 2:
-            result['Dominate3'] = "1d1e1"
+            result['Dominate3'] = "#Wits#Subterfuge"
         if Dominate > 3:
-            result['Dominate4'] = "1d1e1"
+            result['Dominate4'] = "#Charisma + #Leadership"
         if Dominate > 4:
-            result['Dominate5'] = "1d1e1"
+            result['Dominate5'] = "Charisma + Intimidation"
 
         Flight = char.get('Flight', 0)
         if Flight > 0:
@@ -226,20 +226,8 @@ class WoDDice(object):
         if Fortitude > 4:
             result['Fortitude5'] = "1d1e1"
 
-        Fortutude = char.get('Fortutude', 0)
-        if Fortutude > 0:
-            result['Fortutude1'] = "1d1e1"
-        if Fortutude > 1:
-            result['Fortutude2'] = "1d1e1"
-        if Fortutude > 2:
-            result['Fortutude3'] = "1d1e1"
-        if Fortutude > 3:
-            result['Fortutude4'] = "1d1e1"
-        if Fortutude > 4:
-            result['Fortutude5'] = "1d1e1"
-
         Melpominee = char.get('Melpominee', 0)
-        if Melpominee > 0:
+        if Melpominee > 0:#TODO
             result['Melpominee1'] = "1d1e1"
         if Melpominee > 1:
             result['Melpominee2'] = "1d1e1"
@@ -251,7 +239,7 @@ class WoDDice(object):
             result['Melpominee5'] = "1d1e1"
 
         Mytherceria = char.get('Mytherceria', 0)
-        if Mytherceria > 0:
+        if Mytherceria > 0: #TODO
             result['Mytherceria1'] = "1d1e1"
         if Mytherceria > 1:
             result['Mytherceria2'] = "1d1e1"
@@ -263,7 +251,7 @@ class WoDDice(object):
             result['Mytherceria5'] = "1d1e1"
 
         Necromancy = char.get('Necromancy', 0)
-        if Necromancy > 0:
+        if Necromancy > 0:  # thausregeln!
             result['Necromancy1'] = "1d1e1"
         if Necromancy > 1:
             result['Necromancy2'] = "1d1e1"
