@@ -2,13 +2,14 @@ $(document).ready(function(){
             var namespace = '/chat';
 
             var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
-
+            var bell = new Audio("/static/bell.wav");
             // event handler for server sent data
             // the data is displayed in the "Received" section of the page
             socket.on('Message', function(msg) {
                 var box = $('#chatbox');
                 box.append('<br>' + $('<div/>').text(msg.data).html());
                 box.scrollTop(box[0].scrollHeight);
+                bell.play()
             });
 
             socket.on('Status', function(msg) {
