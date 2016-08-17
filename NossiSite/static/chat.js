@@ -16,10 +16,10 @@ $(document).ready(function(){
             });
 
             $(window).blur(function(){
-              ring=false
+              ring=true
             });
             $(window).focus(function(){
-              ring=true
+              ring=false
             });
 
             socket.on('Status', function(msg) {
