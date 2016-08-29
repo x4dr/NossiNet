@@ -3,7 +3,7 @@ $(document).ready(function(){
 
             var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
             var bell = new Audio("/static/bell.wav");
-            var ring = false
+            var ring = false;
             // event handler for server sent data
             // the data is displayed in the "Received" section of the page
             socket.on('Message', function(msg) {
@@ -57,7 +57,7 @@ $(document).ready(function(){
             $(document).keydown(function(event){
                 var msgdata = $('#message_data');
                 var index;
-                msgdata.focus()
+                msgdata.focus();
                 if(event.which == 38){
                     keyCount++;
                     if(typeof prevCommand[keyCount] !== "undefined") {

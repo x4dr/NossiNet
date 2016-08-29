@@ -90,6 +90,7 @@ def echodict(dict):
 
 
 def parseadd(message, trace=False):
+    message = message.replace("#", " ")
     message = message.replace("+", " + ")
     action = True
     adder = re.compile(r'((\b-?\d+) +\+? +(-?[0-9]+\b))')
@@ -178,9 +179,6 @@ def resolvedefine(message, reclvl=0, trace=False, user=""):
         echo("user " + user + " not found!", "NAMEERROR: ", err=True)
         return
     workdef = u.defines.copy()
-    # if trace:
-    #    echo(" DEFINITIONS FOR " + user, "", err=True)
-    #    echodict(workdef)
     message = message.replace("§" + user, "")
     finder = re.compile(r'#([^ +#]+)_')
     for i in finder.findall(message):
