@@ -198,9 +198,9 @@ class WoDDice(object):
         if Dominate > 2:
             result['Dominate3'] = "#Wits#Subterfuge"
         if Dominate > 3:
-            result['Dominate4'] = "#Charisma + #Leadership"
+            result['Dominate4'] = "#Charisma#Leadership"
         if Dominate > 4:
-            result['Dominate5'] = "Charisma + Intimidation"
+            result['Dominate5'] = "#Charisma#Intimidation"
 
         Flight = char.get('Flight', 0)
         if Flight > 0:
@@ -251,19 +251,19 @@ class WoDDice(object):
             result['Mytherceria5'] = "1d1e1"
 
         Necromancy = char.get('Necromancy', 0)
-        if Necromancy > 0:  # thausregeln!
-            result['Necromancy1'] = "1d1e1"
+        if Necromancy > 0:  # hausregeln!
+            result['Necromancy1'] = "#Perception#Alertness f5"
         if Necromancy > 1:
-            result['Necromancy2'] = "1d1e1"
+            result['Necromancy2'] = "#Manipulation#Occult"
         if Necromancy > 2:
-            result['Necromancy3'] = "1d1e1"
+            result['Necromancy3'] = "#Occult"
         if Necromancy > 3:
-            result['Necromancy4'] = "1d1e1"
+            result['Necromancy4'] = "#Willpower"
         if Necromancy > 4:
             result['Necromancy5'] = "1d1e1"
 
         Obeah = char.get('Obeah', 0)
-        if Obeah > 0:
+        if Obeah > 0:  # TODO
             result['Obeah1'] = "1d1e1"
         if Obeah > 1:
             result['Obeah2'] = "1d1e1"
@@ -276,25 +276,25 @@ class WoDDice(object):
 
         Obfuscate = char.get('Obfuscate', 0)
         if Obfuscate > 0:
-            result['Obfuscate1'] = "1d1e1"
+            result['Obfuscate1'] = "#Dexterity#Stealth"
         if Obfuscate > 1:
-            result['Obfuscate2'] = "1d1e1"
+            result['Obfuscate2'] = "#Dexterity#Stealth"
         if Obfuscate > 2:
-            result['Obfuscate3'] = "1d1e1"
+            result['Obfuscate3'] = "#Manipulation#Performance f7"
         if Obfuscate > 3:
-            result['Obfuscate4'] = "1d1e1"
+            result['Obfuscate4'] = "#Charisma#Stealth"
         if Obfuscate > 4:
-            result['Obfuscate5'] = "1d1e1"
+            result['Obfuscate5'] = "#Stealth d1e1"
 
         Obtenebration = char.get('Obtenebration', 0)
         if Obtenebration > 0:
             result['Obtenebration1'] = "1d1e1"
         if Obtenebration > 1:
-            result['Obtenebration2'] = "1d1e1"
+            result['Obtenebration2'] = "#Manipulation#Occult f7"
         if Obtenebration > 2:
-            result['Obtenebration3'] = "1d1e1"
+            result['Obtenebration3'] = "#Manipulation#Occult f7"
         if Obtenebration > 3:
-            result['Obtenebration4'] = "1d1e1"
+            result['Obtenebration4'] = "#Manipulation#Courage f7"
         if Obtenebration > 4:
             result['Obtenebration5'] = "1d1e1"
 
@@ -312,13 +312,13 @@ class WoDDice(object):
 
         Presence = char.get('Presence', 0)
         if Presence > 0:
-            result['Presence1'] = "1d1e1"
+            result['Presence1'] = "#Charisma#Performance f7"
         if Presence > 1:
-            result['Presence2'] = "1d1e1"
+            result['Presence2'] = "#Charisma#Intimidation"
         if Presence > 2:
-            result['Presence3'] = "1d1e1"
+            result['Presence3'] = "#Appearance#Empathy"
         if Presence > 3:
-            result['Presence4'] = "1d1e1"
+            result['Presence4'] = "#Charisma#Subterfuge"
         if Presence > 4:
             result['Presence5'] = "1d1e1"
 
@@ -338,17 +338,17 @@ class WoDDice(object):
         if Quietus > 0:
             result['Quietus1'] = "1d1e1"
         if Quietus > 1:
-            result['Quietus2'] = "1d1e1"
+            result['Quietus2'] = "#Willpower"
         if Quietus > 2:
-            result['Quietus3'] = "1d1e1"
+            result['Quietus3'] = "#Stamina"
         if Quietus > 3:
             result['Quietus4'] = "1d1e1"
         if Quietus > 4:
-            result['Quietus5'] = "1d1e1"
+            result['Quietus5'] = "#Stamina#Athletics"
 
         Serpentis = char.get('Serpentis', 0)
         if Serpentis > 0:
-            result['Serpentis1'] = "1d1e1"
+            result['Serpentis1'] = "#Willpower f9"
         if Serpentis > 1:
             result['Serpentis2'] = "1d1e1"
         if Serpentis > 2:
