@@ -372,15 +372,15 @@ class WoDDice(object):
 
         Thaumaturgy = char.get('Thaumaturgy', 0)
         if Thaumaturgy > 0:
-            result['Thaumaturgy1'] = "1d1e1"
+            result['Thaumaturgy1'] = "#Willpower f4"
         if Thaumaturgy > 1:
-            result['Thaumaturgy2'] = "1d1e1"
+            result['Thaumaturgy2'] = "#Willpower f5"
         if Thaumaturgy > 2:
-            result['Thaumaturgy3'] = "1d1e1"
+            result['Thaumaturgy3'] = "#Willpower f6"
         if Thaumaturgy > 3:
-            result['Thaumaturgy4'] = "1d1e1"
+            result['Thaumaturgy4'] = "#Willpower f7"
         if Thaumaturgy > 4:
-            result['Thaumaturgy5'] = "1d1e1"
+            result['Thaumaturgy5'] = "#Willpower f8"
 
         Vicissitude = char.get('Vicissitude', 0)
         if Vicissitude > 0:
