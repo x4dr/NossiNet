@@ -44,8 +44,8 @@ class Chatroom(object):
     def savechatlog(self):
         self.cleanup()
         db = connect_db()
-        print(len(self.chatlog) )
-        print(self.newestlineindb )
+        print(len(self.chatlog))
+        print(self.newestlineindb)
         if self.chatlog[-1][0] - self.newestlineindb > 0:
             for i in reversed(range(len(self.chatlog))):
                 if self.chatlog[i][0] <= self.newestlineindb:
@@ -63,8 +63,10 @@ class Chatroom(object):
 
     def addline(self, line, supresssave=False):
         try:
+            if len(self.chatlog) < 1:
+                self.chatlog.append([0,line,time.time()])
             self.chatlog.append([self.chatlog[-1][0] + 1, line, time.time()])
-        except Exception as inst: ##DEBUG! DUMP SHOULDNT BE NECESSARY
+        except Exception as inst:  # # DEBUG! DUMP SHOULDNT BE NECESSARY
             print("self.chatlog:",self.chatlog, "\n\nline:", line, inst.args)
             emit("Message", {'data': "a fun little error occured, please inform maric"}, room=self.name)
         try:
@@ -80,7 +82,7 @@ class Chatroom(object):
             prev = next(iterable)
             skip = False
             for element in iterable:
-                if not ":" in element:
+                if ":" not in element:
                     if ("joined the room!" in element[1] or "left the room!" in element[1]) and \
                                     "joined the room!" in prev[1] or "connection established" in element[1]:
                         pass
@@ -101,9 +103,8 @@ class Chatroom(object):
         self.chatlog = [x for x in join_spam_remover(self.chatlog)]
         for u in presentusers.keys():
             if presentusers[u] and (u not in [x[0] for x in self.users]):
-                self.addline(u + ' left the room!',True)
+                self.addline(u + ' left the room!', True)
                 # print("terminated trailing:", u, "from ", self.name) debug
-
 
     def userjoin(self, user):
         if self.mailbox and not (re.match(r'(.*)_.*', self.name).group(1) == session.get('user')):
