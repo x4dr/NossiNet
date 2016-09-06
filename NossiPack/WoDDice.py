@@ -393,3 +393,17 @@ class WoDDice(object):
             result['Vicissitude4'] = "1d1e1"
         if Vicissitude > 4:
             result['Vicissitude5'] = "1d1e1"
+
+        Visceratika = char.get('Visceratika', 0)
+        if Visceratika > 0:
+            result['Visceratika1'] = "1d1e1"
+        if Visceratika > 1:
+            result['Visceratika2'] = "1d1e1"
+        if Visceratika > 2:
+            result['Visceratika3'] = "1d1e1"
+        if Visceratika > 3:
+            result['Visceratika4'] = "1d1e1"
+        if Visceratika > 4:
+            result['Visceratika5'] = "1d1e1"
+
+        return result
