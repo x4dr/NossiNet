@@ -30,5 +30,7 @@ app.config.from_object(__name__)
 socketio = SocketIO(app, async_mode=async_mode)
 
 import NossiSite.views
+
 import NossiSite.chat
+
 import NossiSite.helpers

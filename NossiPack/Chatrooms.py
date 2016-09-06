@@ -44,8 +44,8 @@ class Chatroom(object):
     def savechatlog(self):
         self.cleanup()
         db = connect_db()
-        print(len(self.chatlog))
-        print(self.newestlineindb)
+     #   print(len(self.chatlog)) DEBUG
+     #   print(self.newestlineindb) DEBUG
         if self.chatlog[-1][0] - self.newestlineindb > 0:
             for i in reversed(range(len(self.chatlog))):
                 if self.chatlog[i][0] <= self.newestlineindb:
@@ -64,7 +64,7 @@ class Chatroom(object):
     def addline(self, line, supresssave=False):
         try:
             if len(self.chatlog) < 1:
-                self.chatlog.append([0,line,time.time()])
+                self.chatlog.append([0,line,time.time()]) #initial line
             self.chatlog.append([self.chatlog[-1][0] + 1, line, time.time()])
         except Exception as inst:  # # DEBUG! DUMP SHOULDNT BE NECESSARY
             print("self.chatlog:",self.chatlog, "\n\nline:", line, inst.args)
