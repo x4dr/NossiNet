@@ -405,3 +405,5 @@ class WoDDice(object):
             result['Visceratika4'] = "1d1e1"
         if Visceratika > 4:
             result['Visceratika5'] = "1d1e1"
+
+        return result

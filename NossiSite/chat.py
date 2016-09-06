@@ -125,7 +125,8 @@ def defines(message="="):
         if workdef == {}:
             workdef = u.sheet.unify()
             echo("Definitions reset.")
-        workdef = {**workdef, **WoDDice.shorthand()}
+        workdef = {**workdef, **WoDDice.shorthand(), **WoDDice.disciplines(workdef)}
+
         echo("Presets setup.")
     if message[0] != "=":
         parts = message.split("=")
