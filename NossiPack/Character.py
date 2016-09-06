@@ -84,7 +84,7 @@ class Character(object):
                 "Tzimisce": "Animalism, Auspex, Vicissitude",
                 "Ventrue": "Dominate, Fortitude, Presence",
                 "Daughter of Cacophony": "Fortitude, Melpominee, Presence",
-                "Gargoyle": "Flight, Fortitude, Potence, Visceratika",
+                "Gargoyle": "Flight, Fortitude, Potence, Vicissitude",
                 "Kiasyd": "Dominate, Mytherceria, Obtenebration",
                 "Salubri": "Auspex, Fortitude, Obeah",
                 "Sage": "Potence, Presence, Temporis",
