@@ -150,11 +150,14 @@ class WoDDice(object):
         if Auspex > 2:
             result['Auspex3'] = "#Perception#Empathy"
         if Auspex > 3:
-            result['Auspex4'] = "Intelligence#Subterfuge"
+            result['Auspex4'] = "#Intelligence#Subterfuge"
         if Auspex > 4:
             result['Auspex5'] = "#Perception#Alertness"
 
         Celerity = char.get('Celerity', 0)
+        # TODO
+        # grants extra dice, not a roll by itself for levels 5 and lower,
+        # optional powers _xor_ more dice at 6 and beyond
         if Celerity > 0:
             result['Celerity1'] = "1d1e1"
         if Celerity > 1:
@@ -203,6 +206,8 @@ class WoDDice(object):
             result['Dominate5'] = "#Charisma#Intimidation"
 
         Flight = char.get('Flight', 0)
+        # TODO
+        # has no roll associated, remove or employ house-rules?
         if Flight > 0:
             result['Flight1'] = "1d1e1"
         if Flight > 1:
@@ -215,6 +220,9 @@ class WoDDice(object):
             result['Flight5'] = "1d1e1"
 
         Fortitude = char.get('Fortitude', 0)
+        # TODO
+        # grants extra dice for soaks, not a roll by itself for levels 5 and lower,
+        # optional powers _xor_ more dice at 6 and beyond
         if Fortitude > 0:
             result['Fortitude1'] = "1d1e1"
         if Fortitude > 1:
@@ -227,28 +235,34 @@ class WoDDice(object):
             result['Fortitude5'] = "1d1e1"
 
         Melpominee = char.get('Melpominee', 0)
-        if Melpominee > 0:#TODO
-            result['Melpominee1'] = "1d1e1"
+        if Melpominee > 0:  # TODO
+            result['Melpominee1'] = "1d1e1"  # automatic, no roll
         if Melpominee > 1:
-            result['Melpominee2'] = "1d1e1"
+            result['Melpominee2'] = "#Wits#Performance f7"  # spend 1 blood
         if Melpominee > 2:
-            result['Melpominee3'] = "1d1e1"
+            result['Melpominee3'] = "#Charisma#Performance f7"
         if Melpominee > 3:
-            result['Melpominee4'] = "1d1e1"
+            result['Melpominee4'] = "#Manipulation#Performance"
+            # Extended, resisted roll, Diff depending on target #Willpower
+            # Resisted with Willpower roll (difficulty equal to the singer’s #Appearance#Performance)
         if Melpominee > 4:
-            result['Melpominee5'] = "1d1e1"
+            result['Melpominee5'] = "#Stamina#Performance d1e1"  # spend 1 blood for every five targets beyond the first
+        # TODO level 6 and 7
 
         Mytherceria = char.get('Mytherceria', 0)
-        if Mytherceria > 0: #TODO
-            result['Mytherceria1'] = "1d1e1"
+        if Mytherceria > 0:  # TODO
+            result['Mytherceria1'] = "1d1e1"  # deliberate auto-success, no roll
         if Mytherceria > 1:
-            result['Mytherceria2'] = "1d1e1"
+            result['Mytherceria2'] = "1d1e1"  # automatic, no roll
         if Mytherceria > 2:
-            result['Mytherceria3'] = "1d1e1"
+            result['Mytherceria3'] = "#Perception#Empathy"  # diff at GM discretion
         if Mytherceria > 3:
-            result['Mytherceria4'] = "1d1e1"
+            result['Mytherceria4'] = "#Intelligence#Larceny f7"
+            # for inanimate object. use subject’s current Willpower +2 otherwise
+            # resist with #Wits#Investigation f8
         if Mytherceria > 4:
-            result['Mytherceria5'] = "1d1e1"
+            result['Mytherceria5'] = "#Manipulation#Occult"  # difficulty is the victim’s current Willpower
+            # TODO level 6,7 and 8
 
         Necromancy = char.get('Necromancy', 0)
         if Necromancy > 0:  # hausregeln!
@@ -264,15 +278,16 @@ class WoDDice(object):
 
         Obeah = char.get('Obeah', 0)
         if Obeah > 0:  # TODO
-            result['Obeah1'] = "1d1e1"
+            result['Obeah1'] = "#Perception#Empathy f7"
         if Obeah > 1:
-            result['Obeah2'] = "1d1e1"
+            result['Obeah2'] = "#Willpower"  # for willing subject, #Willpower f8 otherwise, spend 1 blood in any case
         if Obeah > 2:
-            result['Obeah3'] = "1d1e1"
+            result['Obeah3'] = "1d1e1"  # no roll, spend 1 blood, more for bigger wounds
         if Obeah > 3:
-            result['Obeah4'] = "1d1e1"
+            result['Obeah4'] = "1d1e1"  # no roll, spend  two  Willpower
+            # resist in extended, resisted Willpower roll battle, first to be 3 successes in front of the other wins
         if Obeah > 4:
-            result['Obeah5'] = "1d1e1"
+            result['Obeah5'] = "#Intelligence#Empathy f8"  # spend  two  blood
 
         Obfuscate = char.get('Obfuscate', 0)
         if Obfuscate > 0:
@@ -299,6 +314,9 @@ class WoDDice(object):
             result['Obtenebration5'] = "1d1e1"
 
         Potence = char.get('Potence', 0)
+        # TODO
+        # grants extra dice for strength rolls, not a roll by itself for levels 5 and lower,
+        # optional powers _xor_ more dice at 6 and beyond
         if Potence > 0:
             result['Potence1'] = "1d1e1"
         if Potence > 1:
@@ -309,6 +327,7 @@ class WoDDice(object):
             result['Potence4'] = "1d1e1"
         if Potence > 4:
             result['Potence5'] = "1d1e1"
+        # TODO levels 6,7 and 8
 
         Presence = char.get('Presence', 0)
         if Presence > 0:
@@ -324,15 +343,16 @@ class WoDDice(object):
 
         Protean = char.get('Protean', 0)
         if Protean > 0:
-            result['Protean1'] = "1d1e1"
+            result['Protean1'] = "1d1e1"  # no roll
         if Protean > 1:
-            result['Protean2'] = "1d1e1"
+            result['Protean2'] = "1d1e1"  # spend 1 blood
         if Protean > 2:
-            result['Protean3'] = "1d1e1"
+            result['Protean3'] = "1d1e1"  # spend 1 blood
         if Protean > 3:
-            result['Protean4'] = "1d1e1"
+            result['Protean4'] = "1d1e1"  # spend 1 blood, up to 3 to transform faster
         if Protean > 4:
-            result['Protean5'] = "1d1e1"
+            result['Protean5'] = "1d1e1"  # spend 1 blood, up to 3 to transform faster
+        # TODO levels up to 9
 
         Quietus = char.get('Quietus', 0)
         if Quietus > 0:
@@ -345,18 +365,19 @@ class WoDDice(object):
             result['Quietus4'] = "1d1e1"
         if Quietus > 4:
             result['Quietus5'] = "#Stamina#Athletics"
+        # TODO levels up to 9
 
         Serpentis = char.get('Serpentis', 0)
         if Serpentis > 0:
             result['Serpentis1'] = "#Willpower f9"
         if Serpentis > 1:
-            result['Serpentis2'] = "1d1e1"
+            result['Serpentis2'] = "1d1e1"  # no roll
         if Serpentis > 2:
-            result['Serpentis3'] = "1d1e1"
+            result['Serpentis3'] = "1d1e1"  # spend one blood and one Willpower
         if Serpentis > 3:
-            result['Serpentis4'] = "1d1e1"
+            result['Serpentis4'] = "1d1e1"  # spend 1 blood
         if Serpentis > 4:
-            result['Serpentis5'] = "1d1e1"
+            result['Serpentis5'] = "1d1e1"  # no roll
 
         Temporis = char.get('Temporis', 0)
         if Temporis > 0:
@@ -384,26 +405,16 @@ class WoDDice(object):
 
         Vicissitude = char.get('Vicissitude', 0)
         if Vicissitude > 0:
-            result['Vicissitude1'] = "1d1e1"
+            result['Vicissitude1'] = "#Intelligence#Medicine"  # spend one blood point for each body part to be changed
+            # #Perception#Medicine f8 if trying to imitate someones face or voice
         if Vicissitude > 1:
-            result['Vicissitude2'] = "1d1e1"
+            result['Vicissitude2'] = "#Dexterity#Medicine"  # spend 1 blood, variable difficulty
         if Vicissitude > 2:
-            result['Vicissitude3'] = "1d1e1"
+            result['Vicissitude3'] = "#Strength#Medicine"  # spend 1 blood, variable difficulty
         if Vicissitude > 3:
-            result['Vicissitude4'] = "1d1e1"
+            result['Vicissitude4'] = "1d1e1"  # no roll, spend two blood points
         if Vicissitude > 4:
-            result['Vicissitude5'] = "1d1e1"
-
-        Visceratika = char.get('Visceratika', 0)
-        if Visceratika > 0:
-            result['Visceratika1'] = "1d1e1"
-        if Visceratika > 1:
-            result['Visceratika2'] = "1d1e1"
-        if Visceratika > 2:
-            result['Visceratika3'] = "1d1e1"
-        if Visceratika > 3:
-            result['Visceratika4'] = "1d1e1"
-        if Visceratika > 4:
-            result['Visceratika5'] = "1d1e1"
+            result['Vicissitude5'] = "1d1e1"  # roll system insufficient, this is all about blood
+        # TODO up to level 9
 
         return result
