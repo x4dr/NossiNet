@@ -34,7 +34,7 @@
 
             $('form#checkchar').submit(function () {
              var message_data = $('form#sheet').serializeArray();
-             socket.emit('ClientServerEvent', {data: message_data});
+             socket.emit('CheckChar', {data: message_data});
              return false;
             });
          });

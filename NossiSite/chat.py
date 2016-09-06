@@ -13,6 +13,7 @@ from NossiPack.WoDDice import WoDDice
 
 thread = None
 
+
 userlist = {}
 roomlist = [Chatroom('lobby')]
 
@@ -204,6 +205,7 @@ def resolvedefine(message, reclvl=0, trace=False, user=""):
     return message
 
 
+
 def diceparser(message, rec=False, testing=False):
     message=message.strip()
     if ";" in message:
@@ -294,7 +296,7 @@ def diceparser(message, rec=False, testing=False):
 def printroll(roll):
     if not roll:
         return
-    print(roll.roll_nv())
+    # print(roll.roll_nv())
     if roll.explodeon <= roll.max:
         post("", " IS ROLLING, exploding on " + str(roll.explodeon) + "+: \n")
         for i in roll.roll_vv().split("\n"):
@@ -498,8 +500,18 @@ def char_connect():
 
 
 @socketio.on('ClientServerEvent', namespace='/character')
-def receive(message):
-    print(session.get('user', "NoUser"), ":\t", message)
+def receive_message(message):
+    print(session.get('user', "?"), ":  ", message)
+
+
+@socketio.on('NoteDots', namespace='/character')
+def note_dots(message):
+    print(message)
+
+
+@socketio.on('CheckChar', namespace='/character')
+def check_char(message):
+    print(session.get('user', "NoUser"), ":  ", message)
     if len(message['data']) > 20:  # short messages are malformed
         ul = Userlist()
         u = ul.loaduserbyname(session.get('user', None))
@@ -561,3 +573,5 @@ def test_disconnect():
         print("Last client disconnected.")
     for r in session['roomlist']:
         r.userleave(session['user'])
+
+
