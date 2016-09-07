@@ -1,3 +1,4 @@
+            <!--suppress JSUnresolvedVariable, JSUnresolvedFunction -->
 {% extends "layout.html" %}
 {% macro dots(val,max=5) -%}
     {% if val is not defined%}
@@ -16,8 +17,8 @@
     <br>{% endif -%}<input
                 style="width: 10px"  type="radio" name="{{ name }}"
                 value="{{ count|string }}" id="{{ name }}_{{ count|string }}"{%- if value == count -%}
-                checked {%- endif -%} xmlns="http://www.w3.org/1999/html"><label
-                ondblclick="resetDot(this.control)"
+                checked {%- endif -%} xmlns="http://www.w3.org/1999/html"><label ondblclick="resetDot(this.control)"
+                onclick="noteDown(this.control)"
                 style="user-select: none;"
                 for="{{ name }}_{{ count|string }}"
     >&nbsp</label>{%- endfor %}
@@ -38,26 +39,27 @@
             return e.which !== 13;
          });
 
-            var namespace = '/character';
+        var namespace = '/character';
 
-            var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+        var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
 
 
-            socket.on('connect', function () {
+        socket.on('connect', function () {
              socket.emit('ClientServerEvent', {data: 'accessing character {{ character.Meta.Name }}'})
             });
 
 
-            $('form#spendable').onclick(function () {
-             var message_data = $('form#spendable').serializeArray();
-             socket.emit('ClientServerEvent', {data: message_data});
-             return false;
-            });
 
-}
+
          });
 
-     }
+     function noteDown(el) {
+         var message_data = $('form#spendable').serializeArray();
+         alert(message_data)
+         socket.emit('ClientServerEvent', {data: message_data});
+         return false;
+            }
+
 
      function resetDot(el){
         el.checked = '';

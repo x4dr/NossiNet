@@ -17,26 +17,26 @@
             return e.which !== 13;
          });
 
-            var namespace = '/character';
+        var namespace = '/character';
 
-            var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+        var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
 
-            socket.on('comments', function (msg) {
-             var box = $('pre#comments');
-             box.html(msg.data);
-             window.scrollTo(0,0);
-            });
+        socket.on('comments', function (msg) {
+         var box = $('pre#comments');
+         box.html(msg.data);
+         window.scrollTo(0,0);
+        });
 
-            socket.on('connect', function () {
-             socket.emit('ClientServerEvent', {data: 'editing character'})
-            });
+        socket.on('connect', function () {
+         socket.emit('ClientServerEvent', {data: 'editing character'})
+        });
 
 
-            $('form#checkchar').submit(function () {
-             var message_data = $('form#sheet').serializeArray();
-             socket.emit('CheckChar', {data: message_data});
-             return false;
-            });
+        $('form#checkchar').submit(function () {
+         var message_data = $('form#sheet').serializeArray();
+         socket.emit('CheckChar', {data: message_data});
+         return false;
+        });
          });
 
     function resetDot(el){

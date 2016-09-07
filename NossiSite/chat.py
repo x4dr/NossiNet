@@ -490,6 +490,7 @@ def receive(message):
 
 @socketio.on('connect', namespace='/character')
 def char_connect():
+
     if not session.get('user', False):
         emit('comments', {'prefix': '', 'data': 'Not logged in.'})
         return False
@@ -567,10 +568,10 @@ def chat_connect():
 # noinspection PyUnresolvedReferences
 @socketio.on('disconnect', namespace='/chat')
 def test_disconnect():
-    try:
-        print('Client disconnected', rooms())
-    except:
-        print("Last client disconnected.")
+    # DEBUG try:
+        # print('Client disconnected', rooms())
+    # except:
+        # print("Last client disconnected.")
     for r in session['roomlist']:
         r.userleave(session['user'])
 
