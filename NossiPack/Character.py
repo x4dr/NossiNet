@@ -256,7 +256,7 @@ class Character(object):
         special = {}
         for i in self.special.keys():
             try:
-                special[i] = int(self.special.keys()[i])
+                special[i] = int(self.special[i])  # legacy ... rework might be as easy as removing this
             except:
                 pass  # sort all numeric values into special
         return [self.attributes, self.abilities['Skills'],
@@ -269,7 +269,6 @@ class Character(object):
         for b in a:
             for i in b.keys():
                 result[i] = b[i]
-        # print(result)
         return result
 
     def setfromdalines(self, number):
@@ -465,6 +464,14 @@ class Character(object):
         self.disciplines = collections.OrderedDict(x for x in sorted(self.disciplines.items()) if x[0] != "")
         self.backgrounds = collections.OrderedDict(x for x in sorted(self.backgrounds.items()) if x[0] != "")
 
+    def process_trigger(self, trigger):
+        if "§bloodspend" in trigger:  # example, still needs testing, dont implement it like this yet!
+            try:
+                amount = int(trigger.replace("§bloodspend", "").strip())
+                self.special['Bloodpool'] -= amount
+            except:
+                raise Exception("invalid, bloodspend value: " + trigger)
+
     def getdictrepr(self):
         character = {'Meta': self.meta,
                      'Attributes': self.attributes,
@@ -476,24 +483,19 @@ class Character(object):
                      'Special': self.special}
         return character
 
-    def legacy_convert(self): # this is the legacy section used to update old sheets into new formats
-
-        # print("\n", self.timestamp)
+    def legacy_convert(self):  # this is the legacy section used to update old sheets into new formats
         # Fix: uppercasing attributes
         newatt = self.zero_attributes()
-        # print(self.attributes)
         for i in self.attributes.keys():
             newkey = i[0].upper() + i[1:]
             newatt[newkey] = self.attributes[i]
         self.attributes = newatt
+        # Fix: removing space from Self[ ]Control
         try:
             self.virtues['SelfControl'] = self.virtues['Self Control']
             self.virtues.pop('Self Control', None)
         except:
             pass  # already was converted
-
-        # print(self.attributes)
-        # end uppercasing attributes
 
     def combine_bgvdscp(self):
         combined = []

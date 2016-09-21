@@ -66,6 +66,7 @@ def decider(message):
             try:
                 roll = parser.diceparser(message, defines())
                 post(parser.dbg, "'s ROLL: ")
+                trigger(parser.triggers)
                 printroll(roll)
             except Exception as inst:
                 echo(str(inst.args[0]), "ROLLING ERROR: ", err=True)
@@ -73,17 +74,16 @@ def decider(message):
         elif "?" in message:
             echo(message, "'s TEST: ")
             parser = WoDParser()
-            #try:
-            roll = parser.diceparser(message, defines())
-            echo(parser.dbg, "'s TEST: ")
-            printroll(roll, testing=True)
-            #except Exception as inst:
-            echo(str(inst.args[0])+"\n"+parser.dbg, "ROLLING ERROR: ", err=True)
+            try:
+                roll = parser.diceparser(message, defines())
+                echo(parser.dbg, "'s TEST: ")
+                printroll(roll, testing=True)
+            except Exception as inst:
+                echo(str(inst.args[0])+"\n"+parser.dbg, "ROLLING ERROR: ", err=True)
         elif "=" in message:
             defines(message[1:])
 
     elif message[0] == '/':
-        print("received", message)
         if menucmds(message[1:], "/"):
             echo(message)
     elif session['chatmode'] == 'menu':
@@ -103,6 +103,16 @@ def echodict(dict):
     a.sort()
     for i in a:
         echo(("%s" % i).ljust(15) + " : " + str(dict[i]), "", err=True)
+
+
+def trigger(triggers, user=None):
+    if not user:
+        user = session['user']
+    ul = Userlist()
+    u = ul.loaduserbyname(user)
+    for t in triggers:
+        u.sheet.process_trigger()
+    ul.saveuserlist()
 
 
 def defines(message="=", user=None):
@@ -129,7 +139,7 @@ def defines(message="=", user=None):
         echo("Presets setup.")
     if message[0] != "=":  # actually saving a new define
         parts = message.split("=")
-        workdef[parts[0].strip()] = parts[1].strip()  #striping to get whitespace out of the equation
+        workdef[parts[0].strip()] = parts[1].strip()  # stripping to get whitespace out of the equation
         echo("added define for %s=%s" % (parts[0], parts[1]))
     u.defines = workdef
     if user == session['user']:
@@ -144,7 +154,6 @@ def printroll(roll, testing=False):
         deliver = echo
     else:
         deliver = post
-    # print(roll.roll_nv())
     if roll.explodeon <= roll.max:
         deliver("", " IS ROLLING, exploding on " + str(roll.explodeon) + "+: \n")
         for i in roll.roll_vv().split("\n"):

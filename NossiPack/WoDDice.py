@@ -17,15 +17,6 @@ class WoDDice(object):
         if self.explodeon <= self.min:
             self.explodeon = self.max + 1
 
-    def set(self, maxroll=10, difficulty=6, subone=1, explodeon=0, minroll=1):
-        self.min = minroll
-        self.max = maxroll
-        self.difficulty = difficulty
-        self.subone = subone
-        self.explodeon = explodeon
-        if self.explodeon <= self.min:
-            self.explodeon = self.max + 1
-
     def roll_next(self, amount):
         if self.infinity < amount:
             self.infinity = amount
