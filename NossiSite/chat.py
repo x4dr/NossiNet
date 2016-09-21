@@ -63,12 +63,11 @@ def decider(message):
         if not (("?" in message) or ("=" in message)):
             post(message, "'s ROLL: ")
             parser = WoDParser()
-            # try:
-            roll = parser.diceparser(message, defines())
-            post(parser.dbg, "'s ROLL: ")
-            trigger(parser.triggers)
-            update_dots()
             try:
+                roll = parser.diceparser(message, defines())
+                post(parser.dbg, "'s ROLL: ")
+                trigger(parser.triggers)
+                update_dots()
                 printroll(roll)
             except Exception as inst:
                 echo(str(inst.args[0]), "ROLLING ERROR: ", err=True)
