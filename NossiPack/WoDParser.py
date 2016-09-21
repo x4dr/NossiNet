@@ -115,7 +115,8 @@ class WoDParser(object):
             x = len(message) + 1
         ef = max(e, f, g)
         if amount == 0:
-            raise Exception('invalid roll: ' + message)
+            if len(message) > 1:
+                raise Exception('invalid roll: ' + message)
         if amount == 1:
             amount = int(message)
         elif amount == 2:
@@ -145,9 +146,6 @@ class WoDParser(object):
             else:
                 subones = 0
 
-        else:
-            message = self.resolvedefine(message, defines, trace=testing)  # this is important because
-            # this is where the whole resolving happens
         explode = dice + 1 - message.count("!")
 
         return amount, dice, diff, subones, explode
@@ -183,7 +181,8 @@ class WoDParser(object):
         amount, dice, diff, subones, explode = self.extract_diceparams(message)  # actually parses the message into dice
         self.write_humanreadable(amount, dice, diff, subones, explode)  # and generates the human readable messages
         roll = WoDDice(dice, diff, subones, explode)  # creates the Dice object
-        roll.roll(amount)  # and rolls the dice :)
+        if amount:
+            roll.roll(amount)  # and rolls the dice :)
         if testing:
             self.dbg += "test complete:" + message
             return

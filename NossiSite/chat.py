@@ -68,7 +68,8 @@ def decider(message):
                 post(parser.dbg, "'s ROLL: ")
                 trigger(parser.triggers)
                 update_dots()
-                printroll(roll)
+                if roll.rolled:
+                    printroll(roll)
             except Exception as inst:
                 echo(str(inst.args[0]), "ROLLING ERROR: ", err=True)
 
@@ -360,7 +361,7 @@ def char_connect():
 
 @socketio.on('ClientServerEvent', namespace='/character')
 def receive_message(message):
-    print("CHARACTERSHEET", session.get('user', "?"), ":  ", message)
+    #  print("CHARACTERSHEET", session.get('user', "?"), ":  ", message)
     update_dots()
 
 
