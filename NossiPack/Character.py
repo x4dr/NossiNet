@@ -190,7 +190,7 @@ class Character(object):
             comment += need(comment, "The Virtues section", vir)
         if dis < 0:
             comment += need(comment, "The Discipline section", dis)
-        hum = self.special["Humanity"] - self.virtues["Conscience"] - self.virtues["Self Control"]
+        hum = self.special["Humanity"] - self.virtues["Conscience"] - self.virtues["SelfControl"]
         wil = self.special["Willmax"] - self.virtues["Courage"]
 
         if hum < 0:
@@ -476,7 +476,7 @@ class Character(object):
                      'Special': self.special}
         return character
 
-    def legacy_convert(self):
+    def legacy_convert(self): # this is the legacy section used to update old sheets into new formats
 
         # print("\n", self.timestamp)
         # Fix: uppercasing attributes
@@ -486,6 +486,12 @@ class Character(object):
             newkey = i[0].upper() + i[1:]
             newatt[newkey] = self.attributes[i]
         self.attributes = newatt
+        try:
+            self.virtues['SelfControl'] = self.virtues['Self Control']
+            self.virtues.pop('Self Control', None)
+        except:
+            pass  # already was converted
+
         # print(self.attributes)
         # end uppercasing attributes
 
@@ -599,7 +605,7 @@ class Character(object):
 
     @staticmethod
     def zero_virtues():
-        return collections.OrderedDict({'Conscience': 0, 'Self Control': 0, 'Courage': 0})
+        return collections.OrderedDict({'Conscience': 0, 'SelfControl': 0, 'Courage': 0})
 
     def serialize(self):
         return pickle.dumps(self)
