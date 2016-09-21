@@ -63,10 +63,12 @@ def decider(message):
         if not (("?" in message) or ("=" in message)):
             post(message, "'s ROLL: ")
             parser = WoDParser()
+            # try:
+            roll = parser.diceparser(message, defines())
+            post(parser.dbg, "'s ROLL: ")
+            trigger(parser.triggers)
+            update_dots()
             try:
-                roll = parser.diceparser(message, defines())
-                post(parser.dbg, "'s ROLL: ")
-                trigger(parser.triggers)
                 printroll(roll)
             except Exception as inst:
                 echo(str(inst.args[0]), "ROLLING ERROR: ", err=True)
@@ -74,12 +76,9 @@ def decider(message):
         elif "?" in message:
             echo(message, "'s TEST: ")
             parser = WoDParser()
-            try:
-                roll = parser.diceparser(message, defines())
-                echo(parser.dbg, "'s TEST: ")
-                printroll(roll, testing=True)
-            except Exception as inst:
-                echo(str(inst.args[0])+"\n"+parser.dbg, "ROLLING ERROR: ", err=True)
+            roll = parser.diceparser(message, defines())
+            echo(parser.dbg, "'s TEST: ")
+            printroll(roll, testing=True)
         elif "=" in message:
             defines(message[1:])
 
@@ -111,7 +110,7 @@ def trigger(triggers, user=None):
     ul = Userlist()
     u = ul.loaduserbyname(user)
     for t in triggers:
-        u.sheet.process_trigger()
+        u.sheet.process_trigger(t)
     ul.saveuserlist()
 
 
@@ -343,6 +342,7 @@ def chatsite():
 def receive(message):
     print(session.get('user', "NoUser"), ": ", message)
     decider(message['data'])
+    update_dots()
 
 
 @socketio.on('connect', namespace='/character')
@@ -354,21 +354,54 @@ def char_connect():
                               "is a valid starting character (If your history is empty), "
                               "or calculate the difference in XP to the last sheet in "
                               "your history."})
+    print("connected to character")
+    join_room(session.get("'user", "?") + "_dotupdates")
+    update_dots()
 
 
 @socketio.on('ClientServerEvent', namespace='/character')
 def receive_message(message):
-    print(session.get('user', "?"), ":  ", message)
+    print("CHARACTERSHEET", session.get('user', "?"), ":  ", message)
+    update_dots()
+
+
+def update_dots():
+    update = ""
+    maxima = ""
+    ul = Userlist()
+    u = ul.loaduserbyname(session.get('user', "?"))
+    # print("BLOOD:", u.sheet.special['Bloodpool'], "WILL:", u.sheet.special['Willpower'])
+    update += 'Bloodpool_' + str(u.sheet.special['Bloodpool'])
+    maxima += 'Bloodmax_' + str(u.sheet.special['Bloodmax'])
+    update += '&'
+    maxima += '&'
+    update += 'Willpower_' + str(u.sheet.special['Willpower'])
+    maxima += 'Willmax_' + str(u.sheet.special['Willmax'])
+    health = str(u.sheet.special['Bashing']) + '&' + str(u.sheet.special['Lethal']) + '&' + str(
+        u.sheet.special['Aggravated'])
+    emit('DotUpdate', {'data': update + "§" + maxima + "§" + health}, room=session.get("'user", "?") + "_dotupdates")
 
 
 @socketio.on('NoteDots', namespace='/character')
 def note_dots(message):
-    print(message)
+    data = message['data'].split("&")
+    ul = Userlist()
+    u = ul.loaduserbyname(session.get('user', "?"))
+    u.sheet.special['Willpower'] = 0  # initialize with 0 because if 0 on sheet no value will be given
+    u.sheet.special['Bloodpool'] = 0
+    for d in data:
+        if d.split("=")[0] == "Willpower":  # some semblance of santizing
+            u.sheet.special['Willpower'] = int(d.split("=")[1])
+        if d.split("=")[0] == "Bloodpool":  # some semblance of santizing
+            u.sheet.special['Bloodpool'] = int(d.split("=")[1])
+        print(d)
+    ul.saveuserlist()
+    update_dots()
 
 
 @socketio.on('CheckChar', namespace='/character')
 def check_char(message):
-    print(session.get('user', "NoUser"), ":  ", message)
+    print("CHARACTERSHEET", session.get('user', "NoUser"), ":  ", message)
     if len(message['data']) > 20:  # short messages are malformed
         ul = Userlist()
         u = ul.loaduserbyname(session.get('user', None))
@@ -398,13 +431,13 @@ def chat_connect():
         emit('Message', {'prefix': '', 'data': 'Not logged in.'})
         return False
     global userlist
+    join_room(session.get("'user", "?") + "_dotupdates")
     session['id'] = request.sid
     if session.get('user', False):
         userlist[session['user'].upper()] = session['id']
         mailbox = Chatroom(session['user'], True)
         roomlist.append(mailbox)
         session['roomlist'] = [mailbox, roomlist[0]]
-
         try:
             prevmode = session['chatmode']
         except:

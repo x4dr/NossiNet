@@ -464,13 +464,74 @@ class Character(object):
         self.disciplines = collections.OrderedDict(x for x in sorted(self.disciplines.items()) if x[0] != "")
         self.backgrounds = collections.OrderedDict(x for x in sorted(self.backgrounds.items()) if x[0] != "")
 
+    def applydamage(self, amount, type="Lethal"):
+        if amount > 0:
+            self.special[type] += amount
+        else:
+            if type == "Aggravated":
+                self.special['Aggravated'] += amount
+                if self.special['Aggravated'] < 0:
+                    self.special['Aggravated'] = 0
+            else:
+                print(self.special['Bashing'], self.special['Lethal'], self.special['Aggravated'])
+                self.special['Bashing'] += amount
+                if self.special['Bashing'] < 0:
+                    self.special['Lethal'] += self.special['Bashing']
+                    self.special['Bashing'] = 0
+                if self.special['Lethal'] < 0:
+                    self.special['Lethal'] = 0
+        print(self.special['Bashing'], self.special['Lethal'], self.special['Aggravated'])
+        while self.special['Bashing'] + self.special['Lethal'] + self.special['Aggravated'] > 7:
+            if type == "Bashing":  # if damage is bashing
+                if self.special['Bashing'] > 1:  # and there already is bashing damage
+                    self.special['Bashing'] -= 2  # transform a bashing into lethal
+                    self.special['Lethal'] += 1
+                else:
+                    self.special['Bashing'] = 0  # bashing will not overflow into aggravated
+                    break
+            elif type == "Lethal":
+                if self.special['Lethal'] > 1:  # same for lethal to aggravated
+                    self.special['Lethal'] -= 2
+                    self.applydamage(1, 'Aggravated')
+            elif type == "Aggravated":
+                if self.special["Aggravated"] > 7:
+                    print(self.meta['Name'] + " is ash with " + str(self.special['Aggravated']) + " aggravated damage.")
+                break
+
     def process_trigger(self, trigger):
-        if "§bloodspend" in trigger:  # example, still needs testing, dont implement it like this yet!
+        if "§blood_" in trigger:
             try:
-                amount = int(trigger.replace("§bloodspend", "").strip())
+                amount = int(trigger.replace("§blood_", "").strip())
                 self.special['Bloodpool'] -= amount
             except:
-                raise Exception("invalid, bloodspend value: " + trigger)
+                raise Exception("invalid blood value: " + trigger)
+
+        if "§damage_" in trigger:
+            try:
+                if "_bashing_" in trigger:
+                    amount = int(trigger.replace("§damage_bashing_", "").strip())
+                    self.applydamage(amount, type="Bashing")
+                elif "_aggravated_" in trigger:
+                    amount = int(trigger.replace("§damage_aggravated_", "").strip())
+                    self.applydamage(amount, type="Aggravated")
+                else:
+                    amount = int(trigger.replace(trigger[:trigger.rfind("_") + 1], "").strip())
+                    self.applydamage(amount)
+            except Exception as inst:
+                raise Exception("invalid damage: " + trigger + str(inst.args))
+
+        if "§heal_" in trigger:
+            try:
+                if "§heal_aggravated_" in trigger:
+                    print(trigger.replace("§heal_aggravated_", ""))
+                    amount = int(trigger.replace("§heal_aggravated_", "").strip())
+                    self.applydamage(-amount,type="Aggravated")
+                else:
+                    amount = int(trigger.replace("§heal_", "").strip())
+                    self.applydamage(-amount)
+            except:
+                raise Exception("invalid healing: " + trigger)
+        print(self.special)
 
     def getdictrepr(self):
         character = {'Meta': self.meta,

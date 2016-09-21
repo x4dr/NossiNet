@@ -92,10 +92,10 @@ class WoDParser(object):
         return message
 
     def process_triggers(self, message, testing=False):
-        triggerfilter = re.compile(r'§[a-zA-Z]*[a-zA-Z0-9]*')
+        triggerfilter = re.compile(r'§[a-zA-Z]*[a-zA-Z0-9_ -]*')
         triggers = triggerfilter.findall(message)
         for trigger in triggers:
-            self.triggers.append(trigger)
+            self.triggers.append(trigger.replace(" ",""))
             message = message.replace(trigger, "")  # execute them from the level above.
 
         return message

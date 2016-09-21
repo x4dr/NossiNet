@@ -1,8 +1,8 @@
 <!doctype html>
 <html>
-  <head>
+<head>
     {% block title -%}
-    <title>NossiNet</title>
+        <title>NossiNet</title>
     {% endblock %}
     <link rel=stylesheet type=text/css href="
     {%- if session.light -%}
@@ -13,7 +13,7 @@
     ">
     <script type="text/javascript" src="//code.jquery.com/jquery-2.2.2.min.js"></script>
     <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
-        <!--<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.5/socket.io.min.js"></script>-->
+    <!--<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.5/socket.io.min.js"></script>-->
     <script type="text/javascript" charset="utf-8"></script>
     <script>
         function goBack() {
@@ -21,31 +21,32 @@
         }
     </script>
     {% block head %}{% endblock %}
-  </head>
-  <body>
-  <div id="page_complete" class=page>
-      <h1><a href={{ url_for('show_entries') }}>NOSFERATU NETWORK</a></h1>
+</head>
+<body>
+<div id="page_complete" class=page>
+    <h1><a href={{ url_for('show_entries') }}>NOSFERATU NETWORK</a></h1>
     <div class=metanav>
-    {% if not session.logged_in %}
-        <a class=metanav href="{{ url_for('login') }}">log in</a>
-        <a class=metanav href="{{ url_for('register') }}">register</a>
-    {% else %}
-        <a class=metanav href="{{ url_for('charsheet') }}">SHEET</a>  &nbsp
-        <a class=metanav href="/chat/">CHAT</a>  &nbsp
-        <a class=metanav href="{{ url_for('show_user_profile',username=session.user) }}">{{ session.user }}</a>  &nbsp
-        <a class=metanav href="{{ url_for('logout') }}">LOG OUT</a>
-    {% endif %}
+        {% if not session.logged_in %}
+            <a class=metanav href="{{ url_for('login') }}">log in</a>
+            <a class=metanav href="{{ url_for('register') }}">register</a>
+        {% else %}
+            <a class=metanav href="{{ url_for('charsheet') }}">SHEET</a>  &nbsp
+            <a class=metanav href="/chat/">CHAT</a>  &nbsp
+            <a class=metanav href="{{ url_for('show_user_profile',username=session.user) }}">{{ session.user }}</a>  &nbsp
+            <a class=metanav href="{{ url_for('logout') }}">LOG OUT</a>
+        {% endif %}
     </div>
-      {% if error %}<p class=error><strong>Error:</strong> {{ error }}{% endif %}
+    {% if error %}<p class=error><strong>Error:</strong> {{ error }}{% endif %}
     {% for message in get_flashed_messages() %}
-      <div class=flash>{{ message }}</div>
+        <div class=flash>{{ message }}</div>
     {% endfor %}
     {% block body %}{% endblock %}
-  </div>
-  {% if not session.logged_in %}
-      <br>
-      <div style="text-align: center"><a href="{{ url_for('impressum') }}" >Impressum</a></div>
-  {% endif %}
-      <div style="text-align: center"><a href="{{ url_for('lightswitch', x=request.path[1:]) }}" >Light Switch</a></div>
-  </body>
+</div>
+{% if not session.logged_in %}
+    <br>
+    <div style="text-align: center"><a href="{{ url_for('impressum') }}" >Impressum</a></div>
+{% endif %}
+<div style="text-align: center"><a href="{{ url_for('lightswitch', x=request.path[1:]) }}" >Light Switch</a></div>
+<br>
+</body>
 </html>

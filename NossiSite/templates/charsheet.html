@@ -1,4 +1,4 @@
-            <!--suppress JSUnresolvedVariable, JSUnresolvedFunction -->
+<!--suppress JSUnresolvedVariable, JSUnresolvedFunction -->
 {% extends "layout.html" %}
 {% macro dots(val,max=5) -%}
     {% if val is not defined%}
@@ -13,65 +13,77 @@
 {%- endmacro %}
 
 {% macro chooser(name, value, max=5) -%}
-        {% for count in range(1,max + 1) -%}{%- if loop.index0 > 1 and loop.index0 % 10 == 0 %}
-    <br>{% endif -%}<input
-                style="width: 10px"  type="radio" name="{{ name }}"
-                value="{{ count|string }}" id="{{ name }}_{{ count|string }}"{%- if value == count -%}
-                checked {%- endif -%} xmlns="http://www.w3.org/1999/html"><label ondblclick="resetDot(this.control)"
-                onclick="noteDown(this.control)"
-                style="user-select: none;"
-                for="{{ name }}_{{ count|string }}"
+    {% for count in range(1,max + 1) -%}{%- if loop.index0 > 1 and loop.index0 % 10 == 0 %}
+        <br>{% endif -%}<input
+            style="width: 10px"  type="radio" name="{{ name }}"
+            value="{{ count|string }}" id="{{ name }}_{{ count|string }}"{% if value == count -%}
+            checked {%- endif %} xmlns="http://www.w3.org/1999/html"><label ondblclick="resetDot(this.control)"
+                                                                            onmouseup="$('form#spendable').submit();"
+                                                                            style="user-select: none;"
+                                                                            for="{{ name }}_{{ count|string }}"
     >&nbsp</label>{%- endfor %}
 {%- endmacro %}
 
 {% block title %}
-{%- if character.Meta.Name -%}
-    <title>{{ character.Meta.Name }}</title>
-{%- else -%}
-    <title>Charactersheet</title>
-{%- endif -%}
+    {%- if character.Meta.Name -%}
+        <title>{{ character.Meta.Name }}</title>
+    {%- else -%}
+        <title>Charactersheet</title>
+    {%- endif -%}
 {% endblock %}
 
 {% block head %}
     <script>
-     $(document).ready(function() {
-         $('form input').on('keypress', function(e) {
-            return e.which !== 13;
-         });
-
-        var namespace = '/character';
-
-        var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
-
-
-        socket.on('connect', function () {
-             socket.emit('ClientServerEvent', {data: 'accessing character {{ character.Meta.Name }}'})
+        $(document).ready(function() {
+            $('form input').on('keypress', function(e) {
+                return e.which !== 13;
             });
 
+            var namespace = '/character';
+
+            var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+
+
+            socket.on('connect', function () {
+                socket.emit('ClientServerEvent', {data: 'accessing character {{ character.Meta.Name }}'})
+            });
+
+            socket.on('DotUpdate', function(msg){
+                var a = msg.data.split("§");
+                var arr =a[0].split("&");
+                for (var i = 0; i < arr.length; i++) {
+                    var btn = document.getElementById(arr[i]);
+                    btn.checked= true;}
+            });
+
+            $('form#spendable').submit(function () {
+                setTimeout(function(){var message_data = $('form#spendable').serialize();
+                    socket.emit('NoteDots', {data: message_data});
+                }, 10); //to wait for the dot to be saved
 
 
 
-         });
-
-     function noteDown(el) {
-         var message_data = $('form#spendable').serializeArray();
-         alert(message_data)
-         socket.emit('ClientServerEvent', {data: message_data});
-         return false;
-            }
+                return false;
+            })
 
 
-     function resetDot(el){
-        el.checked = '';
-        if (window.getSelection) {
-            if (window.getSelection().empty) {  // Chrome
-                window.getSelection().empty();
+
+        });
+
+        function noteDown(el){}
+
+
+        function resetDot(el){
+            el.checked = '';
+            if (window.getSelection) {
+                if (window.getSelection().empty) {  // Chrome
+                    window.getSelection().empty();
                 } else if (window.getSelection().removeAllRanges) {  // Firefox
-                window.getSelection().removeAllRanges();
+                    window.getSelection().removeAllRanges();
                 }
             } else if (document.selection) {  // IE?
                 document.selection.empty();
-        }
+            }
         }
 
     </script>
@@ -83,11 +95,11 @@
     <table width="100%" class="leet dividedtable" border="1">
         <tr>
             <td colspan="6" style="text-align: center; font-size: 1.5em" class="leeet">
-            {%- if character.Meta.Name -%}
-                Charactersheet&nbspfor&nbsp{{ character.Meta.Name }}</td>
-            {%- else -%}
-                Charactersheet&nbspfor&nbspUnnamed&nbspCharacter</td>
-            {%- endif -%}
+                {%- if character.Meta.Name -%}
+                    Charactersheet&nbspfor&nbsp{{ character.Meta.Name }}</td>
+                {%- else -%}
+                    Charactersheet&nbspfor&nbspUnnamed&nbspCharacter</td>
+                {%- endif -%}
         </tr>
         <tr>
             <td style="text-align: right; ">Name:</td>
@@ -287,78 +299,79 @@
 
     </table>
     <form id="spendable"  name="spendable">
-    <table width="100%">
-    <tr>
+        <table width="100%">
+            <tr>
 
-        <td colspan="2" style="text-align: center; width: 33%;" class="leeet">Merits/Flaws</td>
-        <td colspan="2" style="text-align: center; width: 34%;" class="leeet">Humanity</td>
-        <td colspan="2" style="text-align: center; width: 33%;" class="leeet">Gear</td>
-    </tr>
+                <td colspan="2" style="text-align: center; width: 33%;" class="leeet">Merits/Flaws</td>
+                <td colspan="2" style="text-align: center; width: 34%;" class="leeet">Humanity</td>
+                <td colspan="2" style="text-align: center; width: 33%;" class="leeet">Gear</td>
+            </tr>
 
-    <tr>
-        <td rowspan="999" colspan="2"><pre>{{ character.Meta.Merits }}</pre></td>
-        <td colspan="2">&nbsp</td>
-        <td rowspan="999" colspan="2"><pre>{{ character.Meta.Gear }}</pre></td>
+            <tr>
+                <td rowspan="999" colspan="2"><pre>{{ character.Meta.Merits }}</pre></td>
+                <td colspan="2">&nbsp</td>
+                <td rowspan="999" colspan="2"><pre>{{ character.Meta.Gear }}</pre></td>
 
-    </tr>
-    <tr>
-        <td colspan="2" align="center" style="font-weight: bolder;
+            </tr>
+            <tr>
+                <td colspan="2" align="center" style="font-weight: bolder;
          letter-spacing: 3px">{{ dots(character.Special.Humanity,10) }}</td>
-    </tr>
-    <tr>
-        <td colspan="2">&nbsp</td>
-    </tr>
+            </tr>
+            <tr>
+                <td colspan="2">&nbsp</td>
+            </tr>
 
-    <tr>
-        <td colspan="2" style="text-align: center; width: 34%;" class="leeet">Willpower</td>
+            <tr>
+                <td colspan="2" style="text-align: center; width: 34%;" class="leeet">Willpower</td>
 
-    </tr>
-        <tr>
-        <td colspan="2">&nbsp;</td>
+            </tr>
+            <tr>
+                <td colspan="2">&nbsp;</td>
 
-    </tr>
-        <tr>
-        <td colspan="2" align="center" style="font-weight: bolder;
+            </tr>
+            <tr>
+                <td colspan="2" align="center" style="font-weight: bolder;
          letter-spacing: 3px">{{ chooser("Willpower", character.Special.Willpower,character.Special.Willmax) }}</td>
 
-    </tr>
-    <tr>
-        <td colspan="2">&nbsp</td>
-    </tr>
-    <tr>
-        <td colspan="2" style="text-align: center; width: 34%;" class="leeet">Blood</td>
+            </tr>
+            <tr>
+                <td colspan="2">&nbsp</td>
+            </tr>
+            <tr>
+                <td colspan="2" style="text-align: center; width: 34%;" class="leeet">Blood</td>
 
-    </tr>
-        <tr>
-        <td colspan="2">&nbsp</td>
-    </tr>
-        <tr>
-        <td colspan="2" align="center" style="font-weight: bolder;
-         letter-spacing: 3px">{{ chooser("Blood", character.Special.Blood,character.Special.Bloodmax) }}</td>
+            </tr>
+            <tr>
+                <td colspan="2">&nbsp</td>
+            </tr>
+            <tr>
+                <td colspan="2" align="center" style="font-weight: bolder;
+         letter-spacing: 3px">{{ chooser("Bloodpool", character.Special.Bloodpool,character.Special.Bloodmax) }}</td>
 
-    </tr>
-    <tr>
-        <td colspan="2">&nbsp</td  >
-    </tr>
-    </table>
+            </tr>
+            <tr>
+                <td colspan="2">&nbsp</td  >
+            </tr>
+        </table>
     </form>
+
     <div><pre>{{ character.Meta.Notes }}</pre></div>
     <div >
-    {% if oldsheet %}
-        <form action="{{ url_for('del_sheet')}}" method="POST" >
-            <input title="sheetnum" hidden name="sheetnum" value="{{ oldsheet }}">
-            <input type="submit" style="float: right" class="leet" value="delete">
-        </form>
+        {% if oldsheet %}
+            <form action="{{ url_for('del_sheet')}}" method="POST" >
+                <input title="sheetnum" hidden name="sheetnum" value="{{ oldsheet }}">
+                <input type="submit" style="float: right" class="leet" value="delete">
+            </form>
 
-        <form action="{{ url_for('res_sheet')}}" method="POST" >
-            <input title="sheetnum" hidden name="sheetnum" value="{{ oldsheet }}">
-            <input type="submit" style="float: right" class="leet" value="swap out">
-        </form>
-    {% elif own %}
-        <form action="{{ url_for('modify_sheet') }}" >
-            <input type="submit" style="float: right" class="leet" value="edit">
-        </form>
-    {% endif %}
+            <form action="{{ url_for('res_sheet')}}" method="POST" >
+                <input title="sheetnum" hidden name="sheetnum" value="{{ oldsheet }}">
+                <input type="submit" style="float: right" class="leet" value="swap out">
+            </form>
+        {% elif own %}
+            <form action="{{ url_for('modify_sheet') }}" >
+                <input type="submit" style="float: right" class="leet" value="edit">
+            </form>
+        {% endif %}
     </div>
     <br>
     <a href="{{ url_for('oldsheets') }}">History</a>

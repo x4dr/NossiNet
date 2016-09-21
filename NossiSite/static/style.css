@@ -5,25 +5,25 @@
 
 body {
     background: black;
-    overflow-x: scroll;
+    overflow-x: auto;
 }
 
 a, h1, h2 { color: #00f700; }
 
 h1 { border-bottom: 2px solid #000000; }
-h2 { font-size: 1.2em; } 
+h2 { font-size: 1.2em; }
 h3 { font-size: 1.0em; }
 
 h3 { color: #007700; }
 
 .page {
-  margin: 1em auto;
-  width: 95%;
-  min-width: 35em;
-  border: 5px solid #00f700;
-  padding: 0.8em;
-  background: #010101;
-  color: #00f700;
+    margin: 1em auto;
+    width: 95%;
+    min-width: 35em;
+    border: 5px solid #00f700;
+    padding: 0.8em;
+    background: #010101;
+    color: #00f700;
 }
 
 .leet {
@@ -67,11 +67,11 @@ pre {
 }
 
 .entries {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  background: #000000;
-  color:#00f700
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    background: #000000;
+    color:#00f700
 }
 
 .entries li { margin: 0.8em ; }
@@ -87,18 +87,18 @@ label { white-space: nowrap}
 .add-entry dl { font-weight: bold; color: #00f700; }
 
 .metanav {
-  text-align: right;
-  font-size: 0.8em;
-  padding: 0.3em;
-  margin-bottom: 1em;
-  background: #000;
-  color: #00f700;
+    text-align: right;
+    font-size: 0.8em;
+    padding: 0.3em;
+    margin-bottom: 1em;
+    background: #000;
+    color: #00f700;
 }
 
 .flash {
-  background:#000;
-  padding: 0.5em;
-  border: 1px solid #00f700;
+    background:#000;
+    padding: 0.5em;
+    border: 1px solid #00f700;
 }
 
 .imgover {
@@ -114,7 +114,50 @@ label { white-space: nowrap}
     color: #000000
 }
 
-#chatbox {
+.healthbar{
+    position:fixed; left:0; bottom:2.2%;
+    height: 1%;
+    width:  100%;
+    background-color: #00f700;
+}
+.bashbar{
+    position:fixed; left:0; bottom:2.2%;
+    height: 1%;
+    width:  0;
+    background-color: #003700;
+}
+.lethalbar{
+    position:fixed; left:0; bottom:2.2%;
+    height: 1%;
+    width:  0;
+    background-color: #700720;
+}.aggbar{
+    position:fixed; left:0; bottom:2.2%;
+    height: 1%;
+    width:  0;
+    background-color: #a00050;
+}
+
+.bloodbar{
+
+    position:fixed; left:0; bottom:1%;
+    height: 1.2%;
+    width:  100%;
+    background-color: #900001;
+
+}
+
+.willbar{
+    position:fixed; left:0; bottom:0;
+    height: 1%;
+    width:  100%;
+    background-color: #6060f0;
+
+}
+
+.chatbox {
+    position: relative;
+    width : 95%;
     text-align:left;
     margin-bottom:25px;
     padding:10px;
@@ -126,19 +169,19 @@ label { white-space: nowrap}
 }
 
 ::-webkit-scrollbar {
-     width: auto;
+    width: auto;
 }
 
 ::-webkit-scrollbar-track {
-      background-color: #000200;
+    background-color: #000200;
 }
 
 ::-webkit-scrollbar-thumb {
-      background-color: #00f700;
+    background-color: #00f700;
 }
 
 ::-webkit-scrollbar-button {
-      background-color: #003300;
+    background-color: #003300;
 }
 
 ::-webkit-scrollbar-corner {
@@ -185,5 +228,5 @@ input[type='radio'] + label {
 }
 
 input[type='radio']:checked + label {
-  background: url(radio.png) left center no-repeat;
+    background: url(radio.png) left center no-repeat;
 }

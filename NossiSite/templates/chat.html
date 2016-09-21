@@ -2,30 +2,37 @@
 {% block head %}
     <!--suppress , JSUnresolvedVariable, JSUnresolvedFunction -->
     <script type="text/javascript" charset="utf-8">
-            window.onload=function() {
-                var script = document.createElement('script');
-                script.src = '/static/chat.js';
-                script.type = 'text/javascript';
-                var head = document.getElementsByTagName("head")[0];
-                head.appendChild(script);
-            }
+        window.onload=function() {
+            var script = document.createElement('script');
+            script.src = '/static/chat.js';
+            script.type = 'text/javascript';
+            var head = document.getElementsByTagName("head")[0];
+            head.appendChild(script);
+        }
     </script>
 {% endblock %}
 {% block body %}
 
 
     <div id="wrapper">
-
-    <div id="chatbox"></div>
-    <div id="statusmessage">Waiting for Server connection...</div>
-    <form id="message" name="message" method="POST" action="#">
-        <div class="formline">
-            <input class="leet" name="submitmsg" type="submit"  id="submitmsg"
-                   value="Send" style="float: right; width:  10%" />
-            <span><input class="leet" type="text" name="message_data" id="message_data"
-                   placeholder="Message" autocomplete="off" style="width: 88%"></span>
+        <div id="inner" style="width: 100%;">
+            <div id="healthbar" class="healthbar"></div><div
+                id="bashbar" class="bashbar"></div><div
+                id="lethalbar" class="lethalbar"></div><div
+                id="aggbar" class="aggbar"></div><div
+                id="bloodbar" class="bloodbar"></div><div
+                id="willbar" class="willbar"></div>
+            <div id="chatbox" class="chatbox"></div>
         </div>
-    </form>
+        <div id="statusmessage">Waiting for Server connection...</div>
+        <form id="message" name="message" method="POST" action="#">
+            <div class="formline">
+                <input class="leet" name="submitmsg" type="submit"  id="submitmsg"
+                       value="Send" style="float: right; width:  10%" />
+                <span><input class="leet" type="text" name="message_data" id="message_data"
+                             placeholder="Message" autocomplete="off" style="width: 88%"></span>
+            </div>
+        </form>
     </div>
 
 {% endblock %}
