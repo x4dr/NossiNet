@@ -362,6 +362,7 @@ def char_connect():
                               "is a valid starting character (If your history is empty), "
                               "or calculate the difference in XP to the last sheet in "
                               "your history."})
+    print(session.get("user", "?") + "_dotupdates")
     join_room(session.get("user", "?") + "_dotupdates")
     update_dots()
 
@@ -438,7 +439,7 @@ def chat_connect():
         emit('Message', {'prefix': '', 'data': 'Not logged in.'})
         return False
     global userlist
-    join_room(session.get("'user", "?") + "_dotupdates")
+    join_room(session.get("user", "?") + "_dotupdates")
     session['id'] = request.sid
     if session.get('user', False):
         userlist[session['user'].upper()] = session['id']
