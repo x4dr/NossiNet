@@ -15,11 +15,9 @@ class WoDParser(object):
         message = message.replace("+", " ")
         message = message.strip()
         action = True
-        print("adding", message, end=" ")
         message = re.sub(r'- *([0-9])', ' -\g<1>', message)
 
         adder = re.compile(r'((\b-?[0-9]+) +(-?[0-9]+\b))')  # [-]XX + [-]XX to match numbers to add
-        # print(adder.findall(message))
         if trace:
             if len(message.strip()) > 2:
                 self.dbg += "adding: " + message
@@ -32,7 +30,6 @@ class WoDParser(object):
                 action = False
         if trace:
             self.dbg += " = " + message + "\n"
-        print("=", message)
         return message
 
     def resolvedefine(self, message, reclvl=0, trace=False):
@@ -88,25 +85,19 @@ class WoDParser(object):
 
     def pretrigger(self, message):
         if "§if_" in message:
-            print("ifififif", message)
             cond = message[message.find("§if_"):]
             cond = self.fullparenthesis(cond)
             trigger = (message[message.find("§if_"):].replace("§if_", "", 1).strip()).replace("(" + cond + ")", "", 1)
             trigger = self.fullparenthesis(trigger)
-            print("IFcond:", cond)
-            print("IFtrigger:", trigger)
             roll = self.diceparser(cond)
             res = roll.roll_nv()
-            self.altrolls.append( roll)
+            self.altrolls.append(roll)
             self.dbg = self.dbg[:-3] + ", rolling " + str(res) + " successes. \n"
             if res:
-                print("res", res)
                 message = re.sub(r'§if_.*' + re.escape(trigger) + "\)", "(" + trigger.replace("$", str(res)) + ")",
                                  message)
-                print()
             else:
                 message = re.sub(r'§if_.*' + re.escape(trigger) + "\)", "", message)
-            print("aftersub", message, self.dbg)
 
         if "§param_" in message:  # need to be last
             triggers = message[message.find("§param_"):]
@@ -229,7 +220,7 @@ class WoDParser(object):
             explodebehaviour = ""
         if diff == 0:
             if dice == 1:
-                self.dbg += "==> "+str(amount)+".\n"  #d1g
+                self.dbg += "==> " + str(amount) + ".\n"  # d1g
                 return
             self.dbg += str(amount) + " " + str(dice) + " sided "
             if amount > 1:
@@ -250,7 +241,6 @@ class WoDParser(object):
 
         while message != oldmessage:
             oldmessage = message
-            print(message, "trigger()loop")
             message = self.preparse(message)
             message = self.process_triggers(message, testing)  # processes triggers to be executed by the instance above
             message = self.process_parenthesis(message, testing)  # iteratively processes parenthesis
@@ -262,7 +252,6 @@ class WoDParser(object):
 
         if amount:
             roll.roll(amount)  # and rolls the dice :)
-
 
         if testing:
             self.dbg += "test complete:" + message
