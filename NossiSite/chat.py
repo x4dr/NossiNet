@@ -162,6 +162,9 @@ def printroll(roll, parser=None, testing=False):
         deliver(str(roll.roll_nv())+".", " IS ADDING UP TO: ")
         return
 
+    if len(roll.r) < 1:
+        return
+
     if roll.explodeon <= roll.max:
         deliver("", " IS ROLLING, exploding on " + str(roll.explodeon) + "+: \n")
         for i in roll.roll_vv().split("\n"):
