@@ -61,21 +61,20 @@ def decider(message):
                  ' its doing instead of actually sending it.')
             return
         if not (("?" in message) or ("=" in message)):
-            post(message, "'s ROLL: ")
-            parser = WoDParser()
             try:
-                roll = parser.diceparser(message, defines())
+                post(message, "'s ROLL: ")
+                parser = WoDParser(defines())
+                roll = parser.diceparser(message)
                 post(parser.dbg, "'s ROLL: ")
                 trigger(parser.triggers)
                 update_dots()
-                if roll.rolled:
-                    printroll(roll)
+                printroll(roll, parser)
             except Exception as inst:
                 echo(str(inst.args[0]), "ROLLING ERROR: ", err=True)
 
         elif "?" in message:
             echo(message, "'s TEST: ")
-            parser = WoDParser()
+            parser = WoDParser(defines())
             roll = parser.diceparser(message, defines())
             echo(parser.dbg, "'s TEST: ")
             printroll(roll, testing=True)
@@ -146,13 +145,22 @@ def defines(message="=", user=None):
     return workdef
 
 
-def printroll(roll, testing=False):
+def printroll(roll, parser=None, testing=False):
     if not roll:
+        return
+    if not roll.rolled:
         return
     if testing:
         deliver = echo
     else:
         deliver = post
+    if parser:
+        for r in parser.altrolls:
+            printroll(r, testing=testing)
+    if roll.difficulty == 0 and roll.max==1:
+        deliver(str(roll.roll_nv())+".", " IS ADDING UP TO: ")
+        return
+
     if roll.explodeon <= roll.max:
         deliver("", " IS ROLLING, exploding on " + str(roll.explodeon) + "+: \n")
         for i in roll.roll_vv().split("\n"):

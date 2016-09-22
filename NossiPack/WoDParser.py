@@ -4,15 +4,22 @@ from NossiPack import *
 
 
 class WoDParser(object):
-    def __init__(self):
+    def __init__(self, defines):
         self.dbg = ""
-        self.triggers=[]
+        self.triggers = []
+        self.defines = defines
+        self.altrolls = []  # if the last roll isnt interesting
 
     def parseadd(self, message, trace=False):
         message = message.replace("#", " ")
         message = message.replace("+", " ")
+        message = message.strip()
         action = True
+        print("adding", message, end=" ")
+        message = re.sub(r'- *([0-9])', ' -\g<1>', message)
+
         adder = re.compile(r'((\b-?[0-9]+) +(-?[0-9]+\b))')  # [-]XX + [-]XX to match numbers to add
+        # print(adder.findall(message))
         if trace:
             if len(message.strip()) > 2:
                 self.dbg += "adding: " + message
@@ -25,22 +32,24 @@ class WoDParser(object):
                 action = False
         if trace:
             self.dbg += " = " + message + "\n"
+        print("=", message)
         return message
 
-    def resolvedefine(self, message, defines, reclvl=0, trace=False):
+    def resolvedefine(self, message, reclvl=0, trace=False):
         bits = message.replace('_', ' ').split(' ')  # splits into bits that should be looked up
         bits = [b for b in bits if b != ""]  # clean empty elements
-        replace = [defines.get(b, "0") for b in bits]
+        replace = [self.defines.get(b, None) for b in bits]
 
         for i in range(len(bits)):
-            message = message.replace(bits[i], str(replace[i]))
+            if replace[i]:
+                message = message.replace(bits[i], str(replace[i]))
         message = re.sub(r'0 *_', "-1", message)
         message = re.sub(r'([0-9]+ *)_', "\g<1>", message)
         return message
 
     @staticmethod
     def validate_roll(message):
-        dicecode = re.compile(r' *[0-9]{1,3} *(d *-?[0-9]{1,5}) *(([efg] *-?[0-9]{1,5})|(g)) *!* *$')  # 7d-1g
+        dicecode = re.compile(r' *[0-9]{1,3} *(d *-?[0-9]{1,5}) *(([efg] *-?[0-9]{1,5})|(g)) *!* *$')
         match = dicecode.match(message)
         if match:
             return 4
@@ -62,21 +71,79 @@ class WoDParser(object):
                     else:
                         return 0
 
-    def preparse(self, message, defines):
-        for k in defines.keys():
+    @staticmethod
+    def fullparenthesis(message):
+        i = message.find("(")
+        lvl = 1
+        try:
+            while lvl > 0:
+                i += 1
+                if message[i] == ")":
+                    lvl -= 1
+                if message[i] == "(":
+                    lvl += 1
+            return message[message.find("(") + 1:i]
+        except:
+            raise Exception("unmatched bracked: " + message)
+
+    def pretrigger(self, message):
+        if "§if_" in message:
+            print("ifififif", message)
+            cond = message[message.find("§if_"):]
+            cond = self.fullparenthesis(cond)
+            trigger = (message[message.find("§if_"):].replace("§if_", "", 1).strip()).replace("(" + cond + ")", "", 1)
+            trigger = self.fullparenthesis(trigger)
+            print("IFcond:", cond)
+            print("IFtrigger:", trigger)
+            roll = self.diceparser(cond)
+            res = roll.roll_nv()
+            self.altrolls.append( roll)
+            self.dbg = self.dbg[:-3] + ", rolling " + str(res) + " successes. \n"
+            if res:
+                print("res", res)
+                message = re.sub(r'§if_.*' + re.escape(trigger) + "\)", "(" + trigger.replace("$", str(res)) + ")",
+                                 message)
+                print()
+            else:
+                message = re.sub(r'§if_.*' + re.escape(trigger) + "\)", "", message)
+            print("aftersub", message, self.dbg)
+
+        if "§param_" in message:  # need to be last
+            triggers = message[message.find("§param_"):]
+            message = message[:message.find("§param_")]
+            keys = triggers.split(":")[0]
+            values = triggers.split(":")[1]
+            keys = [x for x in keys.replace("§param_", " ").replace("  ", " ").split(" ") if x]  # purge empty elements
+            values = [x for x in values.split(" ") if x]
+            i = 0
+            for key in keys:
+                try:
+                    self.defines[key] = values[i]
+                    self.dbg += ("added:'" + key + "'='" + values[i] + "'\n")
+                except:
+                    raise Exception("No value for parameter: " + key)
+                    # self.defines[key] = "0" # default to 0; alternative
+                i += 1
+        return message
+
+    def preparse(self, message):
+        for k in self.defines.keys():
             finder = re.compile(r'\b' + k + r'_?\b')
             matches = finder.findall(message)
             for m in matches:
                 message = message.replace("(" + m + ")", m)  # simple fix to infiniparenthesis
                 message = message.replace(m, "(" + m + ")")
+
         return message
 
-    def process_parenthesis(self, message, defines, testing=False):
+    def process_parenthesis(self, message, testing=False):
         finder = re.compile(r'(.*)\((.*?)\)(.*)')  # finds stuff in parenthesis and processes that first
         while finder.findall(message):
+            message = self.pretrigger(message)
             tochange = finder.findall(message)[0][1]  # first result, whatever is in parentheses
             if tochange[0] == "#":  # if its a dicecode in itself:
-                roll = self.diceparser(tochange, defines)
+                roll = self.diceparser(tochange)
+                self.altrolls.append(roll)
                 if "g" in tochange:
                     tobecome = " " + str(roll.roll_sum()) + " "
                     self.dbg = self.dbg[:-3] + ", rolling a sum of" + tobecome[:-1] + ". \n"
@@ -84,23 +151,24 @@ class WoDParser(object):
                     tobecome = " " + str(roll.roll_nv()) + " "
                     self.dbg = self.dbg[:-3] + ", rolling" + tobecome + "successes. \n"
             else:
-                tobecome = " " + self.resolvedefine(tochange, defines)
-                tobecome = self.preparse(tobecome, defines)
+                tobecome = " " + self.resolvedefine(tochange)
+                tobecome = self.preparse(tobecome)
             if testing:
                 self.dbg += "Resolving " + tochange + " to " + tobecome + "\n"
             message = message.replace("(" + tochange + ")", tobecome)
         return message
 
     def process_triggers(self, message, testing=False):
-        triggerfilter = re.compile(r'§[a-zA-Z]*[a-zA-Z0-9_ -]*')
+        triggerfilter = re.compile(r'§[a-zA-Z]*[a-zA-Z0-9_: \-]*')
         triggers = triggerfilter.findall(message)
         for trigger in triggers:
-            self.triggers.append(trigger.replace(" ",""))
+            self.triggers.append(trigger.replace(" ", ""))  # add them to the non executed triggers and
             message = message.replace(trigger, "")  # execute them from the level above.
 
         return message
 
     def extract_diceparams(self, message):
+        message = message.strip()
         subones = 1
         diff = 6
         dice = 10
@@ -116,7 +184,7 @@ class WoDParser(object):
         ef = max(e, f, g)
         if amount == 0:
             if len(message) > 1:
-                raise Exception('invalid roll: ' + message)
+                raise Exception('invalid roll: "' + message + '"')
         if amount == 1:
             amount = int(message)
         elif amount == 2:
@@ -160,6 +228,9 @@ class WoDParser(object):
         else:
             explodebehaviour = ""
         if diff == 0:
+            if dice == 1:
+                self.dbg += "==> "+str(amount)+".\n"  #d1g
+                return
             self.dbg += str(amount) + " " + str(dice) + " sided "
             if amount > 1:
                 self.dbg += "dice summed together. \n"
@@ -169,20 +240,30 @@ class WoDParser(object):
             self.dbg += str(amount) + " " + str(dice) + " sided dice against " + str(diff) + ", " + onebehaviour + \
                         " ones" + explodebehaviour + ". \n"
 
-    def diceparser(self, message, defines, rec=False, testing=False):
-        if message[0] == "#":
-            message = self.preparse(message, defines)  #
+    def diceparser(self, message, rec=False, testing=False):
+        message = self.pretrigger(message)
+        message = self.preparse(message)  #
         if "?" in message:  # set query flag so output is instead done to self.dbg
             testing = True
             message = message.replace("?", "")
-        message = self.process_parenthesis(message, defines, testing)  # iteratively processes parenthesis
-        message = self.process_triggers(message, testing)
+        oldmessage = ""
+
+        while message != oldmessage:
+            oldmessage = message
+            print(message, "trigger()loop")
+            message = self.preparse(message)
+            message = self.process_triggers(message, testing)  # processes triggers to be executed by the instance above
+            message = self.process_parenthesis(message, testing)  # iteratively processes parenthesis
+
         message = self.parseadd(message, testing)  # adds all numbers together
         amount, dice, diff, subones, explode = self.extract_diceparams(message)  # actually parses the message into dice
         self.write_humanreadable(amount, dice, diff, subones, explode)  # and generates the human readable messages
         roll = WoDDice(dice, diff, subones, explode)  # creates the Dice object
+
         if amount:
             roll.roll(amount)  # and rolls the dice :)
+
+
         if testing:
             self.dbg += "test complete:" + message
             return

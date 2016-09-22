@@ -11,7 +11,7 @@ class WoDDice(object):
         self.r = []
         self.log = ""
         self.dbg = ""
-        self.rolled=False
+        self.rolled = False
         self.succ = 0
         self.antisucc = 0
         self.infinity = max(100, maxroll * 10)
@@ -22,7 +22,7 @@ class WoDDice(object):
         if self.infinity < amount:
             self.infinity = amount
         i = 0
-        self.rolled=True
+        self.rolled = True
         self.log = ""
         self.r = []
         self.succ = 0
@@ -87,4 +87,3 @@ class WoDDice(object):
     def roll(self, amount):
         self.roll_next(amount)
         return self.roll_v()
-
