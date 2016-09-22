@@ -119,6 +119,8 @@ class WoDParser(object):
 
     def preparse(self, message):
         for k in self.defines.keys():
+            if not k.strip():           # fix for the dumbasses who have empty keys in their defines
+                continue
             finder = re.compile(r'\b' + k + r'_?\b')
             matches = finder.findall(message)
             for m in matches:
@@ -131,6 +133,7 @@ class WoDParser(object):
         finder = re.compile(r'(.*)\((.*?)\)(.*)')  # finds stuff in parenthesis and processes that first
         while finder.findall(message):
             message = self.pretrigger(message)
+            print(finder.findall(message))
             tochange = finder.findall(message)[0][1]  # first result, whatever is in parentheses
             if tochange[0] == "#":  # if its a dicecode in itself:
                 roll = self.diceparser(tochange)
