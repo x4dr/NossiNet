@@ -362,8 +362,7 @@ def char_connect():
                               "is a valid starting character (If your history is empty), "
                               "or calculate the difference in XP to the last sheet in "
                               "your history."})
-    print("connected to character")
-    join_room(session.get("'user", "?") + "_dotupdates")
+    join_room(session.get("user", "?") + "_dotupdates")
     update_dots()
 
 
