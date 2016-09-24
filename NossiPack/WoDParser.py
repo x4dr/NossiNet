@@ -188,7 +188,10 @@ class WoDParser(object):
             if len(message) > 1:
                 raise Exception('invalid roll: "' + message + '"')
         if amount == 1:
-            amount = int(message)
+            if " " in message:
+                amount = int(message[message.find(" ")])
+            else:
+                amount = int(message)
         elif amount == 2:
             amount = int(message[:ef])
             if g != ef:
