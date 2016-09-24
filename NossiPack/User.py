@@ -155,6 +155,7 @@ class Userlist(object):
         db = connect_db()
 
         for u in self.userlist:
+            print("saving "+u.username,"...",u.sheet.checksum())
             if u.sheet.checksum() != 0:
                 d = dict(username=u.username, pwhash=u.pw_hash, kudos=u.kudos, funds=u.funds, kudosdebt=u.kudosdebt,
                          sheet=u.sheet.serialize(), oldsheets=u.serialize_old_sheets(), defines=pickle.dumps(u.defines),

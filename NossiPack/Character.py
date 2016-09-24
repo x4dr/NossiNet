@@ -63,9 +63,9 @@ class Character(object):
         result = 0
         for a in self.unify().values():
             try:
-                result += a
+                result += int(a)
             except:
-                pass
+                raise Exception("could not add up", a)
         return result
 
     @staticmethod
@@ -503,8 +503,6 @@ class Character(object):
             if self.special["Aggravated"] >= 7:
                 raise Exception(
                     self.meta['Name'] + " is ash with " + str(self.special['Aggravated']) + " aggravated damage.")
-
-
 
     def process_trigger(self, trigger):
         if "§blood_" in trigger:

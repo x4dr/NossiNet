@@ -103,6 +103,7 @@ class WoDParser(object):
                     raise Exception("No value for parameter: " + key)
                     # self.defines[key] = "0" # default to 0; alternative
                 i += 1
+            message = self.preparse(message)  # preparse again
 
         if "§if_" in message:
             cond = message[message.find("§if_"):]
@@ -156,6 +157,7 @@ class WoDParser(object):
             if testing:
                 self.dbg += "Resolving " + tochange + " to " + tobecome + "\n"
             message = message.replace("(" + tochange + ")", tobecome)
+            message = self.pretrigger(message)  # one last time
         return message
 
     def process_triggers(self, message, testing=False):
@@ -253,7 +255,6 @@ class WoDParser(object):
             message = self.preparse(message)
             message = self.process_parenthesis(message, testing)  # iteratively processes parenthesis
             message = self.process_triggers(message, testing)  # processes triggers to be executed by the instance above
-
         message = self.parseadd(message, testing)  # adds all numbers together
         amount, dice, diff, subones, explode = self.extract_diceparams(message)  # actually parses the message into dice
         self.write_humanreadable(amount, dice, diff, subones, explode)  # and generates the human readable messages
