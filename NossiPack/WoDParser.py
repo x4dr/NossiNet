@@ -189,7 +189,7 @@ class WoDParser(object):
                 raise Exception('invalid roll: "' + message + '"')
         if amount == 1:
             if " " in message:
-                amount = int(message[message.find(" ")])
+                amount = int(message[:message.find(" ")])
             else:
                 amount = int(message)
         elif amount == 2:
