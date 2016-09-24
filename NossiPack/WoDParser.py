@@ -326,8 +326,8 @@ class WoDParser(object):
             'fireweapon': '0 §if_(#shoot difficulty)(#gundamage $ -1 e6) sum §param_difficulty:',
             'bloodheal': '§heal_1 §blood_1',
             'drink': '§blood_-amount §param_amount:',
-            'damage': '(#Aggravated sum)(#Bashing Lethal sum) sum',
-            'health': '(#damage sum)'
+            'damage': '#(#Aggravated sum)(#Bashing Lethal sum) sum',
+            'health': '7 -damage '
         }
 
     # noinspection PyPep8Naming
