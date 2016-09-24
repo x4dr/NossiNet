@@ -259,6 +259,7 @@ class Character(object):
                 special[i] = int(self.special[i])  # legacy ... rework might be as easy as removing this
             except:
                 pass  # sort all numeric values into special
+
         return [self.attributes, self.abilities['Skills'],
                 self.abilities['Talents'], self.abilities['Knowledges'],
                 self.virtues, self.disciplines, special]
@@ -268,7 +269,7 @@ class Character(object):
         result = {}
         for b in a:
             for i in b.keys():
-                result[i] = b[i]
+                result[i] = str(b[i])
         return result
 
     def setfromdalines(self, number):
@@ -470,17 +471,20 @@ class Character(object):
         else:
             if type == "Aggravated":
                 self.special['Aggravated'] += amount
-                if self.special['Aggravated'] < 0:
+                if self.special['Aggravated'] <= 0:
                     self.special['Aggravated'] = 0
+                    self.special['Partialheal'] = 0
             else:
-                print(self.special['Bashing'], self.special['Lethal'], self.special['Aggravated'])
                 self.special['Bashing'] += amount
                 if self.special['Bashing'] < 0:
                     self.special['Lethal'] += self.special['Bashing']
                     self.special['Bashing'] = 0
                 if self.special['Lethal'] < 0:
+                    self.special['Partialheal'] -= self.special['Lethal']
                     self.special['Lethal'] = 0
-        print(self.special['Bashing'], self.special['Lethal'], self.special['Aggravated'])
+                if self.special['Partialheal'] > 4:
+                    self.special['Partialheal'] -= 5
+                    self.applydamage(-1, "Aggravated")
         while self.special['Bashing'] + self.special['Lethal'] + self.special['Aggravated'] > 7:
             if type == "Bashing":  # if damage is bashing
                 if self.special['Bashing'] > 1:  # and there already is bashing damage
@@ -493,10 +497,14 @@ class Character(object):
                 if self.special['Lethal'] > 1:  # same for lethal to aggravated
                     self.special['Lethal'] -= 2
                     self.applydamage(1, 'Aggravated')
-            elif type == "Aggravated":
-                if self.special["Aggravated"] > 7:
-                    print(self.meta['Name'] + " is ash with " + str(self.special['Aggravated']) + " aggravated damage.")
-                break
+            elif type != "Aggravated":
+                raise Exception(type + "???")
+
+            if self.special["Aggravated"] >= 7:
+                raise Exception(
+                    self.meta['Name'] + " is ash with " + str(self.special['Aggravated']) + " aggravated damage.")
+
+
 
     def process_trigger(self, trigger):
         if "§blood_" in trigger:
@@ -520,20 +528,18 @@ class Character(object):
                     amount = int(trigger.replace(trigger[:trigger.rfind("_") + 1], "").strip())
                     self.applydamage(amount)
             except Exception as inst:
-                raise Exception("invalid damage: " + trigger + str(inst.args))
+                raise Exception("invalid damage: " + trigger + ", because " + str(inst.args[0]))
 
         if "§heal_" in trigger:
             try:
                 if "§heal_aggravated_" in trigger:
-                    print(trigger.replace("§heal_aggravated_", ""))
                     amount = int(trigger.replace("§heal_aggravated_", "").strip())
-                    self.applydamage(-amount,type="Aggravated")
+                    self.applydamage(-amount, type="Aggravated")
                 else:
                     amount = int(trigger.replace("§heal_", "").strip())
                     self.applydamage(-amount)
             except:
                 raise Exception("invalid healing: " + trigger)
-        print(self.special)
 
     def getdictrepr(self):
         character = {'Meta': self.meta,
@@ -559,6 +565,11 @@ class Character(object):
             self.virtues.pop('Self Control', None)
         except:
             pass  # already was converted
+        # Fix: adding special partialheal
+        try:
+            self.special['Partialheal'] = self.special['Partialheal']
+        except:
+            self.special['Partialheal'] = 0
 
     def combine_bgvdscp(self):
         combined = []
@@ -647,6 +658,7 @@ class Character(object):
                    'Willmax': 1,
                    'Bloodpool': 0,
                    'Bloodmax': 10,
+                   'Partialheal': 0,
                    'Bashing': 0,
                    'Lethal': 0,
                    'Aggravated': 0}

@@ -84,6 +84,26 @@ class WoDParser(object):
             raise Exception("unmatched bracked: " + message)
 
     def pretrigger(self, message):
+        if "§param_" in message:  # need to be last
+            triggers = message[message.find("§param_"):]
+            message = message[:message.find("§param_")]
+            try:
+                keys = triggers.split(":")[0]
+                values = triggers.split(":")[1]
+            except:
+                raise Exception("Parameter malformed. Missing ':'? ")
+            keys = [x for x in keys.replace("§param_", " ").replace("  ", " ").split(" ") if x]  # purge empty elements
+            values = [x for x in values.split(" ") if x]
+            i = 0
+            for key in keys:
+                try:
+                    self.defines[key] = values[i]
+                    self.dbg += ("using: " + values[i] + " as " + key + ".\n")
+                except:
+                    raise Exception("No value for parameter: " + key)
+                    # self.defines[key] = "0" # default to 0; alternative
+                i += 1
+
         if "§if_" in message:
             cond = message[message.find("§if_"):]
             cond = self.fullparenthesis(cond)
@@ -98,42 +118,28 @@ class WoDParser(object):
                                  message)
             else:
                 message = re.sub(r'§if_.*' + re.escape(trigger) + "\)", "", message)
-
-        if "§param_" in message:  # need to be last
-            triggers = message[message.find("§param_"):]
-            message = message[:message.find("§param_")]
-            keys = triggers.split(":")[0]
-            values = triggers.split(":")[1]
-            keys = [x for x in keys.replace("§param_", " ").replace("  ", " ").split(" ") if x]  # purge empty elements
-            values = [x for x in values.split(" ") if x]
-            i = 0
-            for key in keys:
-                try:
-                    self.defines[key] = values[i]
-                    self.dbg += ("added:'" + key + "'='" + values[i] + "'\n")
-                except:
-                    raise Exception("No value for parameter: " + key)
-                    # self.defines[key] = "0" # default to 0; alternative
-                i += 1
         return message
 
     def preparse(self, message):
-        for k in self.defines.keys():
-            if not k.strip():           # fix for the dumbasses who have empty keys in their defines
+        if message and message[0] == "#":
+            message = message[1:]
+
+        for k in self.defines.keys():  # longer ones first
+            if not k.strip():  # fix for the dumbasses who have empty keys in their defines
+                continue
+            if not str(self.defines[k]).strip():
                 continue
             finder = re.compile(r'\b' + k + r'_?\b')
             matches = finder.findall(message)
             for m in matches:
                 message = message.replace("(" + m + ")", m)  # simple fix to infiniparenthesis
                 message = message.replace(m, "(" + m + ")")
-
         return message
 
     def process_parenthesis(self, message, testing=False):
         finder = re.compile(r'(.*)\((.*?)\)(.*)')  # finds stuff in parenthesis and processes that first
         while finder.findall(message):
             message = self.pretrigger(message)
-            print(finder.findall(message))
             tochange = finder.findall(message)[0][1]  # first result, whatever is in parentheses
             if tochange[0] == "#":  # if its a dicecode in itself:
                 roll = self.diceparser(tochange)
@@ -236,7 +242,7 @@ class WoDParser(object):
 
     def diceparser(self, message, rec=False, testing=False):
         message = self.pretrigger(message)
-        message = self.preparse(message)  #
+        message = self.preparse(message)
         if "?" in message:  # set query flag so output is instead done to self.dbg
             testing = True
             message = message.replace("?", "")
@@ -245,8 +251,8 @@ class WoDParser(object):
         while message != oldmessage:
             oldmessage = message
             message = self.preparse(message)
-            message = self.process_triggers(message, testing)  # processes triggers to be executed by the instance above
             message = self.process_parenthesis(message, testing)  # iteratively processes parenthesis
+            message = self.process_triggers(message, testing)  # processes triggers to be executed by the instance above
 
         message = self.parseadd(message, testing)  # adds all numbers together
         amount, dice, diff, subones, explode = self.extract_diceparams(message)  # actually parses the message into dice
@@ -306,25 +312,34 @@ class WoDParser(object):
             'subt': 'Subterfuge_',
             'surv': 'Survival_',
             'scie': 'Science_',
+            # some examples
+            'armor': '0',
             'soak': 'sta armor e6',
             'hack': 'int comp',
             'shoot': 'dex fire',
             'punch': 'dex braw',
             'strike': 'dex mele',
-            'sneak': 'dex stea'
+            'sneak': 'dex stea',
+            'sum': 'd1g',
+            'gundamage': '4',
+            'fireweapon': '0 §if_(#shoot difficulty)(#gundamage $ -1 e6) sum §param_difficulty:',
+            'bloodheal': '§heal_1 §blood_1',
+            'drink': '§blood_-amount §param_amount:',
+            'damage': '(#Aggravated sum)(#Bashing Lethal sum) sum',
+            'health': '(#damage sum)'
         }
 
     # noinspection PyPep8Naming
     @staticmethod
     def disciplines(char):
         result = {}
-        Animalism = char.get('Animalism', 0)
+        Animalism = int(char.get('Animalism', 0))
         if Animalism > 0:
             result['Animalism1'] = "#Manipulation#AnimalKen"
         if Animalism > 1:
             result['Animalism2'] = "#Charisma#Survival"
         if Animalism > 2:
-            if char.get('Intimidation', 0) > char.get('Empathy', 0):
+            if int(char.get('Intimidation', 0)) > int(char.get('Intimidation', 0)):
                 result['Animalism3'] = "#Manipulation#Intimidation"
             else:
                 result['Animalism3'] = "#Manipulation#Empathy"
@@ -333,7 +348,7 @@ class WoDParser(object):
         if Animalism > 4:
             result['Animalism5'] = "#Manipulation#SelfControl"
 
-        Auspex = char.get('Auspex', 0)
+        Auspex = int(char.get('Auspex', 0))
         if Auspex > 0:
             result['Auspex1'] = "#Auspex"
         if Auspex > 1:
@@ -345,7 +360,7 @@ class WoDParser(object):
         if Auspex > 4:
             result['Auspex5'] = "#Perception#Alertness"
 
-        Celerity = char.get('Celerity', 0)
+        Celerity = int(char.get('Celerity', 0))
         # TODO
         # grants extra dice, not a roll by itself for levels 5 and lower,
         # optional powers _xor_ more dice at 6 and beyond
@@ -361,7 +376,7 @@ class WoDParser(object):
         if Celerity > 4:
             result['Celerity5'] = "1d1e1"
 
-        Chimerstry = char.get('Chimerstry', 0)
+        Chimerstry = int(char.get('Chimerstry', 0))
         if Chimerstry > 0:
             result['Chimerstry1'] = "1d1e1"
         if Chimerstry > 1:
@@ -373,7 +388,7 @@ class WoDParser(object):
         if Chimerstry > 4:
             result['Chimerstry5'] = "#Manipulation#Subterfuge"
 
-        Dementation = char.get('Dementation', 0)
+        Dementation = int(char.get('Dementation', 0))
         if Dementation > 0:
             result['Dementation1'] = "#Charisma#Empathy"
         if Dementation > 1:
@@ -385,7 +400,7 @@ class WoDParser(object):
         if Dementation > 4:
             result['Dementation5'] = "#Manipulation#Intimidation"
 
-        Dominate = char.get('Dominate', 0)
+        Dominate = int(char.get('Dominate', 0))
         if Dominate > 0:
             result['Dominate1'] = "#Manipulation#Intimidation"
         if Dominate > 1:
@@ -397,7 +412,7 @@ class WoDParser(object):
         if Dominate > 4:
             result['Dominate5'] = "#Charisma#Intimidation"
 
-        Flight = char.get('Flight', 0)
+        Flight = int(char.get('Flight', 0))
         # TODO
         # has no roll associated, remove or employ house-rules?
         if Flight > 0:
@@ -411,12 +426,12 @@ class WoDParser(object):
         if Flight > 4:
             result['Flight5'] = "1d1e1"
 
-        Fortitude = char.get('Fortitude', 0)
+        Fortitude = int(char.get('Fortitude', 0))
         # TODO
         # grants extra dice for soaks, not a roll by itself for levels 5 and lower,
         # optional powers _xor_ more dice at 6 and beyond
         if Fortitude > 0:
-            result['sta'] = 'Stamina Fortitude stabonus',
+            result['sta'] = 'Stamina Fortitude stabonus'
             result['Fortitude1'] = "1d1e1"
         if Fortitude > 1:
             result['Fortitude2'] = "1d1e1"
@@ -427,7 +442,7 @@ class WoDParser(object):
         if Fortitude > 4:
             result['Fortitude5'] = "1d1e1"
 
-        Melpominee = char.get('Melpominee', 0)
+        Melpominee = int(char.get('Melpominee', 0))
         if Melpominee > 0:  # TODO
             result['Melpominee1'] = "1d1e1"  # automatic, no roll
         if Melpominee > 1:
@@ -442,7 +457,7 @@ class WoDParser(object):
             result['Melpominee5'] = "#Stamina#Performance d1e1"  # spend 1 blood for every five targets beyond the first
         # TODO level 6 and 7
 
-        Mytherceria = char.get('Mytherceria', 0)
+        Mytherceria = int(char.get('Mytherceria', 0))
         if Mytherceria > 0:  # TODO
             result['Mytherceria1'] = "1d1e1"  # deliberate auto-success, no roll
         if Mytherceria > 1:
@@ -457,7 +472,7 @@ class WoDParser(object):
             result['Mytherceria5'] = "#Manipulation#Occult"  # difficulty is the victim’s current Willpower
             # TODO level 6,7 and 8
 
-        Necromancy = char.get('Necromancy', 0)
+        Necromancy = int(char.get('Necromancy', 0))
         if Necromancy > 0:  # hausregeln!
             result['Necromancy1'] = "#Perception#Alertness f5"
         if Necromancy > 1:
@@ -469,7 +484,7 @@ class WoDParser(object):
         if Necromancy > 4:
             result['Necromancy5'] = "1d1e1"
 
-        Obeah = char.get('Obeah', 0)
+        Obeah = int(char.get('Obeah', 0))
         if Obeah > 0:  # TODO
             result['Obeah1'] = "#Perception#Empathy f7"
         if Obeah > 1:
@@ -482,7 +497,7 @@ class WoDParser(object):
         if Obeah > 4:
             result['Obeah5'] = "#Intelligence#Empathy f8"  # spend  two  blood
 
-        Obfuscate = char.get('Obfuscate', 0)
+        Obfuscate = int(char.get('Obfuscate', 0))
         if Obfuscate > 0:
             result['Obfuscate1'] = "#Dexterity#Stealth"
         if Obfuscate > 1:
@@ -494,7 +509,7 @@ class WoDParser(object):
         if Obfuscate > 4:
             result['Obfuscate5'] = "#Stealth d1e1"
 
-        Obtenebration = char.get('Obtenebration', 0)
+        Obtenebration = int(char.get('Obtenebration', 0))
         if Obtenebration > 0:
             result['Obtenebration1'] = "1d1e1"
         if Obtenebration > 1:
@@ -506,7 +521,7 @@ class WoDParser(object):
         if Obtenebration > 4:
             result['Obtenebration5'] = "1d1e1"
 
-        Potence = char.get('Potence', 0)
+        Potence = int(char.get('Potence', 0))
         # TODO
         # grants extra dice for strength rolls, not a roll by itself for levels 5 and lower,
         # optional powers _xor_ more dice at 6 and beyond
@@ -523,7 +538,7 @@ class WoDParser(object):
             result['Potence5'] = "1d1e1"
         # TODO levels 6,7 and 8
 
-        Presence = char.get('Presence', 0)
+        Presence = int(char.get('Presence', 0))
         if Presence > 0:
             result['Presence1'] = "#Charisma#Performance f7"
         if Presence > 1:
@@ -535,7 +550,7 @@ class WoDParser(object):
         if Presence > 4:
             result['Presence5'] = "1d1e1"
 
-        Protean = char.get('Protean', 0)
+        Protean = int(char.get('Protean', 0))
         if Protean > 0:
             result['Protean1'] = "1d1e1"  # no roll
         if Protean > 1:
@@ -548,7 +563,7 @@ class WoDParser(object):
             result['Protean5'] = "1d1e1"  # spend 1 blood, up to 3 to transform faster
         # TODO levels up to 9
 
-        Quietus = char.get('Quietus', 0)
+        Quietus = int(char.get('Quietus', 0))
         if Quietus > 0:
             result['Quietus1'] = "1d1e1"
         if Quietus > 1:
@@ -561,7 +576,7 @@ class WoDParser(object):
             result['Quietus5'] = "#Stamina#Athletics"
         # TODO levels up to 9
 
-        Serpentis = char.get('Serpentis', 0)
+        Serpentis = int(char.get('Serpentis', 0))
         if Serpentis > 0:
             result['Serpentis1'] = "#Willpower f9"
         if Serpentis > 1:
@@ -573,7 +588,7 @@ class WoDParser(object):
         if Serpentis > 4:
             result['Serpentis5'] = "1d1e1"  # no roll
 
-        Temporis = char.get('Temporis', 0)
+        Temporis = int(char.get('Temporis', 0))
         if Temporis > 0:
             result['Temporis1'] = "1d1e1"
         if Temporis > 1:
@@ -585,7 +600,7 @@ class WoDParser(object):
         if Temporis > 4:
             result['Temporis5'] = "1d1e1"
 
-        Thaumaturgy = char.get('Thaumaturgy', 0)
+        Thaumaturgy = int(char.get('Thaumaturgy', 0))
         if Thaumaturgy > 0:
             result['Thaumaturgy1'] = "#Willpower f4"
         if Thaumaturgy > 1:
@@ -597,7 +612,7 @@ class WoDParser(object):
         if Thaumaturgy > 4:
             result['Thaumaturgy5'] = "#Willpower f8"
 
-        Vicissitude = char.get('Vicissitude', 0)
+        Vicissitude = int(char.get('Vicissitude', 0))
         if Vicissitude > 0:
             result['Vicissitude1'] = "#Intelligence#Medicine"  # spend one blood point for each body part to be changed
             # #Perception#Medicine f8 if trying to imitate someones face or voice
@@ -611,7 +626,7 @@ class WoDParser(object):
             result['Vicissitude5'] = "1d1e1"  # roll system insufficient, this is all about blood
         # TODO up to level 9
 
-        Visceratica = char.get('Visceratica', 0)
+        Visceratica = int(char.get('Visceratica', 0))
         if Visceratica > 0:
             result['Visceratica1'] = "#1d1e1"  # spend one blood, +5 stealth for scene
         if Visceratica > 1:

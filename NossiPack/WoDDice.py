@@ -14,13 +14,12 @@ class WoDDice(object):
         self.rolled = False
         self.succ = 0
         self.antisucc = 0
-        self.infinity = max(100, maxroll * 10)
+        self.maxamount = 100
         if self.explodeon <= self.min:
             self.explodeon = self.max + 1
 
     def roll_next(self, amount):
-        if self.infinity < amount:
-            self.infinity = amount
+        self.maxamount += amount
         i = 0
         self.rolled = True
         self.log = ""
@@ -46,7 +45,7 @@ class WoDDice(object):
                 amount += 1
                 self.log += "exploding!"
             self.log += "\n"
-            if i >= self.infinity:
+            if i >= self.maxamount:
                 break
             i += 1
 

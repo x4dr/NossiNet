@@ -61,14 +61,12 @@ def decider(message):
                  ' its doing instead of actually sending it.')
             return
         if not (("?" in message) or ("=" in message)):
-
-            post(message, "'s ROLL: ")
-            parser = WoDParser(defines())
-            roll = parser.diceparser(message)
-            post(parser.dbg, "'s ROLL: ")
-            trigger(parser.triggers)
-            update_dots()
             try:
+                post(message, "'s ROLL: ")
+                parser = WoDParser(defines())
+                roll = parser.diceparser(message)
+                trigger(parser.triggers)
+                update_dots()
                 printroll(roll, parser)
             except Exception as inst:
                 echo(str(inst.args[0]), "ROLLING ERROR: ", err=True)
@@ -115,18 +113,29 @@ def trigger(triggers, user=None):
 
 
 def defines(message="=", user=None):
+    if message[0] == "#":
+        message = message[1:]
+    message = message.strip()
     if not user:
         user = session['user']
     ul = Userlist()
     u = ul.loaduserbyname(user)
     workdef = u.defines
-    if message == "=clear":
+    if message[:6] == "=clear":
+
         workdef = {}
         echo("Definitions reset.")
-    elif message == "=show":
+    elif message[:7] == "=delete":
+        try:
+            test = workdef[message[8:]]
+            workdef.pop(message[8:])
+            echo("Entry " + message[8:] + " cleared.")
+        except:
+            echo("Entry " + message[8:] + " not found.")
+    elif message[:5] == "=show":
         echodict(workdef)
 
-    elif message == "=import":
+    elif message[:7] == "=import":
         workdef = {**workdef, **u.sheet.unify()}
         echo("Current charactersheet imported.")
     elif message == "=setup":
@@ -134,9 +143,8 @@ def defines(message="=", user=None):
             workdef = u.sheet.unify()
             echo("Definitions reset.")
         workdef = {**workdef, **WoDParser.shorthand(), **WoDParser.disciplines(workdef)}
-
         echo("Presets setup.")
-    if message[0] != "=":  # actually saving a new define
+    elif message[0] != "=":  # actually saving a new define
         parts = message.split("=")
         workdef[parts[0].strip()] = parts[1].strip()  # stripping to get whitespace out of the equation
         echo("added define for %s=%s" % (parts[0], parts[1]))
@@ -156,13 +164,13 @@ def printroll(roll, parser=None, testing=False):
     else:
         deliver = post
     if parser:
+        deliver(parser.dbg, "'s ROLL: ")
         for r in parser.altrolls:
             printroll(r, testing=testing)
-    if roll.difficulty == 0 and roll.max==1:
-        deliver(str(roll.roll_nv())+".", " IS ADDING UP TO: ")
-        return
-
     if len(roll.r) < 1:
+        return
+    if roll.difficulty == 0 and roll.max == 1:
+        deliver(str(roll.roll_nv()) + ".", " IS ADDING UP TO: ")
         return
 
     if roll.explodeon <= roll.max:
@@ -366,7 +374,6 @@ def char_connect():
                               "is a valid starting character (If your history is empty), "
                               "or calculate the difference in XP to the last sheet in "
                               "your history."})
-    print(session.get("user", "?") + "_dotupdates")
     join_room(session.get("user", "?") + "_dotupdates")
     update_dots()
 
@@ -390,8 +397,8 @@ def update_dots():
     update += 'Willpower_' + str(u.sheet.special['Willpower'])
     maxima += 'Willmax_' + str(u.sheet.special['Willmax'])
     health = str(u.sheet.special['Bashing']) + '&' + str(u.sheet.special['Lethal']) + '&' + str(
-        u.sheet.special['Aggravated'])
-    emit('DotUpdate', {'data': update + "§" + maxima + "§" + health}, room=session.get("'user", "?") + "_dotupdates")
+        u.sheet.special['Aggravated']) + '&' + str(u.sheet.special['Partialheal'])
+    emit('DotUpdate', {'data': update + "§" + maxima + "§" + health}, room=session.get("user", "?") + "_dotupdates")
 
 
 @socketio.on('NoteDots', namespace='/character')
