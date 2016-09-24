@@ -327,7 +327,8 @@ class WoDParser(object):
             'bloodheal': '§heal_1 §blood_1',
             'drink': '§blood_-amount §param_amount:',
             'damage': '#(#Aggravated sum)(#Bashing Lethal sum) sum',
-            'health': '7 -damage '
+            'initiative' : '#(#1 sum) wit dex sum',
+            'health': '(#7 - damage) sum'
         }
 
     # noinspection PyPep8Naming

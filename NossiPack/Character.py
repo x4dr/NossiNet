@@ -510,7 +510,7 @@ class Character(object):
                 amount = int(trigger.replace("§blood_", "").strip())
                 self.special['Bloodpool'] -= amount
                 if self.special['Bloodpool'] > self.special['Bloodmax']:
-                    self.special['Bloodpool'] = 0
+                    self.special['Bloodpool'] = self.special['Bloodmax']
             except:
                 raise Exception("invalid blood value: " + trigger)
 
