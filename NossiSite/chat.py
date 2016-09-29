@@ -67,13 +67,14 @@ def decider(message):
                 parser = WoDParser(defines())
                 t1 = time.time()
                 roll = parser.diceparser(message)
+                t1_1 = time.time()
                 trigger(parser.triggers)
                 t2 = time.time()
                 update_dots()
                 printroll(roll, parser)
                 t3 = time.time()
                 print("whole processing of dicecode:", t3 - t0, "\tgetting values:", t1 - t0,
-                      "\trolling and calculating:", t2 - t1, "\tprinting and sending", t3 - t2)
+                      "\trolling", t1_1-t1 ,"\tcalculating:", t2 - t1_1, "\tprinting and sending", t3 - t2)
             except Exception as inst:
                 echo(str(inst.args[0]), "ROLLING ERROR: ", err=True)
 
