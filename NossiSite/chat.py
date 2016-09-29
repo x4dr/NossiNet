@@ -62,12 +62,18 @@ def decider(message):
             return
         if not (("?" in message) or ("=" in message)):
             try:
+                t0 = time.time()
                 post(message, "'s ROLL: ")
                 parser = WoDParser(defines())
+                t1 = time.time()
                 roll = parser.diceparser(message)
                 trigger(parser.triggers)
+                t2 = time.time()
                 update_dots()
                 printroll(roll, parser)
+                t3 = time.time()
+                print("whole processing of dicecode:", t3 - t0, "\tgetting values:", t1 - t0,
+                      "\trolling and calculating:", t2 - t1, "\tprinting and sending", t3 - t2)
             except Exception as inst:
                 echo(str(inst.args[0]), "ROLLING ERROR: ", err=True)
 
@@ -155,6 +161,7 @@ def defines(message="=", user=None):
 
 
 def printroll(roll, parser=None, testing=False):
+    t0 = time.time()
     if not roll:
         return
     if not roll.rolled:
@@ -170,6 +177,8 @@ def printroll(roll, parser=None, testing=False):
                 printroll(r, testing=testing)
     if roll.difficulty == 0 and roll.max == 1:
         deliver(str(roll.roll_nv()) + ".", " IS ADDING UP TO: ")
+        t1 = time.time()
+        print("sending/processing ", roll.r, "took", t1 - t0)
         return
 
     if roll.explodeon <= roll.max:
@@ -181,6 +190,8 @@ def printroll(roll, parser=None, testing=False):
         deliver(str(roll.roll_nv()), " IS ROLLING: [" + str(len(roll.r)) + " DICEROLLS] ==> ")
     else:
         deliver(roll.roll_v(), " IS ROLLING: ")
+    t1 = time.time()
+    print("sending/processing ", roll.r, "took", t1 - t0)
 
 
 def menucmds(message, stripped=""):
@@ -360,10 +371,10 @@ def chatsite():
 @socketio.on('ClientServerEvent', namespace='/chat')
 def receive(message):
     print(session.get('user', "NoUser"), ": ", message)
-    t0=time.time()
+    t0 = time.time()
     decider(message['data'])
-    t1=time.time()
-    print("processing of "+message['data']+" took "+str(t1-t0))
+    t1 = time.time()
+    print("processing of " + message['data'] + " took " + str(t1 - t0))
     update_dots()
 
 

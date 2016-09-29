@@ -1,4 +1,4 @@
-import re
+import re, time
 
 from NossiPack import *
 
@@ -256,18 +256,21 @@ class WoDParser(object):
                         " ones" + explodebehaviour + ". \n"
 
     def diceparser(self, message, rec=False, testing=False):
+        t0 = time.time()
         message = self.pretrigger(message)
         message = self.preparse(message)
         if "?" in message:  # set query flag so output is instead done to self.dbg
             testing = True
             message = message.replace("?", "")
         oldmessage = ""
+        t1 = time.time()
 
         while message != oldmessage:
             oldmessage = message
             message = self.preparse(message)
             message = self.process_parenthesis(message, testing)  # iteratively processes parenthesis
             message = self.process_triggers(message, testing)  # processes triggers to be executed by the instance above
+        t2 = time.time()
         message = self.parseadd(message, testing)  # adds all numbers together
         amount, dice, diff, subones, explode = self.extract_diceparams(message)  # actually parses the message into dice
         self.write_humanreadable(amount, dice, diff, subones, explode)  # and generates the human readable messages
@@ -278,9 +281,9 @@ class WoDParser(object):
         for x in range(len(self.altrolls)):
             if len(self.altrolls[x].r) < 1:
                 self.altrolls.pop(x)
-        if testing:
-            self.dbg += "test complete:" + message
-            return
+        t3 = time.time()
+        print("total=", t3 - t0, "\tpreparsing:", t1 - t0, "\tmain loop:", t2 - t1, "\tpostprocessing:", t3 - t2,
+              "\tfor ", message)
         return roll
 
     @staticmethod
@@ -383,7 +386,6 @@ class WoDParser(object):
         # optional powers _xor_ more dice at 6 and beyond
         if Celerity > 0:
             result['dex'] = "Dexterity Celerity dexbonus"
-
 
         Chimerstry = int(char.get('Chimerstry', 0))
         if Chimerstry > 0:
