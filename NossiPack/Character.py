@@ -512,7 +512,15 @@ class Character(object):
                 if self.special['Bloodpool'] > self.special['Bloodmax']:
                     self.special['Bloodpool'] = self.special['Bloodmax']
             except:
-                raise Exception("invalid blood value: " + trigger)
+                raise Exception("Invalid Blood value: " + trigger)
+        if "§will_" in trigger:
+            try:
+                amount = int(trigger.replace("§will_", "").strip())
+                self.special['Willpower'] -= amount
+                if self.special['Willpower'] > self.special['Willmax']:
+                    self.special['Willpower'] = self.special['Willmax']
+            except:
+                raise Exception("Invalid Will value: " + trigger)
 
         if "§damage_" in trigger:
             try:
@@ -526,7 +534,7 @@ class Character(object):
                     amount = int(trigger.replace(trigger[:trigger.rfind("_") + 1], "").strip())
                     self.applydamage(amount)
             except Exception as inst:
-                raise Exception("invalid damage: " + trigger + ", because " + str(inst.args[0]))
+                raise Exception("Invalid damage: " + trigger + ", because " + str(inst.args[0]))
 
         if "§heal_" in trigger:
             try:
@@ -537,7 +545,7 @@ class Character(object):
                     amount = int(trigger.replace("§heal_", "").strip())
                     self.applydamage(-amount)
             except:
-                raise Exception("invalid healing: " + trigger)
+                raise Exception("Invalid healing: " + trigger)
 
     def getdictrepr(self):
         character = {'Meta': self.meta,
