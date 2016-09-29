@@ -164,11 +164,10 @@ def printroll(roll, parser=None, testing=False):
     else:
         deliver = post
     if parser:
-        deliver(parser.dbg, "'s ROLL: ")
-        for r in parser.altrolls:
-            printroll(r, testing=testing)
-    if len(roll.r) < 1:
-        return
+        if "§supress_" not in parser.triggers:
+            deliver(parser.dbg, "'s ROLL: ")
+            for r in parser.altrolls:
+                printroll(r, testing=testing)
     if roll.difficulty == 0 and roll.max == 1:
         deliver(str(roll.roll_nv()) + ".", " IS ADDING UP TO: ")
         return
