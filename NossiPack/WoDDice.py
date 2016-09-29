@@ -61,7 +61,10 @@ class WoDDice(object):
             return 0 - antisucc
 
     def roll_nv(self):  # non-verbose, returns int
-        return self.botchformat(self.succ, self.antisucc)
+        if self.difficulty:
+            return self.botchformat(self.succ, self.antisucc)
+        else:
+            return sum(self.r)
 
     def roll_v(self):  # verbose
         log = ""

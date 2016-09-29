@@ -113,7 +113,7 @@ class WoDParser(object):
             roll = self.diceparser(cond)
             res = roll.roll_nv()
             self.altrolls.append(roll)
-            self.dbg = self.dbg[:-3] + ", rolling " + str(res) + " successes. \n"
+            self.dbg = self.dbg[:-3] + ", for" + str(res) + " successes. \n"
             if res:
                 message = re.sub(r'§if_.*' + re.escape(trigger) + "\)", "(" + trigger.replace("$", str(res)) + ")",
                                  message)
@@ -147,10 +147,12 @@ class WoDParser(object):
                 self.altrolls.append(roll)
                 if "g" in tochange:
                     tobecome = " " + str(roll.roll_sum()) + " "
-                    self.dbg = self.dbg[:-3] + ", rolling a sum of" + tobecome[:-1] + ". \n"
+                    self.dbg = self.dbg[:-3]+self.dbg[-3:].replace(".", ",")
+                    self.dbg = self.dbg[:-1] + " for a sum of" + tobecome[:-1] + ". \n"
                 else:
                     tobecome = " " + str(roll.roll_nv()) + " "
-                    self.dbg = self.dbg[:-3] + ", rolling" + tobecome + "successes. \n"
+                    self.dbg = self.dbg[:-3]+self.dbg[-3:].replace(".", ",")
+                    self.dbg = self.dbg[:-1] + " for " + tobecome + "successes. \n"
             else:
                 tobecome = " " + self.resolvedefine(tochange)
                 tobecome = self.preparse(tobecome)
@@ -266,6 +268,9 @@ class WoDParser(object):
         if amount:
             roll.roll(amount)  # and rolls the dice :)
 
+        for x in range(len(self.altrolls)):
+            if len(self.altrolls[x].r) < 1:
+                self.altrolls.pop(x)
         if testing:
             self.dbg += "test complete:" + message
             return
