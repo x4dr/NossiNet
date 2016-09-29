@@ -109,23 +109,24 @@ class WoDParser(object):
             try:
                 cond = message[message.find("§if_"):]
                 cond = self.fullparenthesis(cond)
-                trigger = (message[message.find("§if_"):].replace("§if_", "", 1).strip()).replace("(" + cond + ")", "", 1)
+                trigger = (message[message.find("§if_"):].replace("§if_", "", 1).strip()).replace("(" + cond + ")", "",
+                                                                                                  1)
                 trigger = self.fullparenthesis(trigger)
-                othertrigger = self.fullparenthesis(message[message.find(trigger)+len(trigger):])
+                othertrigger = self.fullparenthesis(message[message.find(trigger) + len(trigger):])
                 roll = self.diceparser(cond)
                 res = roll.roll_nv()
                 self.altrolls.append(roll)
                 self.dbg = self.dbg[:-3] + ", for " + str(res) + " successes. \n"
                 if res > 0:
-                    message = re.sub(r'§if_.*' + re.escape(trigger) + "\)(\("+re.escape(othertrigger)+"\))?",
+                    message = re.sub(r'§if_.*' + re.escape(trigger) + "\)(\(" + re.escape(othertrigger) + "\))?",
                                      "(" + trigger.replace("$", str(res)) + ")",
                                      message)
                 else:
-                    message = re.sub(r'§if_.*' + re.escape(trigger) + "\)(\("+re.escape(othertrigger)+"\))?",
+                    message = re.sub(r'§if_.*' + re.escape(trigger) + "\)(\(" + re.escape(othertrigger) + "\))?",
                                      "(" + othertrigger.replace("$", str(res)) + ")",
-                                         message)
+                                     message)
             except:
-                raise Exception("Malformed if:"+message)
+                raise Exception("Malformed if:" + message)
         return message
 
     def preparse(self, message):
@@ -154,11 +155,11 @@ class WoDParser(object):
                 self.altrolls.append(roll)
                 if "g" in tochange:
                     tobecome = " " + str(roll.roll_sum()) + " "
-                    self.dbg = self.dbg[:-3]+self.dbg[-3:].replace(".", ",")
+                    self.dbg = self.dbg[:-3] + self.dbg[-3:].replace(".", ",")
                     self.dbg = self.dbg[:-1] + " for a sum of" + tobecome[:-1] + ". \n"
                 else:
                     tobecome = " " + str(roll.roll_nv()) + " "
-                    self.dbg = self.dbg[:-3]+self.dbg[-3:].replace(".", ",")
+                    self.dbg = self.dbg[:-3] + self.dbg[-3:].replace(".", ",")
                     self.dbg = self.dbg[:-1] + "for" + tobecome + "successes. \n"
             else:
                 tobecome = " " + self.resolvedefine(tochange)
@@ -341,7 +342,7 @@ class WoDParser(object):
             'bloodheal': '§heal_1 §blood_1',
             'drink': '§blood_-amount §param_amount:',
             'damage': '#(#Aggravated sum)(#Bashing Lethal sum) sum',
-            'initiative' : '#(#1 sum) wit dex sum',
+            'initiative': '#(#1 sum) wit dex sum',
             'health': '(#7 - damage) sum'
         }
 
@@ -368,29 +369,20 @@ class WoDParser(object):
         if Auspex > 0:
             result['Auspex1'] = "#Auspex"
         if Auspex > 1:
-            result['Auspex2'] = "#Perception#Empathy f8"
+            result['Auspex2'] = "#Perception Empathy f8"
         if Auspex > 2:
-            result['Auspex3'] = "#Perception#Empathy"
+            result['Auspex3'] = "#Perception Empathy f"  # needs a difficulty at castk time
         if Auspex > 3:
-            result['Auspex4'] = "#Intelligence#Subterfuge"
+            result['Auspex4'] = "#Intelligence Subterfuge f"
         if Auspex > 4:
-            result['Auspex5'] = "#Perception#Alertness"
+            result['Auspex5'] = "#Perception Alertness f"
 
         Celerity = int(char.get('Celerity', 0))
-        # TODO
         # grants extra dice, not a roll by itself for levels 5 and lower,
         # optional powers _xor_ more dice at 6 and beyond
         if Celerity > 0:
             result['dex'] = "Dexterity Celerity dexbonus"
-            result['Celerity1'] = "1d1e1"
-        if Celerity > 1:
-            result['Celerity2'] = "1d1e1"
-        if Celerity > 2:
-            result['Celerity3'] = "1d1e1"
-        if Celerity > 3:
-            result['Celerity4'] = "1d1e1"
-        if Celerity > 4:
-            result['Celerity5'] = "1d1e1"
+
 
         Chimerstry = int(char.get('Chimerstry', 0))
         if Chimerstry > 0:
