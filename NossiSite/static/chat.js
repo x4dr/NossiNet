@@ -84,6 +84,7 @@ $(document).ready(function(){
 
     socket.on('connect', function() {
         socket.emit('ClientServerEvent', {data: '/connection established'});
+        $('#message_data').focus();
     });
 
     var prevCommand = [];
@@ -105,9 +106,18 @@ $(document).ready(function(){
     $(document).keydown(function(event){
         var msgdata = $('#message_data');
         var index;
-        msgdata.focus();
+        if(event.which == 32){
+            if (!msgdata.is(':focus')){
+                msgdata.focus();
+                return false
+            }
+
+        }
+
+
         if(event.which == 38){
             keyCount++;
+            msgdata.focus();
             if(typeof prevCommand[keyCount] !== "undefined") {
                 index = prevCommand.length-keyCount;
                 msgdata.val(prevCommand[index]);
@@ -119,6 +129,7 @@ $(document).ready(function(){
             return false;
         }else if(event.which == 40) {
             keyCount--;
+            msgdata.focus();
             if(typeof prevCommand[keyCount] !== "undefined") {
                 index = prevCommand.length-keyCount;
                 msgdata.val(prevCommand[index]);

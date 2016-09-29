@@ -165,7 +165,7 @@ def printroll(roll, parser=None, testing=False):
         deliver = post
     if parser:
         if "§supress_" not in parser.triggers:
-            deliver(parser.dbg, "'s ROLL: ")
+            deliver(parser.dbg[:-1], "'s ROLL: \n")
             for r in parser.altrolls:
                 printroll(r, testing=testing)
     if roll.difficulty == 0 and roll.max == 1:
@@ -360,7 +360,10 @@ def chatsite():
 @socketio.on('ClientServerEvent', namespace='/chat')
 def receive(message):
     print(session.get('user', "NoUser"), ": ", message)
+    t0=time.time()
     decider(message['data'])
+    t1=time.time()
+    print("processing of "+message['data']+" took "+str(t1-t0))
     update_dots()
 
 

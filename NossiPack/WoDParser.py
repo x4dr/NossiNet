@@ -106,19 +106,26 @@ class WoDParser(object):
             message = self.preparse(message)  # preparse again
 
         if "§if_" in message:
-            cond = message[message.find("§if_"):]
-            cond = self.fullparenthesis(cond)
-            trigger = (message[message.find("§if_"):].replace("§if_", "", 1).strip()).replace("(" + cond + ")", "", 1)
-            trigger = self.fullparenthesis(trigger)
-            roll = self.diceparser(cond)
-            res = roll.roll_nv()
-            self.altrolls.append(roll)
-            self.dbg = self.dbg[:-3] + ", for" + str(res) + " successes. \n"
-            if res:
-                message = re.sub(r'§if_.*' + re.escape(trigger) + "\)", "(" + trigger.replace("$", str(res)) + ")",
-                                 message)
-            else:
-                message = re.sub(r'§if_.*' + re.escape(trigger) + "\)", "", message)
+            try:
+                cond = message[message.find("§if_"):]
+                cond = self.fullparenthesis(cond)
+                trigger = (message[message.find("§if_"):].replace("§if_", "", 1).strip()).replace("(" + cond + ")", "", 1)
+                trigger = self.fullparenthesis(trigger)
+                othertrigger = self.fullparenthesis(message[message.find(trigger)+len(trigger):])
+                roll = self.diceparser(cond)
+                res = roll.roll_nv()
+                self.altrolls.append(roll)
+                self.dbg = self.dbg[:-3] + ", for " + str(res) + " successes. \n"
+                if res > 0:
+                    message = re.sub(r'§if_.*' + re.escape(trigger) + "\)(\("+re.escape(othertrigger)+"\))?",
+                                     "(" + trigger.replace("$", str(res)) + ")",
+                                     message)
+                else:
+                    message = re.sub(r'§if_.*' + re.escape(trigger) + "\)(\("+re.escape(othertrigger)+"\))?",
+                                     "(" + othertrigger.replace("$", str(res)) + ")",
+                                         message)
+            except:
+                raise Exception("Malformed if:"+message)
         return message
 
     def preparse(self, message):
@@ -152,7 +159,7 @@ class WoDParser(object):
                 else:
                     tobecome = " " + str(roll.roll_nv()) + " "
                     self.dbg = self.dbg[:-3]+self.dbg[-3:].replace(".", ",")
-                    self.dbg = self.dbg[:-1] + " for " + tobecome + "successes. \n"
+                    self.dbg = self.dbg[:-1] + "for" + tobecome + "successes. \n"
             else:
                 tobecome = " " + self.resolvedefine(tochange)
                 tobecome = self.preparse(tobecome)
@@ -265,8 +272,7 @@ class WoDParser(object):
         self.write_humanreadable(amount, dice, diff, subones, explode)  # and generates the human readable messages
         roll = WoDDice(dice, diff, subones, explode)  # creates the Dice object
 
-        if amount:
-            roll.roll(amount)  # and rolls the dice :)
+        roll.roll(amount)  # and rolls the dice :)
 
         for x in range(len(self.altrolls)):
             if len(self.altrolls[x].r) < 1:
@@ -331,7 +337,7 @@ class WoDParser(object):
             'sneak': 'dex stea',
             'sum': 'd1g',
             'gundamage': '4',
-            'fireweapon': '0 §if_(#shoot difficulty)(#gundamage $ -1 e6) sum §param_difficulty:',
+            'fireweapon': '0 §if_(#shoot difficulty)(#gundamage $ -1 e6)(0) sum §param_difficulty:',
             'bloodheal': '§heal_1 §blood_1',
             'drink': '§blood_-amount §param_amount:',
             'damage': '#(#Aggravated sum)(#Bashing Lethal sum) sum',
