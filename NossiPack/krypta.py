@@ -109,7 +109,7 @@ def d10(amount, difficulty=6, mode=""):
         return -ones
 
 
-def roll(low=0, high=0, attribute=0, ability=0):
+def roll(low=0, high=0, attribute=0, ability=0): #not used right now
     output = 0
     if high != 0:
         output = random.Random().randint(low, high)

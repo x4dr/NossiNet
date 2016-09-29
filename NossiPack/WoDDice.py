@@ -11,6 +11,7 @@ class WoDDice(object):
         self.r = []
         self.log = ""
         self.dbg = ""
+        self.comment = ""
         self.rolled = False
         self.succ = 0
         self.antisucc = 0
@@ -66,6 +67,8 @@ class WoDDice(object):
         log = ""
         for i in self.r:
             log += str(i) + ", "
+        if len(self.r) < 1:
+            return " ==> 0"
         log = log[:-2] + " ==> " + str(self.roll_nv())
         return log
 
