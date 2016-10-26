@@ -394,7 +394,6 @@ def char_connect():
 
 @socketio.on('ClientServerEvent', namespace='/character')
 def receive_message(message):
-    #  print("CHARACTERSHEET", session.get('user', "?"), ":  ", message)
     update_dots()
 
 
@@ -403,7 +402,6 @@ def update_dots():
     maxima = ""
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user', "?"))
-    # print("BLOOD:", u.sheet.special['Bloodpool'], "WILL:", u.sheet.special['Willpower'])
     update += 'Bloodpool_' + str(u.sheet.special['Bloodpool'])
     maxima += 'Bloodmax_' + str(u.sheet.special['Bloodmax'])
     update += '&'
@@ -427,7 +425,6 @@ def note_dots(message):
             u.sheet.special['Willpower'] = int(d.split("=")[1])
         if d.split("=")[0] == "Bloodpool":  # some semblance of santizing
             u.sheet.special['Bloodpool'] = int(d.split("=")[1])
-        print(d)
     ul.saveuserlist()
     update_dots()
 
@@ -494,5 +491,8 @@ def test_disconnect():
     # print('Client disconnected', rooms())
     # except:
     # print("Last client disconnected.")
-    for r in session['roomlist']:
-        r.userleave(session['user'])
+    try:
+        for r in session['roomlist']:
+            r.userleave(session['user'])
+    except Exception as inst:
+        print("there was en error with the roomlist in the session...",inst.args)

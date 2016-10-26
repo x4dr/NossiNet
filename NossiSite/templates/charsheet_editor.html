@@ -1,75 +1,75 @@
-            <!--suppress JSUnresolvedVariable, JSUnresolvedFunction -->
+<!--suppress JSUnresolvedVariable, JSUnresolvedFunction -->
 {% extends "layout.html" %}
 {% macro chooser(name, value, max=5) -%}
-        {% for count in range(1,max + 1) -%}{%- if loop.index0 > 1 and loop.index0 % 10 == 0 %}
-    <br>{% endif -%}<input
-                style="width: 10px"  type="radio" name="{{ name }}"
-                value="{{ count|string }}" id="{{ name }}_{{ count|string }}"{% if value == count -%}
-                checked {%- endif %} xmlns="http://www.w3.org/1999/html"><label ondblclick="resetDot(this.control)"
-                style="user-select: none;"
-                for="{{ name }}_{{ count|string }}"
+    {% for count in range(1,max + 1) -%}{%- if loop.index0 > 1 and loop.index0 % 10 == 0 -%}
+        <br>{%- endif -%}<input
+            style="width: 10px"  type="radio" name="{{ name }}"
+            value="{{ count|string }}" id="{{ name }}_{{ count|string }}"{% if value == count -%}
+            checked {%- endif %} xmlns="http://www.w3.org/1999/html"><label ondblclick="resetDot(this.control)"
+                                                                            style="user-select: none;"
+                                                                            for="{{ name }}_{{ count|string }}"
     >&nbsp</label>{%- endfor %}
 {%- endmacro %}
 {% block head %}
     <script>
-     $(document).ready(function() {
-         $('form input').on('keypress', function(e) {
-            return e.which !== 13;
-         });
+        $(document).ready(function() {
+            $('form input').on('keypress', function(e) {
+                return e.which !== 13;
+            });
 
-        var namespace = '/character';
+            var namespace = '/character';
 
-        var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+            var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
 
-        socket.on('comments', function (msg) {
-         var box = $('pre#comments');
-         box.html(msg.data);
-         window.scrollTo(0,0);
+            socket.on('comments', function (msg) {
+                var box = $('pre#comments');
+                box.html(msg.data);
+                window.scrollTo(0,0);
+            });
+
+            socket.on('connect', function () {
+                socket.emit('ClientServerEvent', {data: 'editing character'})
+            });
+
+
+            $('form#checkchar').submit(function () {
+                var message_data = $('form#sheet').serializeArray();
+                socket.emit('CheckChar', {data: message_data});
+                return false;
+            });
         });
 
-        socket.on('connect', function () {
-         socket.emit('ClientServerEvent', {data: 'editing character'})
-        });
-
-
-        $('form#checkchar').submit(function () {
-         var message_data = $('form#sheet').serializeArray();
-         socket.emit('CheckChar', {data: message_data});
-         return false;
-        });
-         });
-
-    function resetDot(el){
-        el.checked = '';
-        if (window.getSelection) {
-            if (window.getSelection().empty) {  // Chrome
-                window.getSelection().empty();
+        function resetDot(el){
+            el.checked = '';
+            if (window.getSelection) {
+                if (window.getSelection().empty) {  // Chrome
+                    window.getSelection().empty();
                 } else if (window.getSelection().removeAllRanges) {  // Firefox
-                window.getSelection().removeAllRanges();
+                    window.getSelection().removeAllRanges();
                 }
             } else if (document.selection) {  // IE?
                 document.selection.empty();
+            }
         }
-        }
-    function textAreaAdjust(el) {
-        if (el.scrollHeight > el.clientHeight) {
-            el.style.height = el.scrollHeight  + "px"
-        }
+        function textAreaAdjust(el) {
+            if (el.scrollHeight > el.clientHeight) {
+                el.style.height = el.scrollHeight  + "px"
+            }
         }
 
-    function setdisciplines(){
-        var disci_inputs = document.getElementsByClassName("chr_discipline");
-        var disc = document.getElementById('Clan').value;
-        for(var i = 0; i < disci_inputs.length; i++)
-        {
-            disci_inputs[i].setAttribute('list', disc);
+        function setdisciplines(){
+            var disci_inputs = document.getElementsByClassName("chr_discipline");
+            var disc = document.getElementById('Clan').value;
+            for(var i = 0; i < disci_inputs.length; i++)
+            {
+                disci_inputs[i].setAttribute('list', disc);
+            }
         }
-    }
 
 
-    window.onload = function() {
-    setdisciplines();
-    }
+        window.onload = function() {
+            setdisciplines();
+        }
 
     </script>
 
@@ -78,20 +78,20 @@
 
     <datalist id="Clans">
         {%- for c in Clans %}
-        <option value="{{ c }}">{{ c }}</option>
+            <option value="{{ c }}">{{ c }}</option>
         {%- endfor %}
     </datalist>
     {% for c in Clans %}
-    <datalist id="{{ c }}">
-        {%- set discilist = Clans[c].split(", ") %}
-        {%- for d in discilist %}
-        <option value="{{ d }}">{{ d }}</option>
-        {%- endfor %}
-    </datalist>
+        <datalist id="{{ c }}">
+            {%- set discilist = Clans[c].split(", ") %}
+            {%- for d in discilist %}
+                <option value="{{ d }}">{{ d }}</option>
+            {%- endfor %}
+        </datalist>
     {% endfor %}
     <datalist id="Backgrounds">
         {%- for b in Backgrounds %}
-        <option value="{{ b }}">{{ b }}</option>
+            <option value="{{ b }}">{{ b }}</option>
         {%- endfor %}
     </datalist>
     <pre id="comments"></pre>
@@ -280,52 +280,52 @@
             </tr>
             {% set bgnew = 0 %}
             {% set dscpnew = 0 %}
-        {% if character.BGVDSCP_combined.append('') %}{% endif %}
-        {% if character.BGVDSCP_combined.append('') %}{% endif %}
-        {% if character.BGVDSCP_combined.append('') %}{% endif %}
-        {% if character.BGVDSCP_combined.append('') %}{% endif %}
-        {% if character.BGVDSCP_combined.append('') %}{% endif %}
-        {% if character.BGVDSCP_combined.append('') %}{% endif %}
-        {% if character.BGVDSCP_combined.append('') %}{% endif %}
-        {% if character.BGVDSCP_combined.append('') %}{% endif %}
-        {% for bgvdscp in character.BGVDSCP_combined %}
-            <tr>
-                {% if bgvdscp.Background %}
-                    <td><input title="bg" list="Backgrounds"  style="width: 99%" class="leet" name="background_name_{{ bgvdscp.Background }}" value="{{ bgvdscp.Background }}"></td>
-                    <td>{{ chooser("background_value_"+bgvdscp.Background, bgvdscp.Background_Value, ([5,bgvdscp.Background_Value] | sort)[1] ) }}</td>
-                {% else %}
-                    {% if bgnew < 8 %}
-                        <td><input title="additional bg" list="Backgrounds" class="leet" style="width: 99%" name="background_name_New{{ bgnew }}" value=""></td>
-                       <td>{{ chooser("background_value_New"+bgnew|string, 0) }}</td>
-                        {% set bgnew = bgnew + 1 %}
+            {% if character.BGVDSCP_combined.append('') %}{% endif %}
+            {% if character.BGVDSCP_combined.append('') %}{% endif %}
+            {% if character.BGVDSCP_combined.append('') %}{% endif %}
+            {% if character.BGVDSCP_combined.append('') %}{% endif %}
+            {% if character.BGVDSCP_combined.append('') %}{% endif %}
+            {% if character.BGVDSCP_combined.append('') %}{% endif %}
+            {% if character.BGVDSCP_combined.append('') %}{% endif %}
+            {% if character.BGVDSCP_combined.append('') %}{% endif %}
+            {% for bgvdscp in character.BGVDSCP_combined %}
+                <tr>
+                    {% if bgvdscp.Background %}
+                        <td><input title="bg" list="Backgrounds"  style="width: 99%" class="leet" name="background_name_{{ bgvdscp.Background }}" value="{{ bgvdscp.Background }}"></td>
+                        <td>{{ chooser("background_value_"+bgvdscp.Background, bgvdscp.Background_Value, ([5,bgvdscp.Background_Value] | sort)[1] ) }}</td>
                     {% else %}
-                        <td colspan="2">&nbsp</td>
+                        {% if bgnew < 8 %}
+                            <td><input title="additional bg" list="Backgrounds" class="leet" style="width: 99%" name="background_name_New{{ bgnew }}" value=""></td>
+                            <td>{{ chooser("background_value_New"+bgnew|string, 0) }}</td>
+                            {% set bgnew = bgnew + 1 %}
+                        {% else %}
+                            <td colspan="2">&nbsp</td>
+                        {% endif %}
                     {% endif %}
-                {% endif %}
-                <td style="width: 2%;"> </td>
-                {% if bgvdscp.Discipline %}
-                    <td><input title="dscp" style="width: 99%" class="leet chr_discipline" name="discipline_name_{{ bgvdscp.Discipline }}" value="{{ bgvdscp.Discipline }}"> </td>
-                    <td>{{ chooser("discipline_value_"+bgvdscp.Discipline, bgvdscp.Discipline_Value) }}</td>
-                {% else %}
-                    {% if dscpnew < 8 %}
-                        <td><input title="additional dscp" style="width: 99%" class="leet chr_discipline" name="discipline_name_New{{ dscpnew }}" value=""></td>
-                        <td>{{ chooser("discipline_value_New"+dscpnew|string, 0) }}
-                        {% set dscpnew = dscpnew + 1 %}
+                    <td style="width: 2%;"> </td>
+                    {% if bgvdscp.Discipline %}
+                        <td><input title="dscp" style="width: 99%" class="leet chr_discipline" name="discipline_name_{{ bgvdscp.Discipline }}" value="{{ bgvdscp.Discipline }}"> </td>
+                        <td>{{ chooser("discipline_value_"+bgvdscp.Discipline, bgvdscp.Discipline_Value) }}</td>
                     {% else %}
-                        <td colspan="2">&nbsp</td>
+                        {% if dscpnew < 8 %}
+                            <td><input title="additional dscp" style="width: 99%" class="leet chr_discipline" name="discipline_name_New{{ dscpnew }}" value=""></td>
+                            <td>{{ chooser("discipline_value_New"+dscpnew|string, 0) }}
+                                {% set dscpnew = dscpnew + 1 %}
+                                {% else %}
+                            <td colspan="2">&nbsp</td>
+                        {% endif %}
                     {% endif %}
-                {% endif %}
-                <td style="width: 2%;"> </td>
-                {% if bgvdscp %}
-                    {% if bgvdscp.Virtue %}
-                    <td>{{ bgvdscp.Virtue }} <input title="hidden virtue name" hidden value="{{ bgvdscp.Virtue }}" name="virtue_name_{{ bgvdscp.Virtue }}"></td>
-                    <td>{{ chooser("virtue_value_"+bgvdscp.Virtue,bgvdscp.Virtue_Value) }}
-                    {% else %}
-                        <td colspan="2">&nbsp</td>
+                    <td style="width: 2%;"> </td>
+                    {% if bgvdscp %}
+                        {% if bgvdscp.Virtue %}
+                            <td>{{ bgvdscp.Virtue }} <input title="hidden virtue name" hidden value="{{ bgvdscp.Virtue }}" name="virtue_name_{{ bgvdscp.Virtue }}"></td>
+                            <td>{{ chooser("virtue_value_"+bgvdscp.Virtue,bgvdscp.Virtue_Value) }}
+                                {% else %}
+                            <td colspan="2">&nbsp</td>
+                        {% endif %}
                     {% endif %}
-                {% endif %}
-            </tr>
-        {% endfor %}
+                </tr>
+            {% endfor %}
         </table>
         <table width="100%">
             <tr>
@@ -346,11 +346,11 @@
             </tr>
             <tr>
 
-                 <td align="center" style="font-weight: bolder;
+                <td align="center" style="font-weight: bolder;
                  letter-spacing: 3px">{{ chooser("Humanity",character.Special.Humanity,10) }}</td>
             </tr>
             <tr>
-            <td>&nbsp</td>
+                <td>&nbsp</td>
             </tr>
 
             <tr>
@@ -359,7 +359,7 @@
             <tr>
                 <td>&nbsp</td>
             </tr>
-                <tr>
+            <tr>
                 <td align="center" style="font-weight: bolder;
                  letter-spacing: 3px">{{ chooser("Willmax",character.Special.Willmax,10) }}</td>
 
@@ -373,32 +373,34 @@
             <tr>
                 <td>&nbsp</td>
             </tr>
-                <tr>
+            <tr>
                 <td align="center" style="font-weight: bolder;
                  letter-spacing: 3px">{{ chooser("Bloodmax",character.Special.Bloodmax,20) }}</td>
             </tr>
             <tr>
                 <td>&nbsp</td>
             </tr>
-            </table>
-            <div >
-                <textarea title="Notes" style="width: 99%; overflow-y: auto; word-wrap:break-word " onload="textAreaAdjust(this)"
-                          onkeyup="textAreaAdjust(this)" class="leeet" name="Notes">{{ character.Meta.Notes }}</textarea>
-            </div>
-    <br><br>
+        </table>
+
+        <br><br>
         <label>
             <input type="checkbox" name="newsheet" value="newsheet" class="leet"> Save this Version into History.
         </label>
-        <input type="submit" style="float: right; " class="leet" value="save">
+
+        <input type="submit"  class="leet bigbtn" value="SAVE"><br><br><br>
+        <div >
+                <textarea title="Notes" style="width: 99%; overflow-y: auto; word-wrap:break-word " onload="textAreaAdjust(this)"
+                          onkeyup="textAreaAdjust(this)" class="leeet" name="Notes">{{ character.Meta.Notes }}</textarea>
+        </div>
     </form>
     <br>
     <form id="checkchar"  style="float: right" name="checkchar">
-        <input id="check" type="submit" style="float: right; " class="leet" value="check">
+        <input id="check" type="submit"  class="leet bigbtn" value="CHECK">
     </form>
     <div style="float: left">Checks the Character cost (uses the newest sheet in your history)</div>
 
 
-    <br><br>
+    <br><br><br><br>
     <form style="float: left" action="{{ url_for('setfromdalines') }}"> <input type="text" name="dalinesnumber" class="leet">
         <input type="submit" class="leet" value="Load Character from Dalines"><br>(saves the active character into history)
     </form>

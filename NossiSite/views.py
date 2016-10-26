@@ -102,7 +102,6 @@ def charsheet():
         return redirect(url_for('login'))
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
-    print(u.sheet.getdictrepr())
     return render_template('charsheet.html', character=u.sheet.getdictrepr(), own=True)
 
 

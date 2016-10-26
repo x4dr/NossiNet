@@ -13,7 +13,7 @@
 {%- endmacro %}
 
 {% macro chooser(name, value, max=5) -%}
-    {% for count in range(1,max + 1) -%}{%- if loop.index0 > 1 and loop.index0 % 10 == 0 %}
+    {% for count in range(1,max + 1) -%}{%- if loop.index0 > 1 and loop.index0 % 10 == 0 -%}
         <br>{% endif -%}<input
             style="width: 10px"  type="radio" name="{{ name }}"
             value="{{ count|string }}" id="{{ name }}_{{ count|string }}"{% if value == count -%}
@@ -355,7 +355,6 @@
         </table>
     </form>
 
-    <div><pre>{{ character.Meta.Notes }}</pre></div>
     <div >
         {% if oldsheet %}
             <form action="{{ url_for('del_sheet')}}" method="POST" >
@@ -369,10 +368,11 @@
             </form>
         {% elif own %}
             <form action="{{ url_for('modify_sheet') }}" >
-                <input type="submit" style="float: right" class="leet" value="edit">
+                <input type="submit" class="leet bigbtn" value="EDIT">
             </form>
         {% endif %}
-    </div>
+    </div><br>
+    <div><pre>{{ character.Meta.Notes }}</pre></div>
     <br>
     <a href="{{ url_for('oldsheets') }}">History</a>
 

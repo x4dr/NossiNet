@@ -121,7 +121,7 @@ class Chatroom(object):
         actuallyleft = False
         for u in self.users:
             if u[0] == user:
-                print(u)
+                print(u,"is leaving room", self.name)
                 u[1] -= 1
                 if u[1] < 0:
                     self.addline(user + ' left the room!')

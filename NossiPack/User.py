@@ -114,7 +114,7 @@ class User(object):
         for e in entries:
             result += e.get('loaner') + "#" + e.get('state') + "#" + str(e.get('remaining')) + "#" + str(e.get(
                 'original')) + "#" + str(e.get('id')) + "|"
-        print(result)
+        print("kudosdebt:",result)
         self.kudosdebt = result
 
     def add_kudosoffer(self, loaner):

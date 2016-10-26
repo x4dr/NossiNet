@@ -341,6 +341,7 @@ class WoDParser(object):
             'sneak': 'dex stea',
             'sum': 'd1g',
             'gundamage': '4',
+            'init': '(#1g) wit dex sum',
             'fireweapon': '0 §if_(#shoot difficulty)(#gundamage $ -1 e6)(0) sum §param_difficulty:',
             'bloodheal': '§heal_1 §blood_1',
             'drink': '§blood_-amount §param_amount:',

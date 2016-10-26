@@ -135,8 +135,12 @@ $(document).ready(function(){
                 msgdata.val(prevCommand[index]);
                 //  moveCursorToEnd(msgdata)
             } else {
-                keyCount = 0;
-                msgdata.val('');
+                if (prevCommand[commandCount] !== msgdata.val() && msgdata.val() !== '' ) {
+                    commandCount++;
+                    keyCount = 0;
+                    prevCommand[commandCount] = msgdata.val();
+                }
+                msgdata.val('')
             }
             return false;
         }
