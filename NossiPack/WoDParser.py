@@ -1,4 +1,4 @@
-import re, time
+import re, time, json
 
 from NossiPack import *
 
@@ -286,70 +286,8 @@ class WoDParser(object):
               "\tfor ", message)
         return roll
 
-    @staticmethod
-    def shorthand():
-        return {
-            'str': 'Strength strbonus',
-            'dex': 'Dexterity dexbonus',
-            'sta': 'Stamina stabonus',
-            'strbonus': '0',
-            'dexbonus': '0',
-            'stabonus': '0',
-            'cha': 'Charisma',
-            'man': 'Manipulation',
-            'app': 'Appearance',
-            'per': 'Perception',
-            'int': 'Intelligence',
-            'wit': 'Wits',
-            'aler': 'Alertness_',
-            'anim': 'AnimalKen_',
-            'acad': 'Academics_',
-            'athl': 'Athletics_',
-            'craf': 'Crafts_',
-            'comp': 'Computer_',
-            'braw': 'Brawl_',
-            'driv': 'Drive_',
-            'fina': 'Finance_',
-            'dodg': 'Dodge_',
-            'etiq': 'Etiquette_',
-            'inve': 'Investigation_',
-            'empa': 'Empathy_',
-            'fire': 'Firearms_',
-            'law': 'Law_',
-            'expr': 'Expression_',
-            'mele': 'Melee_',
-            'ling': 'Linguistics_',
-            'inti': 'Intimidation_',
-            'perf': 'Performance_',
-            'medi': 'Medicine_',
-            'lead': 'Leadership_',
-            'secu': 'Security_',
-            'occu': 'Occult_',
-            'stre': 'Streetwise_',
-            'stea': 'Stealth_',
-            'poli': 'Politics_',
-            'subt': 'Subterfuge_',
-            'surv': 'Survival_',
-            'scie': 'Science_',
-            # some examples
-            'armor': '0',
-            'soak': 'sta armor e6',
-            'hack': 'int comp',
-            'shoot': 'dex fire',
-            'punch': 'dex braw',
-            'strike': 'dex mele',
-            'sneak': 'dex stea',
-            'sum': 'd1g',
-            'gundamage': '4',
-            'init': '(#1g) wit dex sum',
-            'fireweapon': '0 §if_(#shoot difficulty)(#gundamage $ -1 e6)(0) sum §param_difficulty:',
-            'bloodheal': '§heal_1 §blood_1',
-            'drink': '§blood_-amount §param_amount:',
-            'damage': '#(#Aggravated sum)(#Bashing Lethal sum) sum',
-            'initiative': '#(#1 sum) wit dex sum',
-            'health': '(#7 - damage) sum',
-            'coin': '#1d2e2'
-        }
+    with open('strings.json') as json_data:
+        shorthand = json.load(json_data)['shorthand']
 
     # noinspection PyPep8Naming
     @staticmethod
