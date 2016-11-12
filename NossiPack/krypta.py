@@ -2,7 +2,7 @@ import os
 import random
 import struct
 import math
-from helpers import connect_db, init_db
+from NossiSite.helpers import connect_db, init_db
 
 from Crypto.Cipher import AES
 
