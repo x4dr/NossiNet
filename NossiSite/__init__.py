@@ -4,6 +4,7 @@ import os
 import random
 import string
 
+
 from flask_socketio import SocketIO
 
 async_mode = 'eventlet'
@@ -28,7 +29,6 @@ while i < 10:
 SECRET_KEY = key  # should invalidate cookies
 app.config.from_object(__name__)
 socketio = SocketIO(app, async_mode=async_mode)
-
 import NossiSite.views
 
 import NossiSite.chat

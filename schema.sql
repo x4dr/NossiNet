@@ -33,11 +33,19 @@ CREATE TABLE IF NOT EXISTS users (
   ip           TEXT,
   admin        INTEGER
 );
-
+--DROP TABLE chatlogs;
 CREATE TABLE IF NOT EXISTS chatlogs (
   linenr        INTEGER             NOT NULL,
   line          TEXT                NOT NULL,
   time          INTEGER             NOT NULL,
   room          TEXT                NOT NULL,
   CONSTRAINT unq UNIQUE (linenr, room)
+);
+--DROP TABLE dice;
+
+CREATE TABLE IF NOT EXISTS dice (
+  amount        INTEGER             NOT NULL,
+  difficulty    INTEGER             NOT NULL,
+  data          TEXT                NOT NULL,
+  CONSTRAINT unq UNIQUE (amount, difficulty)
 )

@@ -44,30 +44,33 @@ class Chatroom(object):
     def savechatlog(self):
         self.cleanup()
         db = connect_db()
-     #   print(len(self.chatlog)) DEBUG
-     #   print(self.newestlineindb) DEBUG
-        if self.chatlog[-1][0] - self.newestlineindb > 0:
-            for i in reversed(range(len(self.chatlog))):
-                if self.chatlog[i][0] <= self.newestlineindb:
-                    break
-                d = dict(linenr=str(self.chatlog[i][0]), line=self.chatlog[i][1],
-                         time=self.chatlog[i][2], room=self.name)
-                try:
-                    db.execute("INSERT INTO chatlogs (linenr, line, time, room)"
-                               "VALUES (:linenr,:line, :time ,:room)", d)
-                except Exception as inst:
-                    print("writing", d, "to database failed", inst.args)
-            self.newestlineindb = self.chatlog[-1][0]
-            db.commit()
+        #   print(len(self.chatlog)) DEBUG
+        #   print(self.newestlineindb) DEBUG
+        try:
+            if self.chatlog[-1][0] - self.newestlineindb > 0:
+                for i in reversed(range(len(self.chatlog))):
+                    if self.chatlog[i][0] <= self.newestlineindb:
+                        break
+                    d = dict(linenr=str(self.chatlog[i][0]), line=self.chatlog[i][1],
+                             time=self.chatlog[i][2], rofom=self.name)
+                    try:
+                        db.execute("INSERT INTO chatlogs (linenr, line, time, room)"
+                                   "VALUES (:linenr,:line, :time ,:room)", d)
+                    except Exception as inst:
+                        print("writing", d, "to database failed", inst.args)
+                self.newestlineindb = self.chatlog[-1][0]
+                db.commit()
+        except:
+            print("Chatlog not initialized")
         db.close()
 
     def addline(self, line, supresssave=False):
         try:
             if len(self.chatlog) < 1:
-                self.chatlog.append([0,line,time.time()]) #initial line
+                self.chatlog.append([0, line, time.time()])  # initial line
             self.chatlog.append([self.chatlog[-1][0] + 1, line, time.time()])
         except Exception as inst:  # # DEBUG! DUMP SHOULDNT BE NECESSARY
-            print("self.chatlog:",self.chatlog, "\n\nline:", line, inst.args)
+            print("self.chatlog:", self.chatlog, "\n\nline:", line, inst.args)
             emit("Message", {'data': "a fun little error occured, please inform maric"}, room=self.name)
         try:
             emit("Message", {'data': time.strftime("%H:%M") + " " + line}, room=self.name)
@@ -91,6 +94,7 @@ class Chatroom(object):
                 else:
                     yield element
                 prev = element
+
         presentusers = {}
         for l in [x[1] for x in self.chatlog]:
             t = re.match(r'(.*) joined the room!', l)
@@ -119,14 +123,18 @@ class Chatroom(object):
 
     def userleave(self, user):
         actuallyleft = False
-        for u in self.users:
-            if u[0] == user:
-                print(u,"is leaving room", self.name)
-                u[1] -= 1
-                if u[1] < 0:
-                    self.addline(user + ' left the room!')
-                    actuallyleft = True
-                    self.users = [x for x in self.users if x[0] != user]
+        try:
+            for u in self.users:  # TODO: find out  why multiple leaves are possible
+                if u[0] == user:
+                    print(u, "is leaving room", self.name)
+                    u[1] -= 1
+                    if u[1] < 0:
+                        self.addline(user + ' left the room!')
+                        actuallyleft = True
+                        self.users = [x for x in self.users if x[0] != user]
+        except Exception as inst:
+            print("exception with userleave ...", inst.args)
+            return False
         return actuallyleft
 
     def getlog(self, user):
