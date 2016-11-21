@@ -8,6 +8,7 @@ from NossiSite import app, socketio
 from flask import render_template, session, request, flash, url_for, redirect
 from flask_socketio import emit, join_room, leave_room, disconnect, rooms
 from NossiPack import *
+from NossiPack import WoDData
 
 thread = None
 
@@ -136,7 +137,7 @@ def defines(message="=", user=None):
         if workdef == {}:
             workdef = u.sheet.unify()
             echo("Definitions reset.")
-        workdef = {**workdef, **WoDParser.shorthand(), **WoDParser.disciplines(workdef)}
+        workdef = {**workdef, **WoDParser.shorthand(), **WoDData.disciplines(workdef)}
         echo("Presets setup.")
     elif message[0] != "=":  # actually saving a new define
         parts = message.split("=")
