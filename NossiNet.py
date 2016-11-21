@@ -1,4 +1,3 @@
-import os
 import sys
 from NossiSite import app, socketio
 

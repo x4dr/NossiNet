@@ -1,11 +1,13 @@
 import random
 import time
+import math
 
 from NossiPack.User import Userlist, User
 from NossiSite import app
 from NossiSite.helpers import g, session, generate_token, request, redirect, url_for, \
     render_template, flash, connect_db, generate_password_hash, init_db, abort
 from NossiPack.Character import Character
+from NossiPack.krypta import gendicedata, sumdict
 
 token = {}
 
@@ -39,10 +41,58 @@ def setfromdalines():
     if new.setfromdalines(number):
         u.sheet = new
         ul.saveuserlist()
-        flash("character hast been overwritten with provided Dalines sheet!")
+        flash("character has been overwritten with provided Dalines sheet!")
     else:
         flash("Problem with Sheetnumber!")
     return redirect(url_for('charsheet'))
+
+
+@app.route('/dice/<a>,<b>')
+def dice(a, b):
+    db = connect_db()
+    if a == b == 1 == "0": #currently disabled
+        print("generating")
+        sizes = []
+        for i in range(1, 16):
+            sizes.append([])
+            for j in range(1, 11):
+                gendicedata(i, j, 2)
+                try:
+                    sizes[-1].append(
+                        sum([int(x) for x in
+                             db.execute("SELECT data "
+                                        "FROM dice "
+                                        "WHERE amount = ? AND difficulty = ? ",
+                                        (i, j)
+                                        ).fetchall()[0][0].split(" ") if x]))
+                except Exception as inst:
+                    sizes[-1].append(0)
+        sizes = [[s for s in sublist if s] for sublist in sizes]
+        for e in sizes:
+            print(e)
+        minval, mindex = min((val, idx) for (idx, val) in enumerate([x for x in sizes if x != 0]))
+        print(mindex, minval)
+        return "done."
+    else:
+        #   gendicedata(int(a), int(b), 2)
+        rows = db.execute("SELECT data "
+                          "FROM dice "
+                          "WHERE amount = ? AND difficulty = ? ",
+                          (a, b)
+                          ).fetchall()
+        results = {}
+        x = 0
+        for e in [a for a in rows[0][0].split(" ") if a!='']:
+            results[int((-1) ** x * math.ceil(x / 2))] = e
+            x += 1
+        maximum = max(results.keys())
+        total = sumdict(results)
+        for e in results.keys():
+            results[e] = 100 * int(results[e]) / total  # percent
+        result = ""
+        for i in range(-maximum, maximum + 1):
+                result += str(i) + " = " + str(results.get(i, "<b>0</b>")) + "%<br>"
+        return result
 
 
 @app.route('/kudosloan/', methods=['GET', 'POST'])
@@ -84,7 +134,6 @@ def show_entries():
     cur = g.db.execute('SELECT author, title, text, plusOned, id FROM entries ORDER BY id DESC')
     entries = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4]) for row in cur.fetchall()]
     for e in entries:
-        #   print(e.get('author') + " " + e.get('text') + " " + str(e.get('id')))
         if e.get('plusoned') is not None:
             esplit = e.get('plusoned').split(' ')
             e['plusoned'] = ((session.get('user') in esplit) or (session.get('user') == e.get('author')))
@@ -188,7 +237,6 @@ def showoldsheets(x):
         sheetnum = int(x)
     except:
         return redirect(url_for('/oldsheets/'))
-    # print("><><",u.oldsheets[sheetnum].getdictrepr())
     return render_template('charsheet.html', character=u.oldsheets[sheetnum].getdictrepr(), oldsheet=x)
 
 
@@ -493,7 +541,6 @@ def gettoken():
 def gentoken():
     if session.get('user', False):
         token[session['user']] = generate_token(session)
-        #  print("generated token:", token[session['user']])
         return token[session['user']]
     else:
         return ''
@@ -572,8 +619,6 @@ def honor(ident):
                 n.addkudos(kudosaut)
                 g.db.execute('UPDATE messages SET honored = 1 WHERE id = ?', [ident])
                 cur = g.db.execute('SELECT * FROM messages')
-                # for row in cur.fetchall():
-                #    print(row)
                 flash("Transfer complete. Check the received messsage and "
                       "press the Honor Button if is was what you ordered.")
                 g.db.commit()
@@ -626,9 +671,6 @@ def unlock(ident):
                 nescrow += value
                 g.db.execute('UPDATE messages SET lock = 0, kudosrep=?, kudosaut=? WHERE id = ?',
                              [uescrow, nescrow, ident])
-                # cur = g.db.execute('SELECT * FROM messages')
-                # for row in cur.fetchall():
-                #    print(row)
                 flash("Transfer complete. Check the received message and "
                       "press the Honor Button if it was what you ordered.")
                 g.db.commit()
@@ -652,9 +694,7 @@ def cheat():
     #   g.db.execute('UPDATE messages DELETE WHERE id = 8')
     #   g.db.commit()
 
-    #   print('/ADMINCHEAT/ done!')
     #   return 'OK'
-
 
 
 @app.route('/resetpassword/', methods=['GET', 'POST'])
