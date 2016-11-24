@@ -1,4 +1,5 @@
 import time
+import json
 
 from NossiSite import app, socketio
 # import time
@@ -7,18 +8,20 @@ from NossiSite import app, socketio
 from flask import render_template, session, request, flash, url_for, redirect
 from flask_socketio import emit, join_room, leave_room, disconnect, rooms
 from NossiPack import *
+from NossiPack import WoDData
 
 thread = None
 
 userlist = {}
 roomlist = [Chatroom('lobby')]
+namedStrings = {}
 
 
 def statusupdate():
     if session['chatmode'] == 'menu':
-        emit('Status', {'status': 'Current Mode: Menu. Type "help" for help.'})
+        emit('Status', {'status': 'Current Mode: Menu.' + namedStrings["helpHelp"]})
     elif session['activeroom'] not in session['roomlist']:
-        emit('Status', {'status': 'currently not in any room.'})
+        emit('Status', {'status': 'Currently not in any room.'})
     elif session['activeroom'].name not in [x for x in userlist.values()]:
         emit('Status', {'status': 'Currently talking in: "' + session['activeroom'].name + '".'})
     else:
@@ -32,6 +35,10 @@ def echo(message, sep=": ", err=False):
         emit('Message', {'data': session['user'] + sep + message})
 
 
+with open('strings.json') as json_data:
+    namedStrings = json.load(json_data)['namedStrings']
+
+
 def post(message, sep=": "):
     session['activeroom'].addline(session['user'] + sep + message)
 
@@ -39,26 +46,7 @@ def post(message, sep=": "):
 def decider(message):
     if message[0] == '#':
         if message == "#?":
-            echo('\nmessages prefixed with # are passed to the diceroller'
-                 '\nit expects a number following # and then options '
-                 '\nfollowed by numbers again. Options are'
-                 '\ndXX : sets sidedness of dice to XX. (standard: 10)'
-                 '\neXX : sets difficulty to XX and discards 1s'
-                 '\nfXX : sets difficulty to XX and subtracts 1s (standard: 6)'
-                 '\n!   : sets explosions, use multiple for cumulative effect'
-                 '\n#XX : load define named XX'
-                 '\n=XX : command for defines:'
-                 '\n\t =clear  : clears all definitions'
-                 '\n\t =import : imports/reloads the values from the sheet'
-                 '\n\t =setup  : a usefull basic set of definitions'
-                 '\n\t =show   : shows all currently defined Definitions'
-                 '\nA=B : defines #A to resolve to B. B resolves recursively'
-                 '\n      If B is two values they will be added.'
-                 '\n      If there is a _ after something (on the lowest level) '
-                 '\n      it will resolve to -1 instead of 0 (useful for abilities)'
-                 '\nExample: Try: "#=setup<enter> #dmg=#str+2<enter> ##dmg<enter> and see what happens!'
-                 '\nRemember that you can always add ? to a command to inspect what'
-                 ' its doing instead of actually sending it.')
+            echo(''.join(namedStrings['generalHelp']))
             return
         if not (("?" in message) or ("=" in message)):
             try:
@@ -149,7 +137,7 @@ def defines(message="=", user=None):
         if workdef == {}:
             workdef = u.sheet.unify()
             echo("Definitions reset.")
-        workdef = {**workdef, **WoDParser.shorthand(), **WoDParser.disciplines(workdef)}
+        workdef = {**workdef, **WoDParser.shorthand(), **WoDData.disciplines(workdef)}
         echo("Presets setup.")
     elif message[0] != "=":  # actually saving a new define
         parts = message.split("=")
@@ -198,18 +186,7 @@ def printroll(roll, parser=None, testing=False):
 def menucmds(message, stripped=""):
     if message == 'help':
         echo(message, ": /")
-        emit('Message', {'data': '\navailable subscripts:'
-                                 '\nwidth  <n>: adjusts page width (35 is standart)'
-                                 '\nheight <n>: adjusts height of this box (in pixel)'
-                                 '\njoin   <s>: joins room'
-                                 '\nleave  <s>: leaves that specific room'
-                                 '\nswitch <s>: makes the specified room active'
-                                 '\nmenu      : to switch to menu mode'
-                                 '\ntalk      : to begin talking'
-                                 '\nmailbox   : to check the log of messages send to you'
-                                 '\nlog       : to get the log of the room you are in '
-                                 '\n#         : Diceroller type #? for more info'
-                                 '\n'})
+        emit('Message', {'data': echo(''.join(namedStrings['chatHelp']))})
         if session['chatmode'] == 'menu':
             emit('SetCmd', {'data': '/talk'})
     elif message == 'menu':
@@ -218,19 +195,19 @@ def menucmds(message, stripped=""):
     elif message == 'log':
         echo(message, ": /")
         if session['activeroom'] is not None:
-            emit('Message', {'data': '\n#####START###LOG#####\n' +
+            emit('Message', {'data': namedStrings['startLog'] +
                                      session['activeroom'].getlog(session['user']) +
-                                     '######END####LOG#####\n'})
+                                     namedStrings['endLog']})
         else:
-            emit('Message', {'data': 'no room to get log from!'})
+            emit('Message', {'data': namedStrings['noLogRoom']})
     elif message == 'userlist':
         echo(message, ": /")
         if session['activeroom'] is not None:
-            emit('Message', {'data': '\n#####START###LIST####\n' +
+            emit('Message', {'data': namedStrings['startList'] +
                                      session['activeroom'].getuserlist_text() +
-                                     '######END####LIST####\n'})
+                                     namedStrings['endList']})
         else:
-            emit('Message', {'data': 'no room to get list from!'})
+            emit('Message', {'data': namedStrings['noListRoom']})
     elif message.split(' ')[0] == 'room':
         echo(message, ": /")
         emit('Message', {'data': " ".join(x.name for x in session['roomlist'] if x != session['roomlist'][0])})
@@ -298,13 +275,13 @@ def menucmds(message, stripped=""):
 
                 emit('Message', {'data': 'removed ' + room})
         if not left:
-            emit('Message', {'data': 'not subsrcribed to ' + room + '!'})
+            emit('Message', {'data': namedStrings["notSubscribedTo"] + room + '!'})
 
     elif message.split(' ')[0] == 'mailbox':
         echo(message, ": /")
-        emit('Message', {'data': '\n#####START###LOG#####\n' +
+        emit('Message', {'data': namedStrings['startLog'] +
                                  session['roomlist'][0].getlog(session['user']) +
-                                 '######END####LOG#####\n'})
+                                 namedStrings['endLog']})
     elif message.split(' ')[0] == 'msg':
         echo(message, ": /")
         try:
@@ -339,27 +316,25 @@ def menucmds(message, stripped=""):
                 break
 
         if not switched:
-            emit('Message', {'data': 'not subscribed to ' + room + '!'})
+            emit('Message', {'data': namedStrings["notSubscribedTo"] + room + '!'})
 
     elif message == 'talk':
-        emit('Message', {'data': '\nentering talk mode, prefix further commands with "/"'
-                                 '\nand dice roll codes with #.'
-                                 '\nEverything else will be sent to the active chat!\n\n'})
+        emit('Message', {'data': ''.join(namedStrings['talkMode'])})
         session['chatmode'] = 'talk'
         join_room(session['activeroom'].name)
 
     elif message == 'connection established':
-        echo("You can talk now. Type /help for help.")
+        echo(namedStrings['canTalkNow'] + ' ' + namedStrings['helpHelp'])
         return False
     else:
-        emit('Message', {'data': 'command not found. Type help for help.'})
+        emit('Message', {'data': namedStrings['cmdNotFound'] + ' ' + namedStrings['helpHelp']})
     return False
 
 
 @app.route('/chat/')
 def chatsite():
     if not session.get('logged_in'):
-        flash('You are not logged in!')
+        flash(namedStrings['notLoggedIn'])
         return redirect(url_for('login'))
     # global thread
     # if thread is None:
@@ -382,12 +357,9 @@ def receive(message):
 @socketio.on('connect', namespace='/character')
 def char_connect():
     if not session.get('user', False):
-        emit('comments', {'prefix': '', 'data': 'Not logged in.'})
+        emit('comments', {'prefix': '', 'data': namedStrings['notLoggedIn']})
         return False
-    emit('comments', {'data': "Click \"Check\" down below to check if this sheet "
-                              "is a valid starting character (If your history is empty), "
-                              "or calculate the difference in XP to the last sheet in "
-                              "your history."})
+    emit('comments', {'data': ''.join(namedStrings['checkHelp'])})
     join_room(session.get("user", "?") + "_dotupdates")
     update_dots()
 
@@ -458,7 +430,7 @@ def disconnect_request():
 @socketio.on('connect', namespace='/chat')
 def chat_connect():
     if not session.get('logged_in'):
-        emit('Message', {'prefix': '', 'data': 'Not logged in.'})
+        emit('Message', {'prefix': '', 'data': namedStrings['notLoggedIn']})
         return False
     global userlist
     join_room(session.get("user", "?") + "_dotupdates")
@@ -478,7 +450,7 @@ def chat_connect():
         session['activeroom'] = roomlist[0]
         roomlist[0].userjoin(session['user'])
         join_room(roomlist[0])
-        emit('Message', {'data': 'Hello and Welcome to the NosferatuNetwork Chatserver.\n'})
+        emit('Message', {'data': namedStrings['MOTD']})
     else:
         disconnect()
         return False
@@ -495,4 +467,4 @@ def test_disconnect():
         for r in session['roomlist']:
             r.userleave(session['user'])
     except Exception as inst:
-        print("there was en error with the roomlist in the session...",inst.args)
+        print(namedStrings['roomlistErr'],inst.args)
