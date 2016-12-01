@@ -282,8 +282,8 @@ class WoDParser(object):
             if len(self.altrolls[x].r) < 1:
                 self.altrolls.pop(x)
         t3 = time.time()
-        print("total=", t3 - t0, "\tpreparsing:", t1 - t0, "\tmain loop:", t2 - t1, "\tpostprocessing:", t3 - t2,
-              "\tfor ", message)
+        # print("total=", t3 - t0, "\tpreparsing:", t1 - t0, "\tmain loop:", t2 - t1, "\tpostprocessing:",
+        # t3 - t2, "\tfor ", message) #debug timings
         return roll
 
     with open('strings.json') as json_data:
