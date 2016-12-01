@@ -59,6 +59,7 @@ def decider(message):
                 trigger(parser.triggers)
                 t2 = time.time()
                 update_dots()
+                print(roll.roll_v())
                 printroll(roll, parser)
                 t3 = time.time()
 
