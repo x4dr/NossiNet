@@ -61,8 +61,7 @@ def decider(message):
                 update_dots()
                 printroll(roll, parser)
                 t3 = time.time()
-                print("whole processing of dicecode:", t3 - t0, "\tgetting values:", t1 - t0,
-                      "\trolling", t1_1-t1 ,"\tcalculating:", t2 - t1_1, "\tprinting and sending", t3 - t2)
+
             except Exception as inst:
                 echo(str(inst.args[0]), "ROLLING ERROR: ", err=True)
 
@@ -166,8 +165,6 @@ def printroll(roll, parser=None, testing=False):
                 printroll(r, testing=testing)
     if roll.difficulty == 0 and roll.max == 1:
         deliver(str(roll.roll_nv()) + ".", " IS ADDING UP TO: ")
-        t1 = time.time()
-        print("sending/processing ", roll.r, "took", t1 - t0)
         return
 
     if roll.explodeon <= roll.max:
@@ -180,7 +177,6 @@ def printroll(roll, parser=None, testing=False):
     else:
         deliver(roll.roll_v(), " IS ROLLING: ")
     t1 = time.time()
-    print("sending/processing ", roll.r, "took", t1 - t0)
 
 
 def menucmds(message, stripped=""):
@@ -350,7 +346,6 @@ def receive(message):
     t0 = time.time()
     decider(message['data'])
     t1 = time.time()
-    print("processing of " + message['data'] + " took " + str(t1 - t0))
     update_dots()
 
 
