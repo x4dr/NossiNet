@@ -52,7 +52,7 @@ class Chatroom(object):
                     if self.chatlog[i][0] <= self.newestlineindb:
                         break
                     d = dict(linenr=str(self.chatlog[i][0]), line=self.chatlog[i][1],
-                             time=self.chatlog[i][2], rofom=self.name)
+                             time=self.chatlog[i][2], room=self.name)
                     try:
                         db.execute("INSERT INTO chatlogs (linenr, line, time, room)"
                                    "VALUES (:linenr,:line, :time ,:room)", d)
@@ -135,6 +135,8 @@ class Chatroom(object):
         except Exception as inst:
             print("exception with userleave ...", inst.args)
             return False
+        if actuallyleft:
+            print("userleave exiting")
         return actuallyleft
 
     def getlog(self, user):
