@@ -129,14 +129,17 @@ class Chatroom(object):
                     print(u, "is leaving room", self.name)
                     u[1] -= 1
                     if u[1] < 0:
+                        if u[1]<-1:
+                            print(u)
                         self.addline(user + ' left the room!')
                         actuallyleft = True
                         self.users = [x for x in self.users if x[0] != user]
+                        break
         except Exception as inst:
             print("exception with userleave ...", inst.args)
             return False
         if actuallyleft:
-            print("userleave exiting")
+            print("userleave exiting. userlist:",self.users)
         return actuallyleft
 
     def getlog(self, user):
