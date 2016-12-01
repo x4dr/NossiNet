@@ -116,6 +116,7 @@ class Chatroom(object):
         for u in self.users:
             if u[0] == user:
                 u[1] += 1
+                self.addline(user + ' joined the room!')
                 return False
         self.users.append([user, 0])
         self.addline(user + ' joined the room!')
