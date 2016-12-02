@@ -10,6 +10,7 @@ class WoDParser(object):
         self.defines = defines
         self.altrolls = []  # if the last roll isnt interesting
 
+
     def parseadd(self, message, trace=False):
         message = message.replace("#", " ")
         message = message.replace("+", " ")
@@ -289,5 +290,8 @@ class WoDParser(object):
         # t3 - t2, "\tfor ", message) #debug timings
         return roll
 
-    with open('strings.json') as json_data:
-        shorthand = json.load(json_data)['shorthand']
+    @staticmethod
+    def shorthand():
+        with open('strings.json') as json_data:
+            return json.load(json_data)['shorthand']
+
