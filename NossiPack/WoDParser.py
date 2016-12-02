@@ -148,6 +148,8 @@ class WoDParser(object):
     def process_parenthesis(self, message, testing=False):
         finder = re.compile(r'(.*)\((.*?)\)(.*)')  # finds stuff in parenthesis and processes that first
         while finder.findall(message):
+            for i in range(len(message)-1):
+                message = message.replace("  ", " ")
             message = self.pretrigger(message)
             tochange = finder.findall(message)[0][1]  # first result, whatever is in parentheses
             if tochange[0] == "#":  # if its a dicecode in itself:
@@ -163,6 +165,8 @@ class WoDParser(object):
                     self.dbg = self.dbg[:-1] + "for" + tobecome + "successes. \n"
             else:
                 tobecome = " " + self.resolvedefine(tochange)
+                if tobecome.strip() == tochange.strip():
+                    raise Exception("No "+tochange.strip()+" found!")
                 tobecome = self.preparse(tobecome)
             if testing:
                 self.dbg += "Resolving " + tochange + " to " + tobecome + "\n"
@@ -277,7 +281,6 @@ class WoDParser(object):
         roll = WoDDice(dice, diff, subones, explode)  # creates the Dice object
 
         roll.roll(amount)  # and rolls the dice :)
-
         for x in range(len(self.altrolls)):
             if len(self.altrolls[x].r) < 1:
                 self.altrolls.pop(x)
