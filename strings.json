@@ -33,12 +33,13 @@
       "\njoin   <s>: joins room",
       "\nleave  <s>: leaves that specific room",
       "\nswitch <s>: makes the specified room active",
+      "\nuserlist  : shows currently active users",
       "\nmenu      : to switch to menu mode",
       "\ntalk      : to begin talking",
+      "\nmsg    <s>: sends private message to user"
       "\nmailbox   : to check the log of messages send to you",
       "\nlog       : to get the log of the room you are in",
-      "\n#         : Diceroller type #? for more info",
-      "\n"
+      "\n#         : Diceroller. Type #? for more info"
     ],
     "checkHelp" : [
       "Click \"Check\" down below to check if this sheet ",
