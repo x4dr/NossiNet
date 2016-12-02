@@ -11,7 +11,7 @@
       "\n!   : sets explosions, use multiple for cumulative effect",
       "\nExample: #5d4f2 !! will roll 5 4 sided die, rerolled on ",
       "\n         a 3 or 4 and counting 2 and up, subtracting ones.",
-      "\nExample: #3 will roll 3 10 sided dice, counting 6 and up, subtracting ones"
+      "\nExample: #3 will roll 3 10 sided dice, counting 6 and up, subtracting ones",
       "\n#XX : load define named XX",
       "\n=XX : command for defines:",
       "\n\t =clear  : clears all definitions",
