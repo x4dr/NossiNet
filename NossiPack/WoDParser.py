@@ -46,28 +46,51 @@ class WoDParser(object):
         return message
 
     @staticmethod
+    # general rule: use as much whitespace as you want, before and after each segment ' *'
+    # quantity segment:
+    #     segment must contain exactly one non-negative natural number between 0 and 999 '[0-9]{1,3}'
+    #     '0' '298' '34' are valid - '-1', '23 9', '2341' (and combos) are not
+    #     the segment is always first and always present
+    #     if it is the only segment (with the explosion segment), the validator returns 1
+    # sides segment:
+    #     segment starts with a 'd', followed by any amount of whitespace
+    #     after that a whole number between -99999 and 99999 must be present '-?[0-9]{1,5}'
+    #     the segment comes always second and may or may not be there at all
+    #     if it is the only optional segment present, the validator returns 3
+    # options segment:
+    #     segment may be just a 'g', XOR just a 'm'
+    #     XOR one of any of the chars 'e','f' and 'g', followed by any amount of whitespace and
+    #     after that a whole number between -99999 and 99999 must be present '-?[0-9]{1,5}'
+    #     'g' 'm' 'e -98909' 'f3' 'g  23' are valid - 'e' not
+    #     the segment comes always second-to-last and may or may not be there at all
+    #     if it is the only optional segment present, the validator returns 2
+    # explosion segment:
+    #     segment may contain any number of exclamation marks '!*'
+    #     '' '!' '!!' '!!!' and so forth are valid
+    #     the segment is always last and always present
+    # if all segments are present, the validator returns 4
     def validate_roll(message):
-        dicecode = re.compile(r' *[0-9]{1,3} *(d *-?[0-9]{1,5}) *(([efg] *-?[0-9]{1,5})|(g)) *!* *$')
+        dicecode = re.compile(r' *[0-9]{1,3} *(d *-?[0-9]{1,5}) *(([efg] *-?[0-9]{1,5})|(g)|(m)) *!* *$')
         match = dicecode.match(message)
         if match:
-            return 4
+            return 4  # detected all segments
         else:
             dicecode = re.compile(r' *[0-9]{1,3} *(d *-?[0-9]{1,5}) *!* *$')
             match = dicecode.match(message)
             if match:
-                return 3
+                return 3  # detected sides segment, but no options
             else:
-                dicecode = re.compile(r' *[0-9]{1,3} *(([efg] *-?[0-9]{1,5})|(g)) *!* *$')
+                dicecode = re.compile(r' *[0-9]{1,3} *(([efg] *-?[0-9]{1,5})|(g)|(m)) *!* *$')
                 match = dicecode.match(message)
                 if match:
-                    return 2
+                    return 2  # detected options segment, but no sides segment
                 else:
                     dicecode = re.compile(r' *[0-9]{1,3} *!* *$')
                     match = dicecode.match(message)
                     if match:
-                        return 1
+                        return 1  # detected only amount of default dice at default rules
                     else:
-                        return 0
+                        return 0  # invalid roll
 
     @staticmethod
     def fullparenthesis(message):
@@ -160,6 +183,10 @@ class WoDParser(object):
                     tobecome = " " + str(roll.roll_sum()) + " "
                     self.dbg = self.dbg[:-3] + self.dbg[-3:].replace(".", ",")
                     self.dbg = self.dbg[:-1] + " for a sum of" + tobecome[:-1] + ". \n"
+                elif "m" in tochange:
+                    tobecome = " " + str(roll.roll_vmax()) + " "
+                    self.dbg = self.dbg[:-3] + self.dbg[-3:].replace(".", ",")
+                    self.dbg = self.dbg[:-1] + " for a maximum of" + tobecome[:-1] + ". \n"
                 else:
                     tobecome = " " + str(roll.roll_nv()) + " "
                     self.dbg = self.dbg[:-3] + self.dbg[-3:].replace(".", ",")
@@ -191,47 +218,53 @@ class WoDParser(object):
         dice = 10
         explode = dice
         amount = self.validate_roll(message)  # TDO: make validdroll return range so that parsing dice is easier
+        # find indexes of parameters
         d = message.find("d")
         e = message.find("e")
         f = message.find("f")
         g = message.find("g")
+        m = message.find("m")
         x = message.find("!")
-        if x < 0:
-            x = len(message) + 1
-        ef = max(e, f, g)
-        if amount == 0:
-            if len(message) > 1:
+        if x < 0:  # no explosion found
+            x = len(message) + 1  # so now explosion is at messagelength+1 (has always the highest number)
+        ef = max(e, f, g, m)  # there can be only 1 option, so this is the index of the only option
+        if amount == 0:  # detected invalid roll
+            if len(message) > 1:  # there is a roll at all
                 raise Exception('invalid roll: "' + message + '"')
-        if amount == 1:
-            if " " in message:
-                amount = int(message[:message.find(" ")])
+        if amount == 1:  # detected only amount of default dice at default rules
+            if " " in message:  # if there is whitespace
+                amount = int(message[:message.find(" ")])  # set amount to how much is before the whitespace
             else:
                 amount = int(message)
-        elif amount == 2:
+        elif amount == 2:  # detected options segment, but no sides segment
             amount = int(message[:ef])
-            if g != ef:
-                diff = int(message[ef + 1:x])
-            else:
+            if g == ef:  # if g is the option, negate the difficulty feature
                 diff = 0
-            if "f" in message:
+            elif m == ef:  # if m is the option, negate the difficulty feature and turn it upside down, because #FCKLGC
+                diff = -1
+            else:  # g and m are not the option
+                diff = int(message[ef + 1:x])  # ... so the difficulty is whatever follows (until end of string aka x)
+            if "f" in message:  # if f is present, subtract 1es from successes
                 subones = 1
-            else:
+            else:  # all other possibilities are exhausted, e must be the option - ignore 1es
                 subones = 0
 
-        elif amount == 3:
+        elif amount == 3:  # detected sides segment, but no options
             amount = int(message[:d])
             dice = int(message[d + 1:x])
 
-        elif amount == 4:
+        elif amount == 4:  # detected all segments
             amount = int(message[:d])
             dice = int(message[d + 1: ef])
-            if g != ef:
-                diff = int(message[ef + 1:x])
-            else:
+            if g == ef:  # if g is the option, negate the difficulty feature
                 diff = 0
-            if "f" in message:
+            elif m == ef:  # if m is the option, negate the difficulty feature and turn it upside down, because #FCKLGC
+                diff = -1
+            else:  # g and m are not the option
+                diff = int(message[ef + 1:x])  # ... so the difficulty is whatever follows (until end of string aka x)
+            if "f" in message:  # if f is present, subtract 1es from successes
                 subones = 1
-            else:
+            else:  # all other possibilities are exhausted, e must be the option - ignore 1es
                 subones = 0
 
         explode = dice + 1 - message.count("!")
@@ -254,6 +287,15 @@ class WoDParser(object):
             self.dbg += str(amount) + " " + str(dice) + " sided "
             if amount > 1:
                 self.dbg += "dice summed together. \n"
+            else:
+                self.dbg += "die. \n"
+        elif diff == -1:
+            if dice == 1:
+                self.dbg += "==> " + str(amount) + ".\n"  # d1g
+                return
+            self.dbg += str(amount) + " " + str(dice) + " sided "
+            if amount > 1:
+                self.dbg += "dice, maximum face of all. \n"
             else:
                 self.dbg += "die. \n"
         else:

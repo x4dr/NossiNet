@@ -36,7 +36,7 @@ class WoDDice(object):
             else:
                 self.r.append(random.randint(self.min, self.max))
             self.log += str(self.r[-1]) + ": "
-            if self.r[-1] >= self.difficulty:
+            if self.r[-1] >= self.difficulty:  # last die face >= than the difficulty
                 self.succ += 1
                 self.log += "success "
             elif self.r[-1] <= self.subone:
@@ -79,6 +79,15 @@ class WoDDice(object):
         log = self.log
         log += "==> " + str(self.roll_nv())
         return log
+
+    def roll_max(self):  # returns max nonverbose as int
+        return max(self.r)
+
+    def roll_vmax(self):  # returns max verbose as int
+        log = ""
+        for n in self.r:
+            log += str(self.r) + ", "
+        log = log[:-2] + "= " + str(self.roll_max())
 
     def roll_sum(self):  # returns sum nonverbose as int
         return sum(self.r)
