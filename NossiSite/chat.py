@@ -143,7 +143,7 @@ def defines(message="=", user=None):
         parts = message.split("=")
         workdef[parts[0].strip()] = parts[1].strip()  # stripping to get whitespace out of the equation
         echo("added define for %s=%s" % (parts[0], parts[1]))
-    elif "=" in message and message != "=":
+    elif ("=" in message) and (message != "="):
         echo("No valid config command: " + message)
     u.defines = workdef
     if user == session['user']:

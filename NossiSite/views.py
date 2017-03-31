@@ -164,7 +164,6 @@ def showsheet(name="None"):
         return "error"
     ul = Userlist()
     u = ul.loaduserbyname(name)
-
     if u:
         if u.sheetpublic or session.get('admin', False):
             return render_template('charsheet.html', character=u.sheet.getdictrepr(), own=False)
