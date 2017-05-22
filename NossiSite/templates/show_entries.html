@@ -38,7 +38,6 @@
               href="{{ url_for('show_user_profile', username=entry.author) }}">{{ entry.author }}</a>
           </h2><div class="entry", style="display:none;border:1px solid">{{ entry.text|safe }}</div> 
           <br> {#dangerous entry.text has to be cleaned before being sent here#}
-          {{entry.own}}
           {%- if session.logged_in -%}
               {%- if not entry.plusoned -%}
                   <form action="{{ url_for('plusone',ident=entry.id) }}" , method="post" , class="add-entry">
