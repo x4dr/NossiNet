@@ -121,7 +121,7 @@ class Chatroom(object):
                 return False
         self.users.append([user, 0])
         self.addline(user + ' joined the room!')
-        self.addline("firstjoin: "+str(u))
+        self.addline("firstjoin: "+str(self.users[-1]))
         return True
 
     def userleave(self, user):
