@@ -312,7 +312,7 @@ def timestep():
 @app.route('/delete/<ident>', methods=['POST'])
 def plusone(ident):   
       if checktoken():    
-         if not session.get('logged_in'):
+        if not session.get('logged_in'):
             flash('You are not logged in!')
             return redirect(url_for('login'))     
         entry = {}
