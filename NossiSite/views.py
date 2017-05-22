@@ -12,6 +12,9 @@ from NossiPack.krypta import gendicedata, sumdict
 
 token = {}
 
+bleach.sanitizer.ALLOWED_TAGS.append(u"br")
+bleach.sanitizer.ALLOWED_TAGS.append(u"u")
+
 init_db()
 
 
@@ -140,7 +143,7 @@ def show_entries():
             e['plusoned'] = ((session.get('user') in esplit) or (session.get('user') == e.get('author')))
         else:
             e['plusoned'] = (session.get('user') == e.get('author'))
-        e['text'] = bleach.clean(e['text'].replace("\n","<br>"))
+        e['text'] = bleach.clean(e['text'].replace("\n","<br>"), tag)
     gentoken()
 
     return render_template('show_entries.html', entries=entries)
@@ -396,32 +399,6 @@ def add_funds():
     return render_template('funds.html', user=u, error=error, keyprovided=keyprovided)
 
 
-@app.route('/blog/<x>')
-def filerender(x):
-    try:
-        with open("thoughts.txt") as file:
-            text = file.read()
-        try:
-            x = int(x) - 1
-            if x < 0:
-                x = 0
-        except:
-            x = 0
-
-        entries = text.split("ÄÄ")
-
-        entries = [i for i in entries if i != ""]
-        if x >= len(entries):
-            x = len(entries) - 1
-        entries.reverse()
-        entry = entries[x]
-        text = entry
-        title = entry.split("\n")[0]
-
-        return render_template('renderfile.html', title=title, torender=text)
-    except Exception as j:
-        return str(j)
-
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():  # this is not clrs secure because it does not need to be
@@ -482,12 +459,6 @@ def start():
                            entries=[
                                dict(author='the NOSFERATU NETWORK', title='WeLcOmE tO tHe NoSfErAtU nEtWoRk', text='')],
                            heads=['<META HTTP-EQUIV="refresh" CONTENT="5;url=/">'])
-
-
-@app.route('/regendb/')
-def resetdb():
-    init_db()
-    return "ok "
 
 
 @app.route('/user/<username>')
@@ -562,6 +533,8 @@ def checktoken():
 
 @app.route('/sendmsg/<username>', methods=['POST'])
 def send_msg(username):
+    def check0(a):
+        return int(a) == 0
     error = None
     if checktoken():
         if not session.get('logged_in'):
@@ -580,9 +553,6 @@ def send_msg(username):
         flash('Message sent')
     return redirect(url_for('show_entries', error=error))
 
-
-def check0(a):  # used in sendmsg because typecasts in THAT line would make things even worse
-    return int(a) == 0
 
 
 @app.route('/honor/<ident>', methods=['POST', 'GET'])
@@ -684,20 +654,6 @@ def unlock(ident):
                                                                                          username=u.username) + '">'])
 
 
-@app.route('/ADMINCHEAT/')
-def cheat():
-    return "DEFUNCT"
-    #   ul = Userlist()
-    #   u = ul.loaduserbyname("LOCKE")
-    #   u.funds = 1000
-    #   u.kudos = 4200
-    #   ul.saveuserlist()
-    #   g.db.execute('UPDATE messages DELETE WHERE id = 8')
-    #   g.db.commit()
-
-    #   return 'OK'
-
-
 @app.route('/resetpassword/', methods=['GET', 'POST'])
 def resetpassword():
     if not session.get('logged_in'):
@@ -766,28 +722,6 @@ def lightswitch(x="None"):
     else:
         session["light"] = "ON"
     return redirect(request.referrer)
-
-
-@app.route('/deathanddestruction/<key>')
-def deldb(key="None"):
-    db = connect_db()
-    if key == "None":
-        key = int(time.time())
-        key = generate_password_hash(str(key))
-        print("KEYOFDEATHINCOMING!")
-        print("KEYOFDEATH", key)
-        session['deathkey'] = key[-10:]
-    else:
-        if session.get('deathkey', None) == key[-10:]:
-            db.execute('DROP TABLE IF EXISTS entries')
-            db.execute('DROP TABLE IF EXISTS messages')
-            db.execute('DROP TABLE IF EXISTS users')
-            db.commit()
-            init_db()
-            session.clear()
-            return "<link rel=stylesheet type=text/css href=\"/static/style.css\"> " + \
-                   "death and destruction has been brought forth"
-    return "<link rel=stylesheet type=text/css href=\"/static/style.css\"> DO YOU HAVE THE KEY"
 
 
 @app.route('/chargen/<mini>,<maxi>,<a>,<b>,<c>')
