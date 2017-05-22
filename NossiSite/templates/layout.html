@@ -30,6 +30,7 @@
             <a class=metanav href="{{ url_for('login') }}">log in</a>
             <a class=metanav href="{{ url_for('register') }}">register</a>
         {% else %}
+            <a class=metanav href="{{ url_for('berlinmap') }}">MAP</a>  &nbsp
             <a class=metanav href="{{ url_for('charsheet') }}">SHEET</a>  &nbsp
             <a class=metanav href="/chat/">CHAT</a>  &nbsp
             <a class=metanav href="{{ url_for('show_user_profile',username=session.user) }}">{{ session.user }}</a>  &nbsp
