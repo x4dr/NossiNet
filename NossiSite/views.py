@@ -208,9 +208,9 @@ def res_sheet():
     return redirect(url_for('oldsheets'))
 
 
-@app.route('/map')
+@app.route('/berlinmap')
 def berlinmap():
-    return render_template('map.html')
+    return redirect("https://www.google.com/maps/d/viewer?mid=1TH6vryHyVxv_xFjFJDXgXQegZO4")
 
 
 @app.route('/oldsheets/')
@@ -308,7 +308,26 @@ def timestep():
     return render_template('timestep.html', user=ul.loaduserbyname(session.get('user')),
                            error=error, keyprovided=keyprovided)
 
-
+                        
+@app.route('/delete/<ident>', methods=['POST'])
+def plusone(ident):   
+      if checktoken():    
+         if not session.get('logged_in'):
+            flash('You are not logged in!')
+            return redirect(url_for('login'))     
+        entry = {}
+        cur = g.db.execute('SELECT author, title, text, plusOned, id FROM entries WHERE id = ?', [ident])
+        for row in cur.fetchall():  # SHOULD only run once
+            entry = dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4])
+        if (not session.get('admin')) and  entry.get('author') != session.get('user'):
+            flash('This is not your Post!')
+        else:
+            g.db.execute('UPDATE entries SET author = ? WHERE id = ?', [entry.get('author').lower(),entry.get('id')])
+            flash('entry '+ entry.get('title') + 'has been deleted.')
+        return redirect(url_for('show_entries'))
+                        
+                        
+                        
 @app.route('/plusone/<ident>', methods=['POST'])
 def plusone(ident):
     if checktoken():
