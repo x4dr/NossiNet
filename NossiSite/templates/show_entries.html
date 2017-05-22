@@ -10,9 +10,9 @@
 
             $header = $(this);
             //getting the next element
-            $content = $header.next();
+            $content = $header.next().next();
             //open up the content needed - toggle the slide- if visible, slide up, if not slidedown.
-            $content.slideToggle(500, function () {
+            $content.slideToggle(800, function () {
                 //execute this after slideToggle is done
                 //change text of header based on visibility of content div
                 $header.text(function () {
@@ -49,7 +49,7 @@
   {% endif %}
   <ul class=entries>
   {% for entry in entries %}
-      <li><h2><div class="header">+</div>"{{ entry.title }}" by <a
+      <li><div class="header">+</div><h2>"{{- entry.title }}" by <a
               href="{{ url_for('show_user_profile', username=entry.author) }}">{{ entry.author }}</a>
           </h2><div class="entry", style="overflow:hidden;height:3.5em;border:1px solid">{{ entry.text|safe }}</div> 
           <br> {#dangerous entry.text has to be cleaned before being sent here#}
