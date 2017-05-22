@@ -11,7 +11,7 @@
             $content = $header.next();
             $content.slideToggle(800, function () {
                 $header.text(function () {
-                    return '"'+$header.text().slice(2) + $content.is(":visible") ? "-" : "+";
+                    return ($content.is(":visible") ? "-" : "+")+$header.text().slice(1) + ;
                 });
             });
 
@@ -34,9 +34,9 @@
   {% endif %}
   <ul class=entries>
   {% for entry in entries %}
-      <li><h2 class="header">"+{{- entry.title }}" by <a
+      <li><h2 class="header">+"{{- entry.title }}" by <a
               href="{{ url_for('show_user_profile', username=entry.author) }}">{{ entry.author }}</a>
-          </h2><div class="entry", style=":visible:false;border:1px solid">{{ entry.text|safe }}</div> 
+          </h2><div class="entry", style="display:none;border:1px solid">{{ entry.text|safe }}</div> 
           <br> {#dangerous entry.text has to be cleaned before being sent here#}
           {% if session.logged_in %}
           {% if entry.plusoned %} {% else %}
