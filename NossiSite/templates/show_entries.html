@@ -4,6 +4,15 @@
         {{ headstate|safe }}
     {% else %}
     {% endfor %}
+<script>
+    document.getElementById("content").onclick = function() {
+    if (this.style.height == 'auto')  {
+    this.style.height = '1em';
+    } else {
+    this.style.height = 'auto';
+    }
+}
+</script>
 {% endblock %}
 {% block body %}
   {% if session.logged_in %}
@@ -22,7 +31,8 @@
   {% for entry in entries %}
       <li><h2>"{{ entry.title }}" by <a
               href="{{ url_for('show_user_profile', username=entry.author) }}">{{ entry.author }}</a>
-      </h2>{{ entry.text|safe }} <br> {#dangerous entry.text has to be cleaned before being sent here#}
+          </h2><div id=entry, style="overflow:hidden;height=1em;">{{ entry.text|safe }}</div> 
+          <br> {#dangerous entry.text has to be cleaned before being sent here#}
           {% if session.logged_in %}
           {% if entry.plusoned %} {% else %}
               <form action="{{ url_for('plusone',ident=entry.id) }}" , method="post" , class="add-entry">
