@@ -38,17 +38,23 @@
               href="{{ url_for('show_user_profile', username=entry.author) }}">{{ entry.author }}</a>
           </h2><div class="entry", style="display:none;border:1px solid">{{ entry.text|safe }}</div> 
           <br> {#dangerous entry.text has to be cleaned before being sent here#}
-          {% if session.logged_in %}
-          {% if entry.plusoned %} {% else %}
+          {%- if session.logged_in -%}
+          {%- if entry.own -%}
+           <form action="{{ url_for('delete',ident=entry.id) }}" , method="post" , class="add-entry">
+                  <input class=leeet type=submit value="delete">
+                  <input type="hidden" name="token" value={{ token }}>
+              </form>
+          {%- endif -%}
+          {%- if entry.plusoned- %} {%- else -%}
               <form action="{{ url_for('plusone',ident=entry.id) }}" , method="post" , class="add-entry">
                   <input class=leeet type=submit value="+1">
                   <input type="hidden" name="token" value={{ token }}>
-                  <br>
               </form>
-          {% endif %}
-          {% endif %}
+          {%- endif -%}
+          <br>
+          {%- endif -%}</li>
   {% else %}
-    <li><em>Unbelievable.  No entries here so far</em>
+      <li><em>Unbelievable.  No entries here so far</em></li>
   {% endfor %}
   </ul>
 {% endblock %}
