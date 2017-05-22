@@ -6,7 +6,23 @@
     {% endfor %}
 <script>
     $(document).ready(function() {
-        $(".entry").on("click",function() {
+        $(".entry").click(function () {
+
+            $header = $(this);
+            //getting the next element
+            $content = $header.next();
+            //open up the content needed - toggle the slide- if visible, slide up, if not slidedown.
+            $content.slideToggle(500, function () {
+                //execute this after slideToggle is done
+                //change text of header based on visibility of content div
+                $header.text(function () {
+                    //change text based on condition
+                    return $content.is(":visible") ? "Collapse" : "Expand";
+                });
+            });
+
+        });
+        $(".offentry").on("click",function() {
         if (this.style.height == 'auto')  {
             this.style.height = '3.5em';
             this.style.border = '1px solid;'
