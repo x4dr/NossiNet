@@ -1,6 +1,7 @@
 import random
 import time
 import math
+import bleach
 
 from NossiPack.User import Userlist, User
 from NossiSite import app
@@ -139,7 +140,7 @@ def show_entries():
             e['plusoned'] = ((session.get('user') in esplit) or (session.get('user') == e.get('author')))
         else:
             e['plusoned'] = (session.get('user') == e.get('author'))
-        e['text'] = e['text'].replace("\n","<br>")
+        e['text'] = bleach.clean(e['text'].replace("\n","<br>"))
     gentoken()
 
     return render_template('show_entries.html', entries=entries)
