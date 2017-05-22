@@ -12,8 +12,7 @@ from NossiPack.krypta import gendicedata, sumdict
 
 token = {}
 
-bleach.sanitizer.ALLOWED_TAGS.append(u"br")
-bleach.sanitizer.ALLOWED_TAGS.append(u"u")
+bleach.sanitizer.ALLOWED_TAGS+= [u"br",u"u",u"table",u"th",u"tr",u"td"]
 
 init_db()
 
