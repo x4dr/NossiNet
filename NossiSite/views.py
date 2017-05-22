@@ -165,6 +165,7 @@ def showsheet(name="None"):
         return redirect(url_for('login'))
     if name == "None":
         return "error"
+    name = name.upper()
     ul = Userlist()
     u = ul.loaduserbyname(name)
     if u:
