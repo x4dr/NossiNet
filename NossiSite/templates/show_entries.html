@@ -34,7 +34,7 @@
   {% endif %}
   <ul class=entries>
   {% for entry in entries %}
-      <li><h2 class="header">+"{{- entry.title }}" by <a
+      <li><h2 class="header">+"{{ entry.title }}" by <a
               href="{{ url_for('show_user_profile', username=entry.author) }}">{{ entry.author }}</a>
           </h2><div class="entry", style="display:none;border:1px solid">{{ entry.text|safe }}</div> 
           <br> {#dangerous entry.text has to be cleaned before being sent here#}
@@ -45,7 +45,7 @@
                       <input type="hidden" name="token" value={{ token }}>
                   </form>
               {%- endif -%}
-              {%- if not entry.plusoned- %}
+              {%- if not entry.plusoned -%}
                   <form action="{{ url_for('plusone',ident=entry.id) }}" , method="post" , class="add-entry">
                       <input class=leeet type=submit value="+1">
                       <input type="hidden" name="token" value={{ token }}>
