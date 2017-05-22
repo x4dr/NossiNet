@@ -324,7 +324,7 @@ def delete_entry(ident):
             flash('This is not your Post!')
         else:
             g.db.execute('UPDATE entries SET author = ? WHERE id = ?', [entry.get('author').lower(),entry.get('id')])
-            flash('entry '+ entry.get('title') + 'has been deleted.')
+            flash('Entry: "'+ entry.get('title') + '" has been deleted.')
             g.db.commit()
         return redirect(url_for('show_entries'))
                         
