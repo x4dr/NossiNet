@@ -5,7 +5,7 @@
     {% else %}
     {% endfor %}
 <script>
-    document.getElementById("content").onclick = function() {
+    document.getElementById("entry").onclick = function() {
     if (this.style.height == 'auto')  {
     this.style.height = '1em';
     } else {
@@ -31,7 +31,7 @@
   {% for entry in entries %}
       <li><h2>"{{ entry.title }}" by <a
               href="{{ url_for('show_user_profile', username=entry.author) }}">{{ entry.author }}</a>
-          </h2><div id=entry, style="overflow:hidden;height=1em;">{{ entry.text|safe }}</div> 
+          </h2><div id="entry", style="overflow:hidden;height=1em;">{{ entry.text|safe }}</div> 
           <br> {#dangerous entry.text has to be cleaned before being sent here#}
           {% if session.logged_in %}
           {% if entry.plusoned %} {% else %}
