@@ -12,7 +12,7 @@ from NossiPack.krypta import gendicedata, sumdict
 
 token = {}
 
-bleach.sanitizer.ALLOWED_TAGS+= [u"br",u"u",u"table",u"th",u"tr",u"td"]
+bleach.sanitizer.ALLOWED_TAGS+= ["br","u","table","th","tr","td","tbody","thead","tfoot"]
 
 init_db()
 
