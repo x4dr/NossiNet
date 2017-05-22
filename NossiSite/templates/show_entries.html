@@ -11,7 +11,7 @@
             $content = $header.next();
             $content.slideToggle(800, function () {
                 $header.text(function () {
-                    return ($content.is(":visible") ? "-" : "+")+$header.text().slice(1) + ;
+                    return ($content.is(":visible") ? "-" : "+") + $header.text().slice(1);
                 });
             });
 
