@@ -22,7 +22,7 @@
   {% for entry in entries %}
       <li><h2>"{{ entry.title }}" by <a
               href="{{ url_for('show_user_profile', username=entry.author) }}">{{ entry.author }}</a>
-      </h2>{{ entry.text|safe }} <br>
+      </h2>{{ entry.text }} <br>
           {% if session.logged_in %}
           {% if entry.plusoned %} {% else %}
               <form action="{{ url_for('plusone',ident=entry.id) }}" , method="post" , class="add-entry">
