@@ -117,9 +117,11 @@ class Chatroom(object):
             if u[0] == user:
                 u[1] += 1
                 self.addline(user + ' joined the room!')
+                self.addline("debug: "+str(u))
                 return False
         self.users.append([user, 0])
         self.addline(user + ' joined the room!')
+        self.addline("firstjoin: "+str(u))
         return True
 
     def userleave(self, user):
@@ -133,6 +135,7 @@ class Chatroom(object):
                         if u[1]<-1:
                             print(u)
                         self.addline(user + ' left the room!')
+                        self.addline("debug:"+str(u))
                         actuallyleft = True
                         self.users = [x for x in self.users if x[0] != user]
                         break
