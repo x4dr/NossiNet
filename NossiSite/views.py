@@ -143,6 +143,7 @@ def show_entries():
         else:
             e['plusoned'] = (session.get('user') == e.get('author'))
         e['text'] = bleach.clean(e['text'].replace("\n","<br>"))
+        e['own'] = not (session.get('logged_in') or (session.get('user') != e['author'])
     gentoken()
 
     return render_template('show_entries.html', entries=entries)
@@ -356,6 +357,7 @@ def add_entry():
         flash('New entry was successfully posted')
     gentoken()
     return redirect(url_for('show_entries'))
+
 
 
 @app.route('/buy_funds/', methods=['GET', 'POST'])
