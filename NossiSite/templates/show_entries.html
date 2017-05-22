@@ -7,30 +7,15 @@
 <script>
     $(document).ready(function() {
         $(".header").click(function () {
-
             $header = $(this);
-            //getting the next element
             $content = $header.next().next();
-            //open up the content needed - toggle the slide- if visible, slide up, if not slidedown.
             $content.slideToggle(800, function () {
-                //execute this after slideToggle is done
-                //change text of header based on visibility of content div
                 $header.text(function () {
-                    //change text based on condition
-                    return $content.is(":visible") ? "-" : "+";
+                    return $header.text.slice(1) + $content.is(":visible") ? "-" : "+";
                 });
             });
 
         });
-        $(".offentry").on("click",function() {
-        if (this.style.height == 'auto')  {
-            this.style.height = '3.5em';
-            this.style.border = '1px solid;'
-        } else {
-            this.style.height = 'auto';
-            this.style.border = '0px solid;'
-        }
-    })
 })
 </script>
 {% endblock %}
@@ -49,7 +34,7 @@
   {% endif %}
   <ul class=entries>
   {% for entry in entries %}
-      <li><div class="header">+</div><h2>"{{- entry.title }}" by <a
+      <li><h2 class="header">"+{{- entry.title }}" by <a
               href="{{ url_for('show_user_profile', username=entry.author) }}">{{ entry.author }}</a>
           </h2><div class="entry", style="overflow:hidden;height:3.5em;border:1px solid">{{ entry.text|safe }}</div> 
           <br> {#dangerous entry.text has to be cleaned before being sent here#}
