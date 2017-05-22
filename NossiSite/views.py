@@ -309,8 +309,8 @@ def timestep():
                            error=error, keyprovided=keyprovided)
 
                         
-@app.route('/delete/<ident>', methods=['POST'])
-def plusone(ident):   
+@app.route('/delete_entry/<ident>', methods=['POST'])
+def delete_entry(ident):   
       if checktoken():    
         if not session.get('logged_in'):
             flash('You are not logged in!')
