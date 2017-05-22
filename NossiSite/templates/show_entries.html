@@ -17,7 +17,7 @@
                 //change text of header based on visibility of content div
                 $header.text(function () {
                     //change text based on condition
-                    return $content.is(":visible") ? "Collapse" : "Expand";
+                    return $content.is(":visible") ? "-" : "+";
                 });
             });
 
@@ -49,7 +49,7 @@
   {% endif %}
   <ul class=entries>
   {% for entry in entries %}
-      <li><h2 class="header">"{{ entry.title }}" by <a
+      <li><h2><div class="header">+</div>"{{ entry.title }}" by <a
               href="{{ url_for('show_user_profile', username=entry.author) }}">{{ entry.author }}</a>
           </h2><div class="entry", style="overflow:hidden;height:3.5em;border:1px solid">{{ entry.text|safe }}</div> 
           <br> {#dangerous entry.text has to be cleaned before being sent here#}
