@@ -136,7 +136,7 @@ def kudosloan():
 def show_entries():
     cur = g.db.execute('SELECT author, title, text, plusOned, id FROM entries ORDER BY id DESC')
     entries = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4]) for row in cur.fetchall()]
-    entries = [e for e in entries if e.get('author',"none")[0].islower()]
+    entries = [e for e in entries if e.get('author',"none")[0].isupper()]
     for e in entries:
         if e.get('plusoned') is not None:
             esplit = e.get('plusoned').split(' ')
