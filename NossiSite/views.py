@@ -143,7 +143,7 @@ def show_entries():
             e['plusoned'] = ((session.get('user') in esplit) or (session.get('user') == e.get('author')))
         else:
             e['plusoned'] = (session.get('user') == e.get('author'))
-        e['text'] = bleach.clean(e['text'])
+        e['text'] = bleach.clean(e['text'].replace("\n","<br>")
     gentoken()
 
     return render_template('show_entries.html', entries=entries)
