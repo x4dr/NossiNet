@@ -457,10 +457,12 @@ def chat_connect():
 # noinspection PyUnresolvedReferences
 @socketio.on('disconnect', namespace='/chat')
 def test_disconnect():
-    # DEBUG try:
-    # print('Client disconnected', rooms())
-    # except:
-    # print("Last client disconnected.")
+    # DEBUG 
+    print(str(session))
+    try:
+        print('Client disconnected', rooms())
+    except:
+        print("Last client disconnected.")
     try:
         for r in session['roomlist']:
             r.userleave(session['user'])
