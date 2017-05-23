@@ -53,7 +53,7 @@ def setfromdalines():
 @app.route('/dice/<a>,<b>')
 def dice(a, b):
     db = connect_db()
-    if a == b == 1 == "0": #currently disabled
+    if a == b == 1 == "0":  # currently disabled
         print("generating")
         sizes = []
         for i in range(1, 16):
@@ -85,7 +85,7 @@ def dice(a, b):
                           ).fetchall()
         results = {}
         x = 0
-        for e in [a for a in rows[0][0].split(" ") if a!='']:
+        for e in [a for a in rows[0][0].split(" ") if a != '']:
             results[int((-1) ** x * math.ceil(x / 2))] = e
             x += 1
         maximum = max(results.keys())
@@ -94,7 +94,7 @@ def dice(a, b):
             results[e] = 100 * int(results[e]) / total  # percent
         result = ""
         for i in range(-maximum, maximum + 1):
-                result += str(i) + " = " + str(results.get(i, "<b>0</b>")) + "%<br>"
+            result += str(i) + " = " + str(results.get(i, "<b>0</b>")) + "%<br>"
         return result
 
 
@@ -310,13 +310,13 @@ def timestep():
     return render_template('timestep.html', user=ul.loaduserbyname(session.get('user')),
                            error=error, keyprovided=keyprovided)
 
-                        
+
 @app.route('/delete_entry/<ident>', methods=['POST'])
-def delete_entry(ident):   
-      if checktoken():    
+def delete_entry(ident):
+      if checktoken():
         if not session.get('logged_in'):
             flash('You are not logged in!')
-            return redirect(url_for('login'))     
+            return redirect(url_for('login'))
         entry = {}
         cur = g.db.execute('SELECT author, title, text, plusOned, id FROM entries WHERE id = ?', [ident])
         for row in cur.fetchall():  # SHOULD only run once
@@ -328,9 +328,9 @@ def delete_entry(ident):
             flash('Entry: "'+ entry.get('title') + '" has been deleted.')
             g.db.commit()
         return redirect(url_for('show_entries'))
-                        
-                        
-                        
+
+
+
 @app.route('/plusone/<ident>', methods=['POST'])
 def plusone(ident):
     if checktoken():
@@ -379,7 +379,6 @@ def add_entry():
         flash('New entry was successfully posted')
     gentoken()
     return redirect(url_for('show_entries'))
-
 
 
 @app.route('/buy_funds/', methods=['GET', 'POST'])

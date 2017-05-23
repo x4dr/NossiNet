@@ -42,10 +42,17 @@ CREATE TABLE IF NOT EXISTS chatlogs (
   CONSTRAINT unq UNIQUE (linenr, room)
 );
 --DROP TABLE dice;
-
 CREATE TABLE IF NOT EXISTS dice (
   amount        INTEGER             NOT NULL,
   difficulty    INTEGER             NOT NULL,
   data          TEXT                NOT NULL,
   CONSTRAINT unq UNIQUE (amount, difficulty)
-)
+);
+--DROP TABLE property;
+CREATE TABLE IF NOT EXISTS property (
+  name          TEXT                NOT NULL,
+  owner         TEXT                NOT NULL,
+  tags          TEXT,
+  data          TEXT                NOT NULL,
+  CONSTRAINT unq UNIQUE (name)
+);
