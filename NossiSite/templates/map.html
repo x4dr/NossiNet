@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 {% block head %}
-    <link rel="stylesheet" type=text/css  href="/static/map.css?q=12832">
+    <link rel="stylesheet" type=text/css  href="/static/map.css">
     <script>
         function plzIn() {
             this.style.fill="#ff0000";
@@ -11,7 +11,7 @@
 
     window.onload= function() {
         $(function() {
-            $("#loadedmap").load("/static/berlinPLZ.svg?q=29992", function () {
+            $("#loadedmap").load("/static/berlinPLZ.svg", function () {
                 var map = document.getElementById("svg");
                 var plzs=$(".plz");
                 plzs.hover(plzIn, plzOut);
