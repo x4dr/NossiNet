@@ -211,7 +211,8 @@ def res_sheet():
 
 @app.route('/berlinmap')
 def berlinmap():
-    return redirect("https://www.google.com/maps/d/viewer?mid=1TH6vryHyVxv_xFjFJDXgXQegZO4")
+    return render_template('map.html')
+   # return redirect("https://www.google.com/maps/d/viewer?mid=1TH6vryHyVxv_xFjFJDXgXQegZO4")
 
 
 @app.route('/oldsheets/')

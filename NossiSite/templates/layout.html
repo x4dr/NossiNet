@@ -11,15 +11,14 @@
     {{ url_for('static', filename='style.css') }}
     {%- endif -%}
     ">
-    <script type="text/javascript" src="//code.jquery.com/jquery-2.2.2.min.js"></script>
-    <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
-    <!--<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.5/socket.io.min.js"></script>-->
-    <script type="text/javascript" charset="utf-8"></script>
     <script>
         function goBack() {
             window.history.back();
         }
     </script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.1/socket.io.js"></script>
+    <script type="text/javascript" charset="utf-8"></script>
     {% block head %}{% endblock %}
 </head>
 <body>
@@ -30,9 +29,9 @@
             <a class=metanav href="{{ url_for('login') }}">log in</a>
             <a class=metanav href="{{ url_for('register') }}">register</a>
         {% else %}
-            <a class=metanav href="{{ url_for('berlinmap') }}">MAP</a>  &nbsp
+            <a class=metanav href="https://www.google.com/maps/d/viewer?mid=1TH6vryHyVxv_xFjFJDXgXQegZO4" secret="{{ url_for('berlinmap') }}">MAP</a>  &nbsp
             <a class=metanav href="{{ url_for('charsheet') }}">SHEET</a>  &nbsp
-            <a class=metanav href="/chat/">CHAT</a>  &nbsp
+            <a class=metanav href="{{ url_for('chatsite') }}">CHAT</a>  &nbsp
             <a class=metanav href="{{ url_for('show_user_profile',username=session.user) }}">{{ session.user }}</a>  &nbsp
             <a class=metanav href="{{ url_for('logout') }}">LOG OUT</a>
         {% endif %}

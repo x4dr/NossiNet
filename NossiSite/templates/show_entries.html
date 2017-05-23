@@ -7,8 +7,8 @@
 <script>
     $(document).ready(function() {
         $(".header").click(function () {
-            $header = $(this);
-            $content = $header.next();
+            var $header = $(this);
+            var $content = $header.next();
             $content.slideToggle(800, function () {
                 $header.text(function () {
                     return ($content.is(":visible") ? "-" : "+") + $header.text().slice(1);

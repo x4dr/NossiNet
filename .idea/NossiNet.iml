@@ -5,8 +5,12 @@
       <sourceFolder url="file://$MODULE_DIR$/NossiSite" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/NossiPack" isTestSource="false" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.6.0 (/usr/bin/python3.6)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.6.0 (C:\Program Files\Anaconda3\python.exe)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="jquery" level="application" />
+    <orderEntry type="library" name="socket.io" level="application" />
+    <orderEntry type="library" name="kartograph" level="application" />
+    <orderEntry type="library" name="raphael" level="application" />
   </component>
   <component name="TemplatesService">
     <option name="TEMPLATE_CONFIGURATION" value="Jinja2" />
