@@ -1,386 +1,197 @@
-id="path77"            :10115 		
-id="path79"            :10117       
-id="path81"            :10119       
-id="path83"            :10178       
-id="path85"            :10179       
-id="path87"            :10243       
-id="path89"            :10245       
-id="path91"            :10247       
-id="path93"            :10249       
-id="path95"            :10315       
-id="path97"            :10317       
-id="path99"            :10318       
-id="path101"           :10319       
-id="path103"           :10365       
-id="path105"           :10367       
-id="path107"           :10369       
-id="path109"           :10405       
-id="path111"           :10407       
-id="path113"           :10409       
-id="path115"           :10435       
-id="path117"           :10437       
-id="path119"           :10439       
-id="path121"           :10551       
-id="path123"           :10553       
-id="path125"           :10555       
-id="path127"           :10557       
-id="path129"           :10559       
-id="path131"           :10585       
-id="path133"           :10587       
-id="path135"           :10589       
-id="path137"           :10623       
-id="path139"           :10625       
-id="path141"           :10627       
-id="path143"           :10629       
-id="path145"           :10707       
-id="path147"           :10709       
-id="path149"           :10711       
-id="path151"           :10713       
-id="path153"           :10715       
-id="path155"           :10717       
-id="path157"           :10719       
-id="path159"           :10777       
-id="path161"           :10779       
-id="path163"           :10781       
-id="path165"           :10783       
-id="path167"           :10785       
-id="path169"           :10787       
-id="path171"           :10789       
-id="path173"           :10823       
-id="path175"           :10825       
-id="path177"           :10827       
-id="path179"           :10829       
-id="path181"           :10961       
-id="path183"           :10963       
-id="path185"           :10965       
-id="path187"           :10967       
-id="path189"           :10969       
-id="path191"           :10997       
-id="path193"           :10999       
-id="path197"           :12043       
-id="path199"           :12045       
-id="path201"           :12047       
-id="path203"           :12049       
-id="path205"           :12051       
-id="path207"           :12053       
-id="path209"           :12055       
-id="path211"           :12057       
-id="path213"           :12059       
-id="path215"           :12059       
-id="path217"           :12099       
-id="path219"           :12101       
-id="path221"           :12103       
-id="path223"           :12105       
-id="path225"           :12107       
-id="path227"           :12109       
-id="path229"           :12157       
-id="path231"           :12159       
-id="path233"           :12161       
-id="path235"           :12163       
-id="path237"           :12165       
-id="path239"           :12167       
-id="path241"           :12169       
-id="path243"           :12203       
-id="path245"           :12205       
-id="path247"           :12207       
-id="path249"           :12209       
-id="path251"           :12247       
-id="path253"           :12249       
-id="path255"           :12277       
-id="path257"           :12279       
-id="path259"           :12305       
-id="path261"           :12305       
-id="path263"           :12307       
-id="path265"           :12309       
-id="path267"           :12347       
-id="path269"           :12349       
-id="path271"           :12351       
-id="path273"           :12353       
-id="path275"           :12355       
-id="path277"           :12357       
-id="path279"           :12359       
-id="path281"           :12435       
-id="path283"           :12437       
-id="path285"           :12439       
-id="path287"           :12459       
-id="path289"           :12487       
-id="path291"           :12489       
-id="path293"           :12524       
-id="path295"           :12526       
-id="path297"           :12527       
-id="path299"           :12555       
-id="path301"           :12557       
-id="path303"           :12559       
-id="path305"           :12559       
-id="path307"           :omwtf
-id="path309"           :12587       
-id="path311"           :12589       
-id="path313"           :12619       
-id="path315"           :12621       
-id="path317"           :12623       
-id="path319"           :12623       
-id="path321"           :12627       
-id="path323"           :12629       
-id="path325"           :12679       
-id="path327"           :12681       
-id="path329"           :12683       
-id="path331"           :12685       
-id="path333"           :12687       
-id="path335"           :12689       
-id="path339"           :13051       
-id="path341"           :13053       
-id="path343"           :13055       
-id="path345"           :13057       
-id="path347"           :13059       
-id="path349"           :13086       
-id="path351"           :13088       
-id="path353"           :13089       
-id="path355"           :13125       
-id="path357"           :omwtf
-id="path359"           :13127       
-id="path361"           :13129       
-id="path363"           :13156       
-id="path365"           :13158       
-id="path367"           :13159       
-id="scruyou"           :13186       
-id="path369"           :13187       
-id="path371"           :13189       
-id="path373"           :13347       
-id="path375"           :13349       
-id="path377"           :13351       
-id="path379"           :13353       
-id="path381"           :13355       
-id="path383"           :13357       
-id="path385"           :13359       
-id="path387"           :13403       
-id="path389"           :13405       
-id="path391"           :13407       
-id="path393"           :13409       
-id="path395"           :13435       
-id="path397"           :13437       
-id="path399"           :13439       
-id="path401"           :13465       
-id="path403"           :13467       
-id="path405"           :13469       
-id="path407"           :13503       
-id="path409"           :13505       
-id="path411"           :13507       
-id="path413"           :13509       
-id="path415"           :13581       
-id="path417"           :13583       
-id="path419"           :13585       
-id="path421"           :13587       
-id="path423"           :13589       
-id="path425"           :13591       
-id="path427"           :13593       
-id="path429"           :13595       
-id="path431"           :13597       
-id="path433"           :13599       
-id="path435"           :13627       
-id="path437"           :13629       
-id="path441"           :14050       
-id="path443"           :14052       
-id="path445"           :14053       
-id="path447"           :14055       
-id="path449"           :14057       
-id="path451"           :14059       
-id="path453"           :14089       
-id="path455"           :14109       
-id="path457"           :14129       
-id="path459"           :14163       
-id="path461"           :14165       
-id="path463"           :14167       
-id="path465"           :14169       
-id="path467"           :14193       
-id="path469"           :14195       
-id="path471"           :14197       
-id="path473"           :14199       
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
+sed 's_"path77"_"plz\_"10115"_' $1 |\
+sed 's_"path79"_"plz\_"10117"_' |\
+sed 's_"path81"_"plz\_"10119"_' |\
+sed 's_"path83"_"plz\_"10178"_' |\
+sed 's_"path85"_"plz\_"10179"_' |\
+sed 's_"path87"_"plz\_"10243"_' |\
+sed 's_"path89"_"plz\_"10245"_' |\
+sed 's_"path91"_"plz\_"10247"_' |\
+sed 's_"path93"_"plz\_"10249"_' |\
+sed 's_"path95"_"plz\_"10315"_' |\
+sed 's_"path97"_"plz\_"10317"_' |\
+sed 's_"path99"_"plz\_"10318"_' |\
+sed 's_"path101"_"plz\_"10319"_' |\
+sed 's_"path103"_"plz\_"10365"_' |\
+sed 's_"path105"_"plz\_"10367"_' |\
+sed 's_"path107"_"plz\_"10369"_' |\
+sed 's_"path109"_"plz\_"10405"_' |\
+sed 's_"path111"_"plz\_"10407"_' |\
+sed 's_"path113"_"plz\_"10409"_' |\
+sed 's_"path115"_"plz\_"10435"_' |\
+sed 's_"path117"_"plz\_"10437"_' |\
+sed 's_"path119"_"plz\_"10439"_' |\
+sed 's_"path121"_"plz\_"10551"_' |\
+sed 's_"path123"_"plz\_"10553"_' |\
+sed 's_"path125"_"plz\_"10555"_' |\
+sed 's_"path127"_"plz\_"10557"_' |\
+sed 's_"path129"_"plz\_"10559"_' |\
+sed 's_"path131"_"plz\_"10585"_' |\
+sed 's_"path133"_"plz\_"10587"_' |\
+sed 's_"path135"_"plz\_"10589"_' |\
+sed 's_"path137"_"plz\_"10623"_' |\
+sed 's_"path139"_"plz\_"10625"_' |\
+sed 's_"path141"_"plz\_"10627"_' |\
+sed 's_"path143"_"plz\_"10629"_' |\
+sed 's_"path145"_"plz\_"10707"_' |\
+sed 's_"path147"_"plz\_"10709"_' |\
+sed 's_"path149"_"plz\_"10711"_' |\
+sed 's_"path151"_"plz\_"10713"_' |\
+sed 's_"path153"_"plz\_"10715"_' |\
+sed 's_"path155"_"plz\_"10717"_' |\
+sed 's_"path157"_"plz\_"10719"_' |\
+sed 's_"path159"_"plz\_"10777"_' |\
+sed 's_"path161"_"plz\_"10779"_' |\
+sed 's_"path163"_"plz\_"10781"_' |\
+sed 's_"path165"_"plz\_"10783"_' |\
+sed 's_"path167"_"plz\_"10785"_' |\
+sed 's_"path169"_"plz\_"10787"_' |\
+sed 's_"path171"_"plz\_"10789"_' |\
+sed 's_"path173"_"plz\_"10823"_' |\
+sed 's_"path175"_"plz\_"10825"_' |\
+sed 's_"path177"_"plz\_"10827"_' |\
+sed 's_"path179"_"plz\_"10829"_' |\
+sed 's_"path181"_"plz\_"10961"_' |\
+sed 's_"path183"_"plz\_"10963"_' |\
+sed 's_"path185"_"plz\_"10965"_' |\
+sed 's_"path187"_"plz\_"10967"_' |\
+sed 's_"path189"_"plz\_"10969"_' |\
+sed 's_"path191"_"plz\_"10997"_' |\
+sed 's_"path193"_"plz\_"10999"_' |\
+sed 's_"path197"_"plz\_"12043"_' |\
+sed 's_"path199"_"plz\_"12045"_' |\
+sed 's_"path201"_"plz\_"12047"_' |\
+sed 's_"path203"_"plz\_"12049"_' |\
+sed 's_"path205"_"plz\_"12051"_' |\
+sed 's_"path207"_"plz\_"12053"_' |\
+sed 's_"path209"_"plz\_"12055"_' |\
+sed 's_"path211"_"plz\_"12057"_' |\
+sed 's_"path213"_"plz\_"12059"_' |\
+sed 's_"path215"_"plz\_"12059"_' |\
+sed 's_"path217"_"plz\_"12099"_' |\
+sed 's_"path219"_"plz\_"12101"_' |\
+sed 's_"path221"_"plz\_"12103"_' |\
+sed 's_"path223"_"plz\_"12105"_' |\
+sed 's_"path225"_"plz\_"12107"_' |\
+sed 's_"path227"_"plz\_"12109"_' |\
+sed 's_"path229"_"plz\_"12157"_' |\
+sed 's_"path231"_"plz\_"12159"_' |\
+sed 's_"path233"_"plz\_"12161"_' |\
+sed 's_"path235"_"plz\_"12163"_' |\
+sed 's_"path237"_"plz\_"12165"_' |\
+sed 's_"path239"_"plz\_"12167"_' |\
+sed 's_"path241"_"plz\_"12169"_' |\
+sed 's_"path243"_"plz\_"12203"_' |\
+sed 's_"path245"_"plz\_"12205"_' |\
+sed 's_"path247"_"plz\_"12207"_' |\
+sed 's_"path249"_"plz\_"12209"_' |\
+sed 's_"path251"_"plz\_"12247"_' |\
+sed 's_"path253"_"plz\_"12249"_' |\
+sed 's_"path255"_"plz\_"12277"_' |\
+sed 's_"path257"_"plz\_"12279"_' |\
+sed 's_"path259"_"plz\_"12305"_' |\
+sed 's_"path261"_"plz\_"12305"_' |\
+sed 's_"path263"_"plz\_"12307"_' |\
+sed 's_"path265"_"plz\_"12309"_' |\
+sed 's_"path267"_"plz\_"12347"_' |\
+sed 's_"path269"_"plz\_"12349"_' |\
+sed 's_"path271"_"plz\_"12351"_' |\
+sed 's_"path273"_"plz\_"12353"_' |\
+sed 's_"path275"_"plz\_"12355"_' |\
+sed 's_"path277"_"plz\_"12357"_' |\
+sed 's_"path279"_"plz\_"12359"_' |\
+sed 's_"path281"_"plz\_"12435"_' |\
+sed 's_"path283"_"plz\_"12437"_' |\
+sed 's_"path285"_"plz\_"12439"_' |\
+sed 's_"path287"_"plz\_"12459"_' |\
+sed 's_"path289"_"plz\_"12487"_' |\
+sed 's_"path291"_"plz\_"12489"_' |\
+sed 's_"path293"_"plz\_"12524"_' |\
+sed 's_"path295"_"plz\_"12526"_' |\
+sed 's_"path297"_"plz\_"12527"_' |\
+sed 's_"path299"_"plz\_"12555"_' |\
+sed 's_"path301"_"plz\_"12557"_' |\
+sed 's_"path303"_"plz\_"12559"_' |\
+sed 's_"path305"_"plz\_"12559"_' |\
+sed 's_"path307"_"plz\_"omwtf"_' |\
+sed 's_"path309"_"plz\_"12587"_' |\
+sed 's_"path311"_"plz\_"12589"_' |\
+sed 's_"path313"_"plz\_"12619"_' |\
+sed 's_"path315"_"plz\_"12621"_' |\
+sed 's_"path317"_"plz\_"12623"_' |\
+sed 's_"path319"_"plz\_"12623"_' |\
+sed 's_"path321"_"plz\_"12627"_' |\
+sed 's_"path323"_"plz\_"12629"_' |\
+sed 's_"path325"_"plz\_"12679"_' |\
+sed 's_"path327"_"plz\_"12681"_' |\
+sed 's_"path329"_"plz\_"12683"_' |\
+sed 's_"path331"_"plz\_"12685"_' |\
+sed 's_"path333"_"plz\_"12687"_' |\
+sed 's_"path335"_"plz\_"12689"_' |\
+sed 's_"path339"_"plz\_"13051"_' |\
+sed 's_"path341"_"plz\_"13053"_' |\
+sed 's_"path343"_"plz\_"13055"_' |\
+sed 's_"path345"_"plz\_"13057"_' |\
+sed 's_"path347"_"plz\_"13059"_' |\
+sed 's_"path349"_"plz\_"13086"_' |\
+sed 's_"path351"_"plz\_"13088"_' |\
+sed 's_"path353"_"plz\_"13089"_' |\
+sed 's_"path355"_"plz\_"13125"_' |\
+sed 's_"path357"_"plz\_"omwtf"_' |\
+sed 's_"path359"_"plz\_"13127"_' |\
+sed 's_"path361"_"plz\_"13129"_' |\
+sed 's_"path363"_"plz\_"13156"_' |\
+sed 's_"path365"_"plz\_"13158"_' |\
+sed 's_"path367"_"plz\_"13159"_' |\
+sed 's_"scruyou"_"plz\_"13186"_' |\
+sed 's_"path369"_"plz\_"13187"_' |\
+sed 's_"path371"_"plz\_"13189"_' |\
+sed 's_"path373"_"plz\_"13347"_' |\
+sed 's_"path375"_"plz\_"13349"_' |\
+sed 's_"path377"_"plz\_"13351"_' |\
+sed 's_"path379"_"plz\_"13353"_' |\
+sed 's_"path381"_"plz\_"13355"_' |\
+sed 's_"path383"_"plz\_"13357"_' |\
+sed 's_"path385"_"plz\_"13359"_' |\
+sed 's_"path387"_"plz\_"13403"_' |\
+sed 's_"path389"_"plz\_"13405"_' |\
+sed 's_"path391"_"plz\_"13407"_' |\
+sed 's_"path393"_"plz\_"13409"_' |\
+sed 's_"path395"_"plz\_"13435"_' |\
+sed 's_"path397"_"plz\_"13437"_' |\
+sed 's_"path399"_"plz\_"13439"_' |\
+sed 's_"path401"_"plz\_"13465"_' |\
+sed 's_"path403"_"plz\_"13467"_' |\
+sed 's_"path405"_"plz\_"13469"_' |\
+sed 's_"path407"_"plz\_"13503"_' |\
+sed 's_"path409"_"plz\_"13505"_' |\
+sed 's_"path411"_"plz\_"13507"_' |\
+sed 's_"path413"_"plz\_"13509"_' |\
+sed 's_"path415"_"plz\_"13581"_' |\
+sed 's_"path417"_"plz\_"13583"_' |\
+sed 's_"path419"_"plz\_"13585"_' |\
+sed 's_"path421"_"plz\_"13587"_' |\
+sed 's_"path423"_"plz\_"13589"_' |\
+sed 's_"path425"_"plz\_"13591"_' |\
+sed 's_"path427"_"plz\_"13593"_' |\
+sed 's_"path429"_"plz\_"13595"_' |\
+sed 's_"path431"_"plz\_"13597"_' |\
+sed 's_"path433"_"plz\_"13599"_' |\
+sed 's_"path435"_"plz\_"13627"_' |\
+sed 's_"path437"_"plz\_"13629"_' |\
+sed 's_"path441"_"plz\_"14050"_' |\
+sed 's_"path443"_"plz\_"14052"_' |\
+sed 's_"path445"_"plz\_"14053"_' |\
+sed 's_"path447"_"plz\_"14055"_' |\
+sed 's_"path449"_"plz\_"14057"_' |\
+sed 's_"path451"_"plz\_"14059"_' |\
+sed 's_"path453"_"plz\_"14089"_' |\
+sed 's_"path455"_"plz\_"14109"_' |\
+sed 's_"path457"_"plz\_"14129"_' |\
+sed 's_"path459"_"plz\_"14163"_' |\
+sed 's_"path461"_"plz\_"14165"_' |\
+sed 's_"path463"_"plz\_"14167"_' |\
+sed 's_"path465"_"plz\_"14169"_' |\
+sed 's_"path467"_"plz\_"14193"_' |\
+sed 's_"path469"_"plz\_"14195"_' |\
+sed 's_"path471"_"plz\_"14197"_' |\
+sed 's_"path473"_"plz\_"14199"_' >berlinplz.svg

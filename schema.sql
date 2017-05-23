@@ -53,6 +53,6 @@ CREATE TABLE IF NOT EXISTS property (
   name          TEXT                NOT NULL,
   owner         TEXT                NOT NULL,
   tags          TEXT,
-  data          TEXT                NOT NULL,
+  data          TEXT,
   CONSTRAINT unq UNIQUE (name)
 );
