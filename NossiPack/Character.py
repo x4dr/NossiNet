@@ -701,16 +701,16 @@ class Character(object):
         return tmp
 
     def makechar(self, min, cap, prioa, priob, prioc):  # TODO: rework
-        response = urllib.request.urlopen(
-           "http://www.behindthename.com/random/random.php?number=2&gender=both&surname=&randomsurname=yes&all=no&"
-           "usage_ger=1&usage_myth=1&usage_anci=1&usage_bibl=1&usage_hist=1&usage_lite=1&usage_theo=1&usage_goth=1&"
-           "usage_fntsy=1")
+        #response = urllib.request.urlopen(
+        #   "http://www.behindthename.com/random/random.php?number=2&gender=both&surname=&randomsurname=yes&all=no&"
+        #   "usage_ger=1&usage_myth=1&usage_anci=1&usage_bibl=1&usage_hist=1&usage_lite=1&usage_theo=1&usage_goth=1&"
+        #   "usage_fntsy=1")
         char = Character()
         prio = [prioa, priob, prioc]
-        Random().shuffle(prio)
+        #Random().shuffle(prio)
 
         names = re.compile('<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......')
-        a = str(response.read())
+        a = str#(response.read())
 
         result = names.search(a)
         try:
@@ -720,7 +720,7 @@ class Character(object):
         return char
 
 
-def     tdef(s, default=0):
+def intdef(s, default=0):
     try:
         return int(s)
     except Exception as inst:
