@@ -11,7 +11,9 @@
 
     window.onload= function() {
         $(function() {
-            $("#loadedmap").load("/static/berlinPLZ.svg", function () {
+            $("#loadedmap").load("/static/berlinPLZ.svg?q=2371211", function () {
+                document.getElementById("page_complete").style.minWidth="60em";
+
                 var map = document.getElementById("svg");
                 var plzs=$(".plz");
                 plzs.hover(plzIn, plzOut);
@@ -19,10 +21,17 @@
                 plzs.each(function () {
 
                     var desc = document.createElementNS("http://www.w3.org/2000/svg","title");
-                    var node = document.createTextNode('"DESCRIPTION: '+this.id+'"');
+                    var node = document.createTextNode('"DESCRIPTION: '+this.id.slice(4)+'"');
                     desc.appendChild(node);
-
                     this.appendChild(desc);
+                    var text = document.createElementNS("http://www.w3.org/2000/svg","text");
+                    var plz = document.createTextNode(this.id.slice(4));
+                    text.appendChild(plz);
+                    text.setAttribute("x", this.getBBox().x+this.getBBox().width/2 -15);
+                    text.setAttribute("y", this.getBBox().y+this.getBBox().height/2);
+                    text.setAttribute("style", "fill:#040444");
+                    text.setAttribute("Class", "svgtext");
+                    map.appendChild(text);
                 });
             });
         });
@@ -33,7 +42,10 @@
     </script>
 {% endblock %}
 {% block body %}
-    <div id="loadedmap" style="overflow: hidden; width: 100%"></div>
+    <div id="loadedmap" style="
+    left:0;
+    right:0;
+    width: 100%"></div>
     <div id="map"></div>
 
 
