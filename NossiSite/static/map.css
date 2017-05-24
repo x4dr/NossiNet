@@ -1,9 +1,20 @@
-.plz {
-    fill : #400000
 
+.Ventrue  {
+    fill : #1122aa !important
 }
 
 
+.Ventrue:hover  {
+    fill : #4466dd !important
+}
+
+.plz:hover {
+    fill : #ff1111
+}
+
+.plz {
+    fill : #340404
+}
 
 .svgtext {
     pointer-events: none;

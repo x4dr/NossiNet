@@ -3,15 +3,15 @@
     <link rel="stylesheet" type=text/css  href="/static/map.css">
     <script>
         function plzIn() {
-            this.style.fill="#ff0000";
+
         }
         function plzOut() {
-            this.style.fill="#400000"
+
         }
 
     window.onload= function() {
         $(function() {
-            $("#loadedmap").load("/static/berlinPLZ.svg?q=2371211", function () {
+            $("#loadedmap").load("/static/berlinPLZ.svg", function () {
                 document.getElementById("page_complete").style.minWidth="60em";
 
                 var map = document.getElementById("svg");
@@ -22,12 +22,11 @@
                     plzs.each(function () {
                         var desc = document.createElementNS("http://www.w3.org/2000/svg","title");
                         var name = this.id.slice(4);
-                        console.log(name, mapdata[name]);
                         var node = document.createTextNode('PLZ: ' + name +
                             '\nOwner: ' + mapdata[name]['owner'] +
                             '\nTags: ' + mapdata[name]['tags'] +
                             '\nData: ' + mapdata[name]['data'] );
-                        this.addClasses(mapdata[name]['tags'] );
+                        $(this).attr("tags", mapdata[name]['tags'] );
                         desc.appendChild(node);
                         this.appendChild(desc);
                         var text = document.createElementNS("http://www.w3.org/2000/svg","text");
@@ -36,10 +35,29 @@
                         text.setAttribute("x", this.getBBox().x+this.getBBox().width/2 -15);
                         text.setAttribute("y", this.getBBox().y+this.getBBox().height/2);
                         text.setAttribute("style", "fill:#040444");
-                        text.setAttribute("Class", "svgtext");
+                        text.setAttribute("class", "svgtext");
                         map.appendChild(text);
                     });
                 });
+                $("#VentrueButton").click(function(){
+                    $("path").each(function () {
+                        if (this.getAttribute("tags")) {
+                            if (this.getAttribute("tags").includes("Ventrue")) {
+                                $(this).addClass("Ventrue");
+                            }
+                        }
+                    });
+                });
+                $("#ClearButton").click(function(){
+                    $("path").each(function () {
+                        if (this.getAttribute("tags")) {
+                            if (this.getAttribute("tags").includes("Ventrue")) {
+                                $(this).removeClass(this.getAttribute("tags"));
+                            }
+                        }
+                    });
+                });
+
             });
         });
     };
@@ -49,6 +67,8 @@
     </script>
 {% endblock %}
 {% block body %}
+    <div id="VentrueButton" >Ventrue</div>
+    <div id="ClearButton" >Clear</div>
     <div id="loadedmap" style="
     left:0;
     right:0;

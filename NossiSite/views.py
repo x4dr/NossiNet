@@ -217,10 +217,20 @@ def berlinmap():
 
 @app.route('/berlinmap/data.dat')
 def mapdata():
+    print("genertaing mapdata", end= " ")
+    time0 = time.time()
     cur = g.db.execute('SELECT name, owner,tags,data FROM property')
     plzs = {}
-    for row in cur.fetchall():  # SHOULD only run once
-        plzs[row[0]] = {'owner': row[1], 'tags': row[2], 'data': row[3]}
+    for row in cur.fetchall():
+        plzs[row[0]] = {'owner': row[1] or "", 'tags': row[2] or "", 'data': row[3] or ""}
+    cur = g.db.execute('SELECT name, faction, allegiance, clan,tags FROM actors')
+    for row in cur.fetchall():
+        for plz in plzs.keys():
+            if plzs[plz]['owner'].upper() == row[0]:
+                plzs[plz]['tags'] += " ".join([x for x in row[1:] if x])
+                if row[1]:
+                    plzs[plz]['faction'] = row[1]
+    print("took:",time.time()-time0,"seconds.")
     return json.dumps(plzs)
 
 
