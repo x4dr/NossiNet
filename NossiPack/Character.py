@@ -12,7 +12,7 @@ __author__ = "maric"
 class Character(object):
     def __init__(self, name="", attributes=None, meta=None, abilities=None,
                  virtues=None, backgrounds=None, disciplines=None,
-                 special=None, notes=None):
+                 special=None):
         self.name = name
         if attributes is None:
             self.attributes = self.zero_attributes()
@@ -42,6 +42,7 @@ class Character(object):
             self.special = self.zero_specials()
         else:
             self.special = special
+
 
         self.timestamp = time.strftime("%Y/%m/%d-%H:%M:%S")
 
@@ -699,28 +700,27 @@ class Character(object):
         tmp.legacy_convert()
         return tmp
 
+    def makechar(self, min, cap, prioa, priob, prioc):  # TODO: rework
+        response = urllib.request.urlopen(
+           "http://www.behindthename.com/random/random.php?number=2&gender=both&surname=&randomsurname=yes&all=no&"
+           "usage_ger=1&usage_myth=1&usage_anci=1&usage_bibl=1&usage_hist=1&usage_lite=1&usage_theo=1&usage_goth=1&"
+           "usage_fntsy=1")
+        char = Character()
+        prio = [prioa, priob, prioc]
+        Random().shuffle(prio)
 
-# def makechar(min, cap, prioa, priob, prioc):
-#    response = urllib.request.urlopen(
-#        "http://www.behindthename.com/random/random.php?number=2&gender=both&surname=&randomsurname=yes&all=no&"
-#        "usage_ger=1&usage_myth=1&usage_anci=1&usage_bibl=1&usage_hist=1&usage_lite=1&usage_theo=1&usage_goth=1&"
-#        "usage_fntsy=1")
-#    char = Character()
-#    prio = [prioa, priob, prioc]
-#    Random().shuffle(prio)
+        names = re.compile('<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......')
+        a = str(response.read())
 
-#    names = re.compile('<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......')
-#    a = str(response.read())
-
-#    result = names.search(a)
-#    try:
-#        char.name = (result.group(1) + ", " + result.group(2) + ", " + result.group(3))
-#    except:
-#        char.name = "think for yourself"
-#    return char
+        result = names.search(a)
+        try:
+           char.name = (result.group(1) + ", " + result.group(2) + ", " + result.group(3))
+        except:
+           char.name = "think for yourself"
+        return char
 
 
-def intdef(s, default=0):
+def     tdef(s, default=0):
     try:
         return int(s)
     except Exception as inst:

@@ -17,21 +17,28 @@
                 var map = document.getElementById("svg");
                 var plzs=$(".plz");
                 plzs.hover(plzIn, plzOut);
+                $.getJSON("{{ url_for("mapdata") }}","",function(mapdata){
 
-                plzs.each(function () {
-
-                    var desc = document.createElementNS("http://www.w3.org/2000/svg","title");
-                    var node = document.createTextNode('"DESCRIPTION: '+this.id.slice(4)+'"');
-                    desc.appendChild(node);
-                    this.appendChild(desc);
-                    var text = document.createElementNS("http://www.w3.org/2000/svg","text");
-                    var plz = document.createTextNode(this.id.slice(4));
-                    text.appendChild(plz);
-                    text.setAttribute("x", this.getBBox().x+this.getBBox().width/2 -15);
-                    text.setAttribute("y", this.getBBox().y+this.getBBox().height/2);
-                    text.setAttribute("style", "fill:#040444");
-                    text.setAttribute("Class", "svgtext");
-                    map.appendChild(text);
+                    plzs.each(function () {
+                        var desc = document.createElementNS("http://www.w3.org/2000/svg","title");
+                        var name = this.id.slice(4);
+                        console.log(name, mapdata[name]);
+                        var node = document.createTextNode('PLZ: ' + name +
+                            '\nOwner: ' + mapdata[name]['owner'] +
+                            '\nTags: ' + mapdata[name]['tags'] +
+                            '\nData: ' + mapdata[name]['data'] );
+                        this.addClasses(mapdata[name]['tags'] );
+                        desc.appendChild(node);
+                        this.appendChild(desc);
+                        var text = document.createElementNS("http://www.w3.org/2000/svg","text");
+                        var plz = document.createTextNode(this.id.slice(4));
+                        text.appendChild(plz);
+                        text.setAttribute("x", this.getBBox().x+this.getBBox().width/2 -15);
+                        text.setAttribute("y", this.getBBox().y+this.getBBox().height/2);
+                        text.setAttribute("style", "fill:#040444");
+                        text.setAttribute("Class", "svgtext");
+                        map.appendChild(text);
+                    });
                 });
             });
         });

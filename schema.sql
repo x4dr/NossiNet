@@ -56,3 +56,12 @@ CREATE TABLE IF NOT EXISTS property (
   data          TEXT,
   CONSTRAINT unq UNIQUE (name)
 );
+--DROP TABLE actors;
+CREATE TABLE IF NOT EXISTS actors (
+  name          TEXT                NOT NULL,
+  faction       TEXT,
+  allegiance    TEXT,
+  clan          TEXT,
+  tags          TEXT,
+  CONSTRAINT unq UNIQUE (name)
+);

@@ -2,6 +2,7 @@ import random
 import time
 import math
 import bleach
+import json
 
 from NossiPack.User import Userlist, User
 from NossiSite import app
@@ -12,7 +13,7 @@ from NossiPack.krypta import gendicedata, sumdict
 
 token = {}
 
-bleach.sanitizer.ALLOWED_TAGS+= ["br","u","table","th","tr","td","tbody","thead","tfoot"]
+bleach.sanitizer.ALLOWED_TAGS += ["br", "u", "table", "th", "tr", "td", "tbody", "thead", "tfoot"]
 
 init_db()
 
@@ -68,7 +69,7 @@ def dice(a, b):
                                         "WHERE amount = ? AND difficulty = ? ",
                                         (i, j)
                                         ).fetchall()[0][0].split(" ") if x]))
-                except Exception as inst:
+                except Exception:
                     sizes[-1].append(0)
         sizes = [[s for s in sublist if s] for sublist in sizes]
         for e in sizes:
@@ -109,10 +110,9 @@ def kudosloan():
     if request.method == 'POST':
         if checktoken():
             token[session['user']].pop()
-            id = request.form['id']
             entry = None
             for e in entries:
-                if e.get('id') == id:
+                if e.get('id') == request.form['id']:
                     entry = e
             if entry is not None:
                 if entry.get('state') == 'unaccepted':
@@ -136,14 +136,14 @@ def kudosloan():
 def show_entries():
     cur = g.db.execute('SELECT author, title, text, plusOned, id FROM entries ORDER BY id DESC')
     entries = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4]) for row in cur.fetchall()]
-    entries = [e for e in entries if e.get('author',"none")[0].isupper()]
+    entries = [e for e in entries if e.get('author', "none")[0].isupper()]
     for e in entries:
         if e.get('plusoned') is not None:
             esplit = e.get('plusoned').split(' ')
             e['plusoned'] = ((session.get('user') in esplit) or (session.get('user') == e.get('author')))
         else:
             e['plusoned'] = (session.get('user') == e.get('author'))
-        e['text'] = bleach.clean(e['text'].replace("\n","<br>"))
+        e['text'] = bleach.clean(e['text'].replace("\n", "<br>"))
         e['own'] = (session.get('logged_in')) and (session.get('user') == e['author'])
     gentoken()
 
@@ -190,7 +190,7 @@ def del_sheet():
     u.oldsheets.pop(x)
     ul.saveuserlist()
     flash("Sheet deleted from history!")
-    return redirect(url_for('oldsheets'))
+    return redirect(url_for('menu_oldsheets'))
 
 
 @app.route('/restoresheet/', methods=["POST"])
@@ -206,17 +206,26 @@ def res_sheet():
     u.sheet = newactive
     ul.saveuserlist()
     flash("Sheet deleted from history!")
-    return redirect(url_for('oldsheets'))
+    return redirect(url_for('menu_oldsheets'))
 
 
 @app.route('/berlinmap')
 def berlinmap():
     return render_template('map.html')
-   # return redirect("https://www.google.com/maps/d/viewer?mid=1TH6vryHyVxv_xFjFJDXgXQegZO4")
+    # return redirect("https://www.google.com/maps/d/viewer?mid=1TH6vryHyVxv_xFjFJDXgXQegZO4")
+
+
+@app.route('/berlinmap/data.dat')
+def mapdata():
+    cur = g.db.execute('SELECT name, owner,tags,data FROM property')
+    plzs = {}
+    for row in cur.fetchall():  # SHOULD only run once
+        plzs[row[0]] = {'owner': row[1], 'tags': row[2], 'data': row[3]}
+    return json.dumps(plzs)
 
 
 @app.route('/oldsheets/')
-def oldsheets():
+def menu_oldsheets():
     if not session.get('logged_in'):
         flash('You are not logged in!')
         return redirect(url_for('login'))
@@ -289,7 +298,7 @@ def timestep():
                     keyprovided = True
                 else:
                     error = 'need positive amount'
-            except Exception as inst:
+            except Exception:
                 try:
                     key = request.form['key'][-10:]
                     if key == session.pop('timekey'):
@@ -303,7 +312,7 @@ def timestep():
                         error = 'wrong key, TimeMagic fizzled...'
                         session.pop('timeamount')
                         session.pop('timekey')
-                except Exception as ins:
+                except Exception:
                     error = 'invalid transaction'
     ul.saveuserlist()
     gentoken()
@@ -313,7 +322,7 @@ def timestep():
 
 @app.route('/delete_entry/<ident>', methods=['POST'])
 def delete_entry(ident):
-      if checktoken():
+    if checktoken():
         if not session.get('logged_in'):
             flash('You are not logged in!')
             return redirect(url_for('login'))
@@ -321,14 +330,13 @@ def delete_entry(ident):
         cur = g.db.execute('SELECT author, title, text, plusOned, id FROM entries WHERE id = ?', [ident])
         for row in cur.fetchall():  # SHOULD only run once
             entry = dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4])
-        if (not session.get('admin')) and  entry.get('author') != session.get('user'):
+        if (not session.get('admin')) and entry.get('author') != session.get('user'):
             flash('This is not your Post!')
         else:
-            g.db.execute('UPDATE entries SET author = ? WHERE id = ?', [entry.get('author').lower(),entry.get('id')])
-            flash('Entry: "'+ entry.get('title') + '" has been deleted.')
+            g.db.execute('UPDATE entries SET author = ? WHERE id = ?', [entry.get('author').lower(), entry.get('id')])
+            flash('Entry: "' + entry.get('title') + '" has been deleted.')
             g.db.commit()
         return redirect(url_for('show_entries'))
-
 
 
 @app.route('/plusone/<ident>', methods=['POST'])
@@ -404,7 +412,7 @@ def add_funds():
                     keyprovided = True
                 else:
                     error = 'need positive amount'
-            except Exception as inst:
+            except Exception:
                 try:
                     key = request.form['key'][-10:]
                     if key == session.pop('key'):
@@ -414,13 +422,12 @@ def add_funds():
                         error = 'wrong key, transaction invalidated.'
                         session.pop('amount')
                         session.pop('key')
-                except Exception as ins:
+                except Exception:
                     error = 'invalid transaction'
 
     ul.saveuserlist()
     gentoken()
     return render_template('funds.html', user=u, error=error, keyprovided=keyprovided)
-
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -558,10 +565,11 @@ def checktoken():
 def send_msg(username):
     def check0(a):
         return int(a) == 0
+
     error = None
     if checktoken():
         if not session.get('logged_in'):
-            error = 'You are not logged in!'
+            flash('You are not logged in!')
             return redirect(url_for('login'))
         g.db.execute('INSERT INTO messages (author,recipient,title,text,value,lock,honored)'
                      ' VALUES (?, ?, ?, ?, ?, ?, ?)',  # 7
@@ -575,7 +583,6 @@ def send_msg(username):
         g.db.commit()
         flash('Message sent')
     return redirect(url_for('show_entries', error=error))
-
 
 
 @app.route('/honor/<ident>', methods=['POST', 'GET'])
@@ -612,7 +619,7 @@ def honor(ident):
                 u.addkudos(kudosrep)
                 n.addkudos(kudosaut)
                 g.db.execute('UPDATE messages SET honored = 1 WHERE id = ?', [ident])
-                cur = g.db.execute('SELECT * FROM messages')
+                # cur = g.db.execute('SELECT * FROM messages')
                 flash("Transfer complete. Check the received messsage and "
                       "press the Honor Button if is was what you ordered.")
                 g.db.commit()
@@ -710,9 +717,8 @@ def resetpassword():
 
 @app.route('/payout/', methods=['GET', 'POST'])
 def payout():
-    error = None
     if not session.get('logged_in'):
-        error = 'You are not logged in!'
+        flash('You are not logged in!')
         return redirect(url_for('login'))
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
@@ -733,13 +739,8 @@ def payout():
     return render_template('payout.html', user=u, error=error)
 
 
-@app.route('/deathanddestruction/')
-def deldbredir():
-    return deldb()
-
-
 @app.route('/lightswitch/')
-def lightswitch(x="None"):
+def lightswitch():
     if session.get('light', False):
         session.pop('light')
     else:
@@ -750,7 +751,7 @@ def lightswitch(x="None"):
 @app.route('/chargen/<mini>,<maxi>,<a>,<b>,<c>')
 def chargen(mini, maxi, a, b, c):
     return render_template("chargen.html",
-                           char=None)  # makechar(int(mini), int(maxi), int(a), int(b), int(c)).getstringrepr())
+                           char=Character().makechar(int(mini), int(maxi), int(a), int(b), int(c)).getstringrepr())
 
 
 @app.route('/favicon.ico')
