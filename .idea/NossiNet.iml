@@ -2,15 +2,10 @@
 <module type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/NossiSite" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/NossiPack" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/.idea" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.6.0 (C:\Program Files\Anaconda3\python.exe)" jdkType="Python SDK" />
+    <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="jquery" level="application" />
-    <orderEntry type="library" name="socket.io" level="application" />
-    <orderEntry type="library" name="kartograph" level="application" />
-    <orderEntry type="library" name="raphael" level="application" />
   </component>
   <component name="TemplatesService">
     <option name="TEMPLATE_CONFIGURATION" value="Jinja2" />
