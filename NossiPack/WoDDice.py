@@ -62,7 +62,8 @@ class WoDDice(object):
 
     def roll_nv(self):  # non-verbose, returns int
         if self.difficulty:
-            return self.botchformat(self.succ, self.antisucc)
+            return self.botchformat(self.succ, self.antisucc) if self.difficulty > 0 else max(self.r)  # difficulty -1
+            # means get max
         else:
             return sum(self.r)
 
@@ -98,7 +99,7 @@ class WoDDice(object):
             log += str(self.r) + " + "
         log = log[:-2] + "= " + str(self.roll_sum())
 
-    def result(self,amount):
+    def result(self, amount):
         self.roll_next(amount)
         return self.roll_nv()
 

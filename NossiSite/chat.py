@@ -58,7 +58,7 @@ def decider(message):
         elif "?" in message:
             echo(message, "'s TEST: ")
             parser = WoDParser(defines())
-            roll = parser.diceparser(message, defines())
+            roll = parser.diceparser(message)
             echo(parser.dbg, "'s TEST: ")
             printroll(roll, testing=True)
         elif "=" in message:
