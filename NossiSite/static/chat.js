@@ -3,6 +3,7 @@ $(document).ready(function(){
     var charsocket = io.connect('http://' +  document.domain + ':' +location.port + '/character')
     var bell = new Audio("/static/bell.wav");
     var ring = false;
+    var ringoverwrite = false;
     // event handler for server sent data
     // the data is displayed in the "Received" section of the page
     socket.on('Message', function(msg) {
@@ -61,9 +62,8 @@ $(document).ready(function(){
         dotupdate(msg)
     } );
 
-
     $(window).blur(function(){
-        ring=true
+        ring=!ringoverwrite
     });
     $(window).focus(function(){
         ring=false
@@ -93,6 +93,12 @@ $(document).ready(function(){
 
     $('form#message').submit(function() {
         var message_data=$('#message_data').val();
+        if (message_data=="/ring off"){
+            ringoverwrite = true
+        }
+        if (message_data=="/ring on"){
+            ringoverwrite = false
+        }
         if(document.getElementById('message_data').value != ''){
             socket.emit('ClientServerEvent',
                 {data: message_data});

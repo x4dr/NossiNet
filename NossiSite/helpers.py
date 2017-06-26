@@ -41,6 +41,7 @@ def generate_token(seed):
 
 
 def init_db():
+    print("initializing DB")
     with closing(connect_db()) as db:
         with app.open_resource('../schema.sql', mode='r') as f:
             db.cursor().executescript(f.read())
@@ -48,7 +49,7 @@ def init_db():
 
 
 def connect_db():
-    print(app.config['DATABASE'])
+    print("connecting to", app.config['DATABASE'])
     return sqlite3.connect(app.config['DATABASE'])
 
 

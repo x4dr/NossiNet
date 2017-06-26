@@ -1,20 +1,15 @@
+from NossiPack import WoDData, WoDParser,  Userlist, Character
+from NossiPack.Chatrooms import Chatroom
 import time
 import json
 
 from NossiSite import app, socketio
-# import time
-# import threading
 
 from flask import render_template, session, request, flash, url_for, redirect
 from flask_socketio import emit, join_room, leave_room, disconnect, rooms
-from NossiPack import *
-from NossiPack import WoDData
-
-thread = None
 
 userlist = {}
 roomlist = [Chatroom('lobby')]
-namedStrings = {}
 
 with open('./NossiSite/locales/EN.json') as json_data:
     namedStrings = json.load(json_data)['namedStrings']
@@ -38,9 +33,6 @@ def echo(message, sep=": ", err=False):
         emit('Message', {'data': session['user'] + sep + message})
 
 
-
-
-
 def post(message, sep=": "):
     session['activeroom'].addline(session['user'] + sep + message)
 
@@ -52,18 +44,13 @@ def decider(message):
             return
         if not (("?" in message) or ("=" in message)):
             try:
-                t0 = time.time()
                 post(message, "'s ROLL: ")
                 parser = WoDParser(defines())
-                t1 = time.time()
                 roll = parser.diceparser(message)
-                t1_1 = time.time()
                 trigger(parser.triggers)
-                t2 = time.time()
                 update_dots()
                 print(roll.roll_v())
                 printroll(roll, parser)
-                t3 = time.time()
 
             except Exception as inst:
                 echo(str(inst.args[0]), "ROLLING ERROR: ", err=True)
@@ -78,7 +65,7 @@ def decider(message):
             defines(message[1:])
 
     elif message[0] == '/':
-        if menucmds(message[1:], "/"):
+        if menucmds(message[1:]):
             echo(message)
     elif session['chatmode'] == 'menu':
         if menucmds(message):
@@ -92,11 +79,11 @@ def decider(message):
     statusupdate()
 
 
-def echodict(dict):
-    a = list(dict.keys())
+def echodict(output_dict):
+    a = list(output_dict.keys())
     a.sort()
     for i in a:
-        echo(("%s" % i).ljust(15) + " : " + str(dict[i]), "", err=True)
+        echo(("%s" % i).ljust(15) + " : " + str(output_dict[i]), "", err=True)
 
 
 def trigger(triggers, user=None):
@@ -153,7 +140,6 @@ def defines(message="=", user=None):
 
 
 def printroll(roll, parser=None, testing=False):
-    t0 = time.time()
     if not roll:
         return
     if not roll.rolled:
@@ -180,10 +166,9 @@ def printroll(roll, parser=None, testing=False):
         deliver(str(roll.roll_nv()), " IS ROLLING: [" + str(len(roll.r)) + " DICEROLLS] ==> ")
     else:
         deliver(roll.roll_v(), " IS ROLLING: ")
-    t1 = time.time()
 
 
-def menucmds(message, stripped=""):
+def menucmds(message):
     if message == 'help':
         echo(message, ": /")
         emit('Message', {'data': echo(''.join(namedStrings['chatHelp']))})
@@ -195,17 +180,16 @@ def menucmds(message, stripped=""):
     elif message == 'log':
         echo(message, ": /")
         if session['activeroom'] is not None:
-            emit('Message', {'data': namedStrings['startLog'] +
-                                     session['activeroom'].getlog(session['user']) +
-                                     namedStrings['endLog']})
+            emit('Message', {
+                'data': namedStrings['startLog'] + session['activeroom'].getlog(session['user']) + namedStrings[
+                    'endLog']})
         else:
             emit('Message', {'data': namedStrings['noLogRoom']})
     elif message == 'userlist':
         echo(message, ": /")
         if session['activeroom'] is not None:
-            emit('Message', {'data': namedStrings['startList'] +
-                                     session['activeroom'].getuserlist_text() +
-                                     namedStrings['endList']})
+            emit('Message', {
+                'data': namedStrings['startList'] + session['activeroom'].getuserlist_text() + namedStrings['endList']})
         else:
             emit('Message', {'data': namedStrings['noListRoom']})
     elif message.split(' ')[0] == 'room':
@@ -279,9 +263,8 @@ def menucmds(message, stripped=""):
 
     elif message.split(' ')[0] == 'mailbox':
         echo(message, ": /")
-        emit('Message', {'data': namedStrings['startLog'] +
-                                 session['roomlist'][0].getlog(session['user']) +
-                                 namedStrings['endLog']})
+        emit('Message', {
+            'data': namedStrings['startLog'] + session['roomlist'][0].getlog(session['user']) + namedStrings['endLog']})
     elif message.split(' ')[0] == 'msg':
         echo(message, ": /")
         try:
@@ -347,9 +330,7 @@ def chatsite():
 @socketio.on('ClientServerEvent', namespace='/chat')
 def receive(message):
     print(session.get('user', "NoUser"), ": ", message)
-    t0 = time.time()
     decider(message['data'])
-    t1 = time.time()
     update_dots()
 
 
@@ -365,6 +346,7 @@ def char_connect():
 
 @socketio.on('ClientServerEvent', namespace='/character')
 def receive_message(message):
+    sorted(message)
     update_dots()
 
 
@@ -468,4 +450,4 @@ def test_disconnect():
         for r in session['roomlist']:
             r.userleave(session['user'])
     except Exception as inst:
-        print(namedStrings['roomlistErr'],inst.args)
+        print(namedStrings['roomlistErr'], inst.args)

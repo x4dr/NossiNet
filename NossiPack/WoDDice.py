@@ -98,6 +98,10 @@ class WoDDice(object):
             log += str(self.r) + " + "
         log = log[:-2] + "= " + str(self.roll_sum())
 
+    def result(self,amount):
+        self.roll_next(amount)
+        return self.roll_nv()
+
     def roll(self, amount):
         self.roll_next(amount)
         return self.roll_v()

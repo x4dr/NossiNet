@@ -25,7 +25,9 @@ class Chatroom(object):
         self.loadchatlog()
 
     def loadchatlog(self):  # converts the SQL table into a list for easier access
+        print("loading chatlog")
         db = connect_db()
+        touched = False
         # db.set_trace_callback(echo)
         rows = db.execute("SELECT linenr, line, time  FROM chatlogs WHERE room = ? ORDER BY linenr ASC",
                           [self.name]).fetchall()
@@ -36,16 +38,17 @@ class Chatroom(object):
             if self.newestlineindb < int(row[0]):
                 self.newestlineindb = int(row[0])
         if not self.chatlog:
+            touched = True
             self.chatlog = [[0, "start of " + self.name, time.time()]]
             if self.mailbox:
                 self.userjoin(session['user'])
-        self.savechatlog()
+        if touched:
+            self.savechatlog()
 
     def savechatlog(self):
         self.cleanup()
+        print("saving chatlog");
         db = connect_db()
-        #   print(len(self.chatlog)) DEBUG
-        #   print(self.newestlineindb) DEBUG
         try:
             if self.chatlog[-1][0] - self.newestlineindb > 0:
                 for i in reversed(range(len(self.chatlog))):
@@ -83,7 +86,6 @@ class Chatroom(object):
         def join_spam_remover(seq):
             iterable = iter(seq)
             prev = next(iterable)
-            skip = False
             for element in iterable:
                 if ":" not in element:
                     if ("joined the room!" in element[1] or "left the room!" in element[1]) and \
@@ -108,7 +110,6 @@ class Chatroom(object):
         for u in presentusers.keys():
             if presentusers[u] and (u not in [x[0] for x in self.users]):
                 self.addline(u + ' left the room!', True)
-                # print("terminated trailing:", u, "from ", self.name) debug
 
     def userjoin(self, user):
         if self.mailbox and not (re.match(r'(.*)_.*', self.name).group(1) == session.get('user')):
@@ -117,17 +118,15 @@ class Chatroom(object):
             if u[0] == user:
                 u[1] += 1
                 self.addline(user + ' joined the room!')
-                self.addline("debug: "+str(u))
                 return False
         self.users.append([user, 0])
         self.addline(user + ' joined the room!')
-        self.addline("firstjoin: "+str(self.users[-1]))
         return True
 
     def userleave(self, user):
         actuallyleft = False
         try:
-            for u in self.users:  # TODO: find out  why multiple leaves are possible
+            for u in self.users:
                 if u[0] == user:
                     print(u, "is leaving room", self.name)
                     u[1] -= 1
@@ -135,7 +134,6 @@ class Chatroom(object):
                         if u[1]<-1:
                             print(u)
                         self.addline(user + ' left the room!')
-                        self.addline("debug:"+str(u))
                         actuallyleft = True
                         self.users = [x for x in self.users if x[0] != user]
                         break

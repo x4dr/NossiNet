@@ -9,7 +9,7 @@ from NossiSite import app
 from NossiSite.helpers import g, session, generate_token, request, redirect, url_for, \
     render_template, flash, connect_db, generate_password_hash, init_db, abort
 from NossiPack.Character import Character
-from NossiPack.krypta import gendicedata, sumdict
+# from NossiPack.krypta import  sumdict, gendicedata
 
 token = {}
 
@@ -50,7 +50,7 @@ def setfromdalines():
         flash("Problem with Sheetnumber!")
     return redirect(url_for('charsheet'))
 
-
+'''
 @app.route('/dice/<a>,<b>')
 def dice(a, b):
     db = connect_db()
@@ -97,7 +97,7 @@ def dice(a, b):
         for i in range(-maximum, maximum + 1):
             result += str(i) + " = " + str(results.get(i, "<b>0</b>")) + "%<br>"
         return result
-
+'''
 
 @app.route('/kudosloan/', methods=['GET', 'POST'])
 def kudosloan():
