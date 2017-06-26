@@ -1,10 +1,11 @@
-# from random import Random
-# import urllib
+from random import Random
+import urllib
 import re
 import collections
 import time
 import pickle
-from urllib import request
+import urllib
+
 
 __author__ = "maric"
 
@@ -625,6 +626,8 @@ class Character(object):
 
     @staticmethod
     def zero_abilities():
+        with open('./NossiSite/locales/EN.json') as json_data:
+            return json.load(json_data)['abilities']
         abilities = {'Talents': {}, 'Skills': {}, 'Knowledges': {}}
         abilities['Talents']['Alertness'] = 0
         abilities['Skills']['AnimalKen'] = 0
@@ -700,23 +703,22 @@ class Character(object):
         tmp.legacy_convert()
         return tmp
 
-    def makechar(self, min, cap, prioa, priob, prioc):  # TODO: rework
-        #response = urllib.request.urlopen(
-        #   "http://www.behindthename.com/random/random.php?number=2&gender=both&surname=&randomsurname=yes&all=no&"
-        #   "usage_ger=1&usage_myth=1&usage_anci=1&usage_bibl=1&usage_hist=1&usage_lite=1&usage_theo=1&usage_goth=1&"
-        #   "usage_fntsy=1")
-        char = Character()
+    def makerandom(self, min, cap, prioa, priob, prioc):  # TODO: rework
+        response = urllib.request.urlopen(
+           "http://www.behindthename.com/random/random.php?number=2&gender=both&surname=&randomsurname=yes&all=no&"
+           "usage_ger=1&usage_myth=1&usage_anci=1&usage_bibl=1&usage_hist=1&usage_lite=1&usage_theo=1&usage_goth=1&"
+           "usage_fntsy=1")
         prio = [prioa, priob, prioc]
-        #Random().shuffle(prio)
+        Random().shuffle(prio)
 
         names = re.compile('<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......')
-        a = str#(response.read())
+        a = str(response.read())
 
         result = names.search(a)
         try:
-           char.name = (result.group(1) + ", " + result.group(2) + ", " + result.group(3))
+            char.name = (result.group(1) + ", " + result.group(2) + ", " + result.group(3))
         except:
-           char.name = "think for yourself"
+            char.name = "choose a name!"
         return char
 
 

@@ -16,6 +16,9 @@ userlist = {}
 roomlist = [Chatroom('lobby')]
 namedStrings = {}
 
+with open('./NossiSite/locales/EN.json') as json_data:
+    namedStrings = json.load(json_data)['namedStrings']
+
 
 def statusupdate():
     if session['chatmode'] == 'menu':
@@ -35,8 +38,7 @@ def echo(message, sep=": ", err=False):
         emit('Message', {'data': session['user'] + sep + message})
 
 
-with open('strings.json') as json_data:
-    namedStrings = json.load(json_data)['namedStrings']
+
 
 
 def post(message, sep=": "):
@@ -122,7 +124,6 @@ def defines(message="=", user=None):
         echo("Definitions reset.")
     elif message[:7] == "=delete":
         try:
-            test = workdef[message[8:]]
             workdef.pop(message[8:])
             echo("Entry " + message[8:] + " cleared.")
         except:
@@ -141,8 +142,8 @@ def defines(message="=", user=None):
         echo("Presets setup.")
     elif message[0] != "=":  # actually saving a new define
         parts = message.split("=")
-        workdef[parts[0].strip()] = parts[1].strip()  # stripping to get whitespace out of the equation
-        echo("added define for %s=%s" % (parts[0], parts[1]))
+        workdef[parts[0].strip()] = "".join(parts[1:]).strip()  # stripping to get whitespace out of the equation
+        echo("defined %s as %s" % (parts[0], workdef[parts[0].strip()]))
     elif ("=" in message) and (message != "="):
         echo("No valid config command: " + message)
     u.defines = workdef

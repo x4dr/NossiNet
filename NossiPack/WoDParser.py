@@ -1,4 +1,6 @@
-import re, time, json
+import json
+import re
+import time
 
 from NossiPack import *
 
@@ -9,7 +11,6 @@ class WoDParser(object):
         self.triggers = []
         self.defines = defines
         self.altrolls = []  # if the last roll isnt interesting
-
 
     def parseadd(self, message, trace=False):
         message = message.replace("#", " ")
@@ -302,7 +303,7 @@ class WoDParser(object):
             self.dbg += str(amount) + " " + str(dice) + " sided dice against " + str(diff) + ", " + onebehaviour + \
                         " ones" + explodebehaviour + ". \n"
 
-    def diceparser(self, message, rec=False, testing=False):
+    def diceparser(self, message, rec=False, testing=False): # entry
         t0 = time.time()
         message = self.pretrigger(message)
         message = self.preparse(message)
@@ -334,6 +335,7 @@ class WoDParser(object):
 
     @staticmethod
     def shorthand():
-        with open('strings.json') as json_data:
+
+        with open('./NossiSite/locales/EN.json') as json_data:
             return json.load(json_data)['shorthand']
 
