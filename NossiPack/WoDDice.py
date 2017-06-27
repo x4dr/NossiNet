@@ -3,11 +3,21 @@ import random
 
 class WoDDice(object):
     def __init__(self, maxroll=10, difficulty=6, subone=1, explodeon=0, minroll=1):
-        self.min = minroll
-        self.max = maxroll
-        self.difficulty = difficulty
-        self.subone = subone
-        self.explodeon = explodeon
+        if isinstance(maxroll, dict):
+            info = maxroll
+            self.min = info.get('additivebonus', 1)  # unlikely to get implemented
+            print(info.get('sidedness'))
+            self.max = int(info.get('sidedness')) + self.min - 1
+            self.difficulty = info.get('difficulty', 1)
+            self.subone = info.get('onebehaviour', 1)
+            self.returnfun = info.get('return')
+            self.explodeon = self.max + 1 - info.get('explode', 0)
+        else:
+            self.min = minroll
+            self.max = maxroll
+            self.difficulty = difficulty  # 0 means sum; -1 means highest
+            self.subone = subone
+            self.explodeon = explodeon
         self.r = []
         self.log = ""
         self.dbg = ""
@@ -61,11 +71,8 @@ class WoDDice(object):
             return 0 - antisucc
 
     def roll_nv(self):  # non-verbose, returns int
-        if self.difficulty:
-            return self.botchformat(self.succ, self.antisucc) if self.difficulty > 0 else max(self.r)  # difficulty -1
-            # means get max
-        else:
-            return sum(self.r)
+            return self.botchformat(self.succ, self.antisucc)
+
 
     def roll_v(self):  # verbose
         log = ""
@@ -99,10 +106,13 @@ class WoDDice(object):
             log += str(self.r) + " + "
         log = log[:-2] + "= " + str(self.roll_sum())
 
-    def result(self, amount):
-        self.roll_next(amount)
-        return self.roll_nv()
+    def result(self):
+
+        return self.roll_nv() if not self.returnfun else\
+            max(self.r) if self.returnfun == "max" else\
+            min(self.r) if self.returnfun == "min" else \
+            sum(self.r) if self.returnfun == "sum" else None
 
     def roll(self, amount):
         self.roll_next(amount)
-        return self.roll_v()
+        return self.result()
