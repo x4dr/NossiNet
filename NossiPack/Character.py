@@ -390,14 +390,17 @@ class Character(object):
                 continue
             if field in self.abilities['Skills'].keys():
                 if value is not None:
+                    print("Skill setting", field, "to", value)
                     self.abilities['Skills'][field] = intdef(value)
                 continue
             if field in self.abilities['Talents'].keys():
                 if value is not None:
+                    print("Talents setting", field, "to", value)
                     self.abilities['Talents'][field] = intdef(value)
                 continue
             if field in self.abilities['Knowledges'].keys():
                 if value is not None:
+                    print("Knowledges setting", field, "to", value)
                     self.abilities['Knowledges'][field] = intdef(value)
                 continue
             if "background_name_" in field:

@@ -66,6 +66,7 @@ class User(object):
         return check_password_hash(self.pw_hash, password)
 
     def update_sheet(self, form):
+        print("logging character change\n", form)
         if "newsheet" in form.keys():
             self.oldsheets.append(Character())
             self.oldsheets[-1].setfromform(form)
