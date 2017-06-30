@@ -18,6 +18,7 @@ class WoDDice(object):
             self.difficulty = difficulty  # 0 means sum; -1 means highest
             self.subone = subone
             self.explodeon = explodeon
+            self.returnfun = ""
         self.r = []
         self.log = ""
         self.dbg = ""
