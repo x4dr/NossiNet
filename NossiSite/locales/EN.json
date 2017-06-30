@@ -3,13 +3,13 @@
       "MOTD" : "Hello and Welcome to the NosferatuNetwork Chatserver.\n",
       "generalHelp" : [
           "\nmessages prefixed with # are passed to the diceroller",
-          "\nit expects a number following # and then options ",
+          "\nit expects a number following # and then options",
           "\nfollowed by numbers again. Options are",
           "\ndXX : sets sidedness of dice to XX. (standard: 10)",
           "\neXX : sets difficulty to XX and discards 1s",
           "\nfXX : sets difficulty to XX and subtracts 1s (standard: 6)",
           "\n!   : sets explosions, use multiple for cumulative effect",
-          "\nExample: #5d4f2 !! will roll 5 4 sided die, rerolled on ",
+          "\nExample: #5d4f2 !! will roll 5 4 sided die, rerolled on",
           "\n         a 3 or 4 and counting 2 and up, subtracting ones.",
           "\nExample: #3 will roll 3 10 sided dice, counting 6 and up, subtracting ones",
           "\n#XX : load define named XX",
@@ -43,9 +43,9 @@
           "\n#         : Diceroller. Type #? for more info"
       ],
       "checkHelp" : [
-          "Click \"Check\" down below to check if this sheet ",
+          "Click \"Check\" down below to check if this sheet",
           "is a valid starting character (If your history is empty), ",
-          "or calculate the difference in XP to the last sheet in ",
+          "or calculate the difference in XP to the last sheet in",
           "your history."
       ],
       "startLog" : "\n#####START###LOG#####\n",
@@ -62,7 +62,7 @@
       "cmdNotFound" : "Unfortunately, this command has not been found.",
       "roomlistErr" : "There was en error with the roomlist in the session...",
       "notLoggedIn" : "You are not logged in.",
-      "notSubscribedTo" : "Not subscribed to ",
+      "notSubscribedTo" : "Not subscribed to",
       "noLogRoom" : "No room to get log from!",
       "noListRoom" : "No room to get list from!",
       "foo" : "foo"
@@ -142,28 +142,28 @@
         "Science": 0
       },
       "Skills":{
-        "AnimalKen ": 0,
-        "Crafts ": 0,
-        "Drive ": 0,
-        "Etiquette ": 0,
-        "Firearms ": 0,
-        "Melee ": 0,
-        "Performance ": 0,
-        "Security ": 0,
-        "Stealth ": 0,
-        "Survival ": 0
+        "AnimalKen": 0,
+        "Crafts": 0,
+        "Drive": 0,
+        "Etiquette": 0,
+        "Firearms": 0,
+        "Melee": 0,
+        "Performance": 0,
+        "Security": 0,
+        "Stealth": 0,
+        "Survival": 0
       },
       "Talents": {
-        "Alertness ": 0,
-        "Athletics ": 0,
-        "Brawl ": 0,
-        "Dodge ": 0,
-        "Empathy ": 0,
-        "Expression ": 0,
-        "Intimidation ": 0,
-        "Leadership ": 0,
-        "Streetwise ": 0,
-        "Subterfuge ": 0
+        "Alertness": 0,
+        "Athletics": 0,
+        "Brawl": 0,
+        "Dodge": 0,
+        "Empathy": 0,
+        "Expression": 0,
+        "Intimidation": 0,
+        "Leadership": 0,
+        "Streetwise": 0,
+        "Subterfuge": 0
     }
   }
 

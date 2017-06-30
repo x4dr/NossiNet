@@ -393,9 +393,6 @@ class Character(object):
                     print("Skill setting", field, "to", value)
                     self.abilities['Skills'][field] = intdef(value)
                 continue
-            # DEBUG
-            print(self.abilities['Talents'])
-            print(self.abilities['Skills'])
             if field in self.abilities['Talents'].keys():
                 if value is not None:
                     print("Talents setting", field, "to", value)
