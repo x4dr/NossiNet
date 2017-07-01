@@ -19,6 +19,7 @@ class WoDDice(object):
             self.subone = subone
             self.explodeon = explodeon
             self.returnfun = ""
+
         self.r = []
         self.log = ""
         self.dbg = ""
