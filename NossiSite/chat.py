@@ -336,9 +336,11 @@ def receive(message):
 
 @socketio.on('connect', namespace='/character')
 def char_connect():
+
     if not session.get('user', False):
         emit('comments', {'prefix': '', 'data': namedStrings['notLoggedIn']})
         return False
+    print("charsheet connecting")
     emit('comments', {'data': ''.join(namedStrings['checkHelp'])})
     join_room(session.get("user", "?") + "_dotupdates")
     update_dots()
@@ -346,7 +348,7 @@ def char_connect():
 
 @socketio.on('ClientServerEvent', namespace='/character')
 def receive_message(message):
-    sorted(message)
+    print("characterServerevent", sorted(message))
     update_dots()
 
 
@@ -368,6 +370,7 @@ def update_dots():
 
 @socketio.on('NoteDots', namespace='/character')
 def note_dots(message):
+    print("noting dots:", message['data'])
     data = message['data'].split("&")
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user', "?"))
