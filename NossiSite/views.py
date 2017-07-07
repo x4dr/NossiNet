@@ -14,7 +14,7 @@ from NossiPack.Character import Character
 
 token = {}
 
-bleach.sanitizer.ALLOWED_TAGS += ["br", "u", "table", "th", "tr", "td", "tbody", "thead", "tfoot"]
+bleach.sanitizer.ALLOWED_TAGS += ["br", "u", "p", "table", "th", "tr", "td", "tbody", "thead", "tfoot"]
 
 init_db()
 
