@@ -19,15 +19,25 @@
 })
 </script>
 {% endblock %}
+{%- block metanav -%}
+<form action="{{ url_for('update_filter') }}" method=post class=add-entry style="display:inline">
+    <input type="hidden" name="token" value="{{ token }}">
+    <input class=leet type=text size=30 name=tags value="default">
+    <input class=leeet type=submit value=search>
+</form>&nbsp
+{%- endblock -%}
 {% block body %}
-  {% if session.logged_in %}
+  {% if session.logged_in and edit is defined%}
     <form action="{{ url_for('add_entry') }}" method=post class=add-entry>
         <input type="hidden" name="token" value="{{ token }}">
+        <input type="hidden" name="id" value="new">
         <dl>
-            <dt>Title:
-            <dd><input class=leet type=text size=30 name=title>
-            <dt>Text:
-            <dd><textarea class=leet name=text rows=5 cols=40></textarea>
+            <dt>Title:</dt>
+            <dd><input class=leet type=text size=30 name=title></dd>
+            <dt>Text:</dt>
+            <dd><textarea class=leet name=text rows=5 cols=40></textarea></dd>
+            <dt>Tags:</dt>
+            <dd><input class=leet type=text size=30 name=tags value="default"></dd>
             <dd><input class=leeet type=submit value=Share>
       </dl>
     </form>
@@ -40,18 +50,23 @@
           <br> {#dangerous entry.text has to be cleaned before being sent here#}
           {%- if session.logged_in -%}
               {%- if not entry.plusoned -%}
-                  <form action="{{ url_for('plusone',ident=entry.id) }}" , method="post" , class="add-entry">
+                  <form action="{{ url_for('plusone',ident=entry.id) }}" method="post" class="add-entry">
                       <input class=leeet type=submit value="+1">
                       <input type="hidden" name="token" value={{ token }}>
                   </form>
               {%- endif -%}
+              {% if edit is defined %}
+              <form action="{{ url_for('editentries',x=entry.id) }}" method="get" class="add-entry">
+                  <input class=leeet type=submit value="edit">
+                  <input type="hidden" name="token" value={{ token }}>
+              </form>
+                  {% else %}
+                  edit not defined
+              {% endif %}
+
+
               {%- if entry.own -%}
-               <form action="{{ url_for('delete_entry',ident=entry.id) }}" , method="post" , class="add-entry">
-                      <input class=leeet type=submit value="delete">
-                      <input type="hidden" name="token" value={{ token }}>
-                  </form>
               {%- endif -%}
-              <br>
           {%- endif -%}</div> </li>
   {% else %}
       <li><em>Unbelievable.  No entries here so far</em></li>

@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+{% block head %}
+    {% for headstate in heads %}
+        {{ headstate|safe }}
+    {% else %}
+    {% endfor %}
+{% endblock %}
+{% block body %}
+  {% if session.logged_in %}
+    <form action="{{ url_for('editentries', x=entry.id) }}" method=post class=edit-entry>
+        <input type="hidden" name="token" value="{{ token }}">
+        <input type="hidden" name="id" value="{{ entry.id }}">
+        <dl>
+            <dt>Title:</dt>
+            <dd><input class=leet type=text size=30 name=title value="{{ entry.title }}"></dd>
+            <dt>Text:</dt>
+            <dd><textarea class=leet name=text rows=5 cols=40>{{ entry.text }}</textarea></dd>
+            <dt>Tags:</dt>
+            <dd><input class=leet type=text size=30 name=tags value="{{ entry.tags }}"></dd>
+            <dd><input class=leeet type=submit value=Share></dd>
+      </dl>
+    </form>
+    <form action="{{ url_for('delete_entry',ident=entry.id) }}"  method="post" class="edit-entry">
+         <input class=leeet type=submit value="toggle visibility">
+         <input type="hidden" name="token" value={{ token }}>
+    </form>
+   <!-- <form action="{{ url_for('delete_entry',ident=entry.id, final="yes") }}"  method="post" class="edit-entry">
+         <input class=leeet type=submit value="delete forever.">
+         <input type="hidden" name="token" value={{ token }}>
+    </form>-->
+  {% endif %}
+
+{% endblock %}

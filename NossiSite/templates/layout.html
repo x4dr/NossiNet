@@ -29,6 +29,8 @@
             <a class=metanav href="{{ url_for('login') }}">log in</a>
             <a class=metanav href="{{ url_for('register') }}">register</a>
         {% else %}
+            {%- block metanav -%}
+            {%- endblock -%}
             <a class=metanav href="https://www.google.com/maps/d/viewer?mid=1TH6vryHyVxv_xFjFJDXgXQegZO4" secret="{{ url_for('berlinmap') }}">MAP</a>  &nbsp
             <a class=metanav href="{{ url_for('charsheet') }}">SHEET</a>  &nbsp
             <a class=metanav href="{{ url_for('chatsite') }}">CHAT</a>  &nbsp

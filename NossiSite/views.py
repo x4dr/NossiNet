@@ -9,6 +9,7 @@ from NossiSite import app
 from NossiSite.helpers import g, session, generate_token, request, redirect, url_for, \
     render_template, flash, connect_db, generate_password_hash, init_db, abort
 from NossiPack.Character import Character
+
 # from NossiPack.krypta import  sumdict, gendicedata
 
 token = {}
@@ -16,21 +17,6 @@ token = {}
 bleach.sanitizer.ALLOWED_TAGS += ["br", "u", "table", "th", "tr", "td", "tbody", "thead", "tfoot"]
 
 init_db()
-
-
-@app.route('/kudosloan/<user>', methods=['POST'])
-def loankudos(user):
-    if checktoken():
-        if not session.get('logged_in'):
-            flash('You are not logged in!')
-            return redirect(url_for('login'))
-        ul = Userlist()
-        loaner = ul.loaduserbyname(session.get('user'))
-        loanee = ul.loaduserbyname(user)
-        loanee.add_kudosoffer(loaner.username)
-        ul.saveuserlist()
-        flash("Extended offer for vouching")
-    return redirect(url_for('kudosloan'))
 
 
 @app.route('/setfromdalines/')
@@ -50,104 +36,89 @@ def setfromdalines():
         flash("Problem with Sheetnumber!")
     return redirect(url_for('charsheet'))
 
-'''
-@app.route('/dice/<a>,<b>')
-def dice(a, b):
-    db = connect_db()
-    if a == b == 1 == "0":  # currently disabled
-        print("generating")
-        sizes = []
-        for i in range(1, 16):
-            sizes.append([])
-            for j in range(1, 11):
-                gendicedata(i, j, 2)
-                try:
-                    sizes[-1].append(
-                        sum([int(x) for x in
-                             db.execute("SELECT data "
-                                        "FROM dice "
-                                        "WHERE amount = ? AND difficulty = ? ",
-                                        (i, j)
-                                        ).fetchall()[0][0].split(" ") if x]))
-                except Exception:
-                    sizes[-1].append(0)
-        sizes = [[s for s in sublist if s] for sublist in sizes]
-        for e in sizes:
-            print(e)
-        minval, mindex = min((val, idx) for (idx, val) in enumerate([x for x in sizes if x != 0]))
-        print(mindex, minval)
-        return "done."
-    else:
-        #   gendicedata(int(a), int(b), 2)
-        rows = db.execute("SELECT data "
-                          "FROM dice "
-                          "WHERE amount = ? AND difficulty = ? ",
-                          (a, b)
-                          ).fetchall()
-        results = {}
-        x = 0
-        for e in [a for a in rows[0][0].split(" ") if a != '']:
-            results[int((-1) ** x * math.ceil(x / 2))] = e
-            x += 1
-        maximum = max(results.keys())
-        total = sumdict(results)
-        for e in results.keys():
-            results[e] = 100 * int(results[e]) / total  # percent
-        result = ""
-        for i in range(-maximum, maximum + 1):
-            result += str(i) + " = " + str(results.get(i, "<b>0</b>")) + "%<br>"
-        return result
-'''
-
-@app.route('/kudosloan/', methods=['GET', 'POST'])
-def kudosloan():
-    if not session.get('logged_in'):
-        flash('You are not logged in!')
-        return redirect(url_for('login'))
-    ul = Userlist()
-    u = ul.loaduserbyname(session.get('user'))
-    entries = u.get_kudosdebts()
-    if request.method == 'POST':
-        if checktoken():
-            token[session['user']].pop()
-            entry = None
-            for e in entries:
-                if e.get('id') == request.form['id']:
-                    entry = e
-            if entry is not None:
-                if entry.get('state') == 'unaccepted':
-                    entry['state'] = 'accepted'
-                    n = ul.loaduserbyname(entry.get('loaner'))
-                    amount = int(n.kudos * 0.1)
-                    n.kudos += -amount * 2
-                    u.kudos += amount
-                    entry['original'] = str(amount)
-                    entry['remaining'] = str(amount * 4)
-    u.set_kudosdebts(entries)
-    ul.saveuserlist()
-    for e in entries:
-        e['currentkudos'] = ul.loaduserbyname(e.get('loaner')).kudos
-
-    gentoken()
-    return render_template('loankudos.html', entries=entries)
-
 
 @app.route('/')
 def show_entries():
-    cur = g.db.execute('SELECT author, title, text, plusOned, id FROM entries ORDER BY id DESC')
-    entries = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4]) for row in cur.fetchall()]
-    entries = [e for e in entries if e.get('author', "none")[0].isupper()]
+    cur = g.db.execute('SELECT author, title, text, plusOned, id, tags FROM entries ORDER BY id DESC')
+    entries = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4], tags=row[5]) for row in
+               cur.fetchall()]
     for e in entries:
-        if e.get('plusoned') is not None:
+        skip = True
+        if session.get("logged_in") and session.get("tags"):
+            for t in session.get("tags").split(" "):
+                if t in e.get("tags", "").split(" "):
+                    skip = False
+        else:
+            if "default" in (e.get("tags") if e.get("tags") else "").split(" "):
+                print("displaying:", e.get("title"))
+                skip = False
+        if skip:
+            e["author"] = e.get("author").lower()  # "delete" nonmatching tags
+        if e.get('plusoned'):
             esplit = e.get('plusoned').split(' ')
             e['plusoned'] = ((session.get('user') in esplit) or (session.get('user') == e.get('author')))
         else:
             e['plusoned'] = (session.get('user') == e.get('author'))
         e['text'] = bleach.clean(e['text'].replace("\n", "<br>"))
         e['own'] = (session.get('logged_in')) and (session.get('user') == e['author'])
+    entries = [e for e in entries if e.get('author', "none")[0].isupper()]  # dont send out lowercase authors (deleted)
     gentoken()
 
     return render_template('show_entries.html', entries=entries)
+
+
+@app.route('/edit/entry/<x>', methods=["GET", "POST"])
+def editentries(x):
+    if not session.get('logged_in'):
+        flash('You are not logged in!')
+        return redirect(url_for('login'))
+    if request.method == "GET":
+        if x == "all":
+            cur = g.db.execute('SELECT author, title, text, plusOned, id, tags '
+                               'FROM entries WHERE UPPER(author) LIKE UPPER(?)', [session.get('user')])
+            entries = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4], tags=row[5]) for row
+                       in
+                       cur.fetchall()]
+            gentoken()
+            return render_template('show_entries.html', entries=entries, edit=True)
+        try:
+            x = int(x)
+            cur = g.db.execute('SELECT author, title, text, plusOned, id, tags '
+                               'FROM entries WHERE id == ?', [x])
+            entry = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4], tags=row[5]) for row in
+                     cur.fetchall()][0]
+            if (session.get("user") == entry['author'].upper) or session.get('admin'):
+                return render_template('edit_entry.html', entry=entry)
+            else:
+                flash("not authorized to edit id" + str(x))
+
+        except:
+            flash("id " + str(x) + " not found.")
+        gentoken()
+        return redirect(url_for('editentries', x="all"))
+    if request.method == "POST":
+        print(session.get('user', '?'), "editing id " + request.form['id'], request.form)
+        if request.form["id"] == "new":
+            add_entry()
+        if checktoken():
+            cur = g.db.execute('SELECT author, title, text, plusOned, id, tags '
+                               'FROM entries WHERE id == ?', [int(request.form['id'])])
+            entry = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4], tags=row[5]) for row in
+                     cur.fetchall()][0]
+            if (session.get('user') == entry['author'].upper) or session.get('admin'):
+                g.db.execute('UPDATE entries SET title=?, text=?, tags=? WHERE id == ?',
+                             [request.form['title'], request.form['text'], request.form['tags'], request.form['id']])
+                g.db.commit()
+                flash('entry was successfully edited')
+        gentoken()
+        return redirect(url_for('show_entries'))
+
+
+@app.route('/update_filter/', methods=["POST"])
+def update_filter():
+    if checktoken() and session.get('logged_in'):
+        session['tags'] = request.form['tags']
+    return redirect(url_for("show_entries"))
 
 
 @app.route('/charactersheet/')
@@ -217,7 +188,7 @@ def berlinmap():
 
 @app.route('/berlinmap/data.dat')
 def mapdata():
-    print("genertaing mapdata", end= " ")
+    print("genertaing mapdata", end=" ")
     time0 = time.time()
     cur = g.db.execute('SELECT name, owner,tags,data FROM property')
     plzs = {}
@@ -230,7 +201,7 @@ def mapdata():
                 plzs[plz]['tags'] += " ".join([x for x in row[1:] if x])
                 if row[1]:
                     plzs[plz]['faction'] = row[1]
-    print("took:",time.time()-time0,"seconds.")
+    print("took:", time.time() - time0, "seconds.")
     return json.dumps(plzs)
 
 
@@ -391,8 +362,8 @@ def add_entry():
         return redirect(url_for('login'))
     print(session.get('user', '?'), "adding", request.form)
     if checktoken():
-        g.db.execute('INSERT INTO entries (author, title, text) VALUES (?, ?, ?)',
-                     [session.get('user'), request.form['title'], request.form['text']])
+        g.db.execute('INSERT INTO entries (author, title, text, tags) VALUES (?, ?, ?, ?)',
+                     [session.get('user'), request.form['title'], request.form['text'], request.form['tags']])
         g.db.commit()
         flash('New entry was successfully posted')
     gentoken()

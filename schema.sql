@@ -3,7 +3,8 @@ CREATE TABLE IF NOT EXISTS entries (
   id     INTEGER PRIMARY KEY AUTOINCREMENT,
   author TEXT NOT NULL,
   title  TEXT NOT NULL,
-  text     TEXT NOT NULL,
+  text   TEXT NOT NULL,
+  tags   TEXT,
   plusoned TEXT
 );
 --DROP TABLE messages;
