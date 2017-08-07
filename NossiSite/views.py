@@ -188,7 +188,7 @@ def berlinmap():
 
 @app.route('/berlinmap/data.dat')
 def mapdata():
-    print("genertaing mapdata", end=" ")
+    print("generating mapdata", end=" ")
     time0 = time.time()
     cur = g.db.execute('SELECT name, owner,tags,data FROM property')
     plzs = {}

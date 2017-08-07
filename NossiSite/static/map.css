@@ -8,6 +8,15 @@
     fill : #4466dd !important
 }
 
+.Test  {
+    fill : #ff2211 !important
+}
+
+
+.Test:hover  {
+    fill : #ff6644 !important
+}
+
 .plz:hover {
     fill : #ff1111
 }
