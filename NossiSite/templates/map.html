@@ -3,6 +3,7 @@
     <link rel="stylesheet" type=text/css  href="/static/map.css">
     <script type="text/javascript" src="/static/svg-pan-zoom.min.js"></script>
     <script>
+        var colours = ["#332628", "#cc999e", "#ff001a", "#591631", "#bf004d", "#ff409f", "#594353", "#a6538d", "#331a30", "#f23de0", "#f2bfff", "#4c1659", "#8d29a6", "#8c40ff", "#3900bf", "#9980ff", "#8a86b3", "#0a0066", "#333366", "#b6cef2", "#001433", "#0047b3", "#23588c", "#398fe6", "#1a4f66", "#00a3cc", "#99c7cc", "#006666", "#008080", "#009999", "#00b3b3", "#00d9d9", "#00ff99", "#269960", "#26332b", "#ace6c3", "#0d3318", "#455943", "#67d936", "#397300", "#e6f2b6", "#bdcc33", "#99994d", "#403920", "#ffb300", "#f2c279", "#7f5920", "#a65300", "#ff6600", "#ffd2bf", "#b27459", "#661f00", "#cc5233", "#400600", "#8c4646", "#ff8080"]
         function plzIn() {
 
         }
@@ -122,6 +123,7 @@
                             '\nTags: ' + mapdata[name]['tags'] +
                             '\nData: ' + mapdata[name]['data'] );
                         $(plz).attr("tags", mapdata[name]['tags'] );
+                        $(plz).addClass(mapdata[name]['owner']);
                     } else {
                         node = document.createTextNode('PLZ: ' + name +
                             '\nOwner: Garou' +
@@ -145,7 +147,7 @@
              svgPanZoom("#map", {
                 zoomEnabled: true
                 , panEnabled: true
-                , controlIconsEnabled: false
+                , controlIconsEnabled: true
                 , dblClickZoomEnabled: true
                 , mouseWheelZoomEnabled: true
                 , preventMouseEventsDefault: false
