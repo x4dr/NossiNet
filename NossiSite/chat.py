@@ -1,4 +1,4 @@
-from NossiPack import WoDData, WoDParser,  Userlist, Character
+from NossiPack import WoDData, WoDParser, Userlist, Character
 from NossiPack.Chatrooms import Chatroom
 import time
 import json
@@ -44,13 +44,12 @@ def decider(message):
             return
         if not (("?" in message) or ("=" in message)):
             try:
-                post(message, "'s ROLL: ")
                 parser = WoDParser(defines())
-                roll = parser.diceparser(message)
+                roll = parser.make_roll(message[1:])
                 trigger(parser.triggers)
                 update_dots()
                 print(roll.roll_v())
-                printroll(roll, parser)
+                printroll(roll, parser, message=message)
 
             except Exception as inst:
                 echo(str(inst.args[0]), "ROLLING ERROR: ", err=True)
@@ -58,7 +57,7 @@ def decider(message):
         elif "?" in message:
             echo(message, "'s TEST: ")
             parser = WoDParser(defines())
-            roll = parser.diceparser(message)
+            roll = parser.make_roll(message)
             echo(parser.dbg, "'s TEST: ")
             printroll(roll, testing=True)
         elif "=" in message:
@@ -139,7 +138,8 @@ def defines(message="=", user=None):
     return workdef
 
 
-def printroll(roll, parser=None, testing=False):
+def printroll(roll, parser=None, testing=False, message=""):
+    print("calling printroll with:", roll, parser)
     if not roll:
         return
     if not roll.rolled:
@@ -148,24 +148,26 @@ def printroll(roll, parser=None, testing=False):
         deliver = echo
     else:
         deliver = post
+    deliver(message, "'S ROLL: ")
     if parser:
         if "§supress_" not in parser.triggers:
-            deliver(parser.dbg[:-1], "'s ROLL: \n")
-            for r in parser.altrolls:
-                printroll(r, testing=testing)
+            for r in parser.altrolls[:-1]:
+                deliver(r.roll_v(), "'S SUBROLL " + r.name + ": ")
+
     if roll.difficulty == 0 and roll.max == 1:
         deliver(str(roll.roll_nv()) + ".", " IS ADDING UP TO: ")
         return
 
     if roll.explodeon <= roll.max:
-        deliver("", " IS ROLLING, exploding on " + str(roll.explodeon) + "+: \n")
+        deliver("", " ROLLS, exploding on " + str(roll.explodeon) + "+: \n")
         for i in roll.roll_vv().split("\n"):
             deliver(i, " ROLL: ")
             time.sleep(0.5)
     elif len(roll.r) > 50:
-        deliver(str(roll.roll_nv()), " IS ROLLING: [" + str(len(roll.r)) + " DICEROLLS] ==> ")
+        deliver(str(roll.roll_nv()), " ROLLS: [" + str(len(roll.r)) + " DICEROLLS] ==> ")
     else:
-        deliver(roll.roll_v(), " IS ROLLING: ")
+        print("delivering normally:", roll.roll_v())
+        deliver(roll.roll_v(), " ROLLS: ")
 
 
 def menucmds(message):
@@ -336,7 +338,6 @@ def receive(message):
 
 @socketio.on('connect', namespace='/character')
 def char_connect():
-
     if not session.get('user', False):
         emit('comments', {'prefix': '', 'data': namedStrings['notLoggedIn']})
         return False

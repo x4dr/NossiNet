@@ -139,7 +139,7 @@ class WoDParser(object):
                 trigger = self.fullparenthesis(trigger)
                 othertrigger = self.fullparenthesis(message[message.find(trigger) + len(trigger):])
                 roll = self.diceparser(cond)
-                res = roll.roll_nv()
+                res = roll.result
                 self.altrolls.append(roll)
                 self.dbg = self.dbg[:-3] + ", for " + str(res) + " successes. \n"
                 if res > 0:

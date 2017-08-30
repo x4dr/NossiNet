@@ -3,11 +3,9 @@ from NossiPack.WoDParserV2Test import WoDParser, Node
 
 
 class TestWoDParser(TestCase):
-    def test_nv(self):
-        print(None)
 
     def test_extract_diceparams(self):
-        p = WoDParser({}, "")
+        p = WoDParser({})
         self.assertEqual(p.extract_diceparams("3")['amount'], 3)
 
         info = p.extract_diceparams("99d7")
@@ -28,38 +26,56 @@ class TestWoDParser(TestCase):
         self.assertEqual(info['explosion'], 2)
 
     def test_do_roll(self):
-        p = WoDParser({}, "")
+        p = WoDParser({})
+
         self.assertGreaterEqual(p.do_roll("3d10h"), 1)
         self.assertLessEqual(p.do_roll("3d10h"), 10)
-        print(p.altrolls[-1].roll_vv())
-        print(p.do_roll("3d10h"), 0)
+        print("altrolls[-1].roll_vv():\n" + p.altrolls[-1].roll_vv())
+        print("altrolls[-1].roll_v():\n" + p.altrolls[-1].roll_v())
+        print("do_roll:", p.do_roll("3d10h"))
+
+    def test_parenthesis_roll(self):
+        p = WoDParser({})
+        print("parenthesisroll:", p.do_roll("4(3)"))
 
     def test_resolveroll(self):
         node = Node("a d1g")
-        p = WoDParser({"a": "b c d", "b": "e f", "c": "3", "d": "1", "e": "9", "f": "10"}, "")
+        p = WoDParser({"a": "b c d", "b": "e f", "c": "3", "d": "1", "e": "9", "f": "10"})
         p.resolvedefine(node)
-        self.assertEqual(p.resolveroll(node),"23 d1g")
+        self.assertEqual(p.resolveroll(node), "23 d1g")
+
+    def test_altrolls(self):
+        p = WoDParser({})
+        print("parenthesisroll:", p.do_roll("4(3)(9(3))"))
+        for r in p.altrolls[:-1]:
+            print(r.roll_v())
 
     def test_parseadd(self):
-        p = WoDParser({}, "")
-        a = ["d","4","3","9","+","1","g","1","-1"]
+        p = WoDParser({})
+        a = ["d", "4", "3", "9", "+", "1", "g", "1", "-1"]
         self.assertEqual(p.parseadd(a), ['d', '17', 'g', '0'])
 
     def test_pretrigger(self):
-        p = WoDParser({}, "")
-        p.pretrigger("if;param;")
-        self.fail()
+        print("start pretrigger")
+        p = WoDParser({"shoot": "dex fire", "dex": "Dexterity", "fire": "Firearms", "Dexterity": "3", "Firearms": "4",
+                       "gundamage": "4", "sum":"d1g"})
+        print("firstshoot")
+        print(p.do_roll("5 sum"))
+        print("firstshootdone")
+        r =p.do_roll("&param difficulty& &if shoot difficulty then gundamage $ -1 e6 else 0 done& sum ")
+        print(r, "\nend pretrigger")
 
     def test_resolvedefine(self):
-        p = WoDParser({"a": "b c d", "b": "e f", "c": "3", "d": "1", "e": "9", "f": "10"}, "a d1g")
-        p.resolvedefine(p.roll)
-        self.assertEqual([[y.roll for y in x] for x in [list(y.values()) for y in [x.dependent for x in p.roll.dependent.values()]]],
-                         [[['e', 'f'], ['3'], ['1']]])
-
+        p = WoDParser({"a": "b c d", "b": "e f", "c": "3", "d": "1", "e": "9", "f": "10"})
+        r = Node("a d1g")
+        p.resolvedefine(r)
+        self.assertEqual(
+            [[y.roll for y in x] for x in [list(y.values()) for y in [x.dependent for x in r.dependent.values()]]],
+            [[['e', 'f'], ['3'], ['1']]])
 
     def test_fullparenthesis(self):
-        p = WoDParser({}, "")
+        p = WoDParser({})
         self.assertEqual(p.fullparenthesis("f______(-----((^^^^)~~~~~)---)___"), "-----((^^^^)~~~~~)---")
 
         with self.assertRaises(Exception):
-            p.fullparenthesis("_____(######")
+            print(p.fullparenthesis("_____(######"))
