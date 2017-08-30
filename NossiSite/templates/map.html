@@ -1,79 +1,216 @@
 {% extends "layout.html" %}
 {% block head %}
     <link rel="stylesheet" type=text/css  href="/static/map.css">
+    <script type="text/javascript" src="/static/svg-pan-zoom.min.js"></script>
     <script>
+        var colours = ["#332628", "#cc999e", "#ff001a", "#591631", "#bf004d", "#ff409f", "#594353", "#a6538d", "#331a30", "#f23de0", "#f2bfff", "#4c1659", "#8d29a6", "#8c40ff", "#3900bf", "#9980ff", "#8a86b3", "#0a0066", "#333366", "#b6cef2", "#001433", "#0047b3", "#23588c", "#398fe6", "#1a4f66", "#00a3cc", "#99c7cc", "#006666", "#008080", "#009999", "#00b3b3", "#00d9d9", "#00ff99", "#269960", "#26332b", "#ace6c3", "#0d3318", "#455943", "#67d936", "#397300", "#e6f2b6", "#bdcc33", "#99994d", "#403920", "#ffb300", "#f2c279", "#7f5920", "#a65300", "#ff6600", "#ffd2bf", "#b27459", "#661f00", "#cc5233", "#400600", "#8c4646", "#ff8080"]
         function plzIn() {
 
         }
         function plzOut() {
 
         }
+        function report(e) {
+        console.log(this.id)
+        }
+        function preventDefault(e) {
+          e = e || window.event;
+          if (e.preventDefault)
+              e.preventDefault();
+          e.returnValue = false;
+        }
+        var keys = {37: 1, 38: 1, 39: 1, 40: 1};
+        function preventDefaultForScrollKeys(e) {
+            if (keys[e.keyCode]) {
+                preventDefault(e);
+                return false;
+            }
+        }
+        function mapIn(){
+            if (window.addEventListener) // older FF
+                window.addEventListener('DOMMouseScroll', preventDefault, false);
+            window.onwheel = preventDefault; // modern standard
+            window.onmousewheel = document.onmousewheel = preventDefault; // older browsers, IE
+            window.ontouchmove  = preventDefault; // mobile
+            document.onkeydown  = preventDefaultForScrollKeys;
+        }
+        function mapOut(){
+            if (window.removeEventListener)
+                window.removeEventListener('DOMMouseScroll', preventDefault, false);
+            window.onmousewheel = document.onmousewheel = null;
+            window.onwheel = null;
+            window.ontouchmove = null;
+            document.onkeydown = null;
+        }
+        function sleep(ms) {
+            //return new Promise(resolve => setTimeout(resolve, ms));
+        }
 
-    window.onload= function() {
-        $(function() {
-            $("#loadedmap").load("/static/berlinPLZ.svg", function () {
-                document.getElementById("page_complete").style.minWidth="60em";
 
-                var map = document.getElementById("svg");
-                var plzs=$(".plz");
-                plzs.hover(plzIn, plzOut);
+      $(function() {
+        var lastEventListener = null;
+
+        function createNewEmbed(src){
+          var embed = document.createElement('embed');
+          embed.setAttribute('style', 'width: 100%; height: 500px; border:1px solid #00f700;');
+          embed.setAttribute('type', 'image/svg+xml');
+          embed.setAttribute('src', src);
+          document.getElementById('loadedmap').appendChild(embed)
+
+          lastEventListener = function(){
+            svgPanZoom(embed, {
+                  controlIconsEnabled: false
+                , dblClickZoomEnabled: true
+                , preventMouseEventsDefault: false
+                , zoomScaleSensitivity: 0.2
+                , minZoom: 0.8
+                , maxZoom: 50
+                , fit: true
+                , contain: false
+                , center: true
+            });
+          }
+          embed.addEventListener('load', lastEventListener)
+
+          return embed
+        }
+        //var lastEmbedSrc = '/static/plz-test-berlin.svg'
+        //  , lastEmbed = createNewEmbed(lastEmbedSrc)
+        //  ;
+
+
+        function removeEmbed(){
+          // Destroy svgpanzoom
+          svgPanZoom(lastEmbed).destroy()
+          // Remove event listener
+          lastEmbed.removeEventListener('load', lastEventListener)
+          // Null last event listener
+          lastEventListener = null
+          // Remove embed element
+          document.getElementById('loadedmap').removeChild(lastEmbed)
+          // Null reference to embed
+          lastEmbed = null
+        }
+
+
+
+
+        });
+        window.onload=async function(){
+        document.getElementById("page_complete").style.minWidth="60em";
+            var plzs=$(".plz");
+            await sleep(40);
+        var mapsvg = document.getElementById("map");
+        mapsvg.addEventListener("mouseenter", mapIn);
+        mapsvg.addEventListener("mouseleave", mapOut);
+        console.log("adding");
                 $.getJSON("{{ url_for("mapdata") }}","",function(mapdata){
+                var svgDoc = mapsvg.contentDocument;
+                plzs= svgDoc.getElementsByClassName("plz");
+                console.log("plzlength:",plzs.length);
+                for (i=0; i<plzs.length;i++){
 
-                    plzs.each(function () {
-                        var desc = document.createElementNS("http://www.w3.org/2000/svg","title");
-                        var name = this.id.slice(4);
-                        var node = document.createTextNode('PLZ: ' + name +
+                    plz = plzs.item(i);
+                    plz.addEventListener("mouseenter",plzIn);
+                    plz.addEventListener("mouseleave",plzOut);
+                    plz.addEventListener("mousedown",report);
+                    var desc = document.createElementNS("http://www.w3.org/2000/svg","title");
+                    var name = plz.id;
+                    var node = null;
+                    if (name in mapdata) {
+                        node = document.createTextNode('PLZ: ' + name +
                             '\nOwner: ' + mapdata[name]['owner'] +
                             '\nTags: ' + mapdata[name]['tags'] +
                             '\nData: ' + mapdata[name]['data'] );
-                        $(this).attr("tags", mapdata[name]['tags'] );
-                        desc.appendChild(node);
-                        this.appendChild(desc);
-                        var text = document.createElementNS("http://www.w3.org/2000/svg","text");
-                        var plz = document.createTextNode(this.id.slice(4));
-                        text.appendChild(plz);
-                        text.setAttribute("x", this.getBBox().x+this.getBBox().width/2 -15);
-                        text.setAttribute("y", this.getBBox().y+this.getBBox().height/2);
-                        text.setAttribute("style", "fill:#040444");
-                        text.setAttribute("class", "svgtext");
-                        map.appendChild(text);
-                    });
-                });
-                $("#VentrueButton").click(function(){
-                    $("path").each(function () {
-                        if (this.getAttribute("tags")) {
-                            if (this.getAttribute("tags").includes("Ventrue")) {
-                                $(this).addClass("Ventrue");
-                            }
-                        }
-                    });
-                });
-                $("#ClearButton").click(function(){
-                    $("path").each(function () {
-                        if (this.getAttribute("tags")) {
-                            if (this.getAttribute("tags").includes("Ventrue")) {
-                                $(this).removeClass(this.getAttribute("tags"));
-                            }
-                        }
-                    });
-                });
+                        $(plz).attr("tags", mapdata[name]['tags'] );
+                        $(plz).addClass(mapdata[name]['owner']);
+                    } else {
+                        node = document.createTextNode('PLZ: ' + name +
+                            '\nOwner: Garou' +
+                            '\nTags: Unowned' +
+                            '\nData: ' );
+                        $(plz).attr("tags", 'Unowned' );
+                    }
+                    desc.appendChild(node);
+                    plz.appendChild(desc);
+                    var text = document.createElementNS("http://www.w3.org/2000/svg","text");
+                    var plztext = document.createTextNode(plz.id);
+                    text.appendChild(plztext);
 
-            });
+                    text.setAttribute("x", plz.getBBox().x+plz.getBBox().width/2 -15);
+                    text.setAttribute("y", plz.getBBox().y+plz.getBBox().height/2);
+                    text.setAttribute("style", "fill:#040444");
+                    text.setAttribute("class", "svgtext");
+                    plz.appendChild(text);
+
+                }
+             svgPanZoom("#map", {
+                zoomEnabled: true
+                , panEnabled: true
+                , controlIconsEnabled: true
+                , dblClickZoomEnabled: true
+                , mouseWheelZoomEnabled: true
+                , preventMouseEventsDefault: false
+                , zoomScaleSensitivity: 0.2
+                , minZoom: 0.8
+                , maxZoom: 100
+                , fit: true
+                , contain: false
+                , center: true
         });
-    };
 
+            $("#VentrueButton").click(function(){
+                $("path").each(function () {
+                    if (this.getAttribute("tags")) {
+                        if (this.getAttribute("tags").includes("Ventrue")) {
+                            $(this).addClass("Ventrue");
+                        }
+                    }
+                });
+            });
+            $("#TestButton").click(function(){
+            var cmp = ""
+            var testtargets = ['12559','12526','12527'
+]
+                $("path").each(function () {
+                    if (this.getAttribute("tags")) {
+                        cmp = this.getAttribute("id").substring(4)
+                        console.log(cmp)
+                        for (i = 0; i<testtargets.length; i++){
+                            if (testtargets[i] == cmp) {
+                                $(this).addClass("Test");
+                            }
+
+                        }
+                    }
+                });
+            });
+            $("#ClearButton").click(function(){
+
+                $("path").each(function () {
+                    if (this.getAttribute("tags")) {
+                        if (this.getAttribute("tags").includes("Ventrue")) {
+                            $(this).removeClass(this.getAttribute("tags"));
+                        }
+                    }
+                });
+            });
+    });
+
+}
 
 
     </script>
 {% endblock %}
 {% block body %}
     <div id="VentrueButton" >Ventrue</div>
+    <div id="TestButton" >Test</div>
     <div id="ClearButton" >Clear</div>
+    <object id="map" type="image/svg+xml" data="/static/plz-berlin.svg" style="width: 100%; height: 500px; border:1px solid #00f700;">Your browser does not support SVG</object>
     <div id="loadedmap" style="
     left:0;
     right:0;
     width: 100%"></div>
-    <div id="map"></div>
 
 
 
