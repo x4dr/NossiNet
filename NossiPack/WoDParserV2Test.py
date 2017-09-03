@@ -106,6 +106,8 @@ class WoDParser(object):
         print("returned", roll.roll)
         return " ".join(roll.roll)
 
+
+
     @staticmethod
     def parseadd(roll):
         roll = roll[:]  # copy
@@ -157,7 +159,7 @@ class WoDParser(object):
             return message, "", ""
 
     def pretrigger(self, message):
-
+        #TODO: LOOPTRIGGER
         message, triggername, trigger = self.gettrigger(message)
         while triggername:
 

@@ -29,7 +29,7 @@
             </dd><br>
             <a href = "{{ url_for('showsheet', name=user.username) }}">Sheet of {{ user.username }}</a>
         {% else %}
-            <h3>You have {{ user.kudos }} Kudos. </h3> </h2>
+            <h3>You have {{ user.kudos }} Kudos. </h3>
             <h3>You have {{ user.funds }} Credits.</h3>
             <h3><a href="{{ url_for('add_funds') }}"> BUY CREDITS </a></h3>
             <h3><a href="{{ url_for('payout') }}"> SELL CREDITS </a></h3>

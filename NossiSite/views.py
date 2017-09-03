@@ -72,6 +72,7 @@ def editentries(x):
     if not session.get('logged_in'):
         flash('You are not logged in!')
         return redirect(url_for('login'))
+    print("editentries")
     if request.method == "GET":
         if x == "all":
             cur = g.db.execute('SELECT author, title, text, plusOned, id, tags '
@@ -87,13 +88,15 @@ def editentries(x):
                                'FROM entries WHERE id == ?', [x])
             entry = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4], tags=row[5]) for row in
                      cur.fetchall()][0]
-            if (session.get("user") == entry['author'].upper) or session.get('admin'):
+            if (session.get("user").upper() == entry['author'].upper()) or session.get('admin'):
+                gentoken()
                 return render_template('edit_entry.html', entry=entry)
             else:
                 flash("not authorized to edit id" + str(x))
 
         except:
             flash("id " + str(x) + " not found.")
+
         gentoken()
         return redirect(url_for('editentries', x="all"))
     if request.method == "POST":
@@ -105,11 +108,18 @@ def editentries(x):
                                'FROM entries WHERE id == ?', [int(request.form['id'])])
             entry = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4], tags=row[5]) for row in
                      cur.fetchall()][0]
-            if (session.get('user') == entry['author'].upper) or session.get('admin'):
+            if (session.get('user').upper() == entry['author'].upper()) or session.get('admin'):
+                print(session.get('user', '?'), "editing id " + request.form['id'], request.form)
                 g.db.execute('UPDATE entries SET title=?, text=?, tags=? WHERE id == ?',
                              [request.form['title'], request.form['text'], request.form['tags'], request.form['id']])
+                print('UPDATE entries SET title=?, text=?, tags=? WHERE id == ?',
+                      [request.form['title'], request.form['text'], request.form['tags'], request.form['id']])
+
                 g.db.commit()
                 flash('entry was successfully edited')
+            else:
+                flash("not authorized: " + session.get('user').upper() + "!=" + entry['author'].upper())
+
         gentoken()
         return redirect(url_for('show_entries'))
 
@@ -311,13 +321,22 @@ def delete_entry(ident):
         cur = g.db.execute('SELECT author, title, text, plusOned, id FROM entries WHERE id = ?', [ident])
         for row in cur.fetchall():  # SHOULD only run once
             entry = dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4])
-        if (not session.get('admin')) and entry.get('author') != session.get('user'):
+        if (not session.get('admin')) and (entry.get('author').upper() != session.get('user')):
             flash('This is not your Post!')
         else:
-            g.db.execute('UPDATE entries SET author = ? WHERE id = ?', [entry.get('author').lower(), entry.get('id')])
-            flash('Entry: "' + entry.get('title') + '" has been deleted.')
+            if entry.get('author')[0].islower():
+                g.db.execute('UPDATE entries SET author = ? WHERE id = ?',
+                             [entry.get('author').upper(), entry.get('id')])
+                flash('Entry: "' + entry.get('title') + '" has been restored.')
+
+            else:
+                g.db.execute('UPDATE entries SET author = ? WHERE id = ?',
+                             [entry.get('author').lower(), entry.get('id')])
+                flash('Entry: "' + entry.get('title') + '" has been deleted.')
             g.db.commit()
         return redirect(url_for('show_entries'))
+    else:
+        abort(404)
 
 
 @app.route('/plusone/<ident>', methods=['POST'])
@@ -518,12 +537,15 @@ def impressum():
 
 @app.context_processor
 def gettoken():
+    global token
     return dict(token=token.get(session.get('user', None), ''))
 
 
 def gentoken():
+    global token
     if session.get('user', False):
         token[session['user']] = generate_token(session)
+        print("generated:", token[session['user']])
         return token[session['user']]
     else:
         return ''

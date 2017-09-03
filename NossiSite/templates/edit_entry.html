@@ -12,16 +12,16 @@
         <input type="hidden" name="id" value="{{ entry.id }}">
         <dl>
             <dt>Title:</dt>
-            <dd><input class=leet type=text size=30 name=title value="{{ entry.title }}"></dd>
+            <dd><input class=leet size=30 name=title value="{{ entry.title }}"></dd>
             <dt>Text:</dt>
             <dd><textarea class=leet name=text rows=5 cols=40>{{ entry.text }}</textarea></dd>
             <dt>Tags:</dt>
-            <dd><input class=leet type=text size=30 name=tags value="{{ entry.tags }}"></dd>
+            <dd><input class=leet size=30 name=tags value="{{ entry.tags }}"></dd>
             <dd><input class=leeet type=submit value=Share></dd>
       </dl>
     </form>
     <form action="{{ url_for('delete_entry',ident=entry.id) }}"  method="post" class="edit-entry">
-         <input class=leeet type=submit value="toggle visibility">
+         <input class=leeet type=submit value="{% if entry.author[0].islower() %}un{% endif %}delete">
          <input type="hidden" name="token" value={{ token }}>
     </form>
    <!-- <form action="{{ url_for('delete_entry',ident=entry.id, final="yes") }}"  method="post" class="edit-entry">

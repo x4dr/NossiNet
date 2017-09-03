@@ -445,7 +445,7 @@ def chat_connect():
 @socketio.on('disconnect', namespace='/chat')
 def test_disconnect():
     # DEBUG 
-    print(str(session))
+    print("test disconnect",str(session))
     try:
         print('Client disconnected', rooms())
     except:
