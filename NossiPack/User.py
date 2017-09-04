@@ -17,7 +17,7 @@ def connect_db():
 
 class User(object):
     def __init__(self, username, password="", passwordhash=None, kudos=10, funds=0, kudosdebt="",
-                 sheet=Character().serialize(), oldsheets=b'', admin=0, defines=''):
+                 sheet=Character().serialize(), oldsheets=b'', admin="", defines=''):
         self.kudosdebt = kudosdebt
         self.username = username.strip()
         self.pw_hash = generate_password_hash(password)
@@ -27,7 +27,7 @@ class User(object):
         self.funds = funds
         self.sheet = Character.deserialize(sheet)
         self.oldsheets = self.deserialize_old_sheets(oldsheets)
-        if admin == 1:
+        if admin == "Administrator":
             self.admin = "Administrator"
         else:
             self.admin = ""
