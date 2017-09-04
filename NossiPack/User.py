@@ -17,7 +17,7 @@ def connect_db():
 
 class User(object):
     def __init__(self, username, password="", passwordhash=None, kudos=10, funds=0, kudosdebt="",
-                 sheet=Character().serialize(), oldsheets=b'', admin="", defines=''):
+                 sheet=Character().serialize(), oldsheets=b'', admin=0, defines=''):
         self.kudosdebt = kudosdebt
         self.username = username.strip()
         self.pw_hash = generate_password_hash(password)
@@ -27,7 +27,7 @@ class User(object):
         self.funds = funds
         self.sheet = Character.deserialize(sheet)
         self.oldsheets = self.deserialize_old_sheets(oldsheets)
-        if admin == "Administrator":
+        if admin == 1:
             self.admin = "Administrator"
         else:
             self.admin = ""
@@ -35,14 +35,10 @@ class User(object):
         if defines:
             self.defines = pickle.loads(defines)
         self.defines = {**self.defines, **self.sheet.unify()}
-        #  print(defines, "><defines><")
 
     def set_password(self, newpassword):
         self.pw_hash = generate_password_hash(newpassword)
         return True
-
-    def check_password(self, password):
-        return self.pw_hash == generate_password_hash(password)
 
     def serialize_old_sheets(self):
         oldsheetserialized = []
@@ -77,6 +73,7 @@ class User(object):
         return "public" in self.sheet.meta["Notes"][:22]
 
     def addkudos(self, kudos):
+        d = {}
         if kudos == 0:
             return  # so that if two people both owe each other it will not create an endless loop
         l = self.get_kudosdebts()
@@ -115,7 +112,7 @@ class User(object):
         for e in entries:
             result += e.get('loaner') + "#" + e.get('state') + "#" + str(e.get('remaining')) + "#" + str(e.get(
                 'original')) + "#" + str(e.get('id')) + "|"
-        print("kudosdebt:",result)
+        print("kudosdebt:", result)
         self.kudosdebt = result
 
     def add_kudosoffer(self, loaner):
@@ -193,7 +190,6 @@ class Userlist(object):
         db.commit()
         db.close()
         return None
-
 
     def contains(self, user):
         for u in self.userlist:

@@ -11,17 +11,17 @@ from NossiPack.WoDDice import WoDDice
 class WoDParser(object):
     def __init__(self, defines):
         self.dbg = ""
-        self.triggers = []
+        self.triggers = {}
+        self.owner = ""
+        self.rights = []
         self.defines = defines
         self.tmpdefines = {}
         self.altrolls = []  # if the last roll isnt interesting
 
-    @staticmethod
-    def extract_diceparams(message):
-        message = message.strip()
-
+    def extract_diceparams(self, message):
+        limit = "3" if not self.triggers.get("limitbreak", None) else "10"
         info = re.match(  # the regex matching the roll (?# ) for indentation
-            r'(?# ) *(?P<amount>[0-9]{1,3}) *'  # amount of dice 0-999
+            r'(?# ) *(?P<amount>[0-9]{1,'+limit+'}) *'  # amount of dice 0-999
             r'(?# )(d *(?P<sidedness>[0-9]{1,5}))? *'  # sidedness of dice 0-99999
             r'(?# )(?P<operation>'  # what is happening with the roll
             r'(?#   )(?P<against>'  # rolling against a value for successes 
@@ -36,6 +36,14 @@ class WoDParser(object):
         if info.get('amount', None) is not None:
             info['amount'] = int(info['amount'])
         else:
+            if ";" in message:
+                for m in message.split(";"):
+                    self.do_roll(m)
+                return {}
+            if self.triggers.get("ignore", None):
+                print("invalid dicecode:'" + message + "'")
+                return {}
+
             raise Exception("invalid dicecode:'" + message + "'")
         if info.get('sidedness', None) is not None:
             info['sidedness'] = int(info['sidedness'])
@@ -58,26 +66,29 @@ class WoDParser(object):
         return info
 
     def do_roll(self, roll):
-        self.make_roll(roll)
-        return self.altrolls[-1].result
+        self.altrolls.append(self.make_roll(roll))
+        if self.triggers.get("ignore", None) and self.altrolls[-1] is None:
+            return None
+        elif self.altrolls[-1] is None:
+            raise Exception("Diceroll is missing. Probably a bug. Tell Maric about the dicecode you used.")
+        else:
+            return self.altrolls[-1].result
 
     def make_roll(self, roll):
         roll = Node(roll)
         roll = self.resolveroll(roll)
         params = self.extract_diceparams(roll)
-
-        self.altrolls.append(WoDDice(params))
-        return self.altrolls[-1]
+        if not params:
+            return None
+        return WoDDice(params)
 
     def resolveroll(self, roll):
-        print("entered", roll)
         if isinstance(roll, str):
             return roll
 
         if roll.roll is None:
             self.expand(roll)
             return self.resolveroll(roll)
-
         if roll.is_leaf:
             roll.roll = self.parseadd(roll.roll)
         else:
@@ -103,10 +114,7 @@ class WoDParser(object):
             roll.roll = None
             roll.message = x
             return self.resolveroll(roll)
-        print("returned", roll.roll)
         return " ".join(roll.roll)
-
-
 
     @staticmethod
     def parseadd(roll):
@@ -138,14 +146,22 @@ class WoDParser(object):
     def expand(self, node):
         self.resolvedefine(node)
 
+    def assume(self, message):
+        if message.strip()[0]=="(":
+            p = self.fullparenthesis(message)
+            if len(message.replace(p,"").strip()[1:].strip()[1:].strip()) > 0:
+                raise Exception("Leftovers after "+ message+ ":"+message.replace(p,""))
+            return self.do_roll(self.fullparenthesis(message))
+        return message
+
     @staticmethod
     def gettrigger(message):  # returns (newmessage,triggername, trigger)
         c = message.count("&")
-
         if c > 0:
             if c % 2 != 0:
                 raise Exception("unmatched & in \"" + message + "\"")  # leftover & supposed to be cleared after usage
             else:
+
                 m = message.split("&")
                 tail = "&".join(m[1:])
                 if tail.startswith("if "):  # special case for nested ifs/triggers
@@ -159,11 +175,62 @@ class WoDParser(object):
             return message, "", ""
 
     def pretrigger(self, message):
-        #TODO: LOOPTRIGGER
         message, triggername, trigger = self.gettrigger(message)
         while triggername:
-
-            if triggername == "values":
+            print("Triggering:", triggername)
+            if triggername == "limitbreak":
+                print("RIGHTS:", self.rights)
+                if "Administrator" in self.rights:
+                    self.triggers[triggername] = True
+                    print("LIMITBREAK")
+                else:
+                    self.triggers["rightsviolation"] = True
+                message = message.replace("&", "", 1)
+            elif triggername == "speed":
+                x = float(trigger)
+                self.triggers[triggername] = min(x, max(x, 0), 1)
+                message = message.replace("&", "", 1)
+            elif triggername == "breakthrough":
+                goal = int(self.assume(trigger[trigger.rfind(" "):]))
+                trigger = trigger[:trigger.rfind(" ")]
+                current = int(self.assume(trigger[trigger.rfind(" "):]))
+                trigger = trigger[:trigger.rfind(" ")]
+                i = 0
+                log = ""
+                print("limit:",self.triggers.get("limitbreak", False) )
+                while i < 100 if not self.triggers.get("limitbreak", None) else 1000:
+                    x = self.do_roll(trigger)
+                    log += str(x) + " : "
+                    i += 1
+                    while x < 0:
+                        log += str(current) + "/2 = "
+                        current //= 2
+                        log += str(current) + "\n"
+                        x += 1
+                        if x < 0:
+                            log += str(x) + " : "
+                    if x > 0:
+                        log += str(current) + " + " + str(x) + " = "
+                    current += x
+                    log += str(current) + "\n"
+                    if current >= goal:
+                        break
+                self.triggers[triggername] = (i, current, goal, log)
+                message = message.replace("&", "", 1)
+            elif triggername in ["ignore", "verbose", "suppress"]:
+                if "off" not in trigger:
+                    self.triggers[triggername] = True
+                else:
+                    self.triggers[triggername] = False
+                message = message.replace("&", "", 1)
+            elif triggername == "loop":
+                times = min(int(trigger[trigger.rfind(" "):]), 39 if not self.triggers.get("limitbreak", None) else 100)
+                trigger = trigger[:trigger.rfind(" ")]
+                roll = self.make_roll(trigger)  # it is rolled but not added to the list so this one vanishes
+                for i in range(times):
+                    self.altrolls.append(roll.reroll())
+                message = message.replace("&", "&ignore&", 1)  # its ok for loops to not have dice outside the trigger
+            elif triggername == "values":
                 try:
                     trigger = str(re.sub(r" *: *", ":", trigger))
                     for d in trigger.split(","):
@@ -172,7 +239,7 @@ class WoDParser(object):
                 except:
                     raise Exception("Values malformed. Expected: \"&values key:value, key:value, key:value&\"")
 
-            if triggername == "param":
+            elif triggername == "param":
                 try:
                     trigger = str(re.sub(r" +", "", trigger))
                     for d in reversed(trigger.split(",")):
@@ -186,12 +253,11 @@ class WoDParser(object):
                     raise Exception(
                         "Parameter malformed. Expected: \"&param key1,key2,key3&[...]value1,value2,value3\"")
 
-            if "if" == triggername:
+            elif "if" == triggername:
                 # &if a then b else c&
                 ifbranch = self.fullparenthesis(trigger, opening="if", closing="then")
                 thenbranch = self.fullparenthesis(trigger, opening="then", closing="else")
                 elsebranch = self.fullparenthesis(trigger, opening="else", closing="done")
-                print(">" + ifbranch + "<" + ">" + thenbranch + "<" + ">" + elsebranch + "<")
                 #                ifbranch = trigger.split("then")[0][2:].strip()
                 #                thenbranch = trigger.split("then")[1].strip()
                 #                elsebranch = thenbranch.split("else")[1].strip()
@@ -204,8 +270,11 @@ class WoDParser(object):
                     message = message.replace("&", "(" + thenbranch.replace("$", str(ifroll), 1) + ")", 1)
                 else:
                     message = message.replace("&", "(" + elsebranch.replace("$", str(-ifroll), 1) + ")", 1)
-
+            else:
+                raise Exception("unknown Trigger: " + triggername)
+            print("message:", message)
             message, triggername, trigger = self.gettrigger(message)
+
         return message
 
     def resolvedefine(self, node):
@@ -228,36 +297,25 @@ class WoDParser(object):
         i = -1
         lvl = 0
         begun = None
-        print("openclose:", opening, closing)
         while ((lvl > 0) or begun is None) and (i <= len(message) + 5):
             i += 1
-            print("lvl:", lvl, i, "<" + message[i:i + max(len(closing), len(opening))] + ">", begun)
             if (message[i:i + len(closing)] == closing) \
                     and (((i == 0 or (not message[i - 1].isalnum()))
                           and not (message + " " * len(closing) * 2)[i + len(closing)].isalnum())
                          or len(closing) == 1):
                 if begun is None:
                     continue  # ignore closing parenthesis if not opened yet
-                print(lvl, "closing:" + message[i - 1:i + len(closing) + 1])
                 lvl -= 1
-            else:
-                print(message[i - 1], message[i + len(closing)])
             if (message[i:i + len(opening)] == opening) \
                     and (((i == 0 or (not message[i - 1].isalnum()))
                           and not message[i + len(opening)].isalnum())
                          or len(opening) == 1):
-                print(lvl, "opening:" + message[i - 3:i + len(opening)])
                 lvl += 1
                 if begun is None:
                     begun = i
         if i > len(message) + 5:
-            print("len", message, "=", message, "\ni:", i)
             raise Exception("unmatched " + opening + " " + closing + ": " + message)
-        result = message[begun + (len(opening) if not include else 0):
-        i + (len(closing) if include else 0)]
-        print("result:",
-              begun, (len(opening) if not include else 0),
-              i, (len(closing) if include else 0), result)
+        result = message[begun + (len(opening) if not include else 0): i + (len(closing) if include else 0)]
         return result
 
     @staticmethod

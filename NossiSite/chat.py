@@ -33,8 +33,8 @@ def echo(message, sep=": ", err=False):
         emit('Message', {'data': session['user'] + sep + message})
 
 
-def post(message, sep=": "):
-    session['activeroom'].addline(session['user'] + sep + message)
+def post(message, sep=": ", supresssave=True):
+    session['activeroom'].addline(session['user'] + sep + message, supresssave=supresssave)
 
 
 def decider(message):
@@ -42,13 +42,16 @@ def decider(message):
         if message == "#?":
             echo(''.join(namedStrings['generalHelp']))
             return
+        parser = WoDParser(defines())
+        parser.owner = session.get("user", "?")
+        parser.rights = ["Administrator" if session.get("admin", None) else False]
         if not (("?" in message) or ("=" in message)):
             try:
-                parser = WoDParser(defines())
                 roll = parser.make_roll(message[1:])
                 trigger(parser.triggers)
                 update_dots()
-                print(roll.roll_v())
+                if roll:
+                    print(roll.roll_v())
                 printroll(roll, parser, message=message)
 
             except Exception as inst:
@@ -57,7 +60,7 @@ def decider(message):
         elif "?" in message:
             echo(message, "'s TEST: ")
             parser = WoDParser(defines())
-            roll = parser.make_roll(message)
+            roll = parser.make_roll(message[1:])
             echo(parser.dbg, "'s TEST: ")
             printroll(roll, testing=True)
         elif "=" in message:
@@ -76,6 +79,7 @@ def decider(message):
             print('room: ' + session['activeroom'].name)
             post(message)
     statusupdate()
+    session['activeroom'].savechatlog()
 
 
 def echodict(output_dict):
@@ -140,20 +144,42 @@ def defines(message="=", user=None):
 
 def printroll(roll, parser=None, testing=False, message=""):
     print("calling printroll with:", roll, parser)
-    if not roll:
-        return
-    if not roll.rolled:
-        return
     if testing:
         deliver = echo
     else:
         deliver = post
-    deliver(message, "'S ROLL: ")
-    if parser:
-        if "§supress_" not in parser.triggers:
-            for r in parser.altrolls[:-1]:
-                deliver(r.roll_v(), "'S SUBROLL " + r.name + ": ")
+    if not message:
+        if roll:
+            deliver(roll.name, "'S ROLL: ")
+        else:
+            deliver("", "IS ROLLING: ")
+    else:
+        deliver(message, "'S ROLL: ")
 
+    if parser:
+        if not parser.triggers.get("supress", None):
+            for r in parser.altrolls[:(-1 if roll is not None else len(parser.altrolls) + 1)]:
+                if r:
+                    if parser.triggers.get("verbose", None):
+                        printroll(r, testing=testing)
+                    else:
+                        if len(r.r) > 50:
+                            deliver(str(r.roll_nv()), "'S SUBROLL: [" + str(len(r.r)) + " DICEROLLS] ==> ")
+                        else:
+                            deliver(r.roll_v(), ("'S SUBROLL " if roll is not None else "'S ROLL: ") + r.name + ": ")
+
+        if parser.triggers.get("breakthrough", None):
+            times, current, goal, log = parser.triggers.get("breakthrough", None)
+            for i in [x for x in log.split("\n") if x]:
+                deliver(i, "'S BREAKTHROUGH: ")
+                time.sleep(float(parser.triggers.get("speed", 0.5)))
+            time.sleep(1)
+            deliver(str(times)+" TRIES TO REACH "+str(int(current))+"/"+str(goal)+".", "'S ATTEMPT TOOK ")
+
+    if not roll:
+        return
+    if not roll.rolled:
+        return
     if roll.difficulty == 0 and roll.max == 1:
         deliver(str(roll.roll_nv()) + ".", " IS ADDING UP TO: ")
         return
@@ -162,12 +188,14 @@ def printroll(roll, parser=None, testing=False, message=""):
         deliver("", " ROLLS, exploding on " + str(roll.explodeon) + "+: \n")
         for i in roll.roll_vv().split("\n"):
             deliver(i, " ROLL: ")
-            time.sleep(0.5)
+            time.sleep(float(parser.triggers.get("speed", 0.5)))
     elif len(roll.r) > 50:
         deliver(str(roll.roll_nv()), " ROLLS: [" + str(len(roll.r)) + " DICEROLLS] ==> ")
     else:
         print("delivering normally:", roll.roll_v())
         deliver(roll.roll_v(), " ROLLS: ")
+
+
 
 
 def menucmds(message):
@@ -445,7 +473,7 @@ def chat_connect():
 @socketio.on('disconnect', namespace='/chat')
 def test_disconnect():
     # DEBUG 
-    print("test disconnect",str(session))
+    print("test disconnect", str(session))
     try:
         print('Client disconnected', rooms())
     except:

@@ -3,7 +3,6 @@ from NossiPack.WoDParserV2Test import WoDParser, Node
 
 
 class TestWoDParser(TestCase):
-
     def test_extract_diceparams(self):
         p = WoDParser({})
         self.assertEqual(p.extract_diceparams("3")['amount'], 3)
@@ -55,14 +54,29 @@ class TestWoDParser(TestCase):
         a = ["d", "4", "3", "9", "+", "1", "g", "1", "-1"]
         self.assertEqual(p.parseadd(a), ['d', '17', 'g', '0'])
 
+    def test_looptriggers(self):
+        p = WoDParser({})
+        r = p.make_roll("&loop 3 2&; 3")
+        for x in p.altrolls:
+            if x is not None:
+                print(x.result)
+            else:
+                print("roll none")
+
+    def test_triggerorder(self):
+        p = WoDParser({})
+        p.make_roll("&loop 7 2&;6;&loop 4 3&")
+
+
+
     def test_pretrigger(self):
         print("start pretrigger")
         p = WoDParser({"shoot": "dex fire", "dex": "Dexterity", "fire": "Firearms", "Dexterity": "3", "Firearms": "4",
-                       "gundamage": "4", "sum":"d1g"})
+                       "gundamage": "4", "sum": "d1g"})
         print("firstshoot")
         print(p.do_roll("5 sum"))
         print("firstshootdone")
-        r =p.do_roll("&param difficulty& &if shoot difficulty then gundamage $ -1 e6 else 0 done& sum ")
+        r = p.do_roll("&param difficulty& &if shoot difficulty then gundamage $ -1 e6 else 0 done& sum ")
         print(r, "\nend pretrigger")
 
     def test_resolvedefine(self):

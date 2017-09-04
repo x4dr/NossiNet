@@ -1,3 +1,4 @@
+import datetime
 from flask_socketio import emit
 from flask import session
 from NossiSite.helpers import connect_db
@@ -47,7 +48,7 @@ class Chatroom(object):
 
     def savechatlog(self):
         self.cleanup()
-        print("saving chatlog");
+        print("saving chatlog")
         db = connect_db()
         try:
             if self.chatlog[-1][0] - self.newestlineindb > 0:
@@ -114,26 +115,35 @@ class Chatroom(object):
     def userjoin(self, user):
         if self.mailbox and not (re.match(r'(.*)_.*', self.name).group(1) == session.get('user')):
             return False
-        for u in self.users:
+        n = -1
+        for i, u in enumerate(self.users):
             if u[0] == user:
-                u[1] += 1
+                n = i
+                break
+        if n >= 0:
+            if self.users[n][0] == user:
+                self.users[n][1] += 1
+                print(datetime.datetime.now(), "second joining", self.users[n])
                 self.addline(user + ' joined the room!')
                 return False
-        self.users.append([user, 0])
-        self.addline(user + ' joined the room!')
-        return True
+        else:
+            self.users.append([user, 0])
+            self.addline(user + ' joined the room!')
+            print(datetime.datetime.now(), "first joining:", self.users[n][0])
+            return True
 
     def userleave(self, user):
         actuallyleft = False
         try:
-            for u in self.users:
+            for i, u in enumerate(self.users):
                 if u[0] == user:
                     print(u, "is leaving room", self.name)
                     u[1] -= 1
                     if u[1] < 0:
-                        if u[1]<-1:
+                        if u[1] < -1:
                             print(u)
                         self.addline(user + ' left the room!')
+                        print(self.users)
                         actuallyleft = True
                         self.users = [x for x in self.users if x[0] != user]
                         break
@@ -141,7 +151,7 @@ class Chatroom(object):
             print("exception with userleave ...", inst.args)
             return False
         if actuallyleft:
-            print("userleave exiting. userlist:",self.users)
+            print("userleave exiting. userlist:", self.users)
         return actuallyleft
 
     def getlog(self, user):

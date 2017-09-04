@@ -2,7 +2,7 @@ import random
 
 
 class WoDDice(object):
-    def __init__(self, maxroll=10, difficulty=6, subone=1, explodeon=0, minroll=1):
+    def __init__(self, maxroll=None, difficulty=6, subone=1, explodeon=0, minroll=1):
         if isinstance(maxroll, dict):
             info = maxroll
             self.min = info.get('additivebonus', 1)  # unlikely to get implemented
@@ -14,7 +14,7 @@ class WoDDice(object):
             self.amount = info.get('amount', None)
         else:
             self.min = minroll
-            self.max = maxroll
+            self.max = maxroll if maxroll is not None else 10
             self.difficulty = difficulty  # 0 means sum; -1 means highest
             self.subone = subone
             self.explodeon = explodeon
@@ -46,6 +46,19 @@ class WoDDice(object):
                                                "l" if self.returnfun == "min" else
                                                "g" if self.returnfun == "sum" else "") + (
                    (" exploding on " + str(self.explodeon)) if self.explodeon <= self.max else "")
+
+    def reroll(self):
+        if not self.amount:
+            raise Exception("No Amount set for reroll!")
+        else:
+            return WoDDice({
+                'sidedness': self.max,
+                'difficulty': self.difficulty,
+                'onebehaviour': self.subone,
+                'return': self.returnfun,
+                'explode': self.max - self.explodeon - 1,
+                'amount': self.amount
+            })
 
     def roll_next(self, amount):
         self.maxamount += amount
@@ -129,8 +142,8 @@ class WoDDice(object):
     def result(self):
         return self.roll_nv() if not self.returnfun else \
             max(self.r) if self.returnfun == "max" else \
-                min(self.r) if self.returnfun == "min" else \
-                    sum(self.r) if self.returnfun == "sum" else None
+            min(self.r) if self.returnfun == "min" else \
+            sum(self.r) if self.returnfun == "sum" else None
 
     def roll(self, amount):
         self.roll_next(amount)
