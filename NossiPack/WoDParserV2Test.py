@@ -234,7 +234,7 @@ class WoDParser(object):
                 for i in range(times):
                     self.altrolls.append(roll.reroll())
                     loopsum += self.altrolls[-1].result
-                message = message.replace("&", "&ignore&" if triggername is not loopsum else str(loopsum), 1)  # its ok for loops to not have dice outside the trigger
+                message = message.replace("&", ("&ignore&" if (triggername is "loop") else str(loopsum)), 1)  # its ok for loops to not have dice outside the trigger
             elif triggername == "values":
                 try:
                     trigger = str(re.sub(r" *: *", ":", trigger))
