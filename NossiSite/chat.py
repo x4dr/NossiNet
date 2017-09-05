@@ -157,20 +157,20 @@ def printroll(roll, parser=None, testing=False, message=""):
         deliver(message, "'S ROLL: ")
 
     if parser:
-        if not parser.triggers.get("supress", None):
-            for r in parser.altrolls[:(-1 if roll is not None else len(parser.altrolls) + 1)]:
+        if not parser.triggers.get("suppress", None):
+            for r in parser.altrolls[-parser.triggers.get("cutoff", 20):(-1 if roll is not None else len(parser.altrolls) + 1)]:
                 if r:
                     if parser.triggers.get("verbose", None):
                         printroll(r, testing=testing)
                     else:
-                        if len(r.r) > 50:
+                        if len(r.r) > parser.triggers.get("cutoff", 20):
                             deliver(str(r.roll_nv()), "'S SUBROLL: [" + str(len(r.r)) + " DICEROLLS] ==> ")
                         else:
                             deliver(r.roll_v(), ("'S SUBROLL " if roll is not None else "'S ROLL: ") + r.name + ": ")
 
         if parser.triggers.get("breakthrough", None):
             times, current, goal, log = parser.triggers.get("breakthrough", None)
-            for i in [x for x in log.split("\n") if x]:
+            for i in [x for x in log.split("\n") if x][-parser.triggers.get("cutoff",20):]:
                 deliver(i, "'S BREAKTHROUGH: ")
                 time.sleep(float(parser.triggers.get("speed", 0.5)))
             time.sleep(1)
@@ -189,7 +189,7 @@ def printroll(roll, parser=None, testing=False, message=""):
         for i in roll.roll_vv().split("\n"):
             deliver(i, " ROLL: ")
             time.sleep(float(parser.triggers.get("speed", 0.5)))
-    elif len(roll.r) > 50:
+    elif len(roll.r) > (parser.triggers.get("cutoff",20) if parser is not None else 20):
         deliver(str(roll.roll_nv()), " ROLLS: [" + str(len(roll.r)) + " DICEROLLS] ==> ")
     else:
         print("delivering normally:", roll.roll_v())

@@ -21,16 +21,16 @@ class WoDParser(object):
     def extract_diceparams(self, message):
         limit = "3" if not self.triggers.get("limitbreak", None) else "10"
         info = re.match(  # the regex matching the roll (?# ) for indentation
-            r'(?# ) *(?P<amount>[0-9]{1,'+limit+'}) *'  # amount of dice 0-999
-            r'(?# )(d *(?P<sidedness>[0-9]{1,5}))? *'  # sidedness of dice 0-99999
-            r'(?# )(?P<operation>'  # what is happening with the roll
-            r'(?#   )(?P<against>'  # rolling against a value for successes 
-            r'(?#     )(?P<onebehaviour>[ef]) *'  # e is without subtracting 1, f is with subtracting a success on a 1
-            r'(?#     )(?P<difficulty>([1-9][0-9]{0,4})|([0-9]{0,4}[1-9])))|'  # difficulty 1-99999
-            r'(?#   )(?P<sum>g)|'  # summing rolls up instead
-            r'(?#   )(?P<maximum>h)| *'  # taking the maximum value of the roll
-            r'(?#   )(?P<minimum>l))? *'  # taking the minimum value of the roll
-            r'(?# )(?P<explosion>!+)? *$',  # explosion effects
+            r'(?# ) *(?P<amount>[0-9]{1,' + limit + '}) *'  # amount of dice 0-999
+                                                    r'(?# )(d *(?P<sidedness>[0-9]{1,5}))? *'  # sidedness of dice 0-99999
+                                                    r'(?# )(?P<operation>'  # what is happening with the roll
+                                                    r'(?#   )(?P<against>'  # rolling against a value for successes 
+                                                    r'(?#     )(?P<onebehaviour>[ef]) *'  # e is without subtracting 1, f is with subtracting a success on a 1
+                                                    r'(?#     )(?P<difficulty>([1-9][0-9]{0,4})|([0-9]{0,4}[1-9])))|'  # difficulty 1-99999
+                                                    r'(?#   )(?P<sum>g)|'  # summing rolls up instead
+                                                    r'(?#   )(?P<maximum>h)| *'  # taking the maximum value of the roll
+                                                    r'(?#   )(?P<minimum>l))? *'  # taking the minimum value of the roll
+                                                    r'(?# )(?P<explosion>!+)? *$',  # explosion effects
             message)
         info = {k: v for (k, v) in info.groupdict().items() if v} if info else {}
         if info.get('amount', None) is not None:
@@ -147,10 +147,10 @@ class WoDParser(object):
         self.resolvedefine(node)
 
     def assume(self, message):
-        if message.strip()[0]=="(":
+        if message.strip()[0] == "(":
             p = self.fullparenthesis(message)
-            if len(message.replace(p,"").strip()[1:].strip()[1:].strip()) > 0:
-                raise Exception("Leftovers after "+ message+ ":"+message.replace(p,""))
+            if len(message.replace(p, "").strip()[1:].strip()[1:].strip()) > 0:
+                raise Exception("Leftovers after " + message + ":" + message.replace(p, ""))
             return self.do_roll(self.fullparenthesis(message))
         return message
 
@@ -168,9 +168,9 @@ class WoDParser(object):
                     end = tail.rfind("else")
                     close = tail[end:].find("&")
 
-                    return m[0] + "&" + tail[end + close + 1:], m[1].split(" ")[0], tail[:end + close].strip()
+                    return m[0] + " & " + tail[end + close + 1:], m[1].split(" ")[0], tail[:end + close].strip()
 
-                return m[0] + "&" + "&".join(m[2:]), m[1].split(" ")[0], " ".join(m[1].split(" ")[1:])
+                return m[0] + " & " + "&".join(m[2:]), m[1].split(" ")[0], " ".join(m[1].split(" ")[1:])
         else:
             return message, "", ""
 
@@ -186,9 +186,12 @@ class WoDParser(object):
                 else:
                     self.triggers["rightsviolation"] = True
                 message = message.replace("&", "", 1)
-            elif triggername == "speed":
-                x = float(trigger)
-                self.triggers[triggername] = min(x, max(x, 0), 1)
+            elif triggername in ["speed", "cutoff"]:
+                if triggername in ["speed"]:# doubles
+                    x = float(trigger)
+                else:
+                    x = int(trigger)
+                self.triggers[triggername] = x
                 message = message.replace("&", "", 1)
             elif triggername == "breakthrough":
                 goal = int(self.assume(trigger[trigger.rfind(" "):]))
@@ -197,7 +200,7 @@ class WoDParser(object):
                 trigger = trigger[:trigger.rfind(" ")]
                 i = 0
                 log = ""
-                print("limit:",self.triggers.get("limitbreak", False) )
+                print("limit:", self.triggers.get("limitbreak", False))
                 while i < 100 if not self.triggers.get("limitbreak", None) else 1000:
                     x = self.do_roll(trigger)
                     log += str(x) + " : "
@@ -216,20 +219,22 @@ class WoDParser(object):
                     if current >= goal:
                         break
                 self.triggers[triggername] = (i, current, goal, log)
-                message = message.replace("&", "", 1)
+                message = message.replace("&", str(i), 1)
             elif triggername in ["ignore", "verbose", "suppress"]:
                 if "off" not in trigger:
                     self.triggers[triggername] = True
                 else:
                     self.triggers[triggername] = False
                 message = message.replace("&", "", 1)
-            elif triggername == "loop":
+            elif triggername in ["loop", "loopsum"]:
                 times = min(int(trigger[trigger.rfind(" "):]), 39 if not self.triggers.get("limitbreak", None) else 100)
                 trigger = trigger[:trigger.rfind(" ")]
                 roll = self.make_roll(trigger)  # it is rolled but not added to the list so this one vanishes
+                loopsum = 0
                 for i in range(times):
                     self.altrolls.append(roll.reroll())
-                message = message.replace("&", "&ignore&", 1)  # its ok for loops to not have dice outside the trigger
+                    loopsum += self.altrolls[-1].result
+                message = message.replace("&", "&ignore&" if triggername is not loopsum else str(loopsum), 1)  # its ok for loops to not have dice outside the trigger
             elif triggername == "values":
                 try:
                     trigger = str(re.sub(r" *: *", ":", trigger))
