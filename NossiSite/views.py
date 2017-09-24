@@ -753,10 +753,13 @@ def lightswitch():
 
 @app.route('/chargen/<a>,<b>,<c>,<abia>,<abib>,<abic>,<shuffle>')
 def chargen(a, b, c, abia, abib, abic, shuffle):
-    return render_template("charsheet.html",
-                           character=Character.makerandom(1, 5, int(a), int(b), int(c),
-                                                          int(abia), int(abib), int(abic), int(shuffle))
-                           .getdictrepr())
+    try:
+        return render_template("charsheet.html",
+                               character=Character.makerandom(1, 5, int(a), int(b), int(c),
+                                                              int(abia), int(abib), int(abic), int(shuffle))
+                               .getdictrepr())
+    except:
+        return redirect("/chargen/")
 
 
 @app.route('/favicon.ico')
