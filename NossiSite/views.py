@@ -1,14 +1,14 @@
+import json
 import random
 import time
-import math
-import bleach
-import json
 
+import bleach
+
+from NossiPack.Character import Character
 from NossiPack.User import Userlist, User
 from NossiSite import app
 from NossiSite.helpers import g, session, generate_token, request, redirect, url_for, \
-    render_template, flash, connect_db, generate_password_hash, init_db, abort
-from NossiPack.Character import Character
+    render_template, flash, generate_password_hash, init_db, abort
 
 # from NossiPack.krypta import  sumdict, gendicedata
 
@@ -204,7 +204,7 @@ def mapdata():
     plzs = {}
     for row in cur.fetchall():
         plzs[row[0]] = {'owner': row[1] or "", 'tags': row[2] or "", 'data': row[3] or ""}
-    cur = g.db.execute('SELECT name, faction, allegiance, clan,tags FROM actors')
+    cur = g.db.execute('SELECT name, faction, allegiance, clan, tags FROM actors')
     for row in cur.fetchall():
         for plz in plzs.keys():
             if plzs[plz]['owner'].upper() == row[0]:
@@ -751,10 +751,12 @@ def lightswitch():
     return redirect(request.referrer)
 
 
-@app.route('/chargen/<mini>,<maxi>,<a>,<b>,<c>')
-def chargen(mini, maxi, a, b, c):
-    return render_template("chargen.html",
-                           char=Character().makechar(int(mini), int(maxi), int(a), int(b), int(c)).getstringrepr())
+@app.route('/chargen/<a>,<b>,<c>,<abia>,<abib>,<abic>,<shuffle>')
+def chargen(a, b, c, abia, abib, abic, shuffle):
+    return render_template("charsheet.html",
+                           character=Character.makerandom(1, 5, int(a), int(b), int(c),
+                                                          int(abia), int(abib), int(abic), int(shuffle))
+                           .getdictrepr())
 
 
 @app.route('/favicon.ico')

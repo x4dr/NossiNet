@@ -7,7 +7,6 @@ import time
 import pickle
 import urllib
 
-
 __author__ = "maric"
 
 
@@ -44,7 +43,6 @@ class Character(object):
             self.special = self.zero_specials()
         else:
             self.special = special
-
 
         self.timestamp = time.strftime("%Y/%m/%d-%H:%M:%S")
 
@@ -110,6 +108,26 @@ class Character(object):
                 "Fame",
                 "Herd",
                 "Mentor"]
+
+    def set_attributes_from_int_list(self, att):
+        self.attributes['Strength'] = att[0]
+        self.attributes['Dexterity'] = att[1]
+        self.attributes['Stamina'] = att[2]
+
+        self.attributes['Charisma'] = att[3]
+        self.attributes['Manipulation'] = att[4]
+        self.attributes['Appearance'] = att[5]
+
+        self.attributes['Perception'] = att[6]
+        self.attributes['Intelligence'] = att[7]
+        self.attributes['Wits'] = att[8]
+
+    def set_abilities_from_int_list(self, abi):
+        i = 0
+        for c in reversed(sorted(self.abilities.keys())):
+            for a in sorted(self.abilities[c].keys()):
+                self.abilities[c][a] = abi[i]
+                i += 1
 
     def validate_char(self, extra=False):
         def need(comment, name, number):
@@ -275,6 +293,7 @@ class Character(object):
                 result[i] = str(b[i])
         return result
 
+    # noinspection PyUnresolvedReferences
     def setfromdalines(self, number):
         dalines = ""
 
@@ -326,6 +345,7 @@ class Character(object):
                 number = int(re.search(r'[^0-9]*(.*)', number).group(1))
             except:
                 return False
+
         response = request.urlopen("http://sheetgen.dalines.net/sheet/" + str(number))
         dalines = response.read().decode()
 
@@ -632,38 +652,6 @@ class Character(object):
     def zero_abilities():
         with open('./NossiSite/locales/EN.json') as json_data:
             return json.load(json_data)['abilities']
-        abilities = {'Talents': {}, 'Skills': {}, 'Knowledges': {}}
-        abilities['Talents']['Alertness'] = 0
-        abilities['Skills']['AnimalKen'] = 0
-        abilities['Knowledges']['Academics'] = 0
-        abilities['Talents']['Athletics'] = 0
-        abilities['Skills']['Crafts'] = 0
-        abilities['Knowledges']['Computer'] = 0
-        abilities['Talents']['Brawl'] = 0
-        abilities['Skills']['Drive'] = 0
-        abilities['Knowledges']['Finance'] = 0
-        abilities['Talents']['Dodge'] = 0
-        abilities['Skills']['Etiquette'] = 0
-        abilities['Knowledges']['Investigation'] = 0
-        abilities['Talents']['Empathy'] = 0
-        abilities['Skills']['Firearms'] = 0
-        abilities['Knowledges']['Law'] = 0
-        abilities['Talents']['Expression'] = 0
-        abilities['Skills']['Melee'] = 0
-        abilities['Knowledges']['Linguistics'] = 0
-        abilities['Talents']['Intimidation'] = 0
-        abilities['Skills']['Performance'] = 0
-        abilities['Knowledges']['Medicine'] = 0
-        abilities['Talents']['Leadership'] = 0
-        abilities['Skills']['Security'] = 0
-        abilities['Knowledges']['Occult'] = 0
-        abilities['Talents']['Streetwise'] = 0
-        abilities['Skills']['Stealth'] = 0
-        abilities['Knowledges']['Politics'] = 0
-        abilities['Talents']['Subterfuge'] = 0
-        abilities['Skills']['Survival'] = 0
-        abilities['Knowledges']['Science'] = 0
-        return abilities
 
     @staticmethod
     def zero_specials():
@@ -707,40 +695,72 @@ class Character(object):
         tmp.legacy_convert()
         return tmp
 
-    def makerandom(self, min, cap, prioa, priob, prioc):  # TODO: rework
+    @staticmethod
+    def makerandom(mini, cap, prio1a, prio1b, prio1c, prio2a, prio2b, prio2c, shuffle):
         response = urllib.request.urlopen(
-           "http://www.behindthename.com/random/random.php?number=2&gender=both&surname=&randomsurname=yes&all=no&"
-           "usage_ger=1&usage_myth=1&usage_anci=1&usage_bibl=1&usage_hist=1&usage_lite=1&usage_theo=1&usage_goth=1&"
-           "usage_fntsy=1")
-        prio = [prioa, priob, prioc]
-        Random().shuffle(prio)
+            "http://www.behindthename.com/random/random.php?number=2&gender=both&surname=&randomsurname=yes&all=no&"
+            "usage_ger=1&usage_myth=1&usage_anci=1&usage_bibl=1&usage_hist=1&usage_lite=1&usage_theo=1&usage_goth=1&"
+            "usage_fntsy=1")
+        prio = [prio1a, prio1b, prio1c]
+        abi = [prio2a, prio2b, prio2c]
+        if shuffle:
+            Random().shuffle(prio)
+            Random().shuffle(abi)
 
         names = re.compile('<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......')
         a = str(response.read())
 
         result = names.search(a)
+        char = Character()
+        att = allocaterandomly(prio[0], mini, cap, 3) + \
+              allocaterandomly(prio[1], mini, cap, 3) + \
+              allocaterandomly(prio[2], mini, cap, 3)
+        abi = allocaterandomly(abi[0], 0, 3, 10) + \
+              allocaterandomly(abi[1], 0, 3, 10) + \
+              allocaterandomly(abi[2], 0, 3, 10)
+        char.set_attributes_from_int_list(att)
+        char.set_abilities_from_int_list(abi)
+        char.set_virtues_from_int_list(allocaterandomly(7, 1, 5, 3))
         try:
-            char.name = (result.group(1) + ", " + result.group(2) + ", " + result.group(3))
+            char.meta["Name"] = (result.group(1) + " " + result.group(2) + " " + result.group(3))
         except:
             char.name = "choose a name!"
         return char
+
+    def set_virtues_from_int_list(self, vir):
+        self.virtues["Conscience"] = vir[0]
+        self.virtues["SelfControl"] = vir[1]
+        self.virtues["Courage"] = vir[2]
+
+
+def allocaterandomly(num, mini, cap, var):
+    att = [mini] * var
+    while num:
+        x = Random().randint(0, var - 1)
+        if att[x] < cap:
+            att[x] += 1
+            num -= 1
+        else:
+            if sum(att) > cap * 3:
+                break
+    return att
 
 
 def intdef(s, default=0):
     try:
         return int(s)
-    except Exception as inst:
+    except Exception:
         return default
 
 
-def upsert(list, index, value, min=3):
-    if index >= len(list):
-        list.append("")
-        index = len(list) - 1
+def upsert(listinput, index, value, minimum=3):
+    if index >= len(listinput):
+        listinput.append("")
+        index = len(listinput) - 1
     if value != "":
-        list[index] = value
+        listinput[index] = value
     else:
-        list.pop(index)
-    if not ("".join(list[(-1 * min):]) == ""):
-        list.append("")
-    return list
+        listinput.pop(index)
+    if not ("".join(listinput[(-1 * minimum):]) == ""):
+        listinput.append("")
+    return listinput
