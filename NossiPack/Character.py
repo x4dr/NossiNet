@@ -741,7 +741,7 @@ def allocaterandomly(num, mini, cap, var):
             att[x] += 1
             num -= 1
         else:
-            if sum(att) > cap * 3:
+            if sum(att) >= cap * var:
                 break
     return att
 
