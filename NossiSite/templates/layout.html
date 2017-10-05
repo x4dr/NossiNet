@@ -2,20 +2,21 @@
 <html>
 <head>
     {% block title -%}
-        <title>NossiNet</title>
+        <title> {%- if session.light -%}
+            NossiNet Berlin by Day
+        {%- else -%}
+            Nossinet Berlin by Night
+        {%- endif -%}</title>
     {% endblock %}
-    <link rel=stylesheet type=text/css href="
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="marquee.css") }}">
+    <link rel="stylesheet" type="text/css" href="
     {%- if session.light -%}
     {{ url_for('static', filename='stylelight.css') }}
     {%- else -%}
     {{ url_for('static', filename='style.css') }}
     {%- endif -%}
     ">
-    <script>
-        function goBack() {
-            window.history.back();
-        }
-    </script>
+
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.1/socket.io.js"></script>
     <script type="text/javascript" charset="utf-8"></script>
@@ -31,10 +32,12 @@
         {% else %}
             {%- block metanav -%}
             {%- endblock -%}
-            <a class=metanav href="https://www.google.com/maps/d/viewer?mid=1TH6vryHyVxv_xFjFJDXgXQegZO4" secret="{{ url_for('berlinmap') }}">MAP</a>  &nbsp
+            <a class=metanav href="https://www.google.com/maps/d/viewer?mid=1TH6vryHyVxv_xFjFJDXgXQegZO4"
+               secret="{{ url_for('berlinmap') }}">MAP</a>  &nbsp
             <a class=metanav href="{{ url_for('charsheet') }}">SHEET</a>  &nbsp
             <a class=metanav href="{{ url_for('chatsite') }}">CHAT</a>  &nbsp
-            <a class=metanav href="{{ url_for('show_user_profile',username=session.user) }}">{{ session.user }}</a>  &nbsp
+            <a class=metanav href="{{ url_for('show_user_profile',username=session.user) }}">{{ session.user }}</a>
+            &nbsp
             <a class=metanav href="{{ url_for('logout') }}">LOG OUT</a>
         {% endif %}
     </div>
@@ -43,12 +46,54 @@
         <div class=flash>{{ message }}</div>
     {% endfor %}
     {% block body %}{% endblock %}
+    {% block marquee %}
+
+        <h2 id="ticker" class="marquee marquee-direction-left" data-marquee="~ ~ ~ ~ ~"></h2>
+        <script>
+            function addCSSRule(sheet, selector, rules) {
+                sheet.deleteRule(0);
+                if ("insertRule" in sheet) {
+                    sheet.insertRule(selector + "{" + rules + "}", 0);
+                }
+                else if ("addRule" in sheet) {
+
+                    sheet.addRule(selector, rules, 0);
+                } else alert("the fuck browser are you using?");
+            }
+
+            var sheet = (function () {
+                var style = document.createElement("style");
+                style.appendChild(document.createTextNode(""));
+                document.head.appendChild(style);
+                if ("insertRule" in style.sheet) {
+                    style.sheet.insertRule("tmp" + "{}", 0);
+                }
+                else if ("addRule" in sheet) {
+
+                    style.sheet.addRule("tmp", "", 0);
+                }
+                return style.sheet;
+            })();
+
+            window.setInterval(
+                function() {$.getJSON("{{ url_for("tickerdata", referrer=self|quoted) }}", {}).done(
+                    function (tickerdata) {
+                        var ticker = document.getElementById("ticker");
+                        ticker.setAttribute("data-marquee", tickerdata["data"]);
+                        var len = tickerdata["data"].length;
+                        addCSSRule(sheet, ".marquee:before",
+                            "  -webkit-animation-duration: " + (len / 5).toFixed(0) + "s;\n" +
+                            "          animation-duration: " + (len / 5).toFixed(0) + "s;\n"
+                            , sheet.cssRules.length);
+
+                    })}, 6000)</script>
+    {% endblock %}
 </div>
 {% if not session.logged_in %}
     <br>
-    <div style="text-align: center"><a href="{{ url_for('impressum') }}" >Impressum</a></div>
+    <div style="text-align: center"><a href="{{ url_for('impressum') }}">Impressum</a></div>
 {% endif %}
-<div style="text-align: center"><a href="{{ url_for('lightswitch', x=request.path[1:]) }}" >Light Switch</a></div>
+<div style="text-align: center"><a href="{{ url_for('lightswitch', x=request.path[1:]) }}">Light Switch</a></div>
 <br>
 </body>
 </html>

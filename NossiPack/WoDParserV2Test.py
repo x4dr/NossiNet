@@ -5,9 +5,6 @@ from flask import json
 from NossiPack.WoDDice import WoDDice
 
 
-#
-
-
 class WoDParser(object):
     def __init__(self, defines):
         self.dbg = ""
@@ -232,7 +229,7 @@ class WoDParser(object):
                 roll = self.make_roll(trigger)  # it is rolled but not added to the list so this one vanishes
                 loopsum = 0
                 for i in range(times):
-                    self.altrolls.append(roll.reroll())
+                    self.altrolls.append(roll.another())
                     loopsum += self.altrolls[-1].result
                 message = message.replace("&", ("&ignore&" if (triggername is "loop") else str(loopsum)), 1)  # its ok for loops to not have dice outside the trigger
             elif triggername == "values":

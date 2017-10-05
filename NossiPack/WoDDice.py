@@ -47,7 +47,7 @@ class WoDDice(object):
                                                "g" if self.returnfun == "sum" else "") + (
                    (" exploding on " + str(self.explodeon)) if self.explodeon <= self.max else "")
 
-    def reroll(self):
+    def another(self):
         if not self.amount:
             raise Exception("No Amount set for reroll!")
         else:
@@ -59,6 +59,11 @@ class WoDDice(object):
                 'explode': self.max - self.explodeon - 1,
                 'amount': self.amount
             })
+
+    def reroll(self):
+        self.roll_next(self.amount)
+        return self.result
+
 
     def roll_next(self, amount):
         self.maxamount += amount

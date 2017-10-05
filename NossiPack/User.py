@@ -27,10 +27,7 @@ class User(object):
         self.funds = funds
         self.sheet = Character.deserialize(sheet)
         self.oldsheets = self.deserialize_old_sheets(oldsheets)
-        if admin == "Administrator":
-            self.admin = "Administrator"
-        else:
-            self.admin = ""
+        self.admin = admin
         self.defines = {}
         if defines:
             self.defines = pickle.loads(defines)

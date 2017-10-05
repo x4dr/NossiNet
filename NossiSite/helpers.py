@@ -1,14 +1,19 @@
+import re
+
 from NossiSite import app
 import sqlite3
 from contextlib import closing
+# noinspection PyUnresolvedReferences
 from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash, send_from_directory, Response
+# noinspection PyUnresolvedReferences
 from jinja2 import Environment
 from werkzeug.security import generate_password_hash
 import time
 import logging
 
 log = logging.Logger("helperlogger")
+token = {}
 
 
 def stream_template(template_name, **context):
@@ -27,11 +32,11 @@ def stream_string(s):
 def stream_file(f):
     o = open(f, 'rb')
     try:
-        bytes = o.read(500)
-        while bytes != b'':
-            yield bytes
-            bytes = o.read(500)
-        yield bytes
+        streambytes = o.read(500)
+        while streambytes != b'':
+            yield streambytes
+            streambytes = o.read(500)
+        yield streambytes
     finally:
         o.close()
 
@@ -48,6 +53,14 @@ def init_db():
         db.commit()
 
 
+@app.template_filter('quoted')
+def quoted(s):
+    quotedstring = re.findall('\'([^\']*)\'', str(s))
+    if quotedstring:
+        return quotedstring[0]
+    return None
+
+
 def connect_db():
     print("connecting to", app.config['DATABASE'])
     return sqlite3.connect(app.config['DATABASE'])
@@ -56,6 +69,8 @@ def connect_db():
 @app.before_request
 def before_request():
     g.db = connect_db()
+
+
 #    try:
 #        print(request.remote_addr, " => ", request.path,
 #              ">", session.get('user', '?'), "<")
@@ -63,8 +78,8 @@ def before_request():
 #        print("exception while printing before request")
 
 
-#@app.after_request
-#def after_request(x):
+# @app.after_request
+# def after_request(x):
 #    try:
 #        print(x)
 #        print(request.remote_addr, " done ", request.path,
@@ -79,10 +94,43 @@ def teardown_request(exception):
     db = getattr(g, 'db', None)
     if db is not None:
         db.close()
+    if exception:
+        print(exception)
 
+
+@app.context_processor
+def gettoken():
+    gentoken()
+    global token
+    return dict(token=token.get(session.get('user', None), ''))
+
+
+def gentoken():
+    global token
+    if session.get('user', False):
+        token[session['user']] = generate_token(session)
+        print("generated:", token[session['user']])
+        return token[session['user']]
+    else:
+        return ''
+
+
+def checktoken():
+    global token
+    if token.get(session.get('user', None), None) != request.form.get('token', "None"):
+        # so that None != "None" but a forged token with just "None" inside never matches
+        flash("invalid token!")
+        print("Token received:" + request.form.get('token', "None") + " Token expected:",
+              token.get(session.get('user', None), "INVALID"))
+        return False
+    else:
+        token.pop(session.get('user', ''))
+        return True
 
 @app.errorhandler(404)
 def page_not_found(e):
+    if e:
+        print(e)
     return render_template('404.html'), 404
 
 

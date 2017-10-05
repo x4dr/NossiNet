@@ -1,4 +1,5 @@
 import json
+import os
 import random
 import time
 
@@ -7,12 +8,11 @@ import bleach
 from NossiPack.Character import Character
 from NossiPack.User import Userlist, User
 from NossiSite import app
-from NossiSite.helpers import g, session, generate_token, request, redirect, url_for, \
+from NossiSite.helpers import g, session, checktoken, request, redirect, url_for, \
     render_template, flash, generate_password_hash, init_db, abort
 
 # from NossiPack.krypta import  sumdict, gendicedata
 
-token = {}
 
 bleach.sanitizer.ALLOWED_TAGS += ["br", "u", "p", "table", "th", "tr", "td", "tbody", "thead", "tfoot"]
 
@@ -62,7 +62,6 @@ def show_entries():
         e['text'] = bleach.clean(e['text'].replace("\n", "<br>"))
         e['own'] = (session.get('logged_in')) and (session.get('user') == e['author'])
     entries = [e for e in entries if e.get('author', "none")[0].isupper()]  # dont send out lowercase authors (deleted)
-    gentoken()
 
     return render_template('show_entries.html', entries=entries)
 
@@ -80,7 +79,7 @@ def editentries(x):
             entries = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4], tags=row[5]) for row
                        in
                        cur.fetchall()]
-            gentoken()
+
             return render_template('show_entries.html', entries=entries, edit=True)
         try:
             x = int(x)
@@ -89,15 +88,13 @@ def editentries(x):
             entry = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4], tags=row[5]) for row in
                      cur.fetchall()][0]
             if (session.get("user").upper() == entry['author'].upper()) or session.get('admin'):
-                gentoken()
+
                 return render_template('edit_entry.html', entry=entry)
             else:
                 flash("not authorized to edit id" + str(x))
 
         except:
             flash("id " + str(x) + " not found.")
-
-        gentoken()
         return redirect(url_for('editentries', x="all"))
     if request.method == "POST":
         print(session.get('user', '?'), "editing id " + request.form['id'], request.form)
@@ -120,7 +117,6 @@ def editentries(x):
             else:
                 flash("not authorized: " + session.get('user').upper() + "!=" + entry['author'].upper())
 
-        gentoken()
         return redirect(url_for('show_entries'))
 
 
@@ -306,7 +302,7 @@ def timestep():
                 except Exception:
                     error = 'invalid transaction'
     ul.saveuserlist()
-    gentoken()
+
     return render_template('timestep.html', user=ul.loaduserbyname(session.get('user')),
                            error=error, keyprovided=keyprovided)
 
@@ -370,7 +366,7 @@ def plusone(ident):
         ul.saveuserlist()
         g.db.execute('UPDATE entries SET plusOned = ? WHERE ID = ?', [entry.get('plusoned'), ident])
         g.db.commit()
-        gentoken()
+
     return redirect(url_for('show_entries'))
 
 
@@ -385,7 +381,7 @@ def add_entry():
                      [session.get('user'), request.form['title'], request.form['text'], request.form['tags']])
         g.db.commit()
         flash('New entry was successfully posted')
-    gentoken()
+
     return redirect(url_for('show_entries'))
 
 
@@ -426,7 +422,7 @@ def add_funds():
                     error = 'invalid transaction'
 
     ul.saveuserlist()
-    gentoken()
+
     return render_template('funds.html', user=u, error=error, keyprovided=keyprovided)
 
 
@@ -472,7 +468,7 @@ def login():  # this is not clrs secure because it does not need to be
             print("logged in as", user)
 
             return redirect(url_for('show_entries'))
-    gentoken()
+
     return render_template('login.html', error=error)
 
 
@@ -525,7 +521,7 @@ def show_user_profile(username):
     ownkudos = 0
     if session.get('logged_in', False):
         ownkudos = ul.getuserbyname(session.get('user')).kudos
-    gentoken()
+
     site = render_template('userinfo.html', ownkudos=ownkudos, user=u, msgs=msgs)
     return site
 
@@ -535,33 +531,16 @@ def impressum():
     return render_template('Impressum.html')
 
 
-@app.context_processor
-def gettoken():
-    global token
-    return dict(token=token.get(session.get('user', None), ''))
+@app.route('/tickerdata/<referrer>')
+def tickerdata(referrer):
+    result = {"data": "- - - - -"}
+    print(os.getcwd())
+    with open("NossiSite/locales/newsEN.json") as f:
+        news = json.loads(f.read())
+    if referrer == "show_entries.html":
+        result["data"] = news["mainpage"]
 
-
-def gentoken():
-    global token
-    if session.get('user', False):
-        token[session['user']] = generate_token(session)
-        print("generated:", token[session['user']])
-        return token[session['user']]
-    else:
-        return ''
-
-
-def checktoken():
-    global token
-    if token.get(session.get('user', None), None) != request.form.get('token', "None"):
-        # so that None != "None" but a forged token with just "None" inside never matches
-        flash("invalid token!")
-        print("Token received:" + request.form.get('token', "None") + " Token expected:",
-              token.get(session.get('user', None), "INVALID"))
-        return False
-    else:
-        token.pop(session.get('user', ''))
-        return True
+    return json.dumps(result)
 
 
 @app.route('/sendmsg/<username>', methods=['POST'])
@@ -629,7 +608,7 @@ def honor(ident):
                 ul.saveuserlist()
         else:
             error = 'already unlocked!'
-    gentoken()
+
     return render_template('userinfo.html', user=u, error=error,
                            heads=['<META HTTP-EQUIV="refresh" CONTENT="5;url=' +
                                   url_for('show_user_profile', username=u.username) + '">'])
@@ -681,7 +660,7 @@ def unlock(ident):
                 ul.saveuserlist()
         else:
             flash('already unlocked!')
-    gentoken()
+
     return render_template('userinfo.html', user=u, error=error,
                            heads=['<META HTTP-EQUIV="refresh" CONTENT="5;url=' + url_for('show_user_profile',
                                                                                          username=u.username) + '">'])
@@ -714,7 +693,7 @@ def resetpassword():
                 flash('You seem to not exist. Huh...')
                 return render_template('resetpassword.html')
     ul.saveuserlist()
-    gentoken()
+
     return render_template('resetpassword.html')
 
 
@@ -738,7 +717,7 @@ def payout():
             except:
                 error = "Error deducting \"" + request.form.get('amount', 'nothing') + "\"."
     ul.saveuserlist()
-    gentoken()
+
     return render_template('payout.html', user=u, error=error)
 
 
