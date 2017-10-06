@@ -48,7 +48,7 @@
     {% block body %}{% endblock %}
     {% block marquee %}
 
-        <h2 id="ticker" class="marquee marquee-direction-left" data-marquee="~ ~ ~ ~ ~"></h2>
+   <!--     <h2 id="ticker" class="marquee marquee-direction-left" data-marquee="~ ~ ~ ~ ~"></h2>-->
         <script>
             function addCSSRule(sheet, selector, rules) {
                 sheet.deleteRule(0);
@@ -75,7 +75,7 @@
                 return style.sheet;
             })();
 
-            window.setInterval(
+ /*           window.setInterval(
                 function() {$.getJSON("{{ url_for("tickerdata", referrer=self|quoted) }}", {}).done(
                     function (tickerdata) {
                         var ticker = document.getElementById("ticker");
@@ -86,7 +86,7 @@
                             "          animation-duration: " + (len / 5).toFixed(0) + "s;\n"
                             , sheet.cssRules.length);
 
-                    })}, 6000)</script>
+                    })}, 6000)*/</script>
     {% endblock %}
 </div>
 {% if not session.logged_in %}
