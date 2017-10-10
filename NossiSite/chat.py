@@ -158,7 +158,8 @@ def printroll(roll, parser=None, testing=False, message=""):
 
     if parser:
         if not parser.triggers.get("suppress", None):
-            for r in parser.altrolls[-parser.triggers.get("cutoff", 20):(-1 if roll is not None else len(parser.altrolls) + 1)]:
+            for r in parser.altrolls[
+                     -parser.triggers.get("cutoff", 20):(-1 if roll is not None else len(parser.altrolls) + 1)]:
                 if r:
                     if parser.triggers.get("verbose", None):
                         printroll(r, testing=testing)
@@ -170,11 +171,11 @@ def printroll(roll, parser=None, testing=False, message=""):
 
         if parser.triggers.get("breakthrough", None):
             times, current, goal, log = parser.triggers.get("breakthrough", None)
-            for i in [x for x in log.split("\n") if x][-parser.triggers.get("cutoff",20):]:
+            for i in [x for x in log.split("\n") if x][-parser.triggers.get("cutoff", 20):]:
                 deliver(i, "'S BREAKTHROUGH: ")
                 time.sleep(float(parser.triggers.get("speed", 0.5)))
             time.sleep(1)
-            deliver(str(times)+" TRIES TO REACH "+str(int(current))+"/"+str(goal)+".", "'S ATTEMPT TOOK ")
+            deliver(str(times) + " TRIES TO REACH " + str(int(current)) + "/" + str(goal) + ".", "'S ATTEMPT TOOK ")
 
     if not roll:
         return
@@ -189,13 +190,11 @@ def printroll(roll, parser=None, testing=False, message=""):
         for i in roll.roll_vv().split("\n"):
             deliver(i, " ROLL: ")
             time.sleep(float(parser.triggers.get("speed", 0.5)))
-    elif len(roll.r) > (parser.triggers.get("cutoff",20) if parser is not None else 20):
+    elif len(roll.r) > (parser.triggers.get("cutoff", 20) if parser is not None else 20):
         deliver(str(roll.roll_nv()), " ROLLS: [" + str(len(roll.r)) + " DICEROLLS] ==> ")
     else:
         print("delivering normally:", roll.roll_v())
         deliver(roll.roll_v(), " ROLLS: ")
-
-
 
 
 def menucmds(message):
@@ -439,6 +438,9 @@ def disconnect_request():
     disconnect()
 
 
+leaving = False
+
+
 # noinspection PyUnresolvedReferences
 @socketio.on('connect', namespace='/chat')
 def chat_connect():
@@ -446,6 +448,8 @@ def chat_connect():
         emit('Message', {'prefix': '', 'data': namedStrings['notLoggedIn']})
         return False
     global userlist
+    global leaving
+    leaving = False
     join_room(session.get("user", "?") + "_dotupdates")
     session['id'] = request.sid
     if session.get('user', False):
@@ -469,17 +473,21 @@ def chat_connect():
         return False
 
 
-# noinspection PyUnresolvedReferences
 @socketio.on('disconnect', namespace='/chat')
 def test_disconnect():
-    # DEBUG 
-    print("test disconnect", str(session))
-    try:
-        print('Client disconnected', rooms())
-    except:
-        print("Last client disconnected.")
-    try:
-        for r in session['roomlist']:
-            r.userleave(session['user'])
-    except Exception as inst:
-        print(namedStrings['roomlistErr'], inst.args)
+    # DEBUG
+    global leaving
+    if not leaving:
+        leaving = True
+        print("test disconnect", str(session))
+        try:
+            print('Client disconnected', rooms())
+        except:
+            print("Last client disconnected.")
+        try:
+            for r in session['roomlist']:
+                r.userleave(session['user'])
+        except Exception as inst:
+            print(namedStrings['roomlistErr'], inst.args)
+    if leaving:
+        print("leaving while leaving ...", str(session))
