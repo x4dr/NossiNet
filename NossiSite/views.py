@@ -1,5 +1,4 @@
 import json
-import os
 import random
 import time
 
@@ -535,7 +534,6 @@ def impressum():
 @app.route('/tickerdata/<referrer>')
 def tickerdata(referrer):
     result = {"data": "- - - - -"}
-    print(os.getcwd())
     with open("NossiSite/locales/newsEN.json") as f:
         news = json.loads(f.read())
     if referrer == "show_entries.html":
@@ -549,6 +547,8 @@ def tickerdata(referrer):
 @app.route('/boardgame<int:size>_<seed>.json')
 @app.route('/boardgame<int:size>_.json')
 def boardgamemap(size, seed=""):
+    if size > 100:
+        size = 100
     rx = random.Random()
     if seed:
         rx.seed(str(size) + str(seed))
@@ -574,7 +574,6 @@ def boardgamemap(size, seed=""):
              (6 if j % 2 == 1 and (i in [0, size - 1] or j in [0, size - 1]) else
               (5 if 0 < i < size - 1 else 8))))
 
-        print(difficulty, i, j)
         for l in fpik(e(r(), difficulty)):
             yield l
 
@@ -598,6 +597,7 @@ def boardgamemap(size, seed=""):
             yield ("," if not first else "") + "["
             resetfirst()
             for y in range(size):
+                time.sleep(0.001)
                 yield ("" if notfirst() else ",") + "{ \"x\":%d, \"y\":%d, " % (x, y) + ",".join(
                     cell(x, y)) + "}"
             yield "]"
@@ -609,8 +609,9 @@ def boardgamemap(size, seed=""):
 @app.route('/gameboard/<int:size>/')
 @app.route('/gameboard/<int:size>/<seed>')
 def gameboard(size, seed=""):
+    if size > 20:
+        size = 20
     return render_template("gameboard.html", size=size, seed=seed)
-    pass
 
 
 @app.route('/sendmsg/<username>', methods=['POST'])
