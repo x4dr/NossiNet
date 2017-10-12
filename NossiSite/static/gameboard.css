@@ -1,0 +1,38 @@
+
+
+.hexagon{
+    fill: #100505;
+    stroke: #00a700;
+}
+
+/* HOVER COLOR */
+
+.hexagon:hover {
+        fill: #5a1010;
+    -webkit-transition: all 0.3s ease;
+    -moz-transition: all 0.3s ease;
+    -o-transition: all 0.3s ease;
+    transition: all 0.3s ease;
+}
+
+/* GENERAL STYLES */
+.menutext{
+    color: #00f700;
+}
+body {
+
+    background: -webkit-linear-gradient(bottom, #000000, #100000);
+    background: linear-gradient(bottom, #000000, #100000);
+}
+
+a {
+    outline: none;
+    border: 0;
+    text-decoration: none;
+}
+a svg #hexagon{
+    transition: 200ms;
+    transition-timing-function: ease-in-out;
+    -webkit-transition: 200ms;
+    -webkit-transition-timing-function: ease-in-out;
+}

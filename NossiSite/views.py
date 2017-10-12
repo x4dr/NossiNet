@@ -4,6 +4,7 @@ import random
 import time
 
 import bleach
+from flask import Response
 
 from NossiPack.Character import Character
 from NossiPack.User import Userlist, User
@@ -539,8 +540,77 @@ def tickerdata(referrer):
         news = json.loads(f.read())
     if referrer == "show_entries.html":
         result["data"] = news["mainpage"]
+    else:
+        result["data"] = ""
 
     return json.dumps(result)
+
+
+@app.route('/boardgame<int:size>_<seed>.json')
+@app.route('/boardgame<int:size>_.json')
+def boardgamemap(size, seed=""):
+    rx = random.Random()
+    if seed:
+        rx.seed(str(size) + str(seed))
+
+    def r(a=4):
+        for i in range(a):
+            yield rx.randint(1, 10)
+
+    def e(inp, dif):
+        for i in inp:
+            yield 2 if i == 10 else (1 if i >= dif else 0)
+
+    def fpik(inp, pref="FPIK"):
+        for i in range(len(pref)):
+            yield '"' + pref[i] + '": ' + str(next(inp))
+
+    def cell(i, j):
+        difficulty = (
+            (9 if i == j else
+             8)
+            if i in [0, size - 1] and j in [0, size - 1] else
+            (7 if j in [0, size - 1] else
+             (6 if j % 2 == 1 and (i in [0, size - 1] or j in [0, size - 1]) else
+              (5 if 0 < i < size - 1 else 8))))
+
+        print(difficulty, i, j)
+        for l in fpik(e(r(), difficulty)):
+            yield l
+
+    first = True
+
+    def notfirst():
+        nonlocal first
+        if first:
+            first = False
+            return True
+        else:
+            return False
+
+    def resetfirst():
+        nonlocal first
+        first = True
+
+    def generate():
+        yield "{\"board\": ["
+        for x in range(size):
+            yield ("," if not first else "") + "["
+            resetfirst()
+            for y in range(size):
+                yield ("" if notfirst() else ",") + "{ \"x\":%d, \"y\":%d, " % (x, y) + ",".join(
+                    cell(x, y)) + "}"
+            yield "]"
+        yield "]}"
+
+    return Response(generate(), mimetype='text/json')
+
+
+@app.route('/gameboard/<int:size>/')
+@app.route('/gameboard/<int:size>/<seed>')
+def gameboard(size, seed=""):
+    return render_template("gameboard.html", size=size, seed=seed)
+    pass
 
 
 @app.route('/sendmsg/<username>', methods=['POST'])
