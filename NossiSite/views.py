@@ -562,17 +562,20 @@ def boardgamemap(size, seed=""):
             yield 2 if i == 10 else (1 if i >= dif else 0)
 
     def fpik(inp, pref="FPIK"):
+        vals = list(inp)
+        vals = [(v if v != 2 else (2 if sum(vals) < 4 else 1)) for v in vals]
         for i in range(len(pref)):
-            yield '"' + pref[i] + '": ' + str(next(inp))
+            yield '"' + pref[i] + '": ' + str(vals[i])
 
     def cell(i, j):
-        difficulty = (
+        difficulty = 8
+        '''6 + (
             (9 if i == j else
              8)
             if i in [0, size - 1] and j in [0, size - 1] else
             (7 if j in [0, size - 1] else
              (6 if j % 2 == 1 and (i in [0, size - 1] or j in [0, size - 1]) else
-              (5 if 0 < i < size - 1 else 8))))
+              (5 if 0 < i < size - 1 else 8))))'''
 
         for l in fpik(e(r(), difficulty)):
             yield l
