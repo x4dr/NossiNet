@@ -15,19 +15,14 @@ CREATE TABLE IF NOT EXISTS messages (
   title     TEXT NOT NULL,
   text      TEXT NOT NULL,
   value   INTEGER,
-  kudosrep  INTEGER,
-  kudosaut  INTEGER,
-  lock    BOOLEAN,
-  honored BOOLEAN
+  lock    BOOLEAN
 );
 
 --DROP TABLE users;
 CREATE TABLE IF NOT EXISTS users (
   username     TEXT PRIMARY KEY NOT NULL,
   passwordhash TEXT             NOT NULL,
-  kudos        INTEGER          NOT NULL,
   funds        INTEGER          NOT NULL,
-  kudosdebt    TEXT             NOT NULL,
   sheet        TEXT             NOT NULL,
   oldsheets    TEXT,
   defines      TEXT,

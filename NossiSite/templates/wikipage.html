@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+{% block head %}
+    {% for headstate in heads %}
+        {{ headstate|safe }}
+    {% else %}
+    {% endfor %}
+{% endblock %}
+{% block body %}
+    <h1>{{ entry.title }}</h1>
+    <div class="entry" style="word-wrap:break-word;border:1px solid">{{ entry.text|safe }}
+          <br> {#dangerous entry.text has to be cleaned before being sent here#}
+    </div>
+{% endblock %}

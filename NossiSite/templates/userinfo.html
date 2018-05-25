@@ -12,24 +12,18 @@
                 <dl>
                     <dt>Title:</dt>
                     <input type="hidden" value={{ token }} name="token">
-                    <dd><input class=leet type=text size=30 name="title" , required></dd>
+                    <dd><input class=leet type=text size=30 name="title"  required></dd>
                     <dt>Text:</dt>
                     <dd><textarea class=leet name="text" rows=5 cols=40, required></textarea></dd>
                     <dt>Price to view</dt>
-                    <dd><input class=leet value="0" type=number name="price" , required></dd>
+                    <dd><input class=leet value="0" type=number name="price"  required></dd>
                     <br>
                     <dd><input class=leeet type=submit value=Send></dd>
                 </dl>
             </form>
-            <h2>{{ user.username }} has {{ user.kudos }} Kudos.</h2>
-            <dd> When they accept
-                this, 20% of your Kudos (right now that would be {{ ownkudos // 5 }}) will be deducted from you,
-                half of that (right now {{ ownkudos // 10 }}) will be granted to them and as they earn Kudos
-                you will get double your investment (right now {{ (ownkudos // 5)*2 }} Kudos) back.
-            </dd><br>
+           <br>
             <a href = "{{ url_for('showsheet', name=user.username) }}">Sheet of {{ user.username }}</a>
         {% else %}
-            <h3>You have {{ user.kudos }} Kudos. </h3>
             <h3>You have {{ user.funds }} Credits.</h3>
             <h3><a href="{{ url_for('add_funds') }}"> BUY CREDITS </a></h3>
             <h3><a href="{{ url_for('payout') }}"> SELL CREDITS </a></h3>
@@ -46,37 +40,19 @@
                  by <a href="{{ url_for('show_user_profile', username=msg.author) }}">{{ msg.author }} {% endif %}</a>
             </h2>{{ msg.text|safe }}
             {% if msg.value != 0 %}
-                <br><h3>This message has a price of {{ msg.value }} Credit{% if msg.value!=1 %}s{% endif %}{% if msg.honored=="irrelevant" %}{% else %}
-                   and is{% if msg.lock %} locked{% else %} unlocked{% endif %}{% endif %}.
+                <br><h3>This message has a price of {{ msg.value }} Credit{% if msg.value!=1 %}s{% endif %}
+                   and is{% if msg.lock %} locked{% else %} unlocked{% endif %}.
 
                 {% if msg.lock %}
                     </h3><br>
                     <form action="{{ url_for('unlock', ident=msg.id) }}">
-                        If you unlock this message, the price in kudos plus 10% your total kudos will be moved into
-                        escrow for you and your partner. If it was to your liking you should honor the message,
-                        giving back the amount in escrow for both and adding the price in kudos on top of that.
-                        <br>
                         <br>
                         <input class=leeet type="submit" value="Unlock (costs {{ msg.value }})">
                     </form>
                     <br>
                     <h3>
-                {% else %}
-                    {% if msg.honored %}
-                    {% else %}<br>
-                        <form action="{{ url_for('honor', ident=msg.id) }}" method="post">
-                            <br>
-                            <input type="hidden" name="token" value="{{ token }}">
-                             If you liked this deal, honor it and you will gain {{ msg.kudosrep }} Kudos
-                                and {{ msg.author }} will gain {{ msg.kudosaut }} Kudos.
-                            <br>
-                            <input class=leeet type="submit" value="Honor it.">
-                        </form>
-                        <br> {% endif %}
                 {% endif %}
-            {% if msg.honored=="irrelevant" %}
             {% else %}
-                <br> This deal has{% if msg.honored %}{% else %} not{% endif %} been honored. </h3>
             {% endif %}
             {% endif %}
         {% endfor %}
