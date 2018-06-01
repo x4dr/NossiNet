@@ -10,7 +10,7 @@ import urllib
 __author__ = "maric"
 
 
-class Character(object):
+class VampireCharacter(object):
     def __init__(self, name="", attributes=None, meta=None, abilities=None,
                  virtues=None, backgrounds=None, disciplines=None,
                  special=None):
@@ -581,7 +581,8 @@ class Character(object):
                      'Virtues': self.virtues,
                      'Backgrounds': self.backgrounds,
                      'BGVDSCP_combined': self.combine_bgvdscp(),
-                     'Special': self.special}
+                     'Special': self.special,
+                     'Type': "OWOD"}
         return character
 
     def legacy_convert(self):  # this is the legacy section used to update old sheets into new formats
@@ -711,7 +712,7 @@ class Character(object):
         a = str(response.read())
 
         result = names.search(a)
-        char = Character()
+        char = VampireCharacter()
         att = allocaterandomly(prio[0], mini, cap, 3) + \
               allocaterandomly(prio[1], mini, cap, 3) + \
               allocaterandomly(prio[2], mini, cap, 3)

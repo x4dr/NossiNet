@@ -3,18 +3,21 @@ import random
 import time
 
 import bleach
+import markdown
 from flask import Response
+from markupsafe import Markup
 
-from NossiPack.Character import Character
+from NossiPack.FenCharacter import FenCharacter
+from NossiPack.VampireCharacter import VampireCharacter
 from NossiPack.User import Userlist, User
 from NossiSite import app
 from NossiSite.helpers import g, session, checktoken, request, redirect, url_for, \
-    render_template, flash, generate_password_hash, init_db, abort
+    render_template, flash, generate_password_hash, init_db, abort, wikiload
 
 # from NossiPack.krypta import  sumdict, gendicedata
 
 
-bleach.sanitizer.ALLOWED_TAGS += ["br", "u", "p", "table", "th", "tr", "td", "tbody", "thead", "tfoot"]
+bleach.ALLOWED_TAGS += ["br", "u", "p", "table", "th", "tr", "td", "tbody", "thead", "tfoot"]
 
 init_db()
 
@@ -27,7 +30,7 @@ def setfromdalines():
     number = request.args.get('dalinesnumber')[-7:]
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
-    new = Character()
+    new = VampireCharacter()
     if new.setfromdalines(number):
         u.sheet = new
         ul.saveuserlist()
@@ -66,10 +69,17 @@ def show_entries():
     return render_template('show_entries.html', entries=entries)
 
 
+@app.route('/index/')
+def wiki_index():
+    return ""
+
+
 @app.route('/wiki/<page>', methods=["GET", "POST"])
 def wikipage(page):
     if request.method == "GET":
-        wikiload(page)
+        title, tags, body = wikiload(page)
+        body = Markup(markdown.markdown(body, extensions=["tables", "toc"]))
+        return render_template("wikipage.html", title=title, tags=tags, body=body, light=True)
 
 
 @app.route('/edit/entry/<x>', methods=["GET", "POST"])
@@ -132,6 +142,12 @@ def update_filter():
         session['tags'] = request.form['tags']
     return redirect(url_for("show_entries"))
 
+@app.route('/fentest')
+def fentest():
+    char = FenCharacter("Testchar")
+    char.load_from_md(wikiload("3d10fcharacter")[2], *wikiload("yarat_character"))
+    print(char.Categories)
+    return render_template("fensheet.html", character=char)
 
 @app.route('/charactersheet/')
 def charsheet():
@@ -140,8 +156,14 @@ def charsheet():
         return redirect(url_for('login'))
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
-    return render_template('vampsheet.html', character=u.sheet.getdictrepr(), own=True)
-
+    sheet = u.sheet.getdictrepr()
+    if sheet["Type"] == "OWOD":
+        return render_template('vampsheet.html', character=sheet, own=True)
+    elif sheet["Type"] == "FEN":
+        return render_template('fensheet.html', character=sheet, own=True)
+    else:
+        error = "unrecognized sheet format"
+        return render_template('vampsheet.html', character=sheet, error=error, own=True)
 
 @app.route('/showsheet/<name>')
 def showsheet(name="None"):
@@ -157,7 +179,7 @@ def showsheet(name="None"):
         if u.sheetpublic or session.get('admin', False):
             return render_template('vampsheet.html', character=u.sheet.getdictrepr(), own=False)
         else:
-            return render_template('vampsheet.html', character=Character().getdictrepr(), own=False)
+            return render_template('vampsheet.html', character=VampireCharacter().getdictrepr(), own=False)
     else:
         abort(404)
 
@@ -659,8 +681,8 @@ def lightswitch():
 def chargen(a, b, c, abia, abib, abic, shuffle):
     try:
         return render_template("vampsheet.html",
-                               character=Character.makerandom(1, 5, int(a), int(b), int(c),
-                                                              int(abia), int(abib), int(abic), int(shuffle))
+                               character=VampireCharacter.makerandom(1, 5, int(a), int(b), int(c),
+                                                                     int(abia), int(abib), int(abic), int(shuffle))
                                .getdictrepr())
     except:
         return redirect("/chargen/")

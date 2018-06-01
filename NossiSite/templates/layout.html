@@ -10,7 +10,7 @@
     {% endblock %}
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="marquee.css") }}">
     <link rel="stylesheet" type="text/css" href="
-    {%- if session.light -%}
+    {%- if session.light or light is defined -%}
     {{ url_for('static', filename='stylelight.css') }}
     {%- else -%}
     {{ url_for('static', filename='style.css') }}
@@ -24,7 +24,10 @@
 </head>
 <body>
 <div id="page_complete" class=page>
+{% block pagetitle %}
     <h1><a href={{ url_for('show_entries') }}>NOSFERATU NETWORK</a></h1>
+{% endblock %}
+{% block metanavcomplete %}
     <div class=metanav>
         {% if not session.logged_in %}
             <a class=metanav href="{{ url_for('login') }}">log in</a>
@@ -41,6 +44,7 @@
             <a class=metanav href="{{ url_for('logout') }}">LOG OUT</a>
         {% endif %}
     </div>
+{% endblock %}
     {% if error %}<p class=error><strong>Error:</strong> {{ error }}{% endif %}
     {% for message in get_flashed_messages() %}
         <div class=flash>{{ message }}</div>

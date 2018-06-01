@@ -26,7 +26,7 @@ h3 {
     color: #777777
 }
 
-.page           { margin: 1em auto; width: 45em; border: 5px solid #000000;
+.page           { margin: 1em auto; width: 90%; border: 5px solid #000000;
                   padding: 0.8em; background: #fefefe; color: #000000;  }
 .leet {
     background-color: #ffffff;

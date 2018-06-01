@@ -4,7 +4,7 @@ import pickle
 
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
-from NossiPack.Character import Character
+from NossiPack.VampireCharacter import VampireCharacter
 
 __author__ = 'maric'
 
@@ -17,13 +17,13 @@ def connect_db():
 
 class User(object):
     def __init__(self, username, password="", passwordhash=None, funds=0,
-                 sheet=Character().serialize(), oldsheets=b'', admin="", defines=''):
+                 sheet=VampireCharacter().serialize(), oldsheets=b'', admin="", defines=''):
         self.username = username.strip()
         self.pw_hash = generate_password_hash(password)
         if passwordhash is not None:
             self.pw_hash = passwordhash
         self.funds = funds
-        self.sheet = Character.deserialize(sheet)
+        self.sheet = VampireCharacter.deserialize(sheet)
         self.oldsheets = self.deserialize_old_sheets(oldsheets)
         self.admin = admin
         self.defines = {}
@@ -59,7 +59,7 @@ class User(object):
     def update_sheet(self, form):
         print("logging character change\n", form)
         if "newsheet" in form.keys():
-            self.oldsheets.append(Character())
+            self.oldsheets.append(VampireCharacter())
             self.oldsheets[-1].setfromform(form)
         self.sheet.setfromform(form)
 
@@ -107,7 +107,7 @@ class Userlist(object):
                     "VALUES (:username,:pwhash, :funds, :sheet, :oldsheets, :defines, :admin)", d)
             else:
                 d = dict(username=u.username, pwhash=u.pw_hash, funds=u.funds,
-                         defines=pickle.dumps(u.defines), admin=u.admin, emptysheet=Character().serialize())
+                         defines=pickle.dumps(u.defines), admin=u.admin, emptysheet=VampireCharacter().serialize())
                 db.execute(
                     "INSERT OR REPLACE INTO users (username, passwordhash, funds,  "
                     "sheet, oldsheets, defines, admin) "

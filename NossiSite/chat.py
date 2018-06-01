@@ -1,4 +1,4 @@
-from NossiPack import WoDData, WoDParser, Userlist, Character
+from NossiPack import WoDData, WoDParser, Userlist, VampireCharacter
 from NossiPack.Chatrooms import Chatroom
 import time
 import json
@@ -426,7 +426,7 @@ def check_char(message):
         formdata = {}
         for f in message['data']:
             formdata[f['name']] = f['value']
-        test = Character()
+        test = VampireCharacter()
         test.setfromform(formdata)
         emit('comments', {'data': test.get_diff(old=old, extra=True)})
 

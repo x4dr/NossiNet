@@ -1,5 +1,7 @@
 import re
 
+import os
+
 from NossiSite import app
 import sqlite3
 from contextlib import closing
@@ -13,6 +15,7 @@ import time
 import logging
 
 log = logging.Logger("helperlogger")
+wikipath = "~/wiki/"
 token = {}
 
 
@@ -27,6 +30,26 @@ def stream_template(template_name, **context):
 def stream_string(s):
     for l in s:
         yield l
+
+
+def wikiload(page):
+    with open(os.path.expanduser(wikipath + page + ".md")) as f:
+        mode = "meta"
+        title = ""
+        tags = []
+        body = ""
+        for line in f.readlines():
+            if mode and line.startswith("tags:"):
+                tags += [t for t in line.strip("tags:").strip().split(" ") if t]
+                continue
+            if mode and line.startswith("title:"):
+                title = line.strip("title:").strip()
+                continue
+            if mode and not line.strip():
+                mode = ""
+                continue
+            body += line
+        return title, tags, body
 
 
 def stream_file(f):
@@ -126,6 +149,7 @@ def checktoken():
     else:
         token.pop(session.get('user', ''))
         return True
+
 
 @app.errorhandler(404)
 def page_not_found(e):

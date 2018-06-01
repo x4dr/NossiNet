@@ -5,9 +5,31 @@
     {% else %}
     {% endfor %}
 {% endblock %}
+{% block title %}
+        <title>{{ title }}</title>
+{% endblock %}
+{% block pagetitle %}
+        <h1><a href={{ url_for('wiki_index') }}>{{ title }}</h1>
+{% endblock %}
+{% block metanavcomplete %}
+    <div class=metanav>
+    {% if not session.logged_in %}
+        <a class=metanav href="{{ url_for('login') }}">log in</a>
+        <a class=metanav href="{{ url_for('register') }}">register</a>
+    {% else %}
+            <a class=metanav href="{{ url_for('charsheet') }}">SHEET</a>  &nbsp
+            <a class=metanav href="{{ url_for('chatsite') }}">CHAT</a>  &nbsp
+            <a class=metanav href="{{ url_for('show_user_profile',username=session.user) }}">{{ session.user }}</a>
+            &nbsp
+            <a class=metanav href="{{ url_for('logout') }}">LOG OUT</a>
+    {% endif %}
+    </div>d
+{% endblock %}
+
 {% block body %}
-    <h1>{{ entry.title }}</h1>
-    <div class="entry" style="word-wrap:break-word;border:1px solid">{{ entry.text|safe }}
+
+    <h5>{{ tags }}</h5>
+    <div class="entry" style="word-wrap:break-word;border:1px solid">{{ body|safe }}
           <br> {#dangerous entry.text has to be cleaned before being sent here#}
     </div>
 {% endblock %}
