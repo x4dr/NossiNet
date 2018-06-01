@@ -142,10 +142,11 @@ def update_filter():
         session['tags'] = request.form['tags']
     return redirect(url_for("show_entries"))
 
-@app.route('/fentest')
-def fentest():
-    char = FenCharacter("Testchar")
-    char.load_from_md(wikiload("3d10fcharacter")[2], *wikiload("yarat_character"))
+
+@app.route('/fensheet/<c>')
+def fensheet(c):
+    char = FenCharacter()
+    char.load_from_md(wikiload("3d10fcharacter")[2], *wikiload(c+"_character"))
     print(char.Categories)
     return render_template("fensheet.html", character=char)
 
