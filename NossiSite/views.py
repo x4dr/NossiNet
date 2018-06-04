@@ -142,7 +142,7 @@ def editentries(x=None):
             print(request.form.get("wiki", None), "<<<<<<<<<<<<<<<<<")
             if request.form.get("wiki", None) is not None:
                 wikisave(request.form['wiki'], session.get('user'), request.form['title'],
-                         request.form['tags'], request.form['text'])
+                         request.form['tags'].split(" "), request.form['text'])
                 return redirect(url_for("wikipage", page=request.form['wiki']))
 
             cur = g.db.execute('SELECT author, title, text, id, tags '
