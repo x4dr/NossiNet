@@ -5,29 +5,44 @@
     {% else %}
     {% endfor %}
 {% endblock %}
+{% if wiki is defined %}
+    {% block title %}
+        <title> {{ wiki | capitalize}} </title>
+    {% endblock %}
+    {% block pagetitle %}
+        {% if entry.title | length > 0 %}
+            <h1><a href={{ url_for('wiki_index') }}>{{ entry.title | capitalize }}</h1>
+        {% else %}
+            <h1><a href={{ url_for('wiki_index') }}>{{ wiki | capitalize }}</h1>
+        {% endif %}
+    {% endblock %}
+{% endif %}
 {% block body %}
-  {% if session.logged_in %}
-    <form action="{{ url_for('editentries', x=entry.id) }}" method=post class=edit-entry>
-        <input type="hidden" name="token" value="{{ token }}">
-        <input type="hidden" name="id" value="{{ entry.id }}">
-        <dl>
-            <dt>Title:</dt>
-            <dd><input class=leet size=30 name=title value="{{ entry.title }}"></dd>
-            <dt>Text:</dt>
-            <dd><textarea class=leet name=text rows=5 cols=40>{{ entry.text }}</textarea></dd>
-            <dt>Tags:</dt>
-            <dd><input class=leet size=30 name=tags value="{{ entry.tags }}"></dd>
-            <dd><input class=leeet type=submit value=Share></dd>
-      </dl>
+    {% if session.logged_in %}
+        {% if mode=="blog" %}
+            <form action="{{ url_for('editentries', x=entry.id) }}" method=post class=edit-entry>
+        {% elif mode=="wiki" %}
+            <form action="{{ url_for('editentries', x=wiki) }}" method=post class=edit-entry>
+            <input type="hidden" name="wiki" value="{{ wiki }}">
+        {% endif %}
+    <input type="hidden" name="token" value="{{ token }}">
+    <input type="hidden" name="id" value="{{ entry.id }}">
+    <dl>
+        <dt>Title:</dt>
+        <dd><input class=leet size=50 name=title value="{{ entry.title }}"></dd>
+        <dt>Text:</dt>
+        <dd><textarea class=leet name=text rows={% if mode =="blog" %}5{% elif mode =="wiki" %}40{% endif %} style="width: 80%">{{ entry.text }}</textarea></dd>
+        <dt>Tags:</dt>
+        <dd><input class=leet size=50 name=tags value="{{ entry.tags }}"></dd>
+        <dd><input class=leeet type=submit value=Share></dd>
+    </dl>
     </form>
-    <form action="{{ url_for('delete_entry',ident=entry.id) }}"  method="post" class="edit-entry">
-         <input class=leeet type=submit value="{% if entry.author[0].islower() %}un{% endif %}delete">
-         <input type="hidden" name="token" value={{ token }}>
-    </form>
-   <!-- <form action="{{ url_for('delete_entry',ident=entry.id, final="yes") }}"  method="post" class="edit-entry">
-         <input class=leeet type=submit value="delete forever.">
-         <input type="hidden" name="token" value={{ token }}>
-    </form>-->
-  {% endif %}
+        {% if mode!="wiki" %}
+            <form action="{{ url_for('delete_entry',ident=entry.id) }}"  method="post" class="edit-entry">
+                <input class=leeet type=submit value="{% if entry.author[0].islower() %}un{% endif %}delete">
+                <input type="hidden" name="token" value={{ token }}>
+            </form>
+        {% endif%}
+    {% endif %}
 
 {% endblock %}

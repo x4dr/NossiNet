@@ -27,9 +27,33 @@ def stream_template(template_name, **context):
     return rv
 
 
+wikitags = {}
+wikistamp = 0
+
+
+def wikindex():
+    global wikistamp
+    global wikitags
+    mds = []
+    for p in os.listdir(os.path.expanduser(wikipath)):
+        if p.endswith(".md"):
+            mds.append(p[:-3])
+    return sorted(mds), wikitags, wikistamp
+
+
 def stream_string(s):
     for l in s:
         yield l
+
+
+def wikisave(page, author, title, tags, body):
+    with open(os.path.expanduser(wikipath + page + ".md"), 'w+') as f:
+        f.write("title: " + title + "  \n")
+        f.write("tags: " + " ".join(tags) + "  \n")
+        f.write(body)
+    with open(os.path.expanduser(wikipath) + "control", "a+") as f:
+        f.write(page + " edited by " + author+"\n")
+    os.system("wikiupdate")
 
 
 def wikiload(page):
@@ -92,6 +116,9 @@ def connect_db():
 @app.before_request
 def before_request():
     g.db = connect_db()
+    global wikistamp
+    if len(wikitags.keys()) == 0:
+        updatewikitags()
 
 
 #    try:
@@ -114,11 +141,23 @@ def before_request():
 
 @app.teardown_request
 def teardown_request(exception):
+    global wikistamp
     db = getattr(g, 'db', None)
     if db is not None:
         db.close()
     if exception:
-        print(exception)
+        print("exception caught by teardown:", exception)
+    if time.time() - wikistamp > 3600:
+        updatewikitags()
+
+
+def updatewikitags():
+    global wikistamp
+    print("it has been " + str(time.time() - wikistamp) + " seconds since the last wiki indexing")
+    wikistamp = time.time()
+    for m in wikindex()[0]:
+        wikitags[m] = wikiload(m)[1]
+    print("index took: " + str(1000 * (time.time() - wikistamp)) + " milliseconds")
 
 
 @app.context_processor

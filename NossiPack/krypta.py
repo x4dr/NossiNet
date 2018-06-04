@@ -2,7 +2,7 @@ import os
 import random
 from time import time
 
-from NossiPack.WoDParserV2Test import WoDParser
+from NossiPack.WoDParser import WoDParser
 from NossiSite.helpers import connect_db, init_db
 
 

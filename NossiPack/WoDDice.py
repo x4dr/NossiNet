@@ -20,7 +20,7 @@ class WoDDice(object):
             self.explodeon = explodeon
             self.returnfun = ""
             self.amount = None
-
+        self.selectors = []  # only used for fenrolls
         self.r = []
         self.log = ""
         self.dbg = ""
@@ -63,7 +63,6 @@ class WoDDice(object):
     def reroll(self):
         self.roll_next(self.amount)
         return self.result
-
 
     def roll_next(self, amount):
         self.maxamount += amount
@@ -117,7 +116,7 @@ class WoDDice(object):
             log += str(i) + ", "
         if len(self.r) < 1:
             return " ==> 0"
-        log = log[:-2] + " ==> " + str(self.result)
+        log = log[:-2] + " ==> " + str(self.result if not len(self.selectors) else self.roll_sel())
         return log
 
     def roll_vv(self):  # very verbose
@@ -128,11 +127,18 @@ class WoDDice(object):
     def roll_max(self):  # returns max nonverbose as int
         return max(self.r)
 
+    def roll_sel(self):
+        if ","in self.selectors:
+            self.selectors = self.selectors.split(",")
+        self.selectors = [max(min(int(x), len(self.r)), 0) for x in self.selectors]
+        return sum(sorted(self.r)[s-1] for s in self. selectors)
+
     def roll_vmax(self):  # returns max verbose as int
         log = ""
         for n in self.r:
             log += str(n) + ", "
         self.log = log[:-2] + "= " + str(self.roll_max())
+        return self.roll_max()
 
     def roll_sum(self):  # returns sum nonverbose as int
         return sum(self.r)
@@ -147,8 +153,8 @@ class WoDDice(object):
     def result(self):
         return self.roll_nv() if not self.returnfun else \
             max(self.r) if self.returnfun == "max" else \
-            min(self.r) if self.returnfun == "min" else \
-            sum(self.r) if self.returnfun == "sum" else None
+                min(self.r) if self.returnfun == "min" else \
+                    sum(self.r) if self.returnfun == "sum" else None
 
     def roll(self, amount):
         self.roll_next(amount)

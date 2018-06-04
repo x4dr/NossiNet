@@ -12,7 +12,7 @@ from NossiPack.VampireCharacter import VampireCharacter
 from NossiPack.User import Userlist, User
 from NossiSite import app
 from NossiSite.helpers import g, session, checktoken, request, redirect, url_for, \
-    render_template, flash, generate_password_hash, init_db, abort, wikiload
+    render_template, flash, generate_password_hash, init_db, abort, wikiload, wikindex, wikisave
 
 # from NossiPack.krypta import  sumdict, gendicedata
 
@@ -71,23 +71,44 @@ def show_entries():
 
 @app.route('/index/')
 def wiki_index():
-    return ""
+    r = wikindex()
+    heads = []
+    if r[2] > 3600:
+        heads.append('<META HTTP-EQUIV="refresh" CONTENT="5;url=/">')
+    return render_template("wikindex.html", entries=r[0], tags=r[1], heads=heads)
 
 
+@app.route('/wiki')
 @app.route('/wiki/<page>', methods=["GET", "POST"])
-def wikipage(page):
+def wikipage(page=None):
     if request.method == "GET":
-        title, tags, body = wikiload(page)
+        if page is None:
+            page = request.args.get('n', None)
+            if page is None:
+                return abort(404)
+            return redirect(url_for("wikipage", page=page))
+        try:
+            title, tags, body = wikiload(page)
+        except FileNotFoundError:
+            if session.get('logged_in'):
+                entry = dict(id=0, text="", tags="", author=session.get('user'))
+                print(entry)
+                return render_template("edit_entry.html", mode="wiki", wiki=page, entry=entry
+                                       )
+            else:
+                flash("That page doesn't exist. Log in to create it!")
+
+                return redirect(url_for("wiki_index"))
+        body = bleach.clean(body)
         body = Markup(markdown.markdown(body, extensions=["tables", "toc"]))
-        return render_template("wikipage.html", title=title, tags=tags, body=body, light=True)
+        return render_template("wikipage.html", title=title, tags=tags, body=body, wiki=page)
 
 
-@app.route('/edit/entry/<x>', methods=["GET", "POST"])
-def editentries(x):
+@app.route('/edit/<x>', methods=["GET", "POST"])
+def editentries(x=None):
     if not session.get('logged_in'):
         flash('You are not logged in!')
         return redirect(url_for('login'))
-    print("editentries")
     if request.method == "GET":
         if x == "all":
             cur = g.db.execute('SELECT author, title, text, plusOned, id, tags '
@@ -99,24 +120,36 @@ def editentries(x):
             return render_template('show_entries.html', entries=entries, edit=True)
         try:
             x = int(x)
-            cur = g.db.execute('SELECT author, title, text, plusOned, id, tags '
+            cur = g.db.execute('SELECT author, title, text, id, tags '
                                'FROM entries WHERE id == ?', [x])
-            entry = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4], tags=row[5]) for row in
+            entry = [dict(author=row[0], title=row[1], text=row[2], id=row[3], tags=row[4]) for row in
                      cur.fetchall()][0]
             if (session.get("user").upper() == entry['author'].upper()) or session.get('admin'):
 
-                return render_template('edit_entry.html', entry=entry)
+                return render_template('edit_entry.html', mode="blog", entry=entry)
             else:
                 flash("not authorized to edit id" + str(x))
-
-        except:
-            flash("id " + str(x) + " not found.")
+        except ValueError:
+            try:
+                author = ""
+                ident = x,
+                title, tags, text = wikiload(x)
+                entry = dict(author=author, id=ident, title=title, tags=" ".join(tags), text=text)
+                return render_template('edit_entry.html', mode="wiki", wiki=x, entry=entry)
+            except FileNotFoundError:
+                flash("entry " + str(x) + " not found.")
         return redirect(url_for('editentries', x="all"))
     if request.method == "POST":
         print(session.get('user', '?'), "editing id " + request.form['id'], request.form)
         if request.form["id"] == "new":
             add_entry()
         if checktoken():
+            print(request.form.get("wiki", None), "<<<<<<<<<<<<<<<<<")
+            if request.form.get("wiki", None) is not None:
+                wikisave(request.form['wiki'], session.get('user'), request.form['title'],
+                         request.form['tags'], request.form['text'])
+                return redirect(url_for("wikipage", page=request.form['wiki']))
+
             cur = g.db.execute('SELECT author, title, text, plusOned, id, tags '
                                'FROM entries WHERE id == ?', [int(request.form['id'])])
             entry = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4], tags=row[5]) for row in
@@ -146,9 +179,15 @@ def update_filter():
 @app.route('/fensheet/<c>')
 def fensheet(c):
     char = FenCharacter()
-    char.load_from_md(wikiload("3d10fcharacter")[2], *wikiload(c+"_character"))
+    char.load_from_md(wikiload("3d10fcharacter")[2], *wikiload(c + "_character"))
     print(char.Categories)
     return render_template("fensheet.html", character=char)
+
+
+@app.route('/bytag/<tag>')
+def tagsearch(tag):
+    pass
+
 
 @app.route('/charactersheet/')
 def charsheet():
@@ -165,6 +204,7 @@ def charsheet():
     else:
         error = "unrecognized sheet format"
         return render_template('vampsheet.html', character=sheet, error=error, own=True)
+
 
 @app.route('/showsheet/<name>')
 def showsheet(name="None"):

@@ -1,29 +1,18 @@
 html * {
-    color: #000000;
+    color: #333;
     background: #ffffff;
-     overflow-x: hidden;
-    font-family: "Lucida Console", Monaco, monospace;
-!important;
 }
 
 body {
-    font-family: "Lucida Console", Monaco, monospace;
-    background: #ffffff;
-    overflow-x: scroll
+    background: #faffff;
 }
 a, h1, h2       { color: #000000; }
 
 
 h1              { border-bottom: 2px solid #000000;  }
-h2              {
-                font-size: 1.2em; }
 
 h3 {
-    font-size: 1.0em;
-}
-
-h3 {
-    color: #777777
+    color: #222
 }
 
 .page           { margin: 1em auto; width: 90%; border: 5px solid #000000;
@@ -42,25 +31,11 @@ input[type="text"], textarea {
     background-color: #ffffff;
     color: #000000;
 }
-pre {
-    white-space: pre-wrap;       /* CSS 3 */
-    white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
-    white-space: -o-pre-wrap;    /* Opera 7 */
-    word-wrap: break-word;       /* Internet Explorer 5.5+ */
-}
-
 .leeet {
     background-color: #d5c3d5;
-    font-weight: bold;
     color: #000000;
     border: 1px solid #000000;
-    margin: 1px;
 }
-.entries        { list-style: none; margin: 0; padding: 0; background: #000000;color:#000000 }
-.entries li     { margin: 0.8em ; }
-.entries li h2  { margin-left: 0; }
-
-label { white-space: nowrap}
 
 .add-entry {
     font-size: 0.9em;
@@ -72,13 +47,6 @@ label { white-space: nowrap}
 .flash          { background:#000000; padding: 0.5em;
                   border: 1px solid #000000; }
 
-.imgover {
-    background: transparent;
-    position: absolute;
-    left: 0;
-    top: 0;
-
-}
 
 .error {
     background: #cf0012;
@@ -96,9 +64,6 @@ label { white-space: nowrap}
     border:1px solid #000000;
     overflow:auto; }
 
-::-webkit-scrollbar {
-     width: auto;
-}
 ::-webkit-scrollbar-track {
       background-color: #000200;
 }
@@ -116,39 +81,9 @@ label { white-space: nowrap}
     width:395px;
     border:1px solid #000000; }
 
-#submit { width: 60px; }
-
 
 .formLine {
     overflow: hidden;
     background: #cccccc;
     width: 100%
-}
-.formLine span {
-    display: block;
-    overflow: hidden;
-    padding: 0 5px;
-}
-.formLine input {
-    -moz-box-sizing: border-box;
-    -webkit-box-sizing: border-box;
-    box-sizing: border-box;
-}
-
-input[type='radio'] {
-
-    float: right;
-    position:absolute;
-    visibility: hidden;
-}
-input[type='radio'] + label {
-    margin: 0;
-    clear: none;
-    padding: 0 2px 0 1px;
-    cursor: pointer;
-    background: url(off.png) left center no-repeat;
-}
-
-input[type='radio']:checked + label{
-  background: url(radio.png) left center no-repeat;
 }

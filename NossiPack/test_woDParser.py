@@ -1,5 +1,5 @@
 from unittest import TestCase
-from NossiPack.WoDParserV2Test import WoDParser, Node
+from NossiPack.WoDParser import WoDParser, Node
 
 
 class TestWoDParser(TestCase):

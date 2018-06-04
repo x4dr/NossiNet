@@ -143,7 +143,6 @@ def defines(message="=", user=None):
 
 
 def printroll(roll, parser=None, testing=False, message=""):
-    print("calling printroll with:", roll, parser)
     if testing:
         deliver = echo
     else:
@@ -193,7 +192,6 @@ def printroll(roll, parser=None, testing=False, message=""):
     elif len(roll.r) > (parser.triggers.get("cutoff", 20) if parser is not None else 20):
         deliver(str(roll.roll_nv()), " ROLLS: [" + str(len(roll.r)) + " DICEROLLS] ==> ")
     else:
-        print("delivering normally:", roll.roll_v())
         deliver(roll.roll_v(), " ROLLS: ")
 
 

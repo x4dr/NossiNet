@@ -9,13 +9,11 @@
         {%- endif -%}</title>
     {% endblock %}
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="marquee.css") }}">
-    <link rel="stylesheet" type="text/css" href="
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
     {%- if session.light or light is defined -%}
-    {{ url_for('static', filename='stylelight.css') }}
-    {%- else -%}
-    {{ url_for('static', filename='style.css') }}
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='stylelight.css') }}">
     {%- endif -%}
-    ">
+
 
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.1/socket.io.js"></script>

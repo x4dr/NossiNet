@@ -6,7 +6,7 @@
     {% endfor %}
 {% endblock %}
 {% block title %}
-        <title>{{ title }}</title>
+    <title xmlns="http://www.w3.org/1999/html">{{ title }}</title>
 {% endblock %}
 {% block pagetitle %}
         <h1><a href={{ url_for('wiki_index') }}>{{ title }}</h1>
@@ -23,13 +23,19 @@
             &nbsp
             <a class=metanav href="{{ url_for('logout') }}">LOG OUT</a>
     {% endif %}
-    </div>d
+    </div>
 {% endblock %}
 
 {% block body %}
-
-    <h5>{{ tags }}</h5>
     <div class="entry" style="word-wrap:break-word;border:1px solid">{{ body|safe }}
           <br> {#dangerous entry.text has to be cleaned before being sent here#}
+    </div>
+    <div style="margin: 2em">|
+    {% for t in tags %}
+    <a href="{{ url_for('tagsearch',tag = t) }}">{{ t }}</a> |
+    {% endfor %}
+    <br>
+
+    <a href="{{ url_for("editentries", x=wiki) }}"><input type="button" class="leeet" style="margin-top: 1em" value="Edit"></a>
     </div>
 {% endblock %}
