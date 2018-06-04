@@ -42,8 +42,8 @@ def setfromdalines():
 
 @app.route('/')
 def show_entries():
-    cur = g.db.execute('SELECT author, title, text, plusOned, id, tags FROM entries ORDER BY id DESC')
-    entries = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4], tags=row[5]) for row in
+    cur = g.db.execute('SELECT author, title, text, id, tags FROM entries ORDER BY id DESC')
+    entries = [dict(author=row[0], title=row[1], text=row[2], id=row[5], tags=row[6]) for row in
                cur.fetchall()]
     for e in entries:
         skip = True
@@ -57,11 +57,6 @@ def show_entries():
                 skip = False
         if skip:
             e["author"] = e.get("author").lower()  # "delete" nonmatching tags
-        if e.get('plusoned'):
-            esplit = e.get('plusoned').split(' ')
-            e['plusoned'] = ((session.get('user') in esplit) or (session.get('user') == e.get('author')))
-        else:
-            e['plusoned'] = (session.get('user') == e.get('author'))
         e['text'] = bleach.clean(e['text'].replace("\n", "<br>"))
         e['own'] = (session.get('logged_in')) and (session.get('user') == e['author'])
     entries = [e for e in entries if e.get('author', "none")[0].isupper()]  # dont send out lowercase authors (deleted)
@@ -111,9 +106,9 @@ def editentries(x=None):
         return redirect(url_for('login'))
     if request.method == "GET":
         if x == "all":
-            cur = g.db.execute('SELECT author, title, text, plusOned, id, tags '
+            cur = g.db.execute('SELECT author, title, text, id, tags '
                                'FROM entries WHERE UPPER(author) LIKE UPPER(?)', [session.get('user')])
-            entries = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4], tags=row[5]) for row
+            entries = [dict(author=row[0], title=row[1], text=row[2], id=row[3], tags=row[4]) for row
                        in
                        cur.fetchall()]
 
@@ -150,9 +145,9 @@ def editentries(x=None):
                          request.form['tags'], request.form['text'])
                 return redirect(url_for("wikipage", page=request.form['wiki']))
 
-            cur = g.db.execute('SELECT author, title, text, plusOned, id, tags '
+            cur = g.db.execute('SELECT author, title, text, id, tags '
                                'FROM entries WHERE id == ?', [int(request.form['id'])])
-            entry = [dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4], tags=row[5]) for row in
+            entry = [dict(author=row[0], title=row[1], text=row[2], id=row[3], tags=row[4]) for row in
                      cur.fetchall()][0]
             if (session.get('user').upper() == entry['author'].upper()) or session.get('admin'):
                 print(session.get('user', '?'), "editing id " + request.form['id'], request.form)
@@ -336,9 +331,9 @@ def delete_entry(ident):
             flash('You are not logged in!')
             return redirect(url_for('login'))
         entry = {}
-        cur = g.db.execute('SELECT author, title, text, plusOned, id FROM entries WHERE id = ?', [ident])
+        cur = g.db.execute('SELECT author, title, text, id FROM entries WHERE id = ?', [ident])
         for row in cur.fetchall():  # SHOULD only run once
-            entry = dict(author=row[0], title=row[1], text=row[2], plusoned=row[3], id=row[4])
+            entry = dict(author=row[0], title=row[1], text=row[2], id=row[4])
         if (not session.get('admin')) and (entry.get('author').upper() != session.get('user')):
             flash('This is not your Post!')
         else:
