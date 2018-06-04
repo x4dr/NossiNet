@@ -43,7 +43,7 @@ def setfromdalines():
 @app.route('/')
 def show_entries():
     cur = g.db.execute('SELECT author, title, text, id, tags FROM entries ORDER BY id DESC')
-    entries = [dict(author=row[0], title=row[1], text=row[2], id=row[5], tags=row[6]) for row in
+    entries = [dict(author=row[0], title=row[1], text=row[2], id=row[3], tags=row[4]) for row in
                cur.fetchall()]
     for e in entries:
         skip = True
@@ -333,7 +333,7 @@ def delete_entry(ident):
         entry = {}
         cur = g.db.execute('SELECT author, title, text, id FROM entries WHERE id = ?', [ident])
         for row in cur.fetchall():  # SHOULD only run once
-            entry = dict(author=row[0], title=row[1], text=row[2], id=row[4])
+            entry = dict(author=row[0], title=row[1], text=row[2], id=row[3])
         if (not session.get('admin')) and (entry.get('author').upper() != session.get('user')):
             flash('This is not your Post!')
         else:
