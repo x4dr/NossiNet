@@ -181,7 +181,15 @@ def fensheet(c):
 
 @app.route('/bytag/<tag>')
 def tagsearch(tag):
-    pass
+    r = wikindex()
+    heads = []
+    a = r[1]
+    tags = {t: v for t, v in a.items() if tag in v}
+    entries = [e for e in r[0] if e in tags.keys()]
+
+    if r[2] > 3600:
+        heads.append('<META HTTP-EQUIV="refresh" CONTENT="5;url=/">')
+    return render_template("wikindex.html", entries=entries, tags=tags, heads=heads)
 
 
 @app.route('/charactersheet/')

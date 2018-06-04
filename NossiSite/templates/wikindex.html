@@ -1,4 +1,10 @@
 {% extends "layout.html" %}
+{% block title %}
+    <title>Wiki-Index</title>
+{% endblock %}
+{% block pagetitle %}
+    <a href="{{ url_for("wiki_index") }}"><h1>Wiki-Index</h1></a>
+{% endblock %}
 {% block body %}
     <h1> Entries </h1>
     <table><thead>
@@ -13,8 +19,8 @@
                 <td>
                     <a href="{{ url_for("wikipage",page=m) }}"> {{ m }}</a> </td><td> |
                 {% for x in tags[m] %}
-                    <a href="{{ url_for("tagsearch",tag=x) }}">{{ x }}</a> | </td>
-                {% endfor %}</tr>
+                    <a href="{{ url_for("tagsearch",tag=x) }}">{{ x }}</a> |
+                {% endfor %} </td></tr>
                 <tr>
             {% endfor %}
             </tr>
