@@ -8,6 +8,9 @@
       <dt>Password:
       <dd><input class=leet type=password name=password>
       <dd><input class=leet type=submit value=Login>
+        {% if returnto is defined %}
+        <input type=hidden value="{{ returnto }}" name="returnto">
+        {% endif %}
     </dl>
   </form>
 {% endblock %}

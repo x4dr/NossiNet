@@ -26,7 +26,7 @@ init_db()
 def setfromdalines():
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login'))
+        return redirect(url_for('login',r=request.url))
     number = request.args.get('dalinesnumber')[-7:]
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
@@ -103,7 +103,7 @@ def wikipage(page=None):
 def editentries(x=None):
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login'))
+        return redirect(url_for('login',r=request.url))
     if request.method == "GET":
         if x == "all":
             cur = g.db.execute('SELECT author, title, text, id, tags '
@@ -196,7 +196,7 @@ def tagsearch(tag):
 def charsheet():
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login'))
+        return redirect(url_for('login', r=request.url))
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
     sheet = u.sheet.getdictrepr()
@@ -213,7 +213,7 @@ def charsheet():
 def showsheet(name="None"):
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login'))
+        return redirect(url_for('login',r=request.url))
     if name == "None":
         return "error"
     name = name.upper()
@@ -232,7 +232,7 @@ def showsheet(name="None"):
 def del_sheet():
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login'))
+        return redirect(url_for('login',r=request.url))
     x = int(request.form["sheetnum"])
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
@@ -246,7 +246,7 @@ def del_sheet():
 def res_sheet():
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login'))
+        return redirect(url_for('login',r=request.url))
     x = int(request.form["sheetnum"])
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
@@ -287,7 +287,7 @@ def mapdata():
 def menu_oldsheets():
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login'))
+        return redirect(url_for('login',r=request.url))
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
     oldsheets = []
@@ -305,7 +305,7 @@ def menu_oldsheets():
 def showoldsheets(x):
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login'))
+        return redirect(url_for('login',r=request.url))
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
     try:
@@ -319,7 +319,7 @@ def showoldsheets(x):
 def modify_sheet():
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login'))
+        return redirect(url_for('login',r=request.url))
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
     if request.method == 'POST':
@@ -337,7 +337,7 @@ def delete_entry(ident):
     if checktoken():
         if not session.get('logged_in'):
             flash('You are not logged in!')
-            return redirect(url_for('login'))
+            return redirect(url_for('login',r=request.url))
         entry = {}
         cur = g.db.execute('SELECT author, title, text, id FROM entries WHERE id = ?', [ident])
         for row in cur.fetchall():  # SHOULD only run once
@@ -364,7 +364,7 @@ def delete_entry(ident):
 def add_entry():
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login'))
+        return redirect(url_for('login',r=request.url))
     print(session.get('user', '?'), "adding", request.form)
     if checktoken():
         g.db.execute('INSERT INTO entries (author, title, text, tags) VALUES (?, ?, ?, ?)',
@@ -442,8 +442,10 @@ def register():  # this is not clrs secure because it does not need to be
 
 
 @app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def login():  # this is not clrs secure because it does not need to be
     error = None
+    returnto = request.args.get('r', None)
     ul = Userlist(preload=True, sheets=False)
     if request.method == 'POST':
         user = request.form['username']
@@ -456,10 +458,13 @@ def login():  # this is not clrs secure because it does not need to be
             session['admin'] = (ul.loaduserbyname(session.get('user')).admin == "Administrator")
             flash('You were logged in')
             print("logged in as", user)
+            returnto = request.form.get('returnto',None)
+            if returnto is None:
+                return redirect(url_for('show_entries'))
+            else:
+                return redirect(returnto)
 
-            return redirect(url_for('show_entries'))
-
-    return render_template('login.html', error=error)
+    return render_template('login.html', returnto=returnto, error=error)
 
 
 @app.route('/logout')
@@ -606,7 +611,7 @@ def send_msg(username):
     if checktoken():
         if not session.get('logged_in'):
             flash('You are not logged in!')
-            return redirect(url_for('login'))
+            return redirect(url_for('login',r=request.url))
         g.db.execute('INSERT INTO messages (author,recipient,title,text,value,lock)'
                      ' VALUES (?, ?, ?, ?, ?, ?)',  # 6
                      [session.get('user'),  # 1 -author
@@ -661,7 +666,7 @@ def unlock(ident):
 def resetpassword():
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login'))
+        return redirect(url_for('login',r=request.url))
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
     if request.method == 'POST':
@@ -692,7 +697,7 @@ def resetpassword():
 def payout():
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login'))
+        return redirect(url_for('login',r=request.url))
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
     error = None
