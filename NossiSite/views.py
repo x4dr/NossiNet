@@ -83,6 +83,7 @@ def wikipage(page=None):
                 return abort(404)
             return redirect(url_for("wikipage", page=page))
         try:
+            page = page.lower()
             title, tags, body = wikiload(page)
         except FileNotFoundError:
             if session.get('logged_in'):
@@ -141,7 +142,7 @@ def editentries(x=None):
         if checktoken():
             print(request.form.get("wiki", None), "<<<<<<<<<<<<<<<<<")
             if request.form.get("wiki", None) is not None:
-                wikisave(request.form['wiki'], session.get('user'), request.form['title'],
+                wikisave(request.form['wiki'].lower(), session.get('user'), request.form['title'],
                          request.form['tags'].split(" "), request.form['text'])
                 return redirect(url_for("wikipage", page=request.form['wiki']))
 
