@@ -8,7 +8,7 @@
       <dt>Password:
       <dd><input class=leet type=password name=password>
       <dd><input class=leet type=submit value=Login>
-        {% if returnto is defined and returnto is not None %}
+        {% if returnto is defined and returnto is not none %}
         <input type=hidden value="{{ returnto }}" name="returnto">
         {% endif %}
     </dl>
