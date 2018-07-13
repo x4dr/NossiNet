@@ -291,11 +291,11 @@
             {% for bgvdscp in character.BGVDSCP_combined %}
                 <tr>
                     {% if bgvdscp.Background %}
-                        <td><input title="bg" list="Backgrounds"  style="width: 99%" class="leet" name="background_name_{{ bgvdscp.Background }}" value="{{ bgvdscp.Background }}"></td>
+                        <td><input title="bg" list="Backgrounds"  style="width: 90%" class="leet" name="background_name_{{ bgvdscp.Background }}" value="{{ bgvdscp.Background }}"></td>
                         <td>{{ chooser("background_value_"+bgvdscp.Background, bgvdscp.Background_Value, ([5,bgvdscp.Background_Value] | sort)[1] ) }}</td>
                     {% else %}
                         {% if bgnew < 8 %}
-                            <td><input title="additional bg" list="Backgrounds" class="leet" style="width: 99%" name="background_name_New{{ bgnew }}" value=""></td>
+                            <td><input title="additional bg" list="Backgrounds" class="leet" style="width: 90%" name="background_name_New{{ bgnew }}" value=""></td>
                             <td>{{ chooser("background_value_New"+bgnew|string, 0) }}</td>
                             {% set bgnew = bgnew + 1 %}
                         {% else %}
@@ -304,11 +304,11 @@
                     {% endif %}
                     <td style="width: 2%;"> </td>
                     {% if bgvdscp.Discipline %}
-                        <td><input title="dscp" style="width: 99%" class="leet chr_discipline" name="discipline_name_{{ bgvdscp.Discipline }}" value="{{ bgvdscp.Discipline }}"> </td>
+                        <td><input title="dscp" style="width: 90%" class="leet chr_discipline" name="discipline_name_{{ bgvdscp.Discipline }}" value="{{ bgvdscp.Discipline }}"> </td>
                         <td>{{ chooser("discipline_value_"+bgvdscp.Discipline, bgvdscp.Discipline_Value) }}</td>
                     {% else %}
                         {% if dscpnew < 8 %}
-                            <td><input title="additional dscp" style="width: 99%" class="leet chr_discipline" name="discipline_name_New{{ dscpnew }}" value=""></td>
+                            <td><input title="additional dscp" style="width: 90%" class="leet chr_discipline" name="discipline_name_New{{ dscpnew }}" value=""></td>
                             <td>{{ chooser("discipline_value_New"+dscpnew|string, 0) }}
                                 {% set dscpnew = dscpnew + 1 %}
                                 {% else %}
@@ -394,16 +394,21 @@
         </div>
     </form>
     <br>
-    <form id="checkchar"  style="float: right" name="checkchar">
-        <input id="check" type="submit"  class="leet bigbtn" value="CHECK">
-    </form>
-    <div style="float: left">Checks the Character cost (uses the newest sheet in your history)</div>
+    <table>
+        <tr>
+            <td>
+            <form action="{{ url_for('setfromsource') }}"> <input type="text" name="source" class="leet">
+                <input type="submit" class="leet" value="Load Character from Dalines or wiki"><br>(saves the active character into history)
+            </form>
+            </td>
+            <td>
+                <form id="checkchar"  name="checkchar">
+                    <input id="check" type="submit"  class="leet bigbtn" value="CHECK">
+                </form>
 
-
-    <br><br><br><br>
-    <form style="float: left" action="{{ url_for('setfromdalines') }}"> <input type="text" name="dalinesnumber" class="leet">
-        <input type="submit" class="leet" value="Load Character from Dalines"><br>(saves the active character into history)
-    </form>
-    <br><br>
+                <div>Checks the Character cost (uses the newest sheet in your history)</div>
+            </td>
+        </tr>
+    </table>
 
 {% endblock %}

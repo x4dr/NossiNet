@@ -22,21 +22,33 @@ bleach.ALLOWED_TAGS += ["br", "u", "p", "table", "th", "tr", "td", "tbody", "the
 init_db()
 
 
-@app.route('/setfromdalines/')
-def setfromdalines():
+@app.route('/setfromsource/')
+def setfromsource():
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login',r=request.url))
-    number = request.args.get('dalinesnumber')[-7:]
+        return redirect(url_for('login', r=request.url))
+    source = request.args.get('source')
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
-    new = VampireCharacter()
-    if new.setfromdalines(number):
-        u.sheet = new
-        ul.saveuserlist()
-        flash("character has been overwritten with provided Dalines sheet!")
-    else:
-        flash("Problem with Sheetnumber!")
+    try:
+        new = VampireCharacter()
+        if new.setfromdalines(source[-7:]):
+            u.sheet = new
+            ul.saveuserlist()
+            flash("character has been overwritten with provided Dalines sheet!")
+        else:
+            new = FenCharacter()
+            char = wikiload(source + "_character")
+            if char:
+                new.load_from_md(wikiload("3d10fcharacter")[2], char[0], char[1], char[2])
+                u.sheet = new
+                ul.saveuserlist()
+            else:
+                flash("Problem with provided sheet source!")
+    except Exception as e:
+        print(e)
+        flash("Sorry " + session.get('user').capitalize() + ", I can not let you do that.")
+
     return redirect(url_for('charsheet'))
 
 
@@ -104,7 +116,7 @@ def wikipage(page=None):
 def editentries(x=None):
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login',r=request.url))
+        return redirect(url_for('login', r=request.url))
     if request.method == "GET":
         if x == "all":
             cur = g.db.execute('SELECT author, title, text, id, tags '
@@ -204,7 +216,7 @@ def charsheet():
     if sheet["Type"] == "OWOD":
         return render_template('vampsheet.html', character=sheet, own=True)
     elif sheet["Type"] == "FEN":
-        return render_template('fensheet.html', character=sheet, own=True)
+        return render_template('fensheet.html', character=u.sheet, own=True)
     else:
         error = "unrecognized sheet format"
         return render_template('vampsheet.html', character=sheet, error=error, own=True)
@@ -214,7 +226,7 @@ def charsheet():
 def showsheet(name="None"):
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login',r=request.url))
+        return redirect(url_for('login', r=request.url))
     if name == "None":
         return "error"
     name = name.upper()
@@ -233,7 +245,7 @@ def showsheet(name="None"):
 def del_sheet():
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login',r=request.url))
+        return redirect(url_for('login', r=request.url))
     x = int(request.form["sheetnum"])
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
@@ -247,7 +259,7 @@ def del_sheet():
 def res_sheet():
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login',r=request.url))
+        return redirect(url_for('login', r=request.url))
     x = int(request.form["sheetnum"])
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
@@ -288,7 +300,7 @@ def mapdata():
 def menu_oldsheets():
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login',r=request.url))
+        return redirect(url_for('login', r=request.url))
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
     oldsheets = []
@@ -306,7 +318,7 @@ def menu_oldsheets():
 def showoldsheets(x):
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login',r=request.url))
+        return redirect(url_for('login', r=request.url))
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
     try:
@@ -316,21 +328,48 @@ def showoldsheets(x):
     return render_template('vampsheet.html', character=u.oldsheets[sheetnum].getdictrepr(), oldsheet=x)
 
 
-@app.route('/modify_sheet/', methods=['GET', 'POST'])
-def modify_sheet():
+@app.route('/new_fen_sheet/', methods=['GET'])
+def new_fen_sheet():
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login',r=request.url))
+        return redirect(url_for('login', r=request.url))
+    return render_template('fensheet_editor.html', character=FenCharacter())
+
+
+@app.route('/new_vamp_sheet/', methods=['GET'])
+def new_vamp_sheet():
+    if not session.get('logged_in'):
+        flash('You are not logged in!')
+        return redirect(url_for('login', r=request.url))
+    return render_template('vampsheet_editor.html', character=VampireCharacter())
+
+
+@app.route('/modify_sheet/', methods=['GET', 'POST'])
+@app.route('/modify_sheet/<t>', methods=['GET', 'POST'])
+def modify_sheet(t=None):
+    if not session.get('logged_in'):
+        flash('You are not logged in!')
+        return redirect(url_for('login', r=request.url))
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
+    if t is not None:
+        if t == "FEN":
+            u.sheet = FenCharacter()
+        if t == "OWOD":
+            u.sheet = VampireCharacter()
     if request.method == 'POST':
+        print("incoming modify:", request.form)
         u.update_sheet(request.form)
         ul.saveuserlist()
         return redirect('/charactersheet/')
-    ul.saveuserlist()
-    a = render_template('charsheet_editor.html', character=u.sheet.getdictrepr(), Clans=u.sheet.get_clans(),
-                        Backgrounds=u.sheet.get_backgrounds())
-    return a  # Response(stream_string(a))
+    a = "NOPE"
+    sheet = u.sheet.getdictrepr()
+    if sheet["Type"] == "OWOD":
+        a = render_template('vampsheet_editor.html', character=sheet, Clans=u.sheet.get_clans(),
+                            Backgrounds=u.sheet.get_backgrounds())
+    elif sheet["Type"] == "FEN":
+        a = render_template('fensheet_editor.html', character=u.sheet)
+    return a
 
 
 @app.route('/delete_entry/<ident>', methods=['POST'])
@@ -338,7 +377,7 @@ def delete_entry(ident):
     if checktoken():
         if not session.get('logged_in'):
             flash('You are not logged in!')
-            return redirect(url_for('login',r=request.url))
+            return redirect(url_for('login', r=request.url))
         entry = {}
         cur = g.db.execute('SELECT author, title, text, id FROM entries WHERE id = ?', [ident])
         for row in cur.fetchall():  # SHOULD only run once
@@ -365,7 +404,7 @@ def delete_entry(ident):
 def add_entry():
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login',r=request.url))
+        return redirect(url_for('login', r=request.url))
     print(session.get('user', '?'), "adding", request.form)
     if checktoken():
         g.db.execute('INSERT INTO entries (author, title, text, tags) VALUES (?, ?, ?, ?)',
@@ -459,7 +498,7 @@ def login():  # this is not clrs secure because it does not need to be
             session['admin'] = (ul.loaduserbyname(session.get('user')).admin == "Administrator")
             flash('You were logged in')
             print("logged in as", user)
-            returnto = request.form.get('returnto',None)
+            returnto = request.form.get('returnto', None)
             if returnto is None:
                 return redirect(url_for('show_entries'))
             else:
@@ -553,7 +592,7 @@ def boardgamemap(size, seed=""):
         for i in range(len(pref)):
             yield '"' + pref[i] + '": ' + str(vals[i])
 
-    def cell(i, j):
+    def cell():  # i, j):
         difficulty = 8
         '''6 + (
             (9 if i == j else
@@ -588,7 +627,10 @@ def boardgamemap(size, seed=""):
             for y in range(size):
                 time.sleep(0.001)
                 yield ("" if notfirst() else ",") + "{ \"x\":%d, \"y\":%d, " % (x, y) + ",".join(
-                    cell(x, y)) + "}"
+                    cell(
+                        # x, y
+                    )
+                ) + "}"
             yield "]"
         yield "]}"
 
@@ -612,7 +654,7 @@ def send_msg(username):
     if checktoken():
         if not session.get('logged_in'):
             flash('You are not logged in!')
-            return redirect(url_for('login',r=request.url))
+            return redirect(url_for('login', r=request.url))
         g.db.execute('INSERT INTO messages (author,recipient,title,text,value,lock)'
                      ' VALUES (?, ?, ?, ?, ?, ?)',  # 6
                      [session.get('user'),  # 1 -author
@@ -667,7 +709,7 @@ def unlock(ident):
 def resetpassword():
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login',r=request.url))
+        return redirect(url_for('login', r=request.url))
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
     if request.method == 'POST':
@@ -698,7 +740,7 @@ def resetpassword():
 def payout():
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        return redirect(url_for('login',r=request.url))
+        return redirect(url_for('login', r=request.url))
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
     error = None

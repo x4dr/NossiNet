@@ -383,15 +383,18 @@ def update_dots():
     maxima = ""
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user', "?"))
-    update += 'Bloodpool_' + str(u.sheet.special['Bloodpool'])
-    maxima += 'Bloodmax_' + str(u.sheet.special['Bloodmax'])
-    update += '&'
-    maxima += '&'
-    update += 'Willpower_' + str(u.sheet.special['Willpower'])
-    maxima += 'Willmax_' + str(u.sheet.special['Willmax'])
-    health = str(u.sheet.special['Bashing']) + '&' + str(u.sheet.special['Lethal']) + '&' + str(
-        u.sheet.special['Aggravated']) + '&' + str(u.sheet.special['Partialheal'])
-    emit('DotUpdate', {'data': update + "§" + maxima + "§" + health}, room=session.get("user", "?") + "_dotupdates")
+    if u.sheet.getdictrepr()["Type"] == "OWOD":
+        update += 'Bloodpool_' + str(u.sheet.special['Bloodpool'])
+        maxima += 'Bloodmax_' + str(u.sheet.special['Bloodmax'])
+        update += '&'
+        maxima += '&'
+        update += 'Willpower_' + str(u.sheet.special['Willpower'])
+        maxima += 'Willmax_' + str(u.sheet.special['Willmax'])
+        health = str(u.sheet.special['Bashing']) + '&' + str(u.sheet.special['Lethal']) + '&' + str(
+            u.sheet.special['Aggravated']) + '&' + str(u.sheet.special['Partialheal'])
+        emit('DotUpdate', {'data': update + "§" + maxima + "§" + health}, room=session.get("user", "?") + "_dotupdates")
+    elif u.sheet.getdictrepr()["Type"] == "OWOD":
+        emit('DotUpdate', {'data': "none"}, room=session.get("user", "?") + "_dotupdates")
 
 
 @socketio.on('NoteDots', namespace='/character')

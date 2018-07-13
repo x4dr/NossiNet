@@ -10,12 +10,12 @@ class FenCharacter(object):
         self.Tags = ""
         self.Name = name
         self.Meta = meta
-        self.Categories = {"Stärke": {},
-                           "Können": {},
-                           "Magie": {},
-                           "Weisheit": {},
-                           "Charisma": {},
-                           "Schicksal": {}}
+        self.Categories = {"Stärke": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Zeit": {}},
+                           "Können": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Zeit": {}},
+                           "Magie": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Zeit": {}},
+                           "Weisheit": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Zeit": {}},
+                           "Charisma": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Zeit": {}},
+                           "Schicksal": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Zeit": {}}}
         self.Wounds = []
         self.Modifiers = {}
         self.Inventory = {}
@@ -27,18 +27,18 @@ class FenCharacter(object):
         if cat == "Attribute":
             return -20 if val < 2 else \
                 0 if val == 2 else \
-                FenCharacter.costs(cat, val - 1) + (val - 2) * 20  # [-20, 0, 20, 60, 120],
+                    FenCharacter.costs(cat, val - 1) + (val - 2) * 20  # [-20, 0, 20, 60, 120],
         elif cat == "Fähigkeiten":
             return 0 if val == 0 else \
                 FenCharacter.costs(cat, val - 1) + 5 * val  # [5, 15, 30, 50, 75],
         elif cat == "Quellen":
             return 0 if val == 0 else \
                 5 if val == 1 else \
-                FenCharacter.costs(cat, val - 1) * 2  # [5, 10, 20, 40, 80]
+                    FenCharacter.costs(cat, val - 1) * 2  # [5, 10, 20, 40, 80]
         elif cat == "Konzepte":
             return 0 if val == 0 else \
                 5 if val == 1 else \
-                FenCharacter.costs(cat, val - 1) * 2 + 15  # [5, 15, 45, 135, 405],
+                    FenCharacter.costs(cat, val - 1) * 2 + 15  # [5, 15, 45, 135, 405],
         elif cat == "Aspekte":
             return 0 if val == 0 else \
                 FenCharacter.costs(cat, val - 1) + 5 * val  # [5, 15, 30, 50, 75],
@@ -60,6 +60,18 @@ class FenCharacter(object):
                     result += self.costs(cat, self.Categories[kind][cat][spec])
 
         return result
+
+    def checksum(self):
+        return self.allcosts()
+
+    def unify(self):
+        unified = {}
+        for kind in self.Categories.keys():
+            for cat in self.Categories[kind].keys():
+                for spec in self.Categories[kind][cat].keys():
+                    unified[spec] = self.Categories[kind][cat][spec]
+        print("unified fensheet:", unified)
+        return unified
 
     def load_from_md(self, templatemd, title, tags, body):
         cursec = ""
@@ -144,6 +156,9 @@ class FenCharacter(object):
         return old.allcosts() - self.allcosts()
 
     def setfromform(self, form):  # accesses internal dicts
+        print(form)
+        self.Categories["editing"] = {"is not": {"implemented yet": 1}}
+        self.Notes=form.get("Notes")
         pass
 
     def getdictrepr(self):

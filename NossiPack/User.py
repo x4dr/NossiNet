@@ -1,9 +1,12 @@
 import os
 import sys
 import pickle
+from typing import Union
 
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
+
+from NossiPack.FenCharacter import FenCharacter
 from NossiPack.VampireCharacter import VampireCharacter
 
 __author__ = 'maric'
@@ -23,7 +26,11 @@ class User(object):
         if passwordhash is not None:
             self.pw_hash = passwordhash
         self.funds = funds
-        self.sheet = VampireCharacter.deserialize(sheet)
+        try:
+            self.sheet = VampireCharacter.deserialize(sheet)
+        except:
+            self.sheet = FenCharacter.deserialize(sheet)
+
         self.oldsheets = self.deserialize_old_sheets(oldsheets)
         self.admin = admin
         self.defines = {}
@@ -92,13 +99,13 @@ class Userlist(object):
                              cur.fetchall()]
         db.close()
 
-    def saveuserlist(
-            self):  # writes/overwrites the SQL table with the maybe changed list. this is not performant at all
+    def saveuserlist(self):
+        # writes/overwrites the SQL table with the maybe changed list. this is not performant at all
         db = connect_db()
 
         for u in self.userlist:
             if u.sheet.checksum() != 0:
-                d = dict(username=u.username, pwhash=u.pw_hash,  funds=u.funds,
+                d = dict(username=u.username, pwhash=u.pw_hash, funds=u.funds,
                          sheet=u.sheet.serialize(), oldsheets=u.serialize_old_sheets(), defines=pickle.dumps(u.defines),
                          admin=u.admin)
                 db.execute(
@@ -141,13 +148,13 @@ class Userlist(object):
                 return True
         return False
 
-    def getuserbyname(self, username):
+    def getuserbyname(self, username) -> Union[User, None]:
         for u in self.userlist:
             if u.username == username:
                 return u
         return None
 
-    def loaduserbyname(self, username):
+    def loaduserbyname(self, username)-> Union[User, None]:
         db = connect_db()
         cur = db.execute('SELECT username, passwordhash, funds, '
                          'sheet, oldsheets, defines, admin FROM users WHERE username = (?)', (username,))
@@ -165,7 +172,7 @@ class Userlist(object):
             return user.funds
         return None
 
-    def valid(self, user, password):
+    def valid(self, user, password) -> bool:
         for u in self.userlist:
             if u.username == user:
                 if u.check_password(password):
