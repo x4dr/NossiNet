@@ -52,8 +52,8 @@ def wikisave(page, author, title, tags, body):
         f.write("tags: " + " ".join(tags) + "  \n")
         f.write(body)
     with open(os.path.expanduser(wikipath) + "control", "a+") as f:
-        f.write(page + " edited by " + author+"\n")
-    os.system(os.path.expanduser("~/")+"bin/wikiupdate & ")
+        f.write(page + " edited by " + author + "\n")
+    os.system(os.path.expanduser("~/") + "bin/wikiupdate & ")
 
 
 def wikiload(page):
@@ -164,29 +164,36 @@ def updatewikitags():
 def gettoken():
     gentoken()
     global token
-    return dict(token=token.get(session.get('user', None), ''))
+    return dict(token=token.get(session.get('user', None), '')[-1])
+
+
+def token_clear():
+    global token
+    token.pop(session['user'])
 
 
 def gentoken():
     global token
     if session.get('user', False):
-        token[session['user']] = generate_token(session)
+        token[session['user']] = token.get(session['user'], [])+[generate_token(session)]
         print("generated:", token[session['user']])
-        return token[session['user']]
+        return token[session['user']][-1]
     else:
         return ''
 
 
 def checktoken():
     global token
-    if token.get(session.get('user', None), None) != request.form.get('token', "None"):
+    ts = token.get(session.get('user', None), None)
+    ts = ts if ts else []
+    if request.form.get('token', "None") not in ts:
         # so that None != "None" but a forged token with just "None" inside never matches
         flash("invalid token!")
-        print("Token received:" + request.form.get('token', "None") + " Token expected:",
+        print("Token received:" + request.form.get('token', "None") + " Tokens expected:",
               token.get(session.get('user', None), "INVALID"))
         return False
     else:
-        token.pop(session.get('user', ''))
+        token[session.get('user', '')].remove(request.form.get('token', "None"))
         return True
 
 

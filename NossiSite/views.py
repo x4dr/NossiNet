@@ -12,7 +12,7 @@ from NossiPack.VampireCharacter import VampireCharacter
 from NossiPack.User import Userlist, User
 from NossiSite import app
 from NossiSite.helpers import g, session, checktoken, request, redirect, url_for, \
-    render_template, flash, generate_password_hash, init_db, abort, wikiload, wikindex, wikisave
+    render_template, flash, generate_password_hash, init_db, abort, wikiload, wikindex, wikisave, token_clear
 
 # from NossiPack.krypta import  sumdict, gendicedata
 
@@ -510,6 +510,7 @@ def login():  # this is not clrs secure because it does not need to be
 @app.route('/logout')
 def logout():
     session.clear()
+    token_clear()
     flash('You were logged out')
     return redirect(url_for('show_entries'))
 
