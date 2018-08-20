@@ -156,10 +156,29 @@ class FenCharacter(object):
         return old.allcosts() - self.allcosts()
 
     def setfromform(self, form):  # accesses internal dicts
-        print(form)
-        self.Categories["editing"] = {"is not": {"implemented yet": 1}}
-        self.Notes=form.get("Notes")
-        pass
+        form = dict(form)
+        self.Notes = form.pop("Notes")[0]
+        self.Name = form.pop("Name")[0]
+        self.Meta = {"Species": form.pop("Species", [""])[0],
+                     "XP": form.pop("XP", [""])[0],
+                     "Home": form.pop("Home", [""])[0],
+                     "Story": form.pop("Story", [""])[0],
+                     "Size": form.pop("Size", [""])[0],
+                     "Weight": form.pop("Weight", [""])[0],
+                     "Concept": form.pop("Concept", [""])[0],
+                     "Player": form.pop("Player", [""])[0]}
+        for key, val in form.items():
+            s = key.split("_")
+            if len(s) != 3:
+                continue
+            k = key.split("_")[0]
+            sub_key = key.split("_")[1]
+            if form.get(key + "_val"):
+                if self.Categories.get(k, None) is None:
+                    self.Categories[k] = {}
+                if self.Categories[k].get(sub_key, None) is None:
+                    self.Categories[k][sub_key] = {}
+                self.Categories[k][sub_key][val[0]] = int(form.get(key + "_val")[0])
 
     def getdictrepr(self):
         character = {'Categories': self.Categories,
@@ -168,6 +187,7 @@ class FenCharacter(object):
                      'Inventory': self.Inventory,
                      'Notes': self.Notes,
                      'Type': "FEN"}
+        print("character:", character)
         return character
 
     def serialize(self):

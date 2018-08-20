@@ -2,7 +2,7 @@
 {% macro chooser(name, value, max=5) -%}
     {% for count in range(1,max + 1) -%}{%- if loop.index0 > 1 and loop.index0 % 10 == 0 -%}
         <br>{%- endif -%}<input
-            style="width: 10px"  type="radio" name="{{ name }}"
+            style="width: 10px"  type="radio" name="{{ name }}_val"
             value="{{ count|string }}" id="{{ name }}_{{ count|string }}"{% if value == count -%}
             checked {%- endif %} xmlns="http://www.w3.org/1999/html"><label ondblclick="resetDot(this.control)"
                                                                             style="user-select: none;"
@@ -27,34 +27,34 @@
         {%-set l = [0] %}
         {% for k,v in cat.items()  -%}
             {%- if l[0]==0 -%}
-                    <tr>
-                        <td colspan="2" style="text-align: center;" class="leeet">{{ name }}</td>
-                    </tr>
-                    {%- if l.insert(0, l[0] + 1) -%}{% endif %}
+                <tr>
+                    <td colspan="2" style="text-align: center;" class="leeet">{{ name }}</td>
+                </tr>
+                {%- if l.insert(0, l[0] + 1) -%}{% endif %}
             {%- endif -%}
         {%- endfor -%}
         {%- for k,v in cat.items() -%}
 
-                <tr>
-                    <td colspan="2" style="text-align: center;" class="leet">{{ k }}</td>
-                </tr>
-                {% set vk = v.keys()|list %}
-                {% set vv = v.values()|list %}
-                {%- for i in range(10 + v|length) -%}
-                    <tr id="tr_{{ name }}_{{ k }}_{{ i }}" {%- if v|length < i %} style="visibility: collapse"{%- endif -%}>
-                        {%- if v|length > i -%}
-                            <td><input title="{{ vk[i] }}" style="width: 80%;" class="leet"
-                                       name="Name" type="text" value="{{ vk[i] }}"></td>
-                            <td>{{ chooser(vk[i], vv[i]) }}</td>
-                        {% else %}
-                           <td><input title="{{ name }}_{{ k }}_{{ i }}" style="width: 80%;" class="leet"
-                                       name="Name" type="text"  oninput=reveal("tr_{{ name }}_{{ k }}_{{ i + 1 }}")></td>
-                            <td>{{ chooser(name+"_"+k|string+"_"+i|string , 0) }}</td>
-                        {%- endif -%}
+            <tr>
+                <td colspan="2" style="text-align: center;" class="leet">{{ k }}</td>
+            </tr>
+            {% set vk = v.keys()|list %}
+            {% set vv = v.values()|list %}
+            {%- for i in range(10 + v|length) -%}
+                <tr id="tr_{{ name }}_{{ k }}_{{ i }}" {%- if v|length < i %} style="visibility: collapse"{%- endif -%}>
+                    {%- if v|length > i -%}
+                        <td><input title="{{ vk[i] }}" style="width: 80%;" class="leet"
+                                   name="{{ name }}_{{ k }}_{{ i }}" type="text" value="{{ vk[i] }}"></td>
+                        <td>{{ chooser(name+"_"+k|string+"_"+i|string, vv[i]) }}</td>
+                    {% else %}
+                        <td><input title="{{ name }}_{{ k }}_{{ i }}" style="width: 80%;" class="leet"
+                                   name="{{ name }}_{{ k }}_{{ i }}" type="text"  oninput=reveal("tr_{{ name }}_{{ k }}_{{ i + 1 }}")></td>
+                        <td>{{ chooser(name+"_"+k|string+"_"+i|string , 0) }}</td>
+                    {%- endif -%}
 
-                    </tr>
-                {%- endfor -%}
-                <tr><td><br></td></tr>
+                </tr>
+            {%- endfor -%}
+            <tr><td><br></td></tr>
         {%- endfor -%}
     </table>
 {%- endmacro %}
@@ -108,64 +108,64 @@
                 el.style.height = el.scrollHeight  + "px"
             }
         }
-        
+
 
     </script>
 
 {% endblock %}
 {% block body %}
-
-    <table width="100%" class="leet dividedtable" border="1">
-        <tr>
-            <td colspan="6" style="text-align: center; font-size: 1.5em" class="leeet">
-                {%- if character.Name -%}
-                    Charactersheet&nbspfor&nbsp{{ character.Name }}
-                {%- else -%}
-                    Charactersheet&nbspfor&nbspUnnamed&nbspCharacter
-                {%- endif -%}</td>
-        </tr>
-        <tr>
-            <td style="text-align: right; ">Name:</td>
-            <td style="text-align: left; "><input title="Name" style="width: 80%;" class="leet"  name="Name" type="text" value="{{ character.Name }}"></td>
-            <td style="text-align: right; ">Spezies:</td>
-            <td style="text-align: left; "><input title="Spezies" style="width: 80%;" class="leet"  name="Spezies" type="text" value="{{ character.Meta.Spezies }}"></td>
-            <td style="text-align: right; ">XP:</td>
-            <td style="text-align: left; "><input title="XP" style="width: 80%;" class="leet"  name="XP" type="text" value="{{ character.Meta.xp }}"></td>
-        </tr>
-        <tr>
-            <td style="text-align: right; ">Spieler:</td>
-            <td style="text-align: left; "><input title="Spieler" style="width: 80%;" class="leet"  name="Name" type="text" value="{{ character.Meta.Player }}"></td>
-            <td style="text-align: right; ">Größe:</td>
-            <td style="text-align: left; "><input title="Größe" style="width: 80%;" class="leet"  name="Name" type="text" value="{{ character.Meta.Height }}"></td>
-            <td style="text-align: right; ">Heimat:</td>
-            <td style="white-space: nowrap; text-align: left; "><input title="Heimat" style="width: 80%;" class="leet"  name="Name" type="text" value="{{ character.Meta.Home }}"></td>
-        </tr>
-        <tr>
-            <td style="text-align: right; overflow: hidden; width: 1px; ">Story:</td>
-            <td style="text-align: left; "><input title="Story" style="width: 80%;" class="leet"  name="Name" type="text" value="{{ character.Meta.Story }}"></td>
-            <td style="text-align: right; ">Gewicht:</td>
-            <td style="text-align: left; "><input title="Gewicht" style="width: 80%;" class="leet"  name="Name" type="text" value="{{ character.Meta.Weight }}"></td>
-            <td style="text-align: right; ">Konzept:</td>
-            <td style="white-space: nowrap; text-align: left; "><input title="Konzept" style="width: 80%;" class="leet"  name="Name" type="text" value="{{ character.Meta.Concept }}"></td>
-        </tr>
-    </table>
-    <br>
-    <div style="text-align: center ">
-        {% for category,data in character.Categories.items() %}
-            <div style="display: inline-block; vertical-align: top;">{{ catformat(data,category)}}</div>
-        {% endfor %}
-    </div>
-
-    <pre id="comments"></pre>
-
     <form id="sheet" action="{{ url_for('modify_sheet',t="FEN") }}" method="post" >
+        <table width="100%" class="leet dividedtable" border="1">
+            <tr>
+                <td colspan="6" style="text-align: center; font-size: 1.5em" class="leeet">
+                    {%- if character.Name -%}
+                        Charactersheet&nbspfor&nbsp{{ character.Name }}
+                    {%- else -%}
+                        Charactersheet&nbspfor&nbspUnnamed&nbspCharacter
+                    {%- endif -%}</td>
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Name:</td>
+                <td style="text-align: left; "><input title="Name" style="width: 80%;" class="leet"  name="Name" type="text" value="{{ character.Name }}"></td>
+                <td style="text-align: right; ">Spezies:</td>
+                <td style="text-align: left; "><input title="Spezies" style="width: 80%;" class="leet"  name="Species" type="text" value="{{ character.Meta.Species }}"></td>
+                <td style="text-align: right; ">XP:</td>
+                <td style="text-align: left; "><input title="XP" style="width: 80%;" class="leet"  name="XP" type="text" value="{{ character.Meta.XP }}"></td>
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Spieler:</td>
+                <td style="text-align: left; "><input title="Spieler" style="width: 80%;" class="leet"  name="Player" type="text" value="{{ character.Meta.Player }}"></td>
+                <td style="text-align: right; ">Größe:</td>
+                <td style="text-align: left; "><input title="Größe" style="width: 80%;" class="leet"  name="Size" type="text" value="{{ character.Meta.Size }}"></td>
+                <td style="text-align: right; ">Heimat:</td>
+                <td style="white-space: nowrap; text-align: left; "><input title="Heimat" style="width: 80%;" class="leet"  name="Home" type="text" value="{{ character.Meta.Home }}"></td>
+            </tr>
+            <tr>
+                <td style="text-align: right; overflow: hidden; width: 1px; ">Story:</td>
+                <td style="text-align: left; "><input title="Story" style="width: 80%;" class="leet"  name="Story" type="text" value="{{ character.Meta.Story }}"></td>
+                <td style="text-align: right; ">Gewicht:</td>
+                <td style="text-align: left; "><input title="Gewicht" style="width: 80%;" class="leet"  name="Weight" type="text" value="{{ character.Meta.Weight }}"></td>
+                <td style="text-align: right; ">Konzept:</td>
+                <td style="white-space: nowrap; text-align: left; "><input title="Konzept" style="width: 80%;" class="leet"  name="Concept" type="text" value="{{ character.Meta.Concept }}"></td>
+            </tr>
+        </table>
+        <br>
+        <div style="text-align: center ">
+            {% for category,data in character.Categories.items() %}
+                <div style="display: inline-block; vertical-align: top;">{{ catformat(data,category)}}</div>
+            {% endfor %}
+        </div>
 
-    <br>
-    <input type="submit"  class="leet bigbtn" value="SAVE"><br><br><br>
-    <div >
+        <pre id="comments"></pre>
+
+
+
+        <br>
+        <input type="submit"  class="leet bigbtn" value="SAVE"><br><br><br>
+        <div >
                 <textarea title="Notes" style="width: 99%; overflow-y: auto; word-wrap:break-word " onload="textAreaAdjust(this)"
-                          onkeyup="textAreaAdjust(this)" class="leeet" name="Notes">{{ character.Meta.Notes }}</textarea>
-    </div>
+                          onkeyup="textAreaAdjust(this)" class="leeet" name="Notes">{{ character.Notes }}</textarea>
+        </div>
     </form>
 
     <form id="checkchar"  style="float: right" name="checkchar">
@@ -173,6 +173,6 @@
 
         <div style="float: left">Checks the Character cost (uses the newest sheet in your history)</div>
     </form>
-    <br><br><br><br><br><br><br><br><br><br>
+
 
 {% endblock %}
