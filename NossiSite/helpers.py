@@ -164,7 +164,7 @@ def updatewikitags():
 def gettoken():
     gentoken()
     global token
-    return dict(token=token.get(session.get('user', None), '')[-1])
+    return dict(token=token.get(session.get('user', None), [''])[-1])
 
 
 def token_clear():
