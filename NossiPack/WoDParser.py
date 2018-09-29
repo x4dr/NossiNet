@@ -85,7 +85,7 @@ class WoDParser(object):
                 selectors = selectorprocessing.group("selectors")
 
                 rerolls = int(selectorprocessing.group("rerolls") or 0)
-                roll += " " + selectorprocessing.group("rest")
+                roll += selectorprocessing.group("rest")
 
             roll = Node(roll)
             roll = self.resolveroll(roll)
