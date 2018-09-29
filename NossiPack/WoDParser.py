@@ -76,7 +76,7 @@ class WoDParser(object):
         # tacked on fenroll
         try:
             fenroll = re.compile(r' *(?P<selectors>([0-9](, *)?)*) *@(?P<roll>[^R]+)(R(?P<rerolls>\d+))?(?P<rest>.*)$',
-                                 re.RegexFlag.IGNORECASE)
+                                 re.IGNORECASE)
             selectors = []
             rerolls = 0
             selectorprocessing = fenroll.match(roll)
