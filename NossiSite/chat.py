@@ -58,11 +58,13 @@ def decider(message):
                 echo(str(inst.args[0]), "ROLLING ERROR: ", err=True)
 
         elif "?" in message:
-            echo(message, "'s TEST: ")
+            message = message.replace("?", " ")
             parser = WoDParser(defines())
             roll = parser.make_roll(message[1:])
-            echo(parser.dbg, "'s TEST: ")
-            printroll(roll, testing=True)
+            #roll.r = sorted(roll.r)
+            if parser.dbg:
+                echo(parser.dbg, "'s TEST: ")
+            printroll(roll, parser, testing=True, message= message)
         elif "=" in message:
             defines(message[1:])
 
@@ -144,16 +146,21 @@ def defines(message="=", user=None):
 
 def printroll(roll, parser=None, testing=False, message=""):
     if testing:
+        verb = "TEST"
         deliver = echo
     else:
+        verb = "ROLL"
         deliver = post
     if not message:
         if roll:
-            deliver(roll.name, "'S ROLL: ")
+            deliver(roll.name, "'S "+verb+": ")
         else:
-            deliver("", "IS ROLLING: ")
+            deliver("", "IS "+verb+"ING: ")
     else:
-        deliver(message, "'S ROLL: ")
+        deliver(message, "'S "+verb+": ")
+
+    if parser.triggers.get("order", None):
+        roll.r = sorted(roll.r)
 
     if parser:
         if not parser.triggers.get("suppress", None):
@@ -175,7 +182,8 @@ def printroll(roll, parser=None, testing=False, message=""):
                 time.sleep(float(parser.triggers.get("speed", 0.5)))
             time.sleep(1)
             deliver(str(times) + " TRIES TO REACH " + str(int(current)) + "/" + str(goal) + ".", "'S ATTEMPT TOOK ")
-
+        if roll.log and parser.triggers.get("verbose",None):
+            deliver(roll.log,":\n")
     if not roll:
         return
     if not roll.rolled:

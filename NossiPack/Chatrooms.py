@@ -51,7 +51,7 @@ class Chatroom(object):
         print("saving chatlog")
         db = connect_db()
         try:
-            if self.chatlog[-1][0] - self.newestlineindb > 0:
+            if self.chatlog and self.chatlog[-1] and self.chatlog[-1][0] - self.newestlineindb > 0:
                 for i in reversed(range(len(self.chatlog))):
                     if self.chatlog[i][0] <= self.newestlineindb:
                         break
@@ -64,8 +64,9 @@ class Chatroom(object):
                         print("writing", d, "to database failed", inst.args)
                 self.newestlineindb = self.chatlog[-1][0]
                 db.commit()
-        except:
+        except Exception:
             print("Chatlog not initialized")
+
         db.close()
 
     def addline(self, line, supresssave=False):
@@ -86,7 +87,10 @@ class Chatroom(object):
     def cleanup(self):
         def join_spam_remover(seq):
             iterable = iter(seq)
-            prev = next(iterable)
+            try:
+                prev = next(iterable)
+            except:
+                return []
             for element in iterable:
                 if ":" not in element:
                     if ("joined the room!" in element[1] or "left the room!" in element[1]) and \
@@ -106,8 +110,7 @@ class Chatroom(object):
             t = re.match(r'(.*) left the room!', l)
             if t:
                 presentusers[t.group(1)] = False
-
-        self.chatlog = [x for x in join_spam_remover(self.chatlog)]
+            self.chatlog = [x for x in join_spam_remover(self.chatlog)]
         for u in presentusers.keys():
             if presentusers[u] and (u not in [x[0] for x in self.users]):
                 self.addline(u + ' left the room!', True)

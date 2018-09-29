@@ -69,33 +69,34 @@ class WoDParser(object):
         elif self.altrolls[-1] is None:
             raise Exception("Diceroll is missing. Probably a bug. Tell Maric about the dicecode you used.")
         else:
+            print("do roll result:",self.altrolls[-1].result)
             return self.altrolls[-1].result
 
     def make_roll(self, roll):
         # tacked on fenroll
-        fenroll = re.compile(r' *([0-9](, *)?)* *@.*(R.*)?$')
-        selectors = []
-        rerolls = 0
-        if fenroll.match(roll):
-            roll = roll.split("@")
-            selectors = roll[0]
-            if "R" in roll[1]:
-                roll = roll[1].split("R")[0]
-                rerolls = int(roll[1].split("R")[1])
-            else:
-                roll = roll[1]
+        try:
+            fenroll = re.compile(r' *(?P<selectors>([0-9](, *)?)*) *@(?P<roll>[^R]+)(R(?P<rerolls>\d+))?(?P<rest>.*)$',
+                                 re.RegexFlag.IGNORECASE)
+            selectors = []
+            rerolls = 0
+            selectorprocessing = fenroll.match(roll)
+            if selectorprocessing:
+                roll = selectorprocessing.group("roll")
+                selectors = selectorprocessing.group("selectors")
 
+                rerolls = int(selectorprocessing.group("rerolls") or 0)
+                roll += " " + selectorprocessing.group("rest")
 
-
-        roll = Node(roll)
-        roll = self.resolveroll(roll)
-        params = self.extract_diceparams(roll)
-
-        if not params:
-            return None
-        v = WoDDice(params, rerolls=rerolls)
-        v.selectors = selectors
-        return v
+            roll = Node(roll)
+            roll = self.resolveroll(roll)
+            params = self.extract_diceparams(roll)
+            if not params:
+                return None
+            v = WoDDice(params, rerolls=rerolls, selectors=selectors)
+            return v
+        except Exception as e:
+            print("Exception during make roll:", e.args, e.__traceback__.tb_lineno)
+            raise
 
     def resolveroll(self, roll):
         if isinstance(roll, str):
@@ -185,7 +186,12 @@ class WoDParser(object):
 
                     return m[0] + " & " + tail[end + close + 1:], m[1].split(" ")[0], tail[:end + close].strip()
 
-                return m[0] + " & " + "&".join(m[2:]), m[1].split(" ")[0], " ".join(m[1].split(" ")[1:])
+                # message with first trigger removed (and rest of triggers appended
+                # name of first trigger
+                # command of the trigger (everything after a space until the &
+                return m[0] + " & " + "&".join(m[2:]), \
+                       m[1].split(" ")[0], \
+                       " ".join(m[1].split(" ")[1:])
         else:
             return message, "", ""
 
@@ -201,7 +207,7 @@ class WoDParser(object):
                 else:
                     self.triggers["rightsviolation"] = True
                 message = message.replace("&", "", 1)
-            elif triggername in ["speed", "cutoff"]:
+            elif triggername in ["speed", "cutoff", "adversity"]:
                 if triggername in ["speed"]:  # doubles
                     x = float(trigger)
                 else:
@@ -215,6 +221,7 @@ class WoDParser(object):
                 trigger = trigger[:trigger.rfind(" ")]
                 i = 0
                 log = ""
+                adversity = self.triggers.get("adversity",0)
                 print("limit:", self.triggers.get("limitbreak", False))
                 while i < 100 if not self.triggers.get("limitbreak", None) else 1000:
                     x = self.do_roll(trigger)
@@ -228,14 +235,14 @@ class WoDParser(object):
                         if x < 0:
                             log += str(x) + " : "
                     if x > 0:
-                        log += str(current) + " + " + str(x) + " = "
-                    current += x
+                        log += str(current) + " + " + str(x) + ((" - " + str(adversity)) if adversity != 0 else "")+ " = "
+                    current += x - adversity
                     log += str(current) + "\n"
                     if current >= goal:
                         break
                 self.triggers[triggername] = (i, current, goal, log)
                 message = message.replace("&", str(i), 1)
-            elif triggername in ["ignore", "verbose", "suppress"]:
+            elif triggername in ["ignore", "verbose", "suppress", "order"]:
                 if "off" not in trigger:
                     self.triggers[triggername] = True
                 else:
