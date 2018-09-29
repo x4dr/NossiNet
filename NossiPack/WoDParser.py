@@ -73,12 +73,19 @@ class WoDParser(object):
 
     def make_roll(self, roll):
         # tacked on fenroll
-        fenroll = re.compile(r' *([0-9](, *)?)* *@.*$')
+        fenroll = re.compile(r' *([0-9](, *)?)* *@.*(R.*)?$')
         selectors = []
+        rerolls = 0
         if fenroll.match(roll):
             roll = roll.split("@")
             selectors = roll[0]
-            roll = roll[1]
+            if "R" in roll[1]:
+                roll = roll[1].split("R")[0]
+                rerolls = int(roll[1].split("R")[1])
+            else:
+                roll = roll[1]
+
+
 
         roll = Node(roll)
         roll = self.resolveroll(roll)
@@ -86,7 +93,7 @@ class WoDParser(object):
 
         if not params:
             return None
-        v = WoDDice(params)
+        v = WoDDice(params, rerolls=rerolls)
         v.selectors = selectors
         return v
 

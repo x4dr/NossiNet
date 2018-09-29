@@ -2,7 +2,7 @@ import random
 
 
 class WoDDice(object):
-    def __init__(self, maxroll=None, difficulty=6, subone=1, explodeon=0, minroll=1):
+    def __init__(self, maxroll=None, difficulty=6, subone=1, explodeon=0, minroll=1, rerolls=0):
         if isinstance(maxroll, dict):
             info = maxroll
             self.min = info.get('additivebonus', 1)  # unlikely to get implemented
@@ -20,6 +20,7 @@ class WoDDice(object):
             self.explodeon = explodeon
             self.returnfun = ""
             self.amount = None
+        self.rerolls = rerolls # only used for fenrolls
         self.selectors = []  # only used for fenrolls
         self.r = []
         self.log = ""
@@ -96,6 +97,17 @@ class WoDDice(object):
             if i >= self.maxamount:
                 break
             i += 1
+        reroll = self.rerolls
+        while reroll < 0:
+            reroll -= 1
+            if 1 in self.selectors and reroll == 0:
+                if min(self.r) > 5:
+                    break
+            else:
+                self.r.remove(min(self.r))
+                self.r.append(random.randint(self.min, self.max))
+
+
 
     @staticmethod
     def botchformat(succ, antisucc):
