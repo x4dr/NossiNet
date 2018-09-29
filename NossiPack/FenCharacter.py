@@ -73,6 +73,9 @@ class FenCharacter(object):
         print("unified fensheet:", unified)
         return unified
 
+    def process_trigger(self):
+        pass  # for when triggers are being built in
+
     def load_from_md(self, templatemd, title, tags, body):
         cursec = ""
         subsection = ""
