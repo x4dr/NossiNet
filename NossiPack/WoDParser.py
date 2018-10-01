@@ -69,7 +69,7 @@ class WoDParser(object):
         elif self.altrolls[-1] is None:
             raise Exception("Diceroll is missing. Probably a bug. Tell Maric about the dicecode you used.")
         else:
-            print("do roll result:",self.altrolls[-1].result)
+            print("do roll result:", self.altrolls[-1].result)
             return self.altrolls[-1].result
 
     def make_roll(self, roll):
@@ -207,11 +207,14 @@ class WoDParser(object):
                 else:
                     self.triggers["rightsviolation"] = True
                 message = message.replace("&", "", 1)
-            elif triggername in ["speed", "cutoff", "adversity"]:
+            elif triggername in ["speed", "cutoff", "adversity", "max"]:
                 if triggername in ["speed"]:  # doubles
                     x = float(trigger)
+                elif triggername == "max":
+                    x = min(int(trigger), 100)
                 else:
                     x = int(trigger)
+
                 self.triggers[triggername] = x
                 message = message.replace("&", "", 1)
             elif triggername == "breakthrough":
@@ -221,9 +224,9 @@ class WoDParser(object):
                 trigger = trigger[:trigger.rfind(" ")]
                 i = 0
                 log = ""
-                adversity = self.triggers.get("adversity",0)
+                adversity = self.triggers.get("adversity", 0)
                 print("limit:", self.triggers.get("limitbreak", False))
-                while i < 100 if not self.triggers.get("limitbreak", None) else 1000:
+                while i < (self.triggers.get("max") or 100) if not self.triggers.get("limitbreak", None) else 1000:
                     x = self.do_roll(trigger)
                     log += str(x) + " : "
                     i += 1
@@ -235,7 +238,8 @@ class WoDParser(object):
                         if x < 0:
                             log += str(x) + " : "
                     if x > 0:
-                        log += str(current) + " + " + str(x) + ((" - " + str(adversity)) if adversity != 0 else "")+ " = "
+                        log += str(current) + " + " + str(x) + (
+                            (" - " + str(adversity)) if adversity != 0 else "") + " = "
                     current += x - adversity
                     log += str(current) + "\n"
                     if current >= goal:
@@ -249,7 +253,9 @@ class WoDParser(object):
                     self.triggers[triggername] = False
                 message = message.replace("&", "", 1)
             elif triggername in ["loop", "loopsum"]:
-                times = min(int(trigger[trigger.rfind(" "):]), 39 if not self.triggers.get("limitbreak", None) else 100)
+                times = min(int(trigger[trigger.rfind(" "):]),
+                                (self.triggers.get("max") or 39) if not self.triggers.get("limitbreak",
+                                                                                                 None) else 100)
                 trigger = trigger[:trigger.rfind(" ")]
                 roll = self.make_roll(trigger)  # it is rolled but not added to the list so this one vanishes
                 loopsum = 0
