@@ -18,16 +18,16 @@ class WoDParser(object):
     def extract_diceparams(self, message):
         limit = "3" if not self.triggers.get("limitbreak", None) else "10"
         info = re.match(  # the regex matching the roll (?# ) for indentation
-            r'(?# ) *(?P<amount>[0-9]{1,' + limit + '}) *'  # amount of dice 0-999
-                                                    r'(?# )(d *(?P<sidedness>[0-9]{1,5}))? *'  # sidedness of dice 0-99999
-                                                    r'(?# )(?P<operation>'  # what is happening with the roll
-                                                    r'(?#   )(?P<against>'  # rolling against a value for successes 
-                                                    r'(?#     )(?P<onebehaviour>[ef]) *'  # e is without subtracting 1, f is with subtracting a success on a 1
-                                                    r'(?#     )(?P<difficulty>([1-9][0-9]{0,4})|([0-9]{0,4}[1-9])))|'  # difficulty 1-99999
-                                                    r'(?#   )(?P<sum>g)|'  # summing rolls up instead
-                                                    r'(?#   )(?P<maximum>h)| *'  # taking the maximum value of the roll
-                                                    r'(?#   )(?P<minimum>l))? *'  # taking the minimum value of the roll
-                                                    r'(?# )(?P<explosion>!+)? *$',  # explosion effects
+            r'(?# ) *(?P<amount>[0-9]{1,' + limit + '}) *' +  # amount of dice 0-999
+            r'(?# )(d *(?P<sidedness>[0-9]{1,5}))? *'  # sidedness of dice 0-99999
+            r'(?# )(?P<operation>'  # what is happening with the roll
+            r'(?#   )(?P<against>'  # rolling against a value for successes 
+            r'(?#     )(?P<onebehaviour>[ef]) *'  # e is without subtracting 1, f is with subtracting a success on a 1
+            r'(?#     )(?P<difficulty>([1-9][0-9]{0,4})|([0-9]{0,4}[1-9])))|'  # difficulty 1-99999
+            r'(?#   )(?P<sum>g)|'  # summing rolls up instead
+            r'(?#   )(?P<maximum>h)| *'  # taking the maximum value of the roll
+            r'(?#   )(?P<minimum>l))? *'  # taking the minimum value of the roll
+            r'(?# )(?P<explosion>!+)? *$',  # explosion effects
             message)
         info = {k: v for (k, v) in info.groupdict().items() if v} if info else {}
         if info.get('amount', None) is not None:
@@ -69,7 +69,7 @@ class WoDParser(object):
         elif self.altrolls[-1] is None:
             raise Exception("Diceroll is missing. Probably a bug. Tell Maric about the dicecode you used.")
         else:
-            print("do roll result:",self.altrolls[-1].result)
+            # print("do roll result:", self.altrolls[-1].result)
             return self.altrolls[-1].result
 
     def make_roll(self, roll):
@@ -172,6 +172,7 @@ class WoDParser(object):
 
     @staticmethod
     def gettrigger(message):  # returns (newmessage,triggername, trigger)
+        # print("getting trigger from", message)
         c = message.count("&")
         if c > 0:
             if c % 2 != 0:
@@ -189,9 +190,9 @@ class WoDParser(object):
                 # message with first trigger removed (and rest of triggers appended
                 # name of first trigger
                 # command of the trigger (everything after a space until the &
-                return m[0] + " & " + "&".join(m[2:]), \
-                       m[1].split(" ")[0], \
-                       " ".join(m[1].split(" ")[1:])
+                return (m[0] + " & " + "&".join(m[2:]),
+                        m[1].split(" ")[0],
+                        " ".join(m[1].split(" ")[1:]))
         else:
             return message, "", ""
 
@@ -221,7 +222,7 @@ class WoDParser(object):
                 trigger = trigger[:trigger.rfind(" ")]
                 i = 0
                 log = ""
-                adversity = self.triggers.get("adversity",0)
+                adversity = self.triggers.get("adversity", 0)
                 print("limit:", self.triggers.get("limitbreak", False))
                 while i < 100 if not self.triggers.get("limitbreak", None) else 1000:
                     x = self.do_roll(trigger)
@@ -235,7 +236,8 @@ class WoDParser(object):
                         if x < 0:
                             log += str(x) + " : "
                     if x > 0:
-                        log += str(current) + " + " + str(x) + ((" - " + str(adversity)) if adversity != 0 else "")+ " = "
+                        log += str(current) + " + " + str(x) + (
+                            (" - " + str(adversity)) if adversity != 0 else "") + " = "
                     current += x - adversity
                     log += str(current) + "\n"
                     if current >= goal:
@@ -300,7 +302,7 @@ class WoDParser(object):
                     message = message.replace("&", "(" + elsebranch.replace("$", str(-ifroll), 1) + ")", 1)
             else:
                 raise Exception("unknown Trigger: " + triggername)
-            print("message:", message)
+            # print("message:", message)
             message, triggername, trigger = self.gettrigger(message)
 
         return message

@@ -447,9 +447,6 @@ def disconnect_request():
     disconnect()
 
 
-leaving = False
-
-
 # noinspection PyUnresolvedReferences
 @socketio.on('connect', namespace='/chat')
 def chat_connect():
@@ -485,18 +482,8 @@ def chat_connect():
 @socketio.on('disconnect', namespace='/chat')
 def test_disconnect():
     # DEBUG
-    global leaving
-    if not leaving:
-        leaving = True
-        print("test disconnect", str(session))
-        try:
-            print('Client disconnected', rooms())
-        except:
-            print("Last client disconnected.")
-        try:
-            for r in session['roomlist']:
-                r.userleave(session['user'])
-        except Exception as inst:
-            print(namedStrings['roomlistErr'], inst.args)
-    if leaving:
-        print("leaving while leaving ...", str(session))
+    try:
+        for r in session['roomlist']:
+            r.userleave(session['user'])
+    except Exception as inst:
+        print(namedStrings['roomlistErr'], inst.args)
