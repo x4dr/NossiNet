@@ -62,7 +62,7 @@ class FenCharacter(object):
         return result
 
     def checksum(self):
-        return self.allcosts()
+        return abs(self.allcosts())+1
 
     def unify(self):
         unified = {}
@@ -70,7 +70,7 @@ class FenCharacter(object):
             for cat in self.Categories[kind].keys():
                 for spec in self.Categories[kind][cat].keys():
                     unified[spec] = self.Categories[kind][cat][spec]
-        print("unified fensheet:", unified)
+        # print("unified fensheet:", unified)
         return unified
 
     def process_trigger(self, trigger):
@@ -190,7 +190,7 @@ class FenCharacter(object):
                      'Inventory': self.Inventory,
                      'Notes': self.Notes,
                      'Type': "FEN"}
-        print("character:", character)
+        # print("character:", character)
         return character
 
     def serialize(self):

@@ -358,9 +358,10 @@ def modify_sheet(t=None):
         if t == "OWOD":
             u.sheet = VampireCharacter()
     if request.method == 'POST':
-        print("incoming modify:", request.form)
+        # print("incoming modify:", request.form)
         u.update_sheet(request.form)
         ul.saveuserlist()
+
         return redirect('/charactersheet/')
     a = "NOPE"
     sheet = u.sheet.getdictrepr()
