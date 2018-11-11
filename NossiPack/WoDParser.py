@@ -72,10 +72,10 @@ class WoDParser(object):
             # print("do roll result:", self.altrolls[-1].result)
             return self.altrolls[-1].result
 
-    def make_roll(self, roll):
+    def make_roll(self, roll:str):
         # tacked on fenroll
         try:
-            fenroll = re.compile(r' *(?P<selectors>([0-9](, *)?)*) *@(?P<roll>[^R]+)(R(?P<rerolls>\d+))?(?P<rest>.*)$',
+            fenroll = re.compile(r' *(?P<selectors>([0-9](, *)?)*) *@(?P<roll>[^R]+)(R(?P<rerolls>-?\d+))?(?P<rest>.*)$',
                                  re.IGNORECASE)
             selectors = []
             rerolls = 0
