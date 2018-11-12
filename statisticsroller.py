@@ -1,5 +1,6 @@
 import random
 import sys
+import NossiPack.WoDParser
 
 import time
 from typing import DefaultDict
@@ -75,7 +76,7 @@ def run():
         difficulty = int(sys.argv[3])
         if len(sys.argv) > 3:
             roller = d10fnolossguard
-    successes = DefaultDict(lambda: 0)
+    successes = DefaultDict[lambda: 0]
     i = 0
     time1 = time.time()
     while True:
@@ -88,4 +89,12 @@ def run():
     plot(dict(successes))
 
 
-run()
+# run()
+p= NossiPack.WoDParser({})
+r = p.make_roll("1,2@5R-3")
+val = 0
+rep = 100000
+for i in range(rep):
+    val += r.reroll()
+print(val/rep)
+

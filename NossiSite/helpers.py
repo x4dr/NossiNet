@@ -169,13 +169,17 @@ def gettoken():
 
 def token_clear():
     global token
-    token.pop(session['user'])
+    if session.get('user'):
+        token.pop(session['user'])
+    else:
+        print("logging out nonexistent user...")
+        print("still logged in are "+", ". join(token.keys())+".")
 
 
 def gentoken():
     global token
     if session.get('user', False):
-        token[session['user']] = token.get(session['user'], [])+[generate_token(session)]
+        token[session['user']] = token.get(session['user'], [])[-2:]+[generate_token(session)]
         print("generated:", token[session['user']])
         return token[session['user']][-1]
     else:

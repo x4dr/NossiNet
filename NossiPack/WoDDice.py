@@ -24,8 +24,8 @@ class WoDDice(object):
             self.rerolls = rerolls  # only used for fenrolls
             self.selectors = selectors
             if "," in self.selectors:
-                self.selectors = self.selectors.split(",")
-                self.selectors = [max(min(int(x), self.amount or 0), 0) for x in self.selectors]  # only used for fenrolls
+                self.selectors = self.selectors.split(",")   # only used for fenrolls
+                self.selectors = [max(min(int(x), self.amount or 0), 0) for x in self.selectors]
             self.r = []
             self.log = ""
             self.dbg = ""
@@ -40,7 +40,7 @@ class WoDDice(object):
             if self.amount is not None:
                 self.roll_next(int(maxroll.get('amount')))
         except Exception as e:
-            print("exception durin die creation:",e.args, e.__traceback__.tb_lineno, e.__traceback__.tb_next.tb_lineno)
+            print("exception during die creation:",e.args, e.__traceback__.tb_lineno, e.__traceback__.tb_next.tb_lineno)
             raise
 
     @property
@@ -111,14 +111,16 @@ class WoDDice(object):
         reroll = self.rerolls
         if reroll:
             self.log += "; Rerolls:"
-        while reroll > 0:
-            reroll -= 1
+        while reroll != 0:
+            dir = reroll/abs(reroll)
+            reroll -= reroll/abs(reroll)
             self.log += " "
             if (1 in self.selectors and reroll == 0 and min(self.r) > 5) or sum(self.r) == self.max * len(self.r):
                 break
             else:
-                self.log += str(min(self.r))
-                self.r.remove(min(self.r))
+                sel = min(self.r) if dir > 0 else max(self.r)
+                self.log += str(sel)
+                self.r.remove(sel)
                 self.r.append(random.randint(self.min, self.max))
                 self.log += "->" + str(self.r[-1]) + ";"
 
