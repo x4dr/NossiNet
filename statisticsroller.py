@@ -47,7 +47,7 @@ def plot(data):
     total = sum([v for k, v in data.items()])
     pt = total / 100
     print("Of the %d rolls, %d where successes, %d where failures and %d where botches, averaging %.2f" % (
-        total, success, zeros, botches, (sum([k * v for k, v in data.items()])/total)))
+        total, success, zeros, botches, (sum([k * v for k, v in data.items()]) / total)))
     print("The percentages are:\n+ : %f.3%%\n0 : %f.3%%\n- : %f.3%%" % (success / pt, zeros / pt, botches / pt))
     width = 1
     barsuc = int((success / pt) / width)
@@ -89,12 +89,41 @@ def run():
     plot(dict(successes))
 
 
-# run()
-p= NossiPack.WoDParser({})
-r = p.make_roll("1,2@5R-3")
-val = 0
-rep = 100000
-for i in range(rep):
-    val += r.reroll()
-print(val/rep)
+def get_multiples(xs):
+    ys = sorted(xs) + [None]
+    m = []
+    run = 1
+    for n in range(1, len(ys)):
+        if ys[n] == ys[n - 1]:
+            run += 1
+        else:
+            if run > 1:
+                m.append((ys[n - 1], run - 1))
+                run = 1
+    return m
 
+
+# run()
+t = time.time()
+p = NossiPack.WoDParser({})
+r1 = p.make_roll("1,1@5")
+# r2 = p.make_roll("3,5@3R3")
+val1 = 0
+mul = [0, 0, 0, 0]
+rep = 1000000
+
+for i in range(rep):
+    r = [random.randint(1,10)for x in range(5)]
+    for m in get_multiples(r):
+        mul[m[1] - 1] += 1
+    # val2 += 1 if sum(1 for x, y in multiples if y ==1) else 0
+    # val3 += 1 if sum(1 for x, y in multiples if y ==2) else 0
+    # val4 += 1 if sum(1 for x, y in multiples if y ==3) else 0
+    # val5 += 1 if sum(1 for x, y in multiples if y ==4) else 0
+
+print("avg", val1 / rep)
+print("group of any 2", 100 * mul[0] / rep)
+print("group of any 3", 100 * mul[1] / rep)
+print("group of any 4", 100 * mul[2] / rep)
+print("group of any 5", 100 * mul[3] / rep)
+print(time.time() - t)

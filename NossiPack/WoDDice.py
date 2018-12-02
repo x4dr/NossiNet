@@ -81,7 +81,7 @@ class WoDDice(object):
         self.r = []
         self.succ = 0
         self.antisucc = 0
-        while i < amount:
+        while i < amount+abs(self.rerolls):
             if self.max < self.min:
                 self.r.append(0)
                 self.log += "no dice "
@@ -110,19 +110,14 @@ class WoDDice(object):
             i += 1
         reroll = self.rerolls
         if reroll:
-            self.log += "; Rerolls:"
+            self.log += "; Reroll selection:"
         while reroll != 0:
             dir = reroll/abs(reroll)
             reroll -= reroll/abs(reroll)
             self.log += " "
-            if (1 in self.selectors and reroll == 0 and min(self.r) > 5) or sum(self.r) == self.max * len(self.r):
-                break
-            else:
-                sel = min(self.r) if dir > 0 else max(self.r)
-                self.log += str(sel)
-                self.r.remove(sel)
-                self.r.append(random.randint(self.min, self.max))
-                self.log += "->" + str(self.r[-1]) + ";"
+            sel = min(self.r) if dir > 0 else max(self.r)
+            self.log += str(sel)
+            self.r.remove(sel)
 
     @staticmethod
     def botchformat(succ, antisucc):
