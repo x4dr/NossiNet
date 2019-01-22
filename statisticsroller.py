@@ -89,73 +89,41 @@ def run():
     plot(dict(successes))
 
 
-def count_sets(dice_throw, specific=None):
-    dice_throw = sorted(dice_throw) + [None]
+def get_multiples(xs):
+    ys = sorted(xs) + [None]
     m = []
-    runlength = 1
-    for x in range(1, len(dice_throw)):
-        if dice_throw[x] == dice_throw[x - 1] and (dice_throw[x] == specific if specific else True):
-            runlength += 1
+    run = 1
+    for n in range(1, len(ys)):
+        if ys[n] == ys[n - 1]:
+            run += 1
         else:
-            m.append(runlength)
-            runlength = 1
-    return " ".join(str(n) for n in sorted(m))
+            if run > 1:
+                m.append((ys[n - 1], run - 1))
+                run = 1
+    return m
 
-
-res = {}
-a = []
-t = time.time()
-i = 0
-j = 0
-hits = 0
-crits = {x: 0 for x in range(21)}
-onecount = 0
-for weenie_throw in [1, 2, 3, 4, 5, 6, 7, 7, 7, 7]:
-    for current_throw in [(a + 1, b + 1, c + 1, d + 1, e + 1)
-                          for a in range(10)
-                          for b in range(10)
-                          for c in range(10)
-                          for d in range(10)
-                          for e in range(10)]:
-        current_throw = sorted(current_throw)
-        r = count_sets(current_throw, 7)
-        res[r] = res.get(r, 0) + 1
-        i += 1
-        if 1 in current_throw:
-            onecount += 1
-        if i % 10000 == 0:
-            print(i / 10000, "%")
-        if current_throw[4]*2 <= weenie_throw*2:
-            hits += 1
-
-print(100* hits / i, 100* onecount / i)
-print("groupings")
-for k in sorted(res.keys()):
-    print((k + "                   ")[:10] + ": " + str(res[k] * 100 / i) + "%")
-print(time.time() - t, "seconds")
-exit()
 
 # run()
-p = NossiPack.WoDParser({})
-r = p.make_roll("1,2@5")
-
-rep = 1
 t = time.time()
-import sys
+p = NossiPack.WoDParser({})
+r1 = p.make_roll("1,1@5")
+# r2 = p.make_roll("3,5@3R3")
+val1 = 0
+mul = [0, 0, 0, 0]
+rep = 1000000
 
-last = 0
-for RER in range(0, 3):
-    val = 0
-    for i in range(rep):
-        r = p.make_roll("1,1@5R" + str(RER))
-        val += r.result
-        if (i / rep) * 100 == int((i / rep) * 100):
-            print(int((i / rep) * 100), "%")
-    if abs(last - val) < 2:
-        print(last - val)
-        break
-    else:
-        last = val
-print(RER)
-print(round(val / rep, 2))
-print("seconds:", time.time() - t)
+for i in range(rep):
+    r = [random.randint(1,10)for x in range(5)]
+    for m in get_multiples(r):
+        mul[m[1] - 1] += 1
+    # val2 += 1 if sum(1 for x, y in multiples if y ==1) else 0
+    # val3 += 1 if sum(1 for x, y in multiples if y ==2) else 0
+    # val4 += 1 if sum(1 for x, y in multiples if y ==3) else 0
+    # val5 += 1 if sum(1 for x, y in multiples if y ==4) else 0
+
+print("avg", val1 / rep)
+print("group of any 2", 100 * mul[0] / rep)
+print("group of any 3", 100 * mul[1] / rep)
+print("group of any 4", 100 * mul[2] / rep)
+print("group of any 5", 100 * mul[3] / rep)
+print(time.time() - t)
