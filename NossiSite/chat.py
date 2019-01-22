@@ -6,7 +6,9 @@ import json
 from NossiSite import app, socketio
 
 from flask import render_template, session, request, flash, url_for, redirect
-from flask_socketio import emit, join_room, leave_room, disconnect, rooms
+from flask_socketio import emit, join_room, leave_room, disconnect
+
+from NossiSite.cards import cards
 
 userlist = {}
 roomlist = [Chatroom('lobby')]
@@ -61,10 +63,10 @@ def decider(message):
             message = message.replace("?", " ")
             parser = WoDParser(defines())
             roll = parser.make_roll(message[1:])
-            #roll.r = sorted(roll.r)
+            # roll.r = sorted(roll.r)
             if parser.dbg:
                 echo(parser.dbg, "'s TEST: ")
-            printroll(roll, parser, testing=True, message= message)
+            printroll(roll, parser, testing=True, message=message)
         elif "=" in message:
             defines(message[1:])
 
@@ -153,11 +155,11 @@ def printroll(roll, parser=None, testing=False, message=""):
         deliver = post
     if not message:
         if roll:
-            deliver(roll.name, "'S "+verb+": ")
+            deliver(roll.name, "'S " + verb + ": ")
         else:
-            deliver("", "IS "+verb+"ING: ")
+            deliver("", "IS " + verb + "ING: ")
     else:
-        deliver(message, "'S "+verb+": ")
+        deliver(message, "'S " + verb + ": ")
 
     if parser.triggers.get("order", None):
         roll.r = sorted(roll.r)
@@ -182,8 +184,8 @@ def printroll(roll, parser=None, testing=False, message=""):
                 time.sleep(float(parser.triggers.get("speed", 0.5)))
             time.sleep(1)
             deliver(str(times) + " TRIES TO REACH " + str(int(current)) + "/" + str(goal) + ".", "'S ATTEMPT TOOK ")
-        if roll.log and parser.triggers.get("verbose",None):
-            deliver(roll.log,":\n")
+        if roll.log and parser.triggers.get("verbose", None):
+            deliver(roll.log, ":\n")
     if not roll:
         return
     if not roll.rolled:
@@ -445,6 +447,26 @@ def disconnect_request():
     emit('Message',
          {'data': 'Disconnected!'})
     disconnect()
+
+
+@socketio.on('connect', namespace='/cards')
+def cards_connect():
+    print("cards has been accessed by " + session.get('user', "mysteryman"))
+    if not session.get('logged_in'):
+        emit('Message', {'prefix': '', 'data': namedStrings['notLoggedIn']})
+        emit('Exec', {'command': 'window.location.href = "/login?r=/cards";'})
+        return
+    emit("Message", {'data': "--> cards <--\ntype help for help"})
+
+
+@socketio.on('ClientServerEvent', namespace='/cards')
+def cards_receive(message):
+    if session.get('user', None) is None:
+        disconnect()
+    cards(message['data'])
+    join_room(session.get('user'))
+    join_room("lobby")
+    emit('Status', {"status": "Lobby"})
 
 
 # noinspection PyUnresolvedReferences

@@ -11,7 +11,7 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="marquee.css") }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
     {%- if session.light or light is defined -%}
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='stylelight.css') }}">
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='stylelight.css') }}">
     {%- endif -%}
 
 
@@ -22,35 +22,37 @@
 </head>
 <body>
 <div id="page_complete" class=page>
-{% block pagetitle %}
-    <h1><a href={{ url_for('show_entries') }}>NOSFERATU NETWORK</a></h1>
-{% endblock %}
-{% block metanavcomplete %}
-    <div class=metanav>
-        {% if not session.logged_in %}
-            <a class=metanav href="{{ url_for('login') }}">log in</a>
-            <a class=metanav href="{{ url_for('register') }}">register</a>
-        {% else %}
-            {%- block metanav -%}
-            {%- endblock -%}
-            <a class=metanav href="https://www.google.com/maps/d/viewer?mid=1TH6vryHyVxv_xFjFJDXgXQegZO4"
-               secret="{{ url_for('berlinmap') }}">MAP</a>  &nbsp
-            <a class=metanav href="{{ url_for('charsheet') }}">SHEET</a>  &nbsp
-            <a class=metanav href="{{ url_for('chatsite') }}">CHAT</a>  &nbsp
-            <a class=metanav href="{{ url_for('show_user_profile',username=session.user) }}">{{ session.user }}</a>
-            &nbsp
-            <a class=metanav href="{{ url_for('logout') }}">LOG OUT</a>
-        {% endif %}
-    </div>
-{% endblock %}
+    {% block pagetitle %}
+        <h1><a href={{ url_for('show_entries') }}>NOSFERATU NETWORK</a></h1>
+    {% endblock %}
+    {% block metanavcomplete %}
+        <div class=metanav>
+            {% if not session.logged_in %}
+                <a class=metanav href="{{ url_for('login') }}">log in</a>
+                <a class=metanav href="{{ url_for('register') }}">register</a>
+            {% else %}
+                {%- block metanav -%}
+                {%- endblock -%}
+                <a class=metanav href="https://www.google.com/maps/d/viewer?mid=1TH6vryHyVxv_xFjFJDXgXQegZO4"
+                   secret="{{ url_for('berlinmap') }}">MAP</a>  &nbsp
+                <a class=metanav href="{{ url_for('charsheet') }}">SHEET</a>  &nbsp
+                <a class=metanav href="{{ url_for('chatsite') }}">CHAT</a>  &nbsp
+                <a class=metanav href="{{ url_for('show_user_profile',username=session.user) }}">{{ session.user }}</a>
+                &nbsp
+                <a class=metanav href="{{ url_for('logout') }}">LOG OUT</a>
+            {% endif %}
+        </div>
+    {% endblock %}
     {% if error %}<p class=error><strong>Error:</strong> {{ error }}{% endif %}
     {% for message in get_flashed_messages() %}
-        <div class=flash>{{ message }}</div>
+        <div class=flash onclick="this.parentNode.removeChild(this)">{{ message }}</div>
     {% endfor %}
+
+
     {% block body %}{% endblock %}
     {% block marquee %}
 
-   <!--     <h2 id="ticker" class="marquee marquee-direction-left" data-marquee="~ ~ ~ ~ ~"></h2>-->
+        <!--     <h2 id="ticker" class="marquee marquee-direction-left" data-marquee="~ ~ ~ ~ ~"></h2>-->
         <script>
             function addCSSRule(sheet, selector, rules) {
                 sheet.deleteRule(0);
@@ -77,8 +79,8 @@
                 return style.sheet;
             })();
 
- /*           window.setInterval(
-                function() {$.getJSON("{{ url_for("tickerdata", referrer=self|quoted) }}", {}).done(
+            /*           window.setInterval(
+                           function() {$.getJSON("{{ url_for("tickerdata", referrer=self|quoted) }}", {}).done(
                     function (tickerdata) {
                         var ticker = document.getElementById("ticker");
                         ticker.setAttribute("data-marquee", tickerdata["data"]);

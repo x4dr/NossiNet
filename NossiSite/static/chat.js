@@ -43,7 +43,7 @@ $(document).ready(function(){
         var Lethal= parseInt(health[1]);
         var Aggravated= parseInt(health[2]);
         var Partial= parseInt(health[3]);
-        Aggravated = Aggravated-0.2*Partial
+        Aggravated = Aggravated-0.2*Partial;
         health = 7-(Bash+Lethal+Aggravated);
         document.getElementById("healthbar").style.width = (100*health/7).toString()+"%";
         document.getElementById("healthbar").style.left = (100*(Bash+Lethal+Aggravated)/7).toString()+"%";
