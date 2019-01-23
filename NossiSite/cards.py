@@ -44,15 +44,23 @@ def backlog(user=None, message=None):
         f.truncate()
 
 
-def duelstate():
+def duelstate(state=None, opponent=None):
     with open("duels.crd", 'r+') as f:
         duels = [x.split(": ", 1) for x in f.readlines() if len(x.split(": ", 1)) > 1]
         pick = [x for x in duels if session['user'] in x[0].split("-", 1)]
         if not pick:
-            return None, None
+            if state is not None and opponent:
+                duels.append([session['user']+"-"+opponent,state])
+                f.seek(0)
+                f.writelines([x[0]+": "+x[1]+"\n" for x in duels])
+                f.truncate()
+                return state, opponent
+            else:
+                return None, None
         elif len(pick) > 1:
-            raise Exception("what the fuck two duels?")
+            raise Exception("what the fuck two duels? i fucked that check up somewhere")
         else:
+            pick = pick[0]
             fighters = pick[0].split("-", 1)
             return pick[1], fighters[0] if fighters[1] == session['user'] else fighters[1]
 
@@ -62,14 +70,28 @@ def cards(message: str):
     state, opponent = duelstate()
     if state:
         session['cards_mode'] = "duel"
-        emit("Status", {status: "duelling " + opponent})
+        emit("Status", {"status": "duelling " + opponent})
 
     if message == "///silent":
         return q_send("", False)
-    if session.get('cards_mode', None) is None:
+    elif session.get('cards_mode', None) is None:
         lobby(message)
-    if message ==
+    elif session.get('cards_mode', None) is "duel":
+        duel(message,)
     q_send(message)
+
+def duel(message:str):
+    state, opponent = duelstate()
+    owndeck = extract_owndeck(state)
+    if message == "draw":
+        message = "hand"
+        hand = draw(owndeck, 5)
+        state= update_ownhand(state, hand)
+    if message == "hand":
+        hand = extract_ownhand(state)
+        q_echo(hand);
+
+
 
 def lobby(message: str):
     if message == "help":
@@ -87,6 +109,7 @@ def lobby(message: str):
                 else:
                     match = [x for x in challenges if x[1] == session['user'] and x[0] == opponent]
                     if match:
+                        duelstate("",opponent)
                         q_echo("CHALLENGE ACCEPTED")
                         backlog(opponent, session['user'] + " ACCEPTED YOUR CHALLENGE")
                     else:
