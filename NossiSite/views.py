@@ -108,7 +108,7 @@ def wikipage(page=None):
 
                 return redirect(url_for("wiki_index"))
         body = bleach.clean(body)
-        body = Markup(markdown.markdown(body, extensions=["tables", "toc"]))
+        body = Markup(markdown.markdown(body, extensions=["tables", "toc", "nl2br"]))
         return render_template("wikipage.html", title=title, tags=tags, body=body, wiki=page)
 
 
@@ -514,6 +514,7 @@ def logout():
     token_clear()
     flash('You were logged out')
     return redirect(url_for('show_entries'))
+
 
 @app.route('/cards')
 def cards():
