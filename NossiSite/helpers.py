@@ -55,7 +55,7 @@ def wikisave(page, author, title, tags, body):
     with open(os.path.expanduser(wikipath) + "control", "a+") as f:
         f.write(page + " edited by " + author + "\n")
     with open(os.path.expanduser(wikipath) + "control", "r") as f:
-        print(os.path.expanduser(wikipath), f.read())
+        print(os.path.expanduser(wikipath)+"control", ":", f.read())
     os.system(os.path.expanduser("~/") + "bin/wikiupdate & ")
 
 
