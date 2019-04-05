@@ -1,6 +1,8 @@
 import json
 import random
 import time
+from pathlib import Path
+from typing import List, Tuple
 
 import bleach
 import markdown
@@ -333,7 +335,7 @@ def new_fen_sheet():
     if not session.get('logged_in'):
         flash('You are not logged in!')
         return redirect(url_for('login', r=request.url))
-    return render_template('fensheet_editor.html', character=FenCharacter())
+    return render_template('fensheet_editor_new.html', character=FenCharacter())
 
 
 @app.route('/new_vamp_sheet/', methods=['GET'])
@@ -342,6 +344,72 @@ def new_vamp_sheet():
         flash('You are not logged in!')
         return redirect(url_for('login', r=request.url))
     return render_template('vampsheet_editor.html', character=VampireCharacter())
+
+
+@app.route("/fencalc/all/<costs>/<penalty>")
+def ddos(costs, penalty):
+    p = Path(costs + "-" + penalty + ".result")
+    try:
+        if p.exists():
+            with open(p, "r") as f:
+                return f.read()
+        else:
+            with open(p, "w") as f:
+                res = []
+                for i in range(605):
+                    r = fen_calc(str(i), costs, penalty)
+                    print(i, res)
+                    if i == 0 or r != res[-1][1]:
+                        res.append([(str(i) + "   ")[:4] + " : ", r])
+                r = "\n".join([x[0] + x[1] for x in res])
+                f.write(r)
+                return r
+    except:
+        with open(p, "w") as f:
+            f.write("an error has previously occured and this request is blocked")
+            return "error"
+
+
+@app.route('/fencalc/<inputstring>/<costs>/<penalty>')
+@app.route('/fencalc/<inputstring>')
+def fen_calc(inputstring: str, costs=None, penalty=None):  # move into fen sheet static method
+    def cost(att: Tuple[int, int, int], internal_costs: List[int], internal_penalty: List[int]) -> int:
+        pen = 0
+        for ip, p in enumerate(internal_penalty):
+            pen += (max(sum([1 for a in att if a >= ip]), 1) - 1) * p
+            print("penalty", p, ip, att, pen)
+        return sum([internal_costs[a] for a in att]) + pen
+
+    if costs is not None:
+        costs = [int(x) for x in costs.split(",")]
+    else:
+        costs = [0, 15, 35, 60, 100]
+    if penalty is not None:
+        penalty = [int(x) for x in penalty.split(",")]
+    else:
+        penalty = [0, 0, 0, 50, 100]
+    xp = [int(x) for x in inputstring.split(",")]
+    if len(xp) == 1:
+        xp = xp[0]
+        allconf = set([(a, b, c) for a in range(5) for b in range(a + 1) for c in range(b + 1)])
+        correct = [[x[0] + 1, x[1] + 1, x[2] + 1] for x in allconf if cost(x, costs, penalty) <= xp]
+        i = 0
+        j = len(correct)
+        maximal = correct[:]
+        while i < j:
+            for u in range(len(maximal[i])):
+                upg = list(maximal[i])
+                upg[u] = upg[u] + 1
+                # upg = tuple(upg)
+                if upg in correct:
+                    del (maximal[i])
+                    i -= 1
+                    j -= 1
+                    break
+            i += 1
+        return "\t".join(str(c) for c in maximal)
+    else:
+        return str(cost((x - 1 for x in xp)))
 
 
 @app.route('/modify_sheet/', methods=['GET', 'POST'])
@@ -358,7 +426,7 @@ def modify_sheet(t=None):
         if t == "OWOD":
             u.sheet = VampireCharacter()
     if request.method == 'POST':
-        # print("incoming modify:", request.form)
+        print("incoming modify:", request.form)
         u.update_sheet(request.form)
         ul.saveuserlist()
 
