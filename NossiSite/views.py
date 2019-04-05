@@ -408,7 +408,7 @@ def fen_calc(inputstring: str, costs=None, penalty=None):  # move into fen sheet
             i += 1
         return "\t".join(str(c) for c in maximal)
     else:
-        return str(cost((x - 1 for x in xp), costs, penalty))
+        return str(cost(tuple([x - 1 for x in xp]), costs, penalty))
 
 
 @app.route('/modify_sheet/', methods=['GET', 'POST'])
