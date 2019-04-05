@@ -47,6 +47,7 @@ def stream_string(s):
 
 
 def wikisave(page, author, title, tags, body):
+    print("saving ...")
     with open(os.path.expanduser(wikipath + page + ".md"), 'w+') as f:
         f.write("title: " + title + "  \n")
         f.write("tags: " + " ".join(tags) + "  \n")

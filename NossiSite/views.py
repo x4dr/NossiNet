@@ -154,7 +154,6 @@ def editentries(x=None):
         if request.form["id"] == "new":
             add_entry()
         if checktoken():
-            print(request.form.get("wiki", None), "<<<<<<<<<<<<<<<<<")
             if request.form.get("wiki", None) is not None:
                 wikisave(request.form['wiki'].lower(), session.get('user'), request.form['title'],
                          request.form['tags'].split(" "), request.form['text'])
