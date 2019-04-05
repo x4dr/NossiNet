@@ -10,8 +10,8 @@ from flask import Response
 from markupsafe import Markup
 
 from NossiPack.FenCharacter import FenCharacter
-from NossiPack.VampireCharacter import VampireCharacter
 from NossiPack.User import Userlist, User
+from NossiPack.VampireCharacter import VampireCharacter
 from NossiSite import app
 from NossiSite.helpers import g, session, checktoken, request, redirect, url_for, \
     render_template, flash, generate_password_hash, init_db, abort, wikiload, wikindex, wikisave, token_clear
