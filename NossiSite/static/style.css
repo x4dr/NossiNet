@@ -34,7 +34,6 @@ h7 { color: #009700; }
 
 .leet {
     background-color: black;
-    font-weight: bold;
     color: #00f700;
     border: 1px solid #00f700;
     margin: 10px;
@@ -56,6 +55,30 @@ h7 { color: #009700; }
 .dividedtable:last-child {
     border-color: #00f700;
     border-bottom: #00f700;
+}
+
+.collapsible{
+    background-color: #000005;
+    cursor: pointer;
+    padding: 2px;
+    width: 100%;
+    border: none;
+    text-align: left;
+    outline: none;
+    font-size: 15px;
+    font-family: "Lucida Grande", Monaco, monospace;
+}
+
+.active, .collapsible:hover {
+    background-color: #311;
+}
+
+.content {
+    padding: 0 18px;
+    display: none;
+    overflow: hidden;
+    color: #0da318;
+    background-color: #00005;
 }
 
 
@@ -150,11 +173,11 @@ label { white-space: nowrap}
     width:  0;
     background-color: #700720;
 }.aggbar{
-    position:fixed; left:0; bottom:2.2%;
-    height: 1%;
-    width:  0;
-    background-color: #a00050;
-}
+     position:fixed; left:0; bottom:2.2%;
+     height: 1%;
+     width:  0;
+     background-color: #a00050;
+ }
 
 .bloodbar{
 

@@ -1,0 +1,314 @@
+{% extends "layout.html" %}
+{% macro chooser(name, value, max=5) -%}
+    {% for count in range(1,max + 1) -%}{%- if loop.index0 > 1 and loop.index0 % 10 == 0 -%}
+        <br>{%- endif -%}<input
+            style="width: 10px"  type="radio" name="{{ name }}_val"
+            value="{{ count|string }}" id="{{ name }}_{{ count|string }}"{% if value == count -%}
+            checked {%- endif %} xmlns="http://www.w3.org/1999/html"><label ondblclick="resetDot(this.control)"
+                                                                            style="user-select: none;"
+                                                                            for="{{ name }}_{{ count|string }}"
+    >&nbsp</label>{%- endfor %}
+{%- endmacro %}
+
+{% macro skillsection(name)%}
+    <button type="button" class="collapsible">character[name]</button>
+    <div class="content">
+        <textarea id="Stärke_1">character.description[name]</textarea>
+        <dl>
+            <dt class="collapsible">Level1</dt>
+            <dd class="content"><textarea id="{{name}}_1"></textarea></dd>
+            <dt class="collapsible">Level2</dt>
+            <dd class="content"><textarea id="name_2"></textarea></dd>
+            <dt class="collapsible">Level3</dt>
+            <dd class="content"><textarea id="Stärke_1_3"></textarea></dd>
+            <dt class="collapsible">Level4</dt>
+            <dd class="content"><textarea id="Stärke_1_4"></textarea></dd>
+            <dt class="collapsible">Level5</dt>
+            <dd class="content"><textarea id="Stärke_1_5"></textarea></dd>
+        </dl>
+    </div>
+{% endmacro %}
+
+{% macro dots(val,max=5) -%}
+    {% if val is not defined%}
+        {% set val = 0 %}
+    {% endif %}
+    {% for i in range(val) -%}
+        ●
+    {%- endfor -%}
+    {%- for i in range(max-val) -%}
+        ○
+    {%- endfor %}
+{%- endmacro %}
+{% macro catformat(cat, name) -%}
+    <br>
+    <!-- calling catformat {{ cat }} {{ name }}-->
+    <table style = "width: 100%">
+        {%-set l = [0] %}
+        {% for k,v in cat.items()  -%}
+            {%- if l[0]==0 -%}
+                <tr>
+                    <td colspan="2" style="text-align: center;" class="leeet">{{ name }}</td>
+                </tr>
+                {%- if l.insert(0, l[0] + 1) -%}{% endif %}
+            {%- endif -%}
+        {%- endfor -%}
+        {%- for k,v in cat.items() -%}
+
+            <tr>
+                <td colspan="2" style="text-align: center;" class="leet">{{ k }}</td>
+            </tr>
+            {% set vk = v.keys()|list %}
+            {% set vv = v.values()|list %}
+            {%- for i in range(10 + v|length) -%}
+                <tr id="tr_{{ name }}_{{ k }}_{{ i }}" {%- if v|length < i %} style="visibility: collapse"{%- endif -%}>
+                    {%- if v|length > i -%}
+                        <td><input title="{{ vk[i] }}" style="width: 80%;" class="leet"
+                                   name="{{ name }}_{{ k }}_{{ i }}" type="text" value="{{ vk[i] }}"></td>
+                        <td>{{ chooser(name+"_"+k|string+"_"+i|string, vv[i]) }}</td>
+                    {% else %}
+                        <td><input title="{{ name }}_{{ k }}_{{ i }}" style="width: 80%;" class="leet"
+                                   name="{{ name }}_{{ k }}_{{ i }}" type="text"  oninput=reveal("tr_{{ name }}_{{ k }}_{{ i + 1 }}")></td>
+                        <td>{{ chooser(name+"_"+k|string+"_"+i|string , 0) }}</td>
+                    {%- endif -%}
+
+                </tr>
+            {%- endfor -%}
+            <tr><td><br></td></tr>
+        {%- endfor -%}
+    </table>
+{%- endmacro %}
+{% block head %}
+    <script>
+        $(document).ready(function() {
+            $('form input').on('keypress', function(e) {
+                return e.which !== 13;
+            });
+
+            var namespace = '/character';
+
+            var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+
+            socket.on('comments', function (msg) {
+                var box = $('pre#comments');
+                box.html(msg.data);
+                window.scrollTo(0,0);
+            });
+
+            socket.on('connect', function () {
+                socket.emit('ClientServerEvent', {data: 'editing character'})
+            });
+
+
+            $('form#checkchar').submit(function () {
+                var message_data = $('form#sheet').serializeArray();
+                socket.emit('CheckChar', {data: message_data});
+                return false;
+            });
+
+            //make things collapsible
+            var coll = document.getElementsByClassName("collapsible");
+            var i;
+
+            for (i = 0; i < coll.length; i++) {
+                coll[i].addEventListener("click", function() {
+                    this.classList.toggle("active");
+                    var content = this.nextElementSibling;
+                    if (content.style.display === "block") {
+                        content.style.display = "none";
+                    } else {
+                        content.style.display = "block";
+                    }
+                    return false
+                });
+            }
+        });
+
+        function resetDot(el){
+            el.checked = '';
+            if (window.getSelection) {
+                if (window.getSelection().empty) {  // Chrome
+                    window.getSelection().empty();
+                } else if (window.getSelection().removeAllRanges) {  // Firefox
+                    window.getSelection().removeAllRanges();
+                }
+            } else if (document.selection) {  // IE?
+                document.selection.empty();
+            }
+        }
+        function reveal(id){
+            var el = document.getElementById(id);
+            el.style.visibility="visible";
+        }
+        function textAreaAdjust(el) {
+            if (el.scrollHeight > el.clientHeight) {
+                el.style.height = el.scrollHeight  + "px"
+            }
+        }
+
+
+    </script>
+
+{% endblock %}
+{% block body %}
+    <form id="sheet" action="{{ url_for('modify_sheet',t="FEN") }}" method="post" >
+        <table width="100%" class="leet dividedtable" border="1">
+            <tr>
+                <td colspan="6" style="text-align: center; font-size: 1.5em" class="leeet">
+                    {%- if character.Name -%}
+                        Charactersheet&nbspfor&nbsp{{ character.Name }}
+                    {%- else -%}
+                        Charactersheet&nbspfor&nbspUnnamed&nbspCharacter
+                    {%- endif -%}</td>
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Name:</td>
+                <td style="text-align: left; "><input title="Name" style="width: 80%;" class="leet"  name="Name" type="text" value="{{ character.Name }}"></td>
+                <td style="text-align: right; ">Spezies:</td>
+                <td style="text-align: left; "><input title="Spezies" style="width: 80%;" class="leet"  name="Species" type="text" value="{{ character.Meta.Species }}"></td>
+                <td style="text-align: right; ">XP:</td>
+                <td style="text-align: left; "><input title="XP" style="width: 80%;" class="leet"  name="XP" type="text" value="{{ character.Meta.XP }}"></td>
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Spieler:</td>
+                <td style="text-align: left; "><input title="Spieler" style="width: 80%;" class="leet"  name="Player" type="text" value="{{ character.Meta.Player }}"></td>
+                <td style="text-align: right; ">Größe:</td>
+                <td style="text-align: left; "><input title="Größe" style="width: 80%;" class="leet"  name="Size" type="text" value="{{ character.Meta.Size }}"></td>
+                <td style="text-align: right; ">Heimat:</td>
+                <td style="white-space: nowrap; text-align: left; "><input title="Heimat" style="width: 80%;" class="leet"  name="Home" type="text" value="{{ character.Meta.Home }}"></td>
+            </tr>
+            <tr>
+                <td style="text-align: right; overflow: hidden; width: 1px; ">Story:</td>
+                <td style="text-align: left; "><input title="Story" style="width: 80%;" class="leet"  name="Story" type="text" value="{{ character.Meta.Story }}"></td>
+                <td style="text-align: right; ">Gewicht:</td>
+                <td style="text-align: left; "><input title="Gewicht" style="width: 80%;" class="leet"  name="Weight" type="text" value="{{ character.Meta.Weight }}"></td>
+                <td style="text-align: right; ">Konzept:</td>
+                <td style="white-space: nowrap; text-align: left; "><input title="Konzept" style="width: 80%;" class="leet"  name="Concept" type="text" value="{{ character.Meta.Concept }}"></td>
+            </tr>
+        </table>
+        <br>
+        <table border="1" class="leet dividedtable" width ="100%">
+            <tr>
+                <td>Stärke
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Fähigkeiten</th>
+                        </tr>
+                        </thead>
+                        <tr>
+                            <td>
+                                <button type="button" class="collapsible">Fähigkeit1</button>
+                                <div class="content">
+                                    <p>Lorem ipsum...</p>
+                                    <textarea id="Stärke_1"></textarea>
+                                    <dl>
+                                        <dt class="collapsible">Level1</dt>
+                                        <dd class="content"><textarea id="Stärke_1_1"></textarea></dd>
+                                        <dt class="collapsible">Level2</dt>
+                                        <dd class="content"><textarea id="Stärke_1_2"></textarea></dd>
+                                        <dt class="collapsible">Level3</dt>
+                                        <dd class="content"><textarea id="Stärke_1_3"></textarea></dd>
+                                        <dt class="collapsible">Level4</dt>
+                                        <dd class="content"><textarea id="Stärke_1_4"></textarea></dd>
+                                        <dt class="collapsible">Level5</dt>
+                                        <dd class="content"><textarea id="Stärke_1_5"></textarea></dd>
+                                    </dl>
+                                </div>
+                            </td>
+                            <td><div style="alignment: center">{{ chooser("test", 0) }}</div></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Fähigkeit2
+                            </td>
+                            <td>
+                                - - - - -
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Fähigkeit3
+                            </td>
+                            <td>
+                                - - - - -
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Fähigkeit4
+                            </td>
+                            <td>
+                                - - - - -
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td>Können
+                    <table border="1">
+                        <thead>
+                        <tr>
+                            <th>Fähigkeiten</th>
+                        </tr>
+                        </thead>
+                        <tr>
+                            <td>
+                                Fähigkeit1
+                            </td>
+                            <td>
+                                - - - - -
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Fähigkeit2
+                            </td>
+                            <td>
+                                - - - - -
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Fähigkeit3
+                            </td>
+                            <td>
+                                - - - - -
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Fähigkeit4
+                            </td>
+                            <td>
+                                - - - - -
+                            </td>
+                        </tr>
+                    </table></td>
+
+            </tr>
+            <tr>
+                <td>Charisma</td>
+                <td>Weisheit</td>
+            </tr>
+        </table>
+
+        <pre id="comments"></pre>
+
+
+
+        <br>
+        <input id="save" type="submit"  class="leet bigbtn" value="SAVE"><br><br><br>
+        <div >
+                <textarea title="Notes" style="width: 99%; overflow-y: auto; word-wrap:break-word " onload="textAreaAdjust(this)"
+                          onkeyup="textAreaAdjust(this)" class="leeet" name="Notes">{{ character.Notes }}</textarea>
+        </div>
+    </form>
+
+    <form id="checkchar"  style="float: right" name="checkchar">
+        <input id="check" type="submit"  class="leet bigbtn" value="CHECK">
+
+        <div style="float: left">Checks the Character cost (uses the newest sheet in your history)</div>
+    </form>
+
+
+{% endblock %}
