@@ -28,7 +28,7 @@
 
 {% block body %}
     <div class="entry" style="word-wrap:break-word;border:1px solid">{{ body|safe }}
-          <br> {#dangerous entry.text has to be cleaned before being sent here#}
+          <br> {#dangerous body has to be cleaned before being sent here#}
     </div>
     <div style="margin: 2em">|
     {% for t in tags %}

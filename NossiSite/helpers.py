@@ -51,11 +51,11 @@ def wikisave(page, author, title, tags, body):
     with open(os.path.expanduser(wikipath + page + ".md"), 'w+') as f:
         f.write("title: " + title + "  \n")
         f.write("tags: " + " ".join(tags) + "  \n")
-        f.write(body)
-    with open(os.path.expanduser(wikipath) + "control", "a+") as f:
-        f.write(page + " edited by " + author + "\n")
+        f.write(body.replace("\n", ""))
+    with open(os.path.expanduser(wikipath) + "control", "a+") as h:
+        h.write(page + " edited by " + author + "\n")
     with open(os.path.expanduser(wikipath) + "control", "r") as f:
-        print(os.path.expanduser(wikipath)+"control", ":", f.read())
+        print(os.path.expanduser(wikipath) + "control", ":", f.read())
     os.system(os.path.expanduser("~/") + "bin/wikiupdate & ")
 
 
@@ -75,6 +75,8 @@ def wikiload(page):
             if mode and not line.strip():
                 mode = ""
             body += line
+            print(">", line)
+        print(body)
         return title, tags, body
 
 
