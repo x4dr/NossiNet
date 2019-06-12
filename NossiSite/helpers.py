@@ -71,7 +71,6 @@ def wikiload(page):
                 continue
             if mode and not line.strip():
                 mode = ""
-                continue
             body += line
         return title, tags, body
 
