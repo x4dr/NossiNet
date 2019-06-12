@@ -88,7 +88,7 @@ def wiki_index():
 
 
 @app.route('/wiki')
-@app.route('/wiki/<page>', methods=["GET", "POST"])
+@app.route('/wiki/<page>', methods=["GET"])
 def wikipage(page=None):
     if request.method == "GET":
         if page is None:
@@ -111,7 +111,7 @@ def wikipage(page=None):
                 return redirect(url_for("wiki_index"))
         body = bleach.clean(body)
         body = Markup(markdown.markdown(body, extensions=["tables", "toc", "nl2br"]))
-        body = body.replace("<table>", "<table class=leet>") # making tableshave leet style
+        body = body.replace("<table>", "<table class=\"leet\">")  # making tables have leet style
         return render_template("wikipage.html", title=title, tags=tags, body=body, wiki=page)
 
 
