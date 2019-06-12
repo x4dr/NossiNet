@@ -106,24 +106,12 @@ def get_multiples(xs):
 # run()
 t = time.time()
 p = NossiPack.WoDParser({})
-r1 = p.make_roll("1,1@5")
-# r2 = p.make_roll("3,5@3R3")
+r1 = p.make_roll("2,4@5R2")
 val1 = 0
 mul = [0, 0, 0, 0]
-rep = 1000000
+rep = 100000
 
 for i in range(rep):
-    r = [random.randint(1,10)for x in range(5)]
-    for m in get_multiples(r):
-        mul[m[1] - 1] += 1
-    # val2 += 1 if sum(1 for x, y in multiples if y ==1) else 0
-    # val3 += 1 if sum(1 for x, y in multiples if y ==2) else 0
-    # val4 += 1 if sum(1 for x, y in multiples if y ==3) else 0
-    # val5 += 1 if sum(1 for x, y in multiples if y ==4) else 0
+    val1 += r1.reroll()
 
-print("avg", val1 / rep)
-print("group of any 2", 100 * mul[0] / rep)
-print("group of any 3", 100 * mul[1] / rep)
-print("group of any 4", 100 * mul[2] / rep)
-print("group of any 5", 100 * mul[3] / rep)
-print(time.time() - t)
+print(val1/rep)

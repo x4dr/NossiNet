@@ -47,12 +47,15 @@ def stream_string(s):
 
 
 def wikisave(page, author, title, tags, body):
+    print("saving ...")
     with open(os.path.expanduser(wikipath + page + ".md"), 'w+') as f:
         f.write("title: " + title + "  \n")
         f.write("tags: " + " ".join(tags) + "  \n")
         f.write(body)
     with open(os.path.expanduser(wikipath) + "control", "a+") as f:
         f.write(page + " edited by " + author + "\n")
+    with open(os.path.expanduser(wikipath) + "control", "r") as f:
+        print(os.path.expanduser(wikipath)+"control", ":", f.read())
     os.system(os.path.expanduser("~/") + "bin/wikiupdate & ")
 
 
@@ -172,13 +175,13 @@ def token_clear():
         token.pop(session['user'])
     else:
         print("logging out nonexistent user...")
-        print("still logged in are "+", ". join(token.keys())+".")
+        print("still logged in are " + ", ".join(token.keys()) + ".")
 
 
 def gentoken():
     global token
     if session.get('user', False):
-        token[session['user']] = token.get(session['user'], [])[-2:]+[generate_token(session)]
+        token[session['user']] = token.get(session['user'], [])[-2:] + [generate_token(session)]
         print("generated:", token[session['user']])
         return token[session['user']][-1]
     else:
