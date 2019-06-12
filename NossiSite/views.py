@@ -111,6 +111,7 @@ def wikipage(page=None):
                 return redirect(url_for("wiki_index"))
         body = bleach.clean(body)
         body = Markup(markdown.markdown(body, extensions=["tables", "toc", "nl2br"]))
+        body = body.replace("<table>", "<table class=leet>") # making tableshave leet style
         return render_template("wikipage.html", title=title, tags=tags, body=body, wiki=page)
 
 

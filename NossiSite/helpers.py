@@ -75,7 +75,6 @@ def wikiload(page):
             if mode and not line.strip():
                 mode = ""
             body += line
-        body = body.replace("<table>", "<table class=leet>")
         return title, tags, body
 
 
