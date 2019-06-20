@@ -4,6 +4,7 @@
         {{ headstate|safe }}
     {% else %}
     {% endfor %}
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="wiki.css") }}">
 {% endblock %}
 {% block title %}
     <title xmlns="http://www.w3.org/1999/html">{{ title }}</title>

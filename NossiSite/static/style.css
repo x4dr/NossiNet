@@ -12,16 +12,14 @@ a, h1, h2 { color: #00f700; }
 
 h1 { border-bottom: 2px solid #000000; }
 h2 { font-size: 1.3em; }
-h3 { font-size: 1.2em; }
-h4 { font-size: 1.15em; }
-h5 { font-size: 1.1em; }
-h6 { font-size: 1.05em; }
-h7 { font-size: 1.0em; }
+h3 { font-size: 1.29em; }
+h4 { font-size: 1.28em; }
+h5 { font-size: 1.27em; }
+h6 { font-size: 1.26em; }
 h3 { color: #00d700; }
 h4 { color: #00c700; }
 h5 { color: #00b700; }
 h6 { color: #00a700; }
-h7 { color: #009700; }
 
 .page {
     margin: 1em auto;
@@ -78,7 +76,7 @@ h7 { color: #009700; }
     display: none;
     overflow: hidden;
     color: #0da318;
-    background-color: #00005;
+    background-color: #000005;
 }
 
 

@@ -94,7 +94,7 @@ def wikipage(page=None):
         if page is None:
             page = request.args.get('n', None)
             if page is None:
-                return abort(404)
+                return wiki_index()
             return redirect(url_for("wikipage", page=page))
         try:
             page = page.lower()
@@ -111,7 +111,6 @@ def wikipage(page=None):
                 return redirect(url_for("wiki_index"))
         body = bleach.clean(body)
         body = Markup(markdown.markdown(body, extensions=["tables", "toc", "nl2br"]))
-        body = body.replace("<table>", "<table class=\"leet\">")  # making tables have leet style
         return render_template("wikipage.html", title=title, tags=tags, body=body, wiki=page)
 
 
@@ -373,7 +372,7 @@ def ddos(costs, penalty):
 @app.route('/fencalc/<inputstring>/<costs>/<penalty>')
 @app.route('/fencalc/<inputstring>')
 def fen_calc(inputstring: str, costs=None, penalty=None):  # move into fen sheet static method
-    def cost(att: Tuple[int, int, int], internal_costs: List[int], internal_penalty: List[int]) -> int:
+    def cost(att: Tuple[int, ...], internal_costs: List[int], internal_penalty: List[int]) -> int:
         pen = 0
         for ip, p in enumerate(internal_penalty):
             pen += (max(sum([1 for a in att if a >= ip]), 1) - 1) * p

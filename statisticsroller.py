@@ -1,9 +1,10 @@
 import random
 import sys
-import NossiPack.WoDParser
-
 import time
+from itertools import combinations
 from typing import DefaultDict
+
+import pydealer
 
 
 def d10(amt, diff, ones=True):  # faster than the WoDDice
@@ -104,14 +105,128 @@ def get_multiples(xs):
 
 
 # run()
-t = time.time()
-p = NossiPack.WoDParser({})
-r1 = p.make_roll("2,4@5R2")
-val1 = 0
-mul = [0, 0, 0, 0]
-rep = 100000
 
-for i in range(rep):
-    val1 += r1.reroll()
 
-print(val1/rep)
+def process_hand(stack: pydealer.Stack):
+    transl = {"D": "Order", "C": "Matter", "H": "Energy", "S": "Entropy"}
+    result = {"Order": [], "Matter": [], "Energy": [], "Entropy": []}
+    for c in stack:
+        result[transl[c.abbrev[-1]]].append(11 if (c.abbrev[:-1] == "A") else (
+            int(c.abbrev[:-1]) if c.abbrev[:-1].isdigit() else 10))
+
+    return result
+
+
+spells = {"Bend": {"Order": "3+", "Matter": "4+", "Energy": "0", "Entropy": "3+"},
+          "Morph": {"Order": "9+", "Matter": "9+", "Energy": "0", "Entropy": "0"},
+          "Calcify": {"Order": "0", "Matter": "4+", "Energy": "4+", "Entropy": "0"},
+          "Calcination": {"Order": "0", "Matter": "0", "Energy": "8", "Entropy": "11"},
+          "Solution": {"Order": "10", "Matter": "7", "Energy": "0", "Entropy": "0+"},
+          "Separation": {"Order": "9", "Matter": "0+", "Energy": "1+", "Entropy": "6"},
+          "Conjunction": {"Order": "9", "Matter": "0+", "Energy": "1+", "Entropy": "6"},
+          "Putrefaction": {"Order": "0", "Matter": "14+", "Energy": "14+", "Entropy": "0"},
+          "Sublimation": {"Order": "0", "Matter": "9+", "Energy": "0+", "Entropy": "12"},
+          "Multiplication": {"Order": "10", "Matter": "0", "Energy": "0", "Entropy": "10"},
+          "Buoyancy": {"Order": "0", "Matter": "5+", "Energy": "10+", "Entropy": "0"},
+          "Knallpulver": {"Order": "9+", "Matter": "0", "Energy": "0", "Entropy": "9"},
+          "Schreipulver": {"Order": "0", "Matter": "9+", "Energy": "0", "Entropy": "9"},
+          "Griffpulver": {"Order": "11", "Matter": "16+", "Energy": "0", "Entropy": "0"},
+          "Atemmaske": {"Order": "11", "Matter": "0", "Energy": "0", "Entropy": "8+"},
+          "Leuchtpulver": {"Order": "0", "Matter": "11", "Energy": "16+", "Entropy": "0"},
+          "Schnellfackel": {"Order": "0", "Matter": "0", "Energy": "1+", "Entropy": "1+"},
+          "Durstsand": {"Order": "17", "Matter": "10+", "Energy": "0", "Entropy": "0"},
+
+          "Feuersee": {"Order": "0", "Matter": "0", "Energy": "5+", "Entropy": "5+"},
+          "Pandemonium": {"Order": "0", "Matter": "0", "Energy": "0", "Entropy": "11", "Any": "20"},
+          "Statische Entladung": {"Order": "5+", "Matter": "0", "Energy": "5+", "Entropy": "0"},
+          "Ordnen": {"Order": "5+", "Matter": "0", "Energy": "0", "Entropy": "0"},
+          "Gefrieren": {"Order": "3+", "Matter": "3+", "Energy": "0", "Entropy": "0"},
+          "Magnetisieren": {"Order": "3+", "Matter": "0", "Energy": "3+", "Entropy": "0"},
+          "Essenz des Glücks": {"Order": "3+", "Matter": "0", "Energy": "0", "Entropy": "3+"},
+          "Härten": {"Order": "0", "Matter": "5+", "Energy": "0", "Entropy": "0"},
+          "Beschleunigen": {"Order": "0", "Matter": "3+", "Energy": "3+", "Entropy": "0"},
+          "Verfall": {"Order": "0", "Matter": "3+", "Energy": "0", "Entropy": "3+"},
+          "Statischer Schlag": {"Order": "0", "Matter": "0", "Energy": "5+", "Entropy": "0"},
+          "Destabilisieren": {"Order": "0", "Matter": "0", "Energy": "3+", "Entropy": "3+"},
+          "Änderung": {"Order": "0", "Matter": "0", "Energy": "0", "Entropy": "5+"}
+          }
+
+
+def subsetsum(items, target):
+    for length in range(1, len(items)):
+        for subset in combinations(items, length):
+            if sum(subset) == target:
+                return subset
+    return []
+
+
+def subsetsumany(items, target):
+    for length in range(1, len(items)+1):
+        for subset in combinations(items, length):
+            if sum(subset) >= target:
+                return subset
+    return []
+
+
+repeats = 1000000
+total = 0
+casted_spells = {x: 0 for x in spells.keys()}
+
+used_mana = {"Order": 0, "Matter": 0, "Energy": 0, "Entropy": 0, "Any": 0}
+
+for repeat in range(repeats):
+    deck = pydealer.Deck()
+    deck.shuffle()
+    hand = deck.deal(6)
+    hand = process_hand(hand)
+    casted = 0
+    # hand = {"Order": [9, 5], "Matter": [2], "Energy": [], "Entropy": [10, 11]}
+
+    if 1000 * repeat / repeats % 10 == 0:
+        print(int(100 * repeat / repeats), "%")
+    # print("O {} M {} E {} N {}".format(hand["Order"], hand["Matter"], hand["Energy"], hand["Entropy"]))
+    for s in spells.keys():
+        casteable = True
+        for x in spells[s].keys():  # Order, Matter, Energy, Entropy
+            code = spells[s][x]
+            if code == "0":
+                continue
+            if code[-1] == "+":
+                if x == "Any":
+                    if int(code[:-1]) > sum(hand[i] for i in hand.keys()):
+                        casteable = False
+                        break
+                else:
+                    ssum = subsetsumany(hand[x], int(code[:-1]))
+                    if not ssum:
+                        casteable = False
+                        break
+                    else:
+                        used_mana[x] += sum(ssum)
+            else:
+                if x == "Any":
+                    ssum = subsetsum([a for magictype in hand.keys() for a in hand[magictype]], int(code))
+                    if not ssum:
+                        casteable = False
+                        break
+                    else:
+                        used_mana[x] += int(code)
+
+                else:
+                    ssum = subsetsum(hand[x], int(code))
+                    if not ssum:
+                        casteable = False
+                        break
+                    else:
+                        used_mana[x] += int(code)
+        if casteable:
+            casted += 1
+            casted_spells[s] += 1
+    total += casted
+    # print()
+
+
+print(total / repeats)
+for x in sorted(casted_spells.items(), key=lambda k: k[1]):
+    print("{:<20} {:>5.1f}%".format(x[0], 100 * casted_spells[x[0]] / repeats))
+print(used_mana)
