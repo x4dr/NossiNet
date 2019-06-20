@@ -3,3 +3,8 @@ table, th, td {
     border-collapse: collapse;
     table-layout: fixed;
 }
+td:before {
+  content: '';
+  display: block;
+  width: 2em;
+}
