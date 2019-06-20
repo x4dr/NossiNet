@@ -75,7 +75,8 @@ class WoDParser(object):
     def make_roll(self, roll:str):
         # tacked on fenroll
         try:
-            fenroll = re.compile(r' *(?P<selectors>([0-9](, *)?)*) *@(?P<roll>[^R]+)(R(?P<rerolls>-?\d+))?(?P<rest>.*)$',
+            fenroll = \
+                re.compile(r' *(?P<selectors>([0-9](, *)?)*) *@(?P<roll>[^R]+)(R(?P<rerolls>-?\d+))?(?P<rest>.*)$',
                                  re.IGNORECASE)
             selectors = []
             rerolls = 0
@@ -83,7 +84,6 @@ class WoDParser(object):
             if selectorprocessing:
                 roll = selectorprocessing.group("roll")
                 selectors = selectorprocessing.group("selectors")
-
                 rerolls = int(selectorprocessing.group("rerolls") or 0)
                 roll += selectorprocessing.group("rest")
 
