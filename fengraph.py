@@ -1,9 +1,16 @@
+from math import ceil
+import requests
+
 import plotly
 from plotly.offline import offline
 
-experimental_modifiers = [0.17202107691263938, 0.1613333634862842, 0.14626744159750332, 0.12806712046857685,
-                          0.10685904249304598, 0.08603089169813881, 0.06636966010086162, 0.04910106515298854,
-                          0.033171261222551394, 0.050770030982156995]
+balanced_modifiers = [0.17202107691263938, 0.1613333634862842, 0.14626744159750332, 0.12806712046857685,
+                      0.10685904249304598, 0.08603089169813881, 0.06636966010086162, 0.04910106515298854,
+                      0.033171261222551394, 0.050770030982156995]
+
+one_sided_modifiers = [0.04256588711941915, 0.05309579204942035, 0.06453828874002167, 0.07635936058405873,
+                       0.08557553451803121, 0.09267068474467488, 0.09599011191784669, 0.09552629467688234,
+                       0.09044436198804605, 0.3032336836615989]
 
 
 def modify_dmg(modifiers, dmgstring, type, armor):
@@ -16,6 +23,9 @@ def modify_dmg(modifiers, dmgstring, type, armor):
         elif type == "Schlagen":
             e = d - int(armor / 2)
             effectivedmg.append(e if e > 0 else 0)
+        elif type == "Schneiden":
+            e = d - armor
+            effectivedmg.append(e + ceil(e / 5) * 3 if e > 0 else 0)
         else:
             e = d - armor
             effectivedmg.append(e if e > 0 else 0)
@@ -25,30 +35,32 @@ def modify_dmg(modifiers, dmgstring, type, armor):
     return total
 
 
-dmgraw = """
+r = requests.get("nosferatu.vampir.es/wiki/weapons")
+r.content
+
+dmgraw = """ 
 ###Kurzschwert
 | Wert                             | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |   
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | [Hauen](damage#h-hauen)          | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |   
-| [Stechen](damage#p-stechen)      | 2 | 3 | 3 | 4 | 4 | 5 | 5 | 6 | 6 | 7 |   
-| [Schneiden](weapons#c-schneiden) | 2 | 2 | 3 | 3 | 4 | 4 | 5 | 5 | 6 | 7 |   
-| [Schlagen](damage#b-stumpf)      | 2 | 2 | 3 | 4 | 4 | 5 | 5 | 6 | 6 | 7 |   
-
+| [Stechen](damage#p-stechen)      | 1 | 2 | 3 | 4 | 4 | 5 | 5 | 6 | 6 | 7 |   
+| [Schneiden](weapons#c-schneiden) | 1 | 2 | 3 | 3 | 4 | 4 | 5 | 5 | 6 | 7 |   
+| [Schlagen](damage#b-stumpf)      | 1 | 2 | 3 | 3 | 4 | 4 | 5 | 5 | 6 | 7 |   
 
 ###Langschwert
 | Wert                             | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |   
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| [Hauen](damage#h-hauen)          | 5 | 5 | 6 | 6 | 7 | 8| 9| 10| 11 | 12 |   
-| [Stechen](damage#p-stechen)      | 3 | 4 | 4 | 5 | 5 | 6 | 6 | 7 | 7 | 8 |   
+| [Hauen](damage#h-hauen)          | 4 | 5 | 6 | 7 | 7 | 8 | 9 | 10| 11 | 12 |   
+| [Stechen](damage#p-stechen)      | 2 | 3 | 4 | 4 | 5 | 6 | 6 | 7 | 7 | 8 |   
 | [Schneiden](weapons#c-schneiden) | 2 | 3 | 3 | 4 | 4 | 5 | 5 | 6 | 7 | 8 |   
-| [Schlagen](damage#b-stumpf)      | 3 | 4 | 4 | 5 | 5 | 6 | 7 | 8 | 9 | 10 |   
+| [Schlagen](damage#b-stumpf)      | 2 | 3 | 3 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |   
 
 ###Dolch
 | Wert                             | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |   
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| [Hauen](damage#h-hauen)          | 1 | 2 | 3 | 4 | 6 | 8 | 10 | 12 | 14 | 16 |   
-| [Stechen](damage#p-stechen)      | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10| 12 |   
-| [Schneiden](weapons#c-schneiden) | 2 | 3 | 4 | 4 | 4 | 4 | 5 | 5 | 5 | 5  |   
+| [Hauen](damage#h-hauen)          | 1 | 2 | 3 | 4 | 5 | 5 | 8 | 10 | 12 | 14 |   
+| [Stechen](damage#p-stechen)      | 1 | 2 | 3 | 4 | 4 | 5 | 5 | 8 | 11 | 14 |   
+| [Schneiden](weapons#c-schneiden) | 2 | 3 | 4 | 4 | 4 | 4 | 5 | 5 | 5 | 8  |   
 | [Schlagen](damage#b-stumpf)      | 1 | 1 | 1 | 2 | 2 | 2 | 3 | 3 | 3 | 10 |  
 
 ###Hammer
@@ -62,9 +74,9 @@ dmgraw = """
 ###Axt
 | Wert                             | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |   
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| [Hauen](damage#h-hauen)          | 6 | 6 | 7 | 7 | 8 | 8 | 9 | 11 | 13 | 15 |   
+| [Hauen](damage#h-hauen)          | 3 | 3 | 4 | 5 | 6 | 8 | 10 | 12 | 14 | 16 |   
 | [Stechen](damage#p-stechen)      | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |   
-| [Schneiden](weapons#c-schneiden) | 2 | 2 | 3 | 3 | 4 | 5 | 6 | 7 | 8 | 10 |
+| [Schneiden](weapons#c-schneiden) | 2 | 2 | 3 | 3 | 4 | 4 | 5 | 5 | 8 | 10 |
 | [Schlagen](damage#b-stumpf)      | 2 | 3 | 4 | 5 | 6 | 6 | 6 | 6 | 6 | 6 | 
 
 ###Säbel
@@ -73,17 +85,17 @@ dmgraw = """
 | [Hauen](damage#h-hauen)          | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |   
 | [Stechen](damage#p-stechen)      | 1 | 1 | 2 | 2 | 3 | 3 | 4 | 5 | 6 | 7 |   
 | [Schneiden](weapons#c-schneiden) | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 |    
-| [Schlagen](damage#b-stumpf)      | 3 | 3 | 3 | 4 | 4 | 5 | 5 | 6 | 6 | 7 |  
+| [Schlagen](damage#b-stumpf)      | 2 | 2 | 2 | 3 | 3 | 4 | 4 | 5 | 5 | 6 |  
 
 ###Kurzspeer
 | Wert                             | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |   
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | [Hauen](damage#h-hauen)          | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |   
-| [Stechen](damage#p-stechen)      | 3 | 4 | 5 | 5 | 6 | 7 | 8 | 9 | 11 | 13 |   
+| [Stechen](damage#p-stechen)      | 2 | 3 | 4 | 5 | 5 | 6 | 7 | 9 | 12 | 15 |   
 | [Schneiden](weapons#c-schneiden) | 2 | 3 | 4 | 4 | 4 | 4 | 5 | 5 | 5 | 5  |   
-| [Schlagen](damage#b-stumpf)      | 2 | 3 | 4 | 4 | 5 | 5 | 6 | 6 | 7 | 7 |  """
+| [Schlagen](damage#b-stumpf)      | 2 | 3 | 4 | 4 | 4 | 5 | 5 | 5 | 6 | 6 |  """
 
-armormax = 11
+armormax = 14
 
 weapons = {}
 for dmgsect in dmgraw.split("###"):
@@ -105,7 +117,7 @@ for i in range(armormax):
     for w in weapons.keys():
         damage[-1][w] = {}
         for d in weapons[w].keys():
-            damage[-1][w][d] = modify_dmg(experimental_modifiers, weapons[w][d], d, i)
+            damage[-1][w][d] = modify_dmg(balanced_modifiers, weapons[w][d], d, i)
 
 traces = []
 for i in range(armormax):
@@ -118,7 +130,7 @@ for i in range(armormax):
             name=t
         ))
 
-frames = [plotly.graph_objs.Frame(name="Frame"+str(i), data=traces[i]) for i in range(0, armormax)]
+frames = [plotly.graph_objs.Frame(name="Frame" + str(i), data=traces[i]) for i in range(0, armormax)]
 slider = {
     'args': [
         'transition', {
@@ -150,7 +162,7 @@ sliders_dict = {
 }
 for i in range(armormax):
     slider_step = dict(method='animate',
-                       args=[["Frame"+str(i)],
+                       args=[["Frame" + str(i)],
                              dict(mode='immediate',
                                   frame=dict(duration=200, redraw=True),
                                   transition=dict(duration=100)

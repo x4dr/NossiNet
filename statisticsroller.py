@@ -1,20 +1,14 @@
+import collections
 import random
 import sys
 import time
 from itertools import combinations
-import collections
-
-import plotly
-from plotly.graph_objs._frame import Frame
-from plotly.graph_objs.layout.slider import Step
-from plotly.grid_objs import Column, Grid
-from plotly.offline import offline
-
-from NossiPack.WoDParser import WoDParser
-import plotly.graph_objs as go
-import plotly.plotly as py
+from math import ceil
+from typing import Tuple
 
 import pydealer
+
+from NossiPack.WoDParser import WoDParser
 
 
 def d10(amt, diff, ones=True):  # faster than the WoDDice
@@ -38,10 +32,10 @@ def d10(amt, diff, ones=True):  # faster than the WoDDice
         return succ
 
 
-def selector(sel):
+def selector(sel, addon=""):
     sel = [str(x) for x in sel]
     p = WoDParser({})
-    r = p.make_roll(",".join(sel) + "@5")
+    r = p.make_roll(",".join(sel) + "@5" + addon)
     return r.result
 
 
@@ -58,52 +52,72 @@ def d10fnolossguard(amt, diff):  # faster than the normal d10
     return succ - anti
 
 
-def plot(data):
+def plot(data, showsucc=False, showgraph=True, showdmgmods=False, grouped=1):
     success = sum([v for k, v in data.items() if k > 0])
     zeros = sum([v for k, v in data.items() if k == 0])
     botches = sum([v for k, v in data.items() if k < 0])
     total = sum([v for k, v in data.items()])
     pt = total / 100
-    print("Of the %d rolls, %d where successes, %d where failures and %d where botches, averaging %.2f" % (
-        total, success, zeros, botches, (sum([k * v for k, v in data.items()]) / total)))
-    print("The percentages are:\n+ : %f.3%%\n0 : %f.3%%\n- : %f.3%%" % (success / pt, zeros / pt, botches / pt))
     width = 1
-    barsuc = int((success / pt) / width)
-    barbot = int((botches / pt) / width)
-    barzer = int(100 / width - barsuc - barbot)
-    print("+" * barsuc + "0" * barzer + "-" * barbot)
-    lowest = min(data.keys())
-    highest = max(data.keys())
-    for i in range(lowest, highest):
-        if i == 0:
-            print()
-        if i not in data.keys():
-            data[i] = 0
-        print("%2d : %7.3f%% " % (i, data[i] / pt), end="")
-        print("#" * int((data[i] / pt) / width))
-        if i == 0:
-            print()
-    print("dmgmods(adjusted):")
-    for i in range(1, highest):
-        print(data[i] / success, end=" ")
-    print()
+    if showsucc:
+        print("Of the %d rolls, %d where successes, %d where failures and %d where botches, averaging %.2f" % (
+            total, success, zeros, botches, (sum([k * v for k, v in data.items()]) / total)))
+        print("The percentages are:\n+ : %f.3%%\n0 : %f.3%%\n- : %f.3%%" % (success / pt, zeros / pt, botches / pt))
+
+        barsuc = int((success / pt) / width)
+        barbot = int((botches / pt) / width)
+        barzer = int(100 / width - barsuc - barbot)
+        print("+" * barsuc + "0" * barzer + "-" * barbot)
+    if showgraph:
+
+        lowest = min(data.keys())
+        highest = max(data.keys())
+        width = 1 / 60 * max(int(data[i] / pt) if i in data else 0 for i in range(lowest, highest + 1))
+        for i in range(lowest, highest + 1):
+            if i == 0 and showsucc:
+                print()
+            if i not in data.keys():
+                data[i] = 0
+            if grouped == 1:
+                print("%2d : %7.3f%% " % (i, data[i] / pt), end="")
+            else:
+                print("%2d-%2d : %7.3f%% " % (i * grouped, (i + 1) * grouped - 1, data[i] / pt), end="")
+            print("#" * int((data[i] / pt) / width))
+            if i == 0 and showsucc:
+                print()
+    if showdmgmods:
+        print("dmgmods(adjusted):")
+        print([data[i] / success for i in range(1, highest + 1)])
 
 
-def run_duel():
+def run_duel(a, b, c=None, d=None):
+    if c is None:
+        c = a
+    if d is None:
+        d = a
     successes = collections.defaultdict(lambda: 0)
     i = 0
     time1 = time.time()
     duration = 60
     while True:
         i += 1
-        delta = selector([2, 3]) - selector([2, 3])
-        delta = delta if delta > 0 else 0
+        delta = selector([a, b]) - selector([c, d])
+        delta = min(10, max(delta, 0))
         successes[delta] += 1
         if i % 10000 == 0:
             if time.time() - time1 >= duration:
                 break
-    print("rolling 3,3 against 3,3 for %.1f seconds" % duration)
-    plot(dict(successes))
+    print("rolling %s against %s for %.1f seconds" % (str(a) + ", " + str(b), str(c) + ", " + str(d), duration))
+    return plot(dict(successes))
+
+
+def run_sel(sel, addon=""):
+    total = []
+    for i in range(100000):
+        total.append(selector(sel, addon))
+    pr = {x: (total.count(x) if x in total else 0) for x in range(min(total), max(total) + 1)}
+    plot(pr)
+    print(sum(total) / 100000)
 
 
 def run():
@@ -157,7 +171,7 @@ def process_hand(stack: pydealer.Stack):
 spells = {"Bend": {"Order": "3+", "Matter": "4+", "Energy": "0", "Entropy": "3+"},
           "Morph": {"Order": "9+", "Matter": "9+", "Energy": "0", "Entropy": "0"},
           "Calcify": {"Order": "0", "Matter": "4+", "Energy": "4+", "Entropy": "0"},
-          "Calcination": {"Order": "0", "Matter": "0", "Energy": "8", "Entropy": "11"},
+          "Calcination": {"Order": "0", "Matter": "0", "Energy": "10", "Entropy": "11+"},
           "Solution": {"Order": "10", "Matter": "7", "Energy": "0", "Entropy": "0+"},
           "Separation": {"Order": "9", "Matter": "0+", "Energy": "1+", "Entropy": "6"},
           "Conjunction": {"Order": "9", "Matter": "0+", "Energy": "1+", "Entropy": "6"},
@@ -206,7 +220,7 @@ def subsetsumany(items, target):
 
 
 def spell_run():
-    repeats = 0
+    repeats = 20000
     total = 0
     casted_spells = {x: 0 for x in spells.keys()}
 
@@ -266,6 +280,65 @@ def spell_run():
     print(total / repeats)
     for x in sorted(casted_spells.items(), key=lambda k: k[1]):
         print("{:<20} {:>5.1f}%".format(x[0], 100 * casted_spells[x[0]] / repeats))
-    print(used_mana)
+    print({k: 100 * v / sum(used_mana.values()) for k, v in used_mana.items()})
 
-# run_duel()
+
+def crafting(effort: int, adverse: int, increase_every: int, stats: Tuple[int, int], addon=""):
+    progress = 0
+    rolls = 0
+    level = 0
+    increase_adverse_every = increase_every
+    p = WoDParser({})
+    craftingroll = p.make_roll(",".join((str(x) for x in stats)) + "@5" + addon)
+    while True:
+        rolls += 1
+        if rolls % increase_adverse_every == 0:
+            adverse += 1
+        result = craftingroll.reroll()
+        botch = craftingroll.resonance(1)
+        if botch > 0:
+            #    print(rolls, "BOTCH:", botch)
+            adverse += botch
+            progress = ceil(progress / 2)
+            if botch > 1:
+                progress = 0
+            if botch > 2:
+                adverse += 2
+            if botch > 3:
+                print("critical BOTCH!", craftingroll.r)
+                break
+        # print("{:<3}:{:<3}+{:<3}-{:<2}= {:<3}".format(rolls, progress, result, adverse, progress + result - adverse))
+        progress += result - adverse
+
+        if progress >= effort:
+            level += 1
+            #      print("LEVEL UP TO", level, "AFTER", rolls, "ROLLS")
+            progress = 0
+        elif progress <= 0:
+            #       print(rolls, "FAILURE")
+            break
+    # print("level", level, "with", rolls, "rolls")
+    return rolls, level
+
+
+def run_craft():
+    rolls, levels = [], []
+    total = 10000
+    for i in range(total):
+        rol, lev = crafting(10, 0, 1, (2, 1), "")
+        rolls.append(rol)
+        levels.append(lev)
+    rolls = {x: (rolls.count(x) if x in rolls else 0) for x in range(min(rolls), max(rolls) + 1)}
+    levels = {x: (levels.count(x) if x in levels else 0) for x in range(min(levels), max(levels) + 1)}
+    nrolls = {int(x / 5): sum(rolls[x + i] if x + i in rolls else 0 for i in range(5)) for x in
+              range(0, max(rolls) + 1, 5)}
+    print("rolls")
+    plot(nrolls, grouped=5)
+    print("levels:")
+    plot(levels)
+    print("averages=", sum([k * v for k, v in rolls.items()]) / len(rolls),
+          sum([k * v for k, v in levels.items()]) / len(rolls))
+
+
+run_sel([2, 1])
+run_craft()

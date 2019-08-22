@@ -24,7 +24,7 @@ class WoDDice(object):
             self.rerolls = rerolls  # only used for fenrolls
             self.selectors = selectors
             if "," in self.selectors:
-                self.selectors = self.selectors.split(",")   # only used for fenrolls
+                self.selectors = self.selectors.split(",")  # only used for fenrolls
                 self.selectors = [max(min(int(x), self.amount or 0), 0) for x in self.selectors]
             self.r = []
             self.log = ""
@@ -40,8 +40,12 @@ class WoDDice(object):
             if self.amount is not None:
                 self.roll_next(int(maxroll.get('amount')))
         except Exception as e:
-            print("exception during die creation:",e.args, e.__traceback__.tb_lineno, e.__traceback__.tb_next.tb_lineno)
+            print("exception during die creation:", e.args, e.__traceback__.tb_lineno,
+                  e.__traceback__.tb_next.tb_lineno)
             raise
+
+    def resonance(self, resonator: int):
+        return self.r.count(resonator) - 1
 
     @property
     def name(self):
@@ -81,7 +85,7 @@ class WoDDice(object):
         self.r = []
         self.succ = 0
         self.antisucc = 0
-        while i < amount+abs(self.rerolls):
+        while i < amount + abs(self.rerolls):
             if self.max < self.min:
                 self.r.append(0)
                 self.log += "no dice "
@@ -112,8 +116,8 @@ class WoDDice(object):
         if reroll:
             self.log += "; Reroll selection:"
         while reroll != 0:
-            dir = reroll/abs(reroll)
-            reroll -= reroll/abs(reroll)
+            dir = reroll / abs(reroll)
+            reroll -= reroll / abs(reroll)
             self.log += " "
             sel = min(self.r) if dir > 0 else max(self.r)
             self.log += str(sel)
@@ -173,11 +177,11 @@ class WoDDice(object):
 
     @property
     def result(self):
-        return self.roll_sel() if self.selectors else\
+        return self.roll_sel() if self.selectors else \
             self.roll_nv() if not self.returnfun else \
-            max(self.r) if self.returnfun == "max" else \
-                min(self.r) if self.returnfun == "min" else \
-                    sum(self.r) if self.returnfun == "sum" else None
+                max(self.r) if self.returnfun == "max" else \
+                    min(self.r) if self.returnfun == "min" else \
+                        sum(self.r) if self.returnfun == "sum" else None
 
     def roll(self, amount):
         self.roll_next(amount)

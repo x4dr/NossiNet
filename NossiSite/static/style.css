@@ -123,6 +123,7 @@ label { white-space: nowrap}
 
 .entry {
     padding: 1em;
+    display: inline-block;
 }
 
 .metanav {
