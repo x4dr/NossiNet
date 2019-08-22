@@ -89,7 +89,8 @@ def wiki_index():
 
 @app.route('/wiki')
 @app.route('/wiki/<page>', methods=["GET"])
-def wikipage(page=None):
+@app.route('/wiki/<page>/<raw>', methods=["GET"])
+def wikipage(page=None, raw=None):
     if request.method == "GET":
         if page is None:
             page = request.args.get('n', None)
@@ -109,9 +110,12 @@ def wikipage(page=None):
                 flash("That page doesn't exist. Log in to create it!")
 
                 return redirect(url_for("wiki_index"))
-        body = bleach.clean(body)
-        body = Markup(markdown.markdown(body, extensions=["tables", "toc", "nl2br"]))
-        return render_template("wikipage.html", title=title, tags=tags, body=body, wiki=page)
+        if raw != "raw":
+            body = bleach.clean(body)
+            body = Markup(markdown.markdown(body, extensions=["tables", "toc", "nl2br"]))
+            return render_template("wikipage.html", title=title, tags=tags, body=body, wiki=page)
+        else:
+            return body
 
 
 @app.route('/edit/<x>', methods=["GET", "POST"])

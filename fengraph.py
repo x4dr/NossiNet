@@ -36,7 +36,6 @@ def modify_dmg(modifiers, dmgstring, type, armor):
 
 
 r = requests.get("nosferatu.vampir.es/wiki/weapons")
-r.content
 
 dmgraw = """ 
 ###Kurzschwert
