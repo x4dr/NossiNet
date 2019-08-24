@@ -90,7 +90,7 @@ def plot(data, showsucc=False, showgraph=True, showdmgmods=False, grouped=1):
         print([data[i] / success for i in range(1, highest + 1)])
 
 
-def run_duel(a, b, c=None, d=None):
+def run_duel(a, b, c=None, d=None, duration=60):
     if c is None:
         c = a
     if d is None:
@@ -98,7 +98,6 @@ def run_duel(a, b, c=None, d=None):
     successes = collections.defaultdict(lambda: 0)
     i = 0
     time1 = time.time()
-    duration = 60
     while True:
         i += 1
         delta = selector([a, b]) - selector([c, d])
@@ -321,11 +320,10 @@ def crafting(effort: int, adverse: int, increase_every: int, stats: Tuple[int, i
     return rolls, level
 
 
-def run_craft():
+def run_craft(total: int, effort: int, adverse: int, increase_every: int, sel: Tuple[int, int], addon: str):
     rolls, levels = [], []
-    total = 10000
     for i in range(total):
-        rol, lev = crafting(10, 0, 1, (2, 1), "")
+        rol, lev = crafting(effort, adverse, increase_every, sel, addon)
         rolls.append(rol)
         levels.append(lev)
     rolls = {x: (rolls.count(x) if x in rolls else 0) for x in range(min(rolls), max(rolls) + 1)}
@@ -340,5 +338,4 @@ def run_craft():
           sum([k * v for k, v in levels.items()]) / len(rolls))
 
 
-run_sel([2, 1])
-run_craft()
+run_craft(10000, 10, 0, 1, (2, 3), "")
