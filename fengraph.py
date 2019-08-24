@@ -35,79 +35,28 @@ def modify_dmg(modifiers, dmgstring, type, armor):
     return total
 
 
-r = requests.get("nosferatu.vampir.es/wiki/weapons")
-
-dmgraw = """ 
-###Kurzschwert
-| Wert                             | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |   
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| [Hauen](damage#h-hauen)          | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |   
-| [Stechen](damage#p-stechen)      | 1 | 2 | 3 | 4 | 4 | 5 | 5 | 6 | 6 | 7 |   
-| [Schneiden](weapons#c-schneiden) | 1 | 2 | 3 | 3 | 4 | 4 | 5 | 5 | 6 | 7 |   
-| [Schlagen](damage#b-stumpf)      | 1 | 2 | 3 | 3 | 4 | 4 | 5 | 5 | 6 | 7 |   
-
-###Langschwert
-| Wert                             | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |   
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| [Hauen](damage#h-hauen)          | 4 | 5 | 6 | 7 | 7 | 8 | 9 | 10| 11 | 12 |   
-| [Stechen](damage#p-stechen)      | 2 | 3 | 4 | 4 | 5 | 6 | 6 | 7 | 7 | 8 |   
-| [Schneiden](weapons#c-schneiden) | 2 | 3 | 3 | 4 | 4 | 5 | 5 | 6 | 7 | 8 |   
-| [Schlagen](damage#b-stumpf)      | 2 | 3 | 3 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |   
-
-###Dolch
-| Wert                             | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |   
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| [Hauen](damage#h-hauen)          | 1 | 2 | 3 | 4 | 5 | 5 | 8 | 10 | 12 | 14 |   
-| [Stechen](damage#p-stechen)      | 1 | 2 | 3 | 4 | 4 | 5 | 5 | 8 | 11 | 14 |   
-| [Schneiden](weapons#c-schneiden) | 2 | 3 | 4 | 4 | 4 | 4 | 5 | 5 | 5 | 8  |   
-| [Schlagen](damage#b-stumpf)      | 1 | 1 | 1 | 2 | 2 | 2 | 3 | 3 | 3 | 10 |  
-
-###Hammer
-| Wert                             | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |   
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| [Hauen](damage#h-hauen)          | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |  
-| [Stechen](damage#p-stechen)      | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |   
-| [Schneiden](weapons#c-schneiden) | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| [Schlagen](damage#b-stumpf)      | 4 | 4 | 5 | 5 | 6 | 7 | 8 | 10 | 12 | 15 | 
-
-###Axt
-| Wert                             | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |   
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| [Hauen](damage#h-hauen)          | 3 | 3 | 4 | 5 | 6 | 8 | 10 | 12 | 14 | 16 |   
-| [Stechen](damage#p-stechen)      | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |   
-| [Schneiden](weapons#c-schneiden) | 2 | 2 | 3 | 3 | 4 | 4 | 5 | 5 | 8 | 10 |
-| [Schlagen](damage#b-stumpf)      | 2 | 3 | 4 | 5 | 6 | 6 | 6 | 6 | 6 | 6 | 
-
-###Säbel
-| Wert                             | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |   
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| [Hauen](damage#h-hauen)          | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |   
-| [Stechen](damage#p-stechen)      | 1 | 1 | 2 | 2 | 3 | 3 | 4 | 5 | 6 | 7 |   
-| [Schneiden](weapons#c-schneiden) | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 |    
-| [Schlagen](damage#b-stumpf)      | 2 | 2 | 2 | 3 | 3 | 4 | 4 | 5 | 5 | 6 |  
-
-###Kurzspeer
-| Wert                             | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |   
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| [Hauen](damage#h-hauen)          | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |   
-| [Stechen](damage#p-stechen)      | 2 | 3 | 4 | 5 | 5 | 6 | 7 | 9 | 12 | 15 |   
-| [Schneiden](weapons#c-schneiden) | 2 | 3 | 4 | 4 | 4 | 4 | 5 | 5 | 5 | 5  |   
-| [Schlagen](damage#b-stumpf)      | 2 | 3 | 4 | 4 | 4 | 5 | 5 | 5 | 6 | 6 |  """
+r = requests.get("http://nosferatu.vampir.es/wiki/weapons/raw")
+dmgraw = r.content.decode()
 
 armormax = 14
 
 weapons = {}
 for dmgsect in dmgraw.split("###"):
-    if not dmgsect.strip():
+    if not dmgsect.strip() or "Langschwert" not in dmgsect and "Rapier" not in dmgsect :
+        continue
+    if not all(x in dmgsect for x in ["Wert", "Hacken", "Stechen", "Schneiden", "Schlagen"]):
         continue
     weapon = dmgsect[:dmgsect.find("\n")].strip()
     weapons[weapon] = {}
     for dmgline in dmgsect.split("\n"):
         if "Wert" in dmgline or "---" in dmgline or len(dmgline) < 50:
             continue
+        if "|" not in dmgline:
+            break
         dmgtype = dmgline[dmgline.find("[") + 1:dmgline.find("]")].strip()
         weapons[weapon][dmgtype] = dmgline[35:]
 weaponnames = list(weapons.keys())
+
 types = list(weapons[weaponnames[0]].keys())
 
 damage = []
@@ -117,6 +66,10 @@ for i in range(armormax):
         damage[-1][w] = {}
         for d in weapons[w].keys():
             damage[-1][w][d] = modify_dmg(balanced_modifiers, weapons[w][d], d, i)
+
+for d in damage:
+    for w in d.keys():
+        print(f"{w} : {max(d[w].items(), key=lambda x:x[1])}")
 
 traces = []
 for i in range(armormax):
