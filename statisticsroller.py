@@ -5,6 +5,7 @@ import time
 from itertools import combinations
 from math import ceil
 from typing import Tuple
+from generate_dmgmods import tuples, dice5, dice4, dice3, dice2, dice1, selector as selectorq
 
 import pydealer
 
@@ -321,6 +322,7 @@ def crafting(effort: int, adverse: int, increase_every: int, stats: Tuple[int, i
 
 
 def run_craft(total: int, effort: int, adverse: int, increase_every: int, sel: Tuple[int, int], addon: str):
+    # run_craft(10, 10, 0, 1, (2, 3), "")
     rolls, levels = [], []
     for i in range(total):
         rol, lev = crafting(effort, adverse, increase_every, sel, addon)
@@ -338,4 +340,33 @@ def run_craft(total: int, effort: int, adverse: int, increase_every: int, sel: T
           sum([k * v for k, v in levels.items()]) / len(rolls))
 
 
-run_craft(10000, 10, 0, 1, (2, 3), "")
+def target_hit_chance(sel):
+    t = {}
+    for die, freq1 in dice5.items():
+        r = selectorq(sel, die)
+        freq1 = freq1 / sum(dice5.values())
+        skew = dice5 if 18 < r else \
+            dice4 if 14 < r else \
+                dice3 if 12 < r else \
+                    dice2 if 8 < r else \
+                        dice1 if 4 < r else None
+        if skew is None:
+            t[0] = t.get(0, 0) + freq1 * 1  # always the outcome
+            continue
+        skewtotal = sum(skew.values())
+        for die2, freq2 in skew.items():
+            freq2 = freq2 / skewtotal
+            deviation = die2[-1]
+            t[deviation] = t.get(deviation, 0) + freq1 * freq2
+    print(sum(t.values()), sel)
+    plot(t)
+    return t
+
+
+
+omni = {x: 0 for x in range(0, 11)}
+for t1 in tuples:
+    for k, v in target_hit_chance(t1).items():
+        omni[k] += v
+print("total")
+plot(omni)

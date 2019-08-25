@@ -3,11 +3,30 @@ import math
 import multiprocessing
 import time
 
-dice = {}  # define global variable dice, takes less than 1 sec
+dice5 = {}  # define global variable dice, takes less than 1 sec
 for roll_id in range(100000):
     r = tuple(sorted([(roll_id // (10 ** i)) % 10 or 10 for i in [4, 3, 2, 1, 0]]))
-    dice[tuple(r)] = dice.get(tuple(r), 0) + 1
+    dice5[tuple(r)] = dice5.get(tuple(r), 0) + 1
 
+dice4 = {}  # define global variable dice, takes less than 1 sec
+for roll_id in range(10000):
+    r = tuple(sorted([(roll_id // (10 ** i)) % 10 or 10 for i in [3, 2, 1, 0]]))
+    dice4[tuple(r)] = dice5.get(tuple(r), 0) + 1
+
+dice3 = {}  # define global variable dice, takes less than 1 sec
+for roll_id in range(1000):
+    r = tuple(sorted([(roll_id // (10 ** i)) % 10 or 10 for i in [2, 1, 0]]))
+    dice3[tuple(r)] = dice5.get(tuple(r), 0) + 1
+
+dice2 = {}  # define global variable dice, takes less than 1 sec
+for roll_id in range(100):
+    r = tuple(sorted([(roll_id // (10 ** i)) % 10 or 10 for i in [1, 0]]))
+    dice2[tuple(r)] = dice5.get(tuple(r), 0) + 1
+
+dice1 = {}  # define global variable dice, takes less than 1 sec
+for roll_id in range(10):
+    r = tuple(sorted([(roll_id // (10 ** i)) % 10 or 10 for i in [0]]))
+    dice1[tuple(r)] = dice5.get(tuple(r), 0) + 1
 
 def selector(sel, r):
     return sum(r[s - 1] for s in sel)
@@ -33,14 +52,14 @@ def comparison(sel):
     print(f"starting {sel1}, {sel2}")
     occurences = collections.defaultdict(lambda: 0)
     j = 0
-    global dice
+    global dice5
     time1 = time.time()
-    for i in dice.keys():
-        for k in dice.keys():
+    for i in dice5.keys():
+        for k in dice5.keys():
             j += 1
             delta = selector(sel1, i) - selector(sel2, k)
             # delta = min(10, max(delta, 0))  # clamp to 0-10
-            occurences[delta] += dice[k] * dice[i]
+            occurences[delta] += dice5[k] * dice5[i]
     print(f"rolling {sel1} against {sel2} for {time.time() - time1:.4} seconds")
     return sel, dict(occurences), time.time() - time1
 
@@ -53,6 +72,7 @@ tuplecombos = []
 for t1 in tuples:
     for t2 in tuples:
         tuplecombos.append((t1, t2))
+
 if __name__ == '__main__':
     pool = multiprocessing.Pool(processes=4)
     time0 = time.time()
