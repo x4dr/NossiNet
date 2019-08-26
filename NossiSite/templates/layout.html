@@ -49,48 +49,6 @@
 
 
     {% block body %}{% endblock %}
-    {% block marquee %}
-
-        <!--     <h2 id="ticker" class="marquee marquee-direction-left" data-marquee="~ ~ ~ ~ ~"></h2>-->
-        <script>
-            function addCSSRule(sheet, selector, rules) {
-                sheet.deleteRule(0);
-                if ("insertRule" in sheet) {
-                    sheet.insertRule(selector + "{" + rules + "}", 0);
-                }
-                else if ("addRule" in sheet) {
-
-                    sheet.addRule(selector, rules, 0);
-                } else alert("the fuck browser are you using?");
-            }
-
-            var sheet = (function () {
-                var style = document.createElement("style");
-                style.appendChild(document.createTextNode(""));
-                document.head.appendChild(style);
-                if ("insertRule" in style.sheet) {
-                    style.sheet.insertRule("tmp" + "{}", 0);
-                }
-                else if ("addRule" in sheet) {
-
-                    style.sheet.addRule("tmp", "", 0);
-                }
-                return style.sheet;
-            })();
-
-            /*           window.setInterval(
-                           function() {$.getJSON("{{ url_for("tickerdata", referrer=self|quoted) }}", {}).done(
-                    function (tickerdata) {
-                        var ticker = document.getElementById("ticker");
-                        ticker.setAttribute("data-marquee", tickerdata["data"]);
-                        var len = tickerdata["data"].length;
-                        addCSSRule(sheet, ".marquee:before",
-                            "  -webkit-animation-duration: " + (len / 5).toFixed(0) + "s;\n" +
-                            "          animation-duration: " + (len / 5).toFixed(0) + "s;\n"
-                            , sheet.cssRules.length);
-
-                    })}, 6000)*/</script>
-    {% endblock %}
 </div>
 {% if not session.logged_in %}
     <br>

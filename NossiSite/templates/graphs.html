@@ -1,0 +1,139 @@
+{% extends "layout.html" %}
+{% block body %}
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='graph.css') }}">
+    <div class="valueslider">
+        <button class="valueslider__button" name="AttackerSkill"></button>
+    </div>
+    <div>
+        <strong>Attacker Skill:</strong><span></span>
+    </div>
+    <div class="valueslider">
+        <button class="valueslider__button" name="DefenderSkill"></button>
+    </div>
+    <div>
+        <strong>Defender Skill: </strong><span></span>
+    </div>
+    <div class="valueslider">
+        <button class="valueslider__button" name="Armor"></button>
+    </div>
+    <div>
+        <strong>Armor: </strong><span></span>
+    </div>
+
+    <canvas id="DataChart" width="300" height="100"></canvas>
+    <script>
+        $.getJSON("/static/test.json", function(json) {
+            window.values=json;
+        });
+        var ctx = document.getElementById('DataChart');
+        window.dataChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Kurzschwert', 'Langschwert', 'Messer'],
+                datasets: [
+                    {
+                        backgroundColor: 'rgba(235, 210, 12, 0.8)',
+                        borderColor: 'rgba(235, 210, 12, 1)',
+                        label: 'Hacken',
+                        data: [12, 19, 3, 5, 2, 3]
+                    },
+                    {
+                        backgroundColor: 'rgba(255, 25, 90, 0.8)',
+                        borderColor:'rgba(255, 25, 90, 1)',
+                        label: 'Schneiden',
+                        data: [ 19, 3, 5, 2, 3, 12]
+                    },
+                    {
+                        backgroundColor: 'rgba(25, 25, 210, 0.8)',
+                        borderColor: 'rgba(25, 25, 210, 1)',
+                        label: 'Stechen',
+                        data: [3, 5, 2, 3,12, 19]
+                    },
+                    {
+                        backgroundColor: 'rgba(100, 105, 20, 0.8)',
+                        borderColor: 'rgba(100, 105, 20, 1)',
+                        label: 'Schlagen',
+                        data: [5, 2, 3,12, 19, 3]
+                    }]
+            },
+            options: {
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true
+                        }
+                    }]
+                }
+            }
+        });
+        window.dataChart.selval = [0,0,0];
+        window.dataChart.updatevalues = function(){
+
+            var a = dataChart.selval[0],
+                b = dataChart.selval[1],
+                c = dataChart.selval[2];
+            var k1 = Object.keys(window.values).sort()[a],
+                k2 = Object.keys(window.values[k1]).sort()[b],
+                vals = window.values[k1][k2][c];
+            console.log(a,b,c,k1,k2,vals);
+
+            dataChart.data.datasets.forEach(function(dataset) {
+                while (dataset.data.pop()){ }
+            });
+            vals = JSON.parse(JSON.stringify(vals)); // efficient deepcopy
+            vals.forEach(function(val){
+                dataChart.data.datasets.forEach(function(dataset) {
+                    dataset.data.push(val.pop());
+                    console.log(val)
+                });
+            });
+
+            dataChart.update()
+
+        };
+        document.addEventListener('DOMContentLoaded', function() {
+            var sliders = document.querySelectorAll('.valueslider');
+
+            [].forEach.call(sliders, function(el, i) {
+                var btn = el.firstElementChild,
+                    span = el.nextElementSibling.querySelector('span'),
+                    isMoving = false;
+
+                var move = function(e) {
+                    if (isMoving) {
+                        var min = 0,
+                            max = el.offsetWidth - btn.offsetWidth,
+                            mousePos = (e.pageX - el.offsetLeft - (btn.offsetWidth / 2)),
+                            position = (mousePos > max ? max : mousePos < min ? min : mousePos),
+                            newvalue = Math.floor((position / max) * 3),
+                            value=btn.value;
+                        if (Number(newvalue) !== Number(value)){
+                            value = newvalue;
+                            dataChart.selval[i]=Number(newvalue);
+                            console.log("updating value"+i+" to ",newvalue);
+                            window.dataChart.updatevalues()
+                        }
+
+                        btn.style.marginLeft = position + 'px';
+                        btn.value = value;
+                        span.textContent = value;
+                    }
+                };
+
+                el.addEventListener('mousedown', function(e) {
+                    isMoving = true;
+                    move(e);
+                });
+
+                document.addEventListener('mouseup', function(e) {
+                    isMoving = false;
+                });
+
+                document.addEventListener('mousemove', function(e) {
+                    move(e);
+                });
+            });
+        });
+    </script>
+{% endblock %}

@@ -847,6 +847,11 @@ def lightswitch():
     return redirect(request.referrer)
 
 
+@app.route('/graphtest')
+def graphtest():
+    return render_template("graphs.html")
+
+
 @app.route('/chargen/<a>,<b>,<c>,<abia>,<abib>,<abic>,<shuffle>')
 def chargen(a, b, c, abia, abib, abic, shuffle):
     try:
