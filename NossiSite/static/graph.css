@@ -1,0 +1,16 @@
+.valueslider {
+  border: 1px solid rgba(0,167,0,08);
+  border-radius: 3px;
+  background-color: rgba(30,90,30);
+  height: 10px;
+  line-height: 10px;
+}
+.valueslider__button {
+  border: 1px solid rgba(30,90,30);
+  border-radius: 3px;
+  margin-top: -4px;
+  width: 18px;
+  height: 18px;
+  background-color: rgba(80,130,80);
+  display: block;
+}
