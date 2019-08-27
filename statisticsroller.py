@@ -363,10 +363,10 @@ def target_hit_chance(sel):
     return t
 
 
-
-omni = {x: 0 for x in range(0, 11)}
-for t1 in tuples:
-    for k, v in target_hit_chance(t1).items():
-        omni[k] += v
-print("total")
-plot(omni)
+if __name__=="__main__":
+    omni = {x: 0 for x in range(0, 11)}
+    for t1 in tuples:
+        for k, v in target_hit_chance(t1).items():
+            omni[k] += v
+    print("total")
+    plot(omni)

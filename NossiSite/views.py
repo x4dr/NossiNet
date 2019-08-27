@@ -847,9 +847,24 @@ def lightswitch():
     return redirect(request.referrer)
 
 
-@app.route('/graphtest')
+@app.route('/fenweapongraph')
 def graphtest():
-    return render_template("graphs.html")
+    import os
+    if not os.path.isfile("5d10_ordered_data"):
+        import generate_dmgmods
+        from pathlib import Path
+        if os.path.isfile("process_running"):
+            return "busy..."
+        import subprocess
+        os.system("/usr/bin/python generate_dmgmods.py")
+
+        return "now wait a while..."
+    else:
+        if not os.path.isfile("NossiSite/static/graphdata.json"):
+            import fengraph
+            fengraph.supply_graphdata()
+        return render_template("graphs.html")
+
 
 
 @app.route('/chargen/<a>,<b>,<c>,<abia>,<abib>,<abic>,<shuffle>')

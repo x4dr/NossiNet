@@ -3,19 +3,19 @@
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.min.js"></script>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='graph.css') }}">
     <div class="valueslider">
-        <button class="valueslider__button" name="AttackerSkill"></button>
+        <button class="valueslider__button" name="AttackerSkill" disabled="disabled"></button>
     </div>
     <div>
         <strong>Attacker Skill:</strong><span></span>
     </div>
     <div class="valueslider">
-        <button class="valueslider__button" name="DefenderSkill"></button>
+        <button class="valueslider__button" name="DefenderSkill" disabled="disabled"></button>
     </div>
     <div>
         <strong>Defender Skill: </strong><span></span>
     </div>
     <div class="valueslider">
-        <button class="valueslider__button" name="Armor"></button>
+        <button class="valueslider__button" name="Armor" disabled="disabled"></button>
     </div>
     <div>
         <strong>Armor: </strong><span></span>
@@ -23,38 +23,55 @@
 
     <canvas id="DataChart" width="300" height="100"></canvas>
     <script>
-        $.getJSON("/static/test.json", function(json) {
+        $.getJSON("{{ url_for('static', filename='graphdata.json')}}", function(json) {
             window.values=json;
+            console.log("data received!");
+            window.dataChart.updatevalues(true);
+
+            const sliders = document.querySelectorAll('.valueslider');
+            [].forEach.call(sliders, function(el, i) {
+                const span = el.nextElementSibling.querySelector('span'),
+                    btn = el.firstElementChild;
+                if (i===2){
+                    span.textContent="0"
+                    btn.value=0
+                }
+
+                else {
+                    btn.value=0
+                    span.textContent="1 1"
+                }
+                btn.disabled=false;
+            });
         });
-        var ctx = document.getElementById('DataChart');
+        const ctx = document.getElementById('DataChart');
         window.dataChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['Kurzschwert', 'Langschwert', 'Messer'],
                 datasets: [
                     {
                         backgroundColor: 'rgba(235, 210, 12, 0.8)',
                         borderColor: 'rgba(235, 210, 12, 1)',
                         label: 'Hacken',
-                        data: [12, 19, 3, 5, 2, 3]
+                        data: []
                     },
                     {
-                        backgroundColor: 'rgba(255, 25, 90, 0.8)',
-                        borderColor:'rgba(255, 25, 90, 1)',
+                        backgroundColor: 'rgba(205, 5, 9, 0.8)',
+                        borderColor:'rgba(255, 25, 0, 1)',
                         label: 'Schneiden',
-                        data: [ 19, 3, 5, 2, 3, 12]
+                        data: []
                     },
                     {
                         backgroundColor: 'rgba(25, 25, 210, 0.8)',
                         borderColor: 'rgba(25, 25, 210, 1)',
                         label: 'Stechen',
-                        data: [3, 5, 2, 3,12, 19]
+                        data: []
                     },
                     {
-                        backgroundColor: 'rgba(100, 105, 20, 0.8)',
+                        backgroundColor: 'rgba(50, 55, 10, 0.8)',
                         borderColor: 'rgba(100, 105, 20, 1)',
                         label: 'Schlagen',
-                        data: [5, 2, 3,12, 19, 3]
+                        data: []
                     }]
             },
             options: {
@@ -67,57 +84,63 @@
                 }
             }
         });
-        window.dataChart.selval = [0,0,0];
-        window.dataChart.updatevalues = function(){
+        tuples = [];
+        let a;
+        let b;
+        for (a=1;a<6;a++){
+            for (b=a;b<6;b++){
+                tuples.push((b+" "+a))
+            }
+        }
 
-            var a = dataChart.selval[0],
+        window.dataChart.selval = [0,0,0];
+        window.dataChart.updatevalues = function(init){
+            const dataChart = window.dataChart;
+            if (init){
+                //init code
+                dataChart.data.labels=window.values["Names"];
+                //dataChart.options.scales.yAxes[0].ticks.max=window.values["max"];
+            }
+            const a = dataChart.selval[0],
                 b = dataChart.selval[1],
                 c = dataChart.selval[2];
-            var k1 = Object.keys(window.values).sort()[a],
-                k2 = Object.keys(window.values[k1]).sort()[b],
-                vals = window.values[k1][k2][c];
-            console.log(a,b,c,k1,k2,vals);
-
-            dataChart.data.datasets.forEach(function(dataset) {
-                while (dataset.data.pop()){ }
-            });
-            vals = JSON.parse(JSON.stringify(vals)); // efficient deepcopy
-            vals.forEach(function(val){
-                dataChart.data.datasets.forEach(function(dataset) {
-                    dataset.data.push(val.pop());
-                    console.log(val)
-                });
-            });
-
+            let damagevalues = window.values[tuples[a]][tuples[b]][c];
+            for (let index = 0; index < dataChart.data.datasets.length; ++index) {
+                dataChart.data.datasets[index].data=damagevalues[index];
+            }
             dataChart.update()
 
         };
         document.addEventListener('DOMContentLoaded', function() {
-            var sliders = document.querySelectorAll('.valueslider');
+            const sliders = document.querySelectorAll('.valueslider');
 
             [].forEach.call(sliders, function(el, i) {
-                var btn = el.firstElementChild,
-                    span = el.nextElementSibling.querySelector('span'),
-                    isMoving = false;
+                const btn = el.firstElementChild,
+                    span = el.nextElementSibling.querySelector('span');
+                let    isMoving = false;
 
-                var move = function(e) {
+                const move = function(e) {
                     if (isMoving) {
-                        var min = 0,
+                        const min = 0,
                             max = el.offsetWidth - btn.offsetWidth,
                             mousePos = (e.pageX - el.offsetLeft - (btn.offsetWidth / 2)),
                             position = (mousePos > max ? max : mousePos < min ? min : mousePos),
-                            newvalue = Math.floor((position / max) * 3),
-                            value=btn.value;
+                            newvalue = Math.floor((position / max) * (i===2?13:(window.values["Names"].length)));
+                        let value=btn.value;
                         if (Number(newvalue) !== Number(value)){
                             value = newvalue;
                             dataChart.selval[i]=Number(newvalue);
-                            console.log("updating value"+i+" to ",newvalue);
-                            window.dataChart.updatevalues()
+                            window.dataChart.updatevalues(false)
                         }
 
                         btn.style.marginLeft = position + 'px';
                         btn.value = value;
-                        span.textContent = value;
+                        if (i < 2){
+                            span.textContent = tuples[value];
+                        } else {
+                            span.textContent = value;
+                        }
+
                     }
                 };
 
