@@ -1,6 +1,7 @@
 import re
 
 import os
+import traceback
 
 from NossiSite import app
 import sqlite3
@@ -145,7 +146,8 @@ def teardown_request(exception: Exception):
     if db is not None:
         db.close()
     if exception:
-        print("exception caught by teardown:", exception, exception.args, exception.with_traceback())
+        print("exception caught by teardown:", exception, exception.args)
+        traceback.print_tb(exception)
 
 
 def updatewikitags():
