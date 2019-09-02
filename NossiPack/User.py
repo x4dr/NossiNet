@@ -85,6 +85,7 @@ class Userlist(object):
 
     def loaduserlist(self, sheets=True):  # converts the SQL table into a list for easier access
         db = connect_db()
+        print("loading userlist")
         if sheets:
             cur = db.execute('SELECT username, passwordhash, funds, '
                              'sheet, oldsheets, defines, admin FROM users')
@@ -98,6 +99,7 @@ class Userlist(object):
                                   defines=row[3], admin=row[4]) for row in
                              cur.fetchall()]
         db.close()
+        print("loaded userlist")
 
     def saveuserlist(self):
         # writes/overwrites the SQL table with the maybe changed list. this is not performant at all
