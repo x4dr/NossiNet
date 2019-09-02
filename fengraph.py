@@ -73,7 +73,7 @@ def supply_graphdata():
                 damages = ast.literal_eval(f.read())
             else:
                 print(
-                    f"fengraph comparing hashes: {str(nmd5).strip()} != {str(wmd5).strip()}, so graphdata will be "
+                    f"fengraph comparing hashes: {str(nmd5).strip()} != {str(wmd5).strip()}, so graphdata will be " +
                     f"regenerated")
                 damages = {}
     except SyntaxError as e:
