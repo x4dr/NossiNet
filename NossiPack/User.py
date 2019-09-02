@@ -85,7 +85,6 @@ class Userlist(object):
 
     def loaduserlist(self, sheets=True):  # converts the SQL table into a list for easier access
         db = connect_db()
-        print("loading userlist")
         if sheets:
             cur = db.execute('SELECT username, passwordhash, funds, '
                              'sheet, oldsheets, defines, admin FROM users')
@@ -93,16 +92,15 @@ class Userlist(object):
                                   sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6]) for row in
                              cur.fetchall()]
         else:
-            print("creating cursor")
             cur = db.execute('SELECT username, passwordhash, funds,'
                              'defines, admin FROM users')
-            print("fetching")
+            print("fetching userlist")
+            t1 = time.time()
             self.userlist = [User(username=row[0], passwordhash=row[1], funds=row[2],
                                   defines=row[3], admin=row[4]) for row in
                              cur.fetchall()]
-            print("fetched")
+            print("fetched in", time.time() - t1)
         db.close()
-        print("loaded userlist")
 
     def saveuserlist(self):
         # writes/overwrites the SQL table with the maybe changed list. this is not performant at all
@@ -159,7 +157,7 @@ class Userlist(object):
                 return u
         return None
 
-    def loaduserbyname(self, username)-> Union[User, None]:
+    def loaduserbyname(self, username) -> Union[User, None]:
         db = connect_db()
         cur = db.execute('SELECT username, passwordhash, funds, '
                          'sheet, oldsheets, defines, admin FROM users WHERE username = (?)', (username,))
