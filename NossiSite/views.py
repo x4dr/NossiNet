@@ -82,8 +82,6 @@ def show_entries():
 def wiki_index():
     r = wikindex()
     heads = []
-    if r[2] > 3600:
-        heads.append('<META HTTP-EQUIV="refresh" CONTENT="5;url=/">')
     return render_template("wikindex.html", entries=r[0], tags=r[1], heads=heads)
 
 
@@ -204,9 +202,6 @@ def tagsearch(tag):
     a = r[1]
     tags = {t: v for t, v in a.items() if tag in v}
     entries = [e for e in r[0] if e in tags.keys()]
-
-    if r[2] > 3600:
-        heads.append('<META HTTP-EQUIV="refresh" CONTENT="5;url=/">')
     return render_template("wikindex.html", entries=entries, tags=tags, heads=heads)
 
 
@@ -558,8 +553,8 @@ def register():  # this is not clrs secure because it does not need to be
 def login():  # this is not clrs secure because it does not need to be
     error = None
     returnto = request.args.get('r', None)
-    ul = Userlist(preload=True, sheets=False)
     if request.method == 'POST':
+        ul = Userlist(preload=False, sheets=False)
         user = request.form['username']
         user = user.upper()
         if not ul.valid(user, request.form['password']):

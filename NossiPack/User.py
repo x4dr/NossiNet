@@ -162,11 +162,14 @@ class Userlist(object):
         db = connect_db()
         cur = db.execute('SELECT username, passwordhash, funds, '
                          'sheet, oldsheets, defines, admin FROM users WHERE username = (?)', (username,))
-        self.userlist = [User(username=row[0], passwordhash=row[1], funds=row[2],
-                              sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6]) for row in
-                         cur.fetchall()]
+        row = cur.fetchone()
+        newuser = User(username=row[0], passwordhash=row[1], funds=row[2],
+                       sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6])
+
+        if not all(u.username != newuser.username for u in self.userlist):
+            self.userlist.append(newuser)
         db.close()
-        return self.getuserbyname(username)
+        return newuser
 
     def getfunds(self, user=None, username=None):
         if user is None:

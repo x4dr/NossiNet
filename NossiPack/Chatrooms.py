@@ -26,8 +26,7 @@ class Chatroom(object):
         self.loadchatlog()
 
     def loadchatlog(self):  # converts the SQL table into a list for easier access
-        print("loading chatlog")
-        db = connect_db()
+        db = connect_db("loadchatlog")
         touched = False
         # db.set_trace_callback(echo)
         rows = db.execute("SELECT linenr, line, time  FROM chatlogs WHERE room = ? ORDER BY linenr ASC",
@@ -48,8 +47,7 @@ class Chatroom(object):
 
     def savechatlog(self):
         self.cleanup()
-        print("saving chatlog")
-        db = connect_db()
+        db = connect_db("save chatlog")
         try:
             if self.chatlog and self.chatlog[-1] and self.chatlog[-1][0] - self.newestlineindb > 0:
                 for i in reversed(range(len(self.chatlog))):

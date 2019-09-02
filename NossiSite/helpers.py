@@ -28,17 +28,16 @@ def stream_template(template_name, **context):
 
 
 wikitags = {}
-wikistamp = 0
+wikistamp = [0]
 
 
 def wikindex():
-    global wikistamp
     global wikitags
     mds = []
     for p in os.listdir(os.path.expanduser(wikipath)):
         if p.endswith(".md"):
             mds.append(p[:-3])
-    return sorted(mds), wikitags, wikistamp
+    return sorted(mds), wikitags
 
 
 def stream_string(s):
@@ -96,7 +95,7 @@ def generate_token(seed):
 
 def init_db():
     print("initializing DB")
-    with closing(connect_db()) as db:
+    with closing(connect_db("initialization")) as db:
         with app.open_resource('../schema.sql', mode='r') as f:
             db.cursor().executescript(f.read())
         db.commit()
@@ -110,15 +109,14 @@ def quoted(s):
     return None
 
 
-def connect_db():
-    print("connecting to", app.config['DATABASE'])
+def connect_db(source):
+    print("connecting to", app.config['DATABASE'], "from", source)
     return sqlite3.connect(app.config['DATABASE'])
 
 
 @app.before_request
 def before_request():
-    g.db = connect_db()
-    global wikistamp
+   # g.db = connect_db("before request")
     if len(wikitags.keys()) == 0:
         updatewikitags()
 
@@ -143,23 +141,19 @@ def before_request():
 
 @app.teardown_request
 def teardown_request(exception: Exception):
-    global wikistamp
     db = getattr(g, 'db', None)
     if db is not None:
         db.close()
     if exception:
-        print("exception caught by teardown:", exception, exception.args)
-    if time.time() - wikistamp > 3600:
-        updatewikitags()
+        print("exception caught by teardown:", exception, exception.args, exception.with_traceback())
 
 
 def updatewikitags():
-    global wikistamp
-    print("it has been " + str(time.time() - wikistamp) + " seconds since the last wiki indexing")
-    wikistamp = time.time()
+    print("it has been " + str(time.time() - wikistamp[0]) + " seconds since the last wiki indexing")
+    wikistamp[0] = time.time()
     for m in wikindex()[0]:
         wikitags[m] = wikiload(m)[1]
-    print("index took: " + str(1000 * (time.time() - wikistamp)) + " milliseconds")
+    print("index took: " + str(1000 * (time.time() - wikistamp[0])) + " milliseconds")
 
 
 @app.context_processor
