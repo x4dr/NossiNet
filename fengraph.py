@@ -58,7 +58,6 @@ def supply_graphdata():
                 break
             dmgtype = dmgline[dmgline.find("[") + 1:dmgline.find("]")].strip()
             weapons[weapon][dmgtype] = dmgline[35:]
-    weaponnames = list(weapons.keys())
 
     wmd5 = md5(str(weapons).encode("utf-8")).hexdigest()
     damages = {}
