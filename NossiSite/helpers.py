@@ -29,7 +29,7 @@ def stream_template(template_name, **context):
 
 
 wikitags = {}
-wikistamp = [0]
+wikistamp = [0.0]
 
 
 def wikindex():
@@ -111,13 +111,19 @@ def quoted(s):
 
 
 def connect_db(source):
+    try:
+        db = getattr(g, 'db', None)
+        if db:
+            return db
+    except:
+        pass # just connect normally
     print("connecting to", app.config['DATABASE'], "from", source)
     return sqlite3.connect(app.config['DATABASE'])
 
 
 @app.before_request
 def before_request():
-   # g.db = connect_db("before request")
+    g.db = connect_db("before request")
     if len(wikitags.keys()) == 0:
         updatewikitags()
 
@@ -207,6 +213,6 @@ def page_not_found(e):
 
 
 def openupdb():
-    db = connect_db()
+    db = connect_db("opening_DB_UP")
     if db is not None:
         db.close()

@@ -23,6 +23,7 @@ class Chatroom(object):
         self.chatlog = []
         self.password = ''  # unimplemented
         self.newestlineindb = -1
+        self.presentusers = {}
         self.loadchatlog()
 
     def loadchatlog(self):  # converts the SQL table into a list for easier access
@@ -68,6 +69,8 @@ class Chatroom(object):
         db.close()
 
     def addline(self, line, supresssave=False):
+        if not session["user"] in self.presentusers.keys():
+            raise Exception("You left this room or were inactive. (Testphase)")
         try:
             if len(self.chatlog) < 1:
                 self.chatlog.append([0, line, time.time()])  # initial line
@@ -87,73 +90,38 @@ class Chatroom(object):
             iterable = iter(seq)
             try:
                 prev = next(iterable)
-            except:
+                yield prev
+            except Exception as e:
+                print("exception during cleanup:", e, e.args)
                 return []
             for element in iterable:
                 if ":" not in element:
                     if ("joined the room!" in element[1] or "left the room!" in element[1]) and \
-                                    "joined the room!" in prev[1] or "connection established" in element[1]:
+                            "joined the room!" in prev[1] or "connection established" in element[1]:
                         pass
                     else:
                         yield element
                 else:
                     yield element
                 prev = element
-
-        presentusers = {}
-        for l in [x[1] for x in self.chatlog]:
-            t = re.match(r'(.*) joined the room!', l)
-            if t:
-                presentusers[t.group(1)] = True
-            t = re.match(r'(.*) left the room!', l)
-            if t:
-                presentusers[t.group(1)] = False
             self.chatlog = [x for x in join_spam_remover(self.chatlog)]
-        for u in presentusers.keys():
-            if presentusers[u] and (u not in [x[0] for x in self.users]):
-                self.addline(u + ' left the room!', True)
 
     def userjoin(self, user):
         if self.mailbox and not (re.match(r'(.*)_.*', self.name).group(1) == session.get('user')):
             return False
-        n = -1
-        for i, u in enumerate(self.users):
-            if u[0] == user:
-                n = i
-                break
-        if n >= 0:
-            if self.users[n][0] == user:
-                self.users[n][1] += 1
-                print(datetime.datetime.now(), "second joining", self.users[n])
-                self.addline(user + ' joined the room!')
-                return False
-        else:
-            self.users.append([user, 0])
-            self.addline(user + ' joined the room!')
-            print(datetime.datetime.now(), "first joining:", self.users[n][0])
-            return True
+        if user in self.presentusers.keys():
+            return False
+        self.presentusers[user] = time.time()
+        self.addline(user + ' joined the room!')
+        return True
 
     def userleave(self, user):
-        actuallyleft = False
-        try:
-            for i, u in enumerate(self.users):
-                if u[0] == user:
-                    print(u, "is leaving room", self.name)
-                    u[1] -= 1
-                    if u[1] < 0:
-                        if u[1] < -1:
-                            print(u)
-                        self.addline(user + ' left the room!')
-                        print(self.users)
-                        actuallyleft = True
-                        self.users = [x for x in self.users if x[0] != user]
-                        break
-        except Exception as inst:
-            print("exception with userleave ...", inst.args)
+        if user in self.presentusers.keys():
+            self.presentusers.pop(user)
+            self.addline(user + ' left the room!')
+            return True
+        else:
             return False
-        if actuallyleft:
-            print("userleave exiting. userlist:", self.users)
-        return actuallyleft
 
     def getlog(self, user):
         present = False

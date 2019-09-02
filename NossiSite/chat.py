@@ -63,7 +63,6 @@ def decider(message):
             message = message.replace("?", " ")
             parser = WoDParser(defines())
             roll = parser.make_roll(message[1:])
-            # roll.r = sorted(roll.r)
             if parser.dbg:
                 echo(parser.dbg, "'s TEST: ")
             printroll(roll, parser, testing=True, message=message)
@@ -274,10 +273,12 @@ def menucmds(message):
                     joining.userjoin(session['user'])
                     session['roomlist'].append(joining)
                     roomlist.append(joining)
-
+                session['activeroom'].userleave(session['user'])
                 leave_room(session['activeroom'].name)
                 session['activeroom'] = joining
-                join_room(session['activeroom'].name)
+                if session['activeroom'].userjoin(session['user']):
+                    join_room(session['activeroom'].name)
+
                 emit('Message', {'data': 'done joining!'})
 
     elif message.split(' ')[0] == 'leave':
@@ -327,9 +328,11 @@ def menucmds(message):
         switched = False
         for r in session['roomlist']:
             if (room == r.name) and (not r.mailbox):
+                session['activeroom'].userleave(session['user'])
                 leave_room(session['activeroom'].name)
                 session['activeroom'] = r
-                join_room(session['activeroom'].name)
+                if session['activeroom'].userjoin(session['user']):
+                    join_room(session['activeroom'].name)
                 switched = True
                 emit('Message', {'data': 'done switching!'})
             if switched:
@@ -341,10 +344,11 @@ def menucmds(message):
     elif message == 'talk':
         emit('Message', {'data': ''.join(namedStrings['talkMode'])})
         session['chatmode'] = 'talk'
-        join_room(session['activeroom'].name)
+        if session['activeroom'].userjoin(session['user']):
+            join_room(session['activeroom'].name)
 
     elif message == 'connection established':
-        echo(namedStrings['canTalkNow'] + ' ' + namedStrings['helpHelp'])
+        echo(namedStrings['canTalkNow'] + ' ' + namedStrings['helpHelp'] + ' ')
         return False
     else:
         emit('Message', {'data': namedStrings['cmdNotFound'] + ' ' + namedStrings['helpHelp']})
@@ -356,11 +360,6 @@ def chatsite():
     if not session.get('logged_in'):
         flash(namedStrings['notLoggedIn'])
         return redirect(url_for('login'))
-    # global thread
-    # if thread is None:
-    # thread = threading.Thread(target=background_thread)
-    # thread.daemon = True
-    # thread.start()
     return render_template('chat.html')
 
 
@@ -368,6 +367,15 @@ def chatsite():
 def receive(message):
     print(session.get('user', "NoUser"), ": ", message)
     decider(message['data'])
+
+
+@socketio.on('KeepAlive', namespace='/chat')
+def keep_alive(message):
+    session['activeroom'].presentusers[session['user']] = time.time()
+    for r in roomlist:
+        for u, t in r.presentusers.items():
+            if time.time()-t > 10:
+                r.userleave(u)
     update_dots()
 
 
@@ -476,25 +484,25 @@ def chat_connect():
         emit('Message', {'prefix': '', 'data': namedStrings['notLoggedIn']})
         return False
     global userlist
-    global leaving
-    leaving = False
     join_room(session.get("user", "?") + "_dotupdates")
     session['id'] = request.sid
     if session.get('user', False):
         userlist[session['user'].upper()] = session['id']
         mailbox = Chatroom(session['user'], True)
         roomlist.append(mailbox)
-        session['roomlist'] = [mailbox, roomlist[0]]
+        session['roomlist'] = session.get('roomlist', []) + [mailbox, roomlist[0]]
         try:
             prevmode = session['chatmode']
         except:
             prevmode = 'talk'
-            session['activeroom'] = session['roomlist'][1]
-            join_room(session['activeroom'].name)
         session['chatmode'] = prevmode
         session['activeroom'] = roomlist[0]
-        roomlist[0].userjoin(session['user'])
-        join_room(roomlist[0])
+        print("user", session['user'], "conncting")
+        if roomlist[0].userjoin(session['user']):
+
+            join_room(roomlist[0].name)
+        else:
+            emit("nooope")
         emit('Message', {'data': namedStrings['MOTD']})
     else:
         disconnect()
@@ -507,5 +515,6 @@ def test_disconnect():
     try:
         for r in session['roomlist']:
             r.userleave(session['user'])
+            leave_room(r.name)
     except Exception as inst:
         print(namedStrings['roomlistErr'], inst.args)

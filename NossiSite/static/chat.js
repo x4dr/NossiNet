@@ -19,6 +19,12 @@ $(document).ready(function(){
         charsocket.emit('ClientServerEvent', {data: 'accessing character from chat'})
     });
 
+    function keepAlive() {
+        socket.emit('KeepAlive', {data:'blip'})
+    }
+
+    setInterval(keepAlive, 5000);
+
     function dotupdate(msg){
         var input = msg.data.split("§");
         var values = input[0].split("&");
