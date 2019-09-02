@@ -93,11 +93,14 @@ class Userlist(object):
                                   sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6]) for row in
                              cur.fetchall()]
         else:
+            print("creating cursor")
             cur = db.execute('SELECT username, passwordhash, funds,'
                              'defines, admin FROM users')
+            print("fetching")
             self.userlist = [User(username=row[0], passwordhash=row[1], funds=row[2],
                                   defines=row[3], admin=row[4]) for row in
                              cur.fetchall()]
+            print("fetched")
         db.close()
         print("loaded userlist")
 
