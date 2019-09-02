@@ -147,7 +147,7 @@ def teardown_request(exception: Exception):
         db.close()
     if exception:
         print("exception caught by teardown:", exception, exception.args)
-        traceback.print_tb(exception)
+        traceback.print_exc()
 
 
 def updatewikitags():
