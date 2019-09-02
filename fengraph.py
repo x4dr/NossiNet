@@ -30,9 +30,17 @@ def modify_dmg(specific_modifiers, dmgstring, damage_type, armor):
         total_damage += damage_instance * specific_modifiers[i]
     return total_damage
 
+
 def supply_graphdata():
-    r = requests.get("http://nosferatu.vampir.es/wiki/weapons/raw")
-    dmgraw = r.content.decode()
+    try:
+        import os
+        with open(os.path.expanduser("~/wiki/weapons.md")) as f:
+            dmgraw = f.read()
+            print("successfully loaded", len(dmgraw), "weapons.md locally")
+    except Exception as e:
+        r = requests.get("http://nosferatu.vampir.es/wiki/weapons/raw")
+        dmgraw = r.content.decode()
+        print("loaded weapons.md via web, because", e, e.args)
     armormax = 14
     dmgtypes = ["Hacken", "Stechen", "Schneiden", "Schlagen"]
     weapons = {}
@@ -50,7 +58,6 @@ def supply_graphdata():
                 break
             dmgtype = dmgline[dmgline.find("[") + 1:dmgline.find("]")].strip()
             weapons[weapon][dmgtype] = dmgline[35:]
-    weaponnames = list(weapons.keys())
 
     wmd5 = md5(str(weapons).encode("utf-8")).hexdigest()
     damages = {}
@@ -59,9 +66,13 @@ def supply_graphdata():
         with open("weaponstuff_internal") as f:
             nmd5 = f.readline()
             if str(nmd5).strip() == str(wmd5).strip():
+                with open("NossiSite/static/graphdata.json") as g:
+                    if str(wmd5) in g.read(len(str(wmd5) * 2)):  # find hash at the beginning of the json
+                        return
                 damages = ast.literal_eval(f.read())
             else:
-                print(f"{str(nmd5).strip()} != {str(wmd5).strip()}")
+                print(
+                    f"fengraph hashes: {str(nmd5).strip()} != {str(wmd5).strip()}, so graphdata will be regenerated")
                 damages = {}
     except SyntaxError as e:
         print("syntax error in weaponstuff_internal, regenerating:", e.msg)
@@ -100,8 +111,7 @@ def supply_graphdata():
             f.write(str(wmd5) + "\n")
             f.write(str(damages))
 
-
-    cmprjsn = {"Names": list(weapons.keys()), "Types": list(dmgtypes)}
+    cmprjsn = {"Hash": wmd5, "Names": list(weapons.keys()), "Types": list(dmgtypes)}
     for attackerstat, defender in (sorted(damages.items())):
         cmprjsn[attackerstat] = {}
         for defenderstat, damage in defender.items():

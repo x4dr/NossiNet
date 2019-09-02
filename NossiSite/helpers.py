@@ -142,13 +142,13 @@ def before_request():
 
 
 @app.teardown_request
-def teardown_request(exception):
+def teardown_request(exception: Exception):
     global wikistamp
     db = getattr(g, 'db', None)
     if db is not None:
         db.close()
     if exception:
-        print("exception caught by teardown:", exception)
+        print("exception caught by teardown:", exception, exception.args)
     if time.time() - wikistamp > 3600:
         updatewikitags()
 
