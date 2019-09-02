@@ -180,8 +180,4 @@ class Userlist(object):
         return None
 
     def valid(self, user, password) -> bool:
-        for u in self.userlist:
-            if u.username == user:
-                if u.check_password(password):
-                    return True
-        return False
+        return self.loaduserbyname(user).check_password(password)
