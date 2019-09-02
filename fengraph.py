@@ -33,12 +33,14 @@ def modify_dmg(specific_modifiers, dmgstring, damage_type, armor):
 
 def supply_graphdata():
     try:
-        with open("~/wiki/weapons.md") as f:
+        import os
+        with open(os.path.expanduser("~/wiki/weapons.md")) as f:
             dmgraw = f.read()
             print("successfully loaded", len(dmgraw), "weapons.md locally")
-    except:
+    except Exception as e:
         r = requests.get("http://nosferatu.vampir.es/wiki/weapons/raw")
         dmgraw = r.content.decode()
+        print("loaded weapons.md via web, because", e, e.args)
     armormax = 14
     dmgtypes = ["Hacken", "Stechen", "Schneiden", "Schlagen"]
     weapons = {}
