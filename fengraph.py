@@ -14,7 +14,7 @@ def modify_dmg(specific_modifiers, dmgstring, damage_type, armor):
     effectivedmg = []
     for damage_instance in dmg:
         if damage_type == "Stechen":
-            effectivedmg.append(0 if damage_instance <= armor else damage_instance)
+            effectivedmg.append(0 if damage_instance <= armor else math.ceil(damage_instance / 2))
         elif damage_type == "Schlagen":
             effective_dmg = damage_instance - int(armor / 2)
             effectivedmg.append(effective_dmg if effective_dmg > 0 else 0)
@@ -47,6 +47,7 @@ def supply_graphdata():
     for dmgsect in dmgraw.split("###"):
         if not dmgsect.strip():
             continue
+
         if not all(x in dmgsect for x in ["Wert"] + dmgtypes):
             continue
         weapon = dmgsect[:dmgsect.find("\n")].strip()
@@ -58,6 +59,8 @@ def supply_graphdata():
                 break
             dmgtype = dmgline[dmgline.find("[") + 1:dmgline.find("]")].strip()
             weapons[weapon][dmgtype] = dmgline[35:]
+        if "##" in dmgsect:
+            break
 
     wmd5 = md5(str(weapons).encode("utf-8")).hexdigest()
     damages = {}
@@ -132,3 +135,7 @@ def supply_graphdata():
     cmprjsn["max"] = math.ceil(maxdmg)
     with open("NossiSite/static/graphdata.json", "w") as f:
         f.write(json.dumps(cmprjsn))
+
+
+if "__main__" == __name__:
+    supply_graphdata()

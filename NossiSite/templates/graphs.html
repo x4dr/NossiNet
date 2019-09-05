@@ -2,6 +2,15 @@
 {% block body %}
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.min.js"></script>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='graph.css') }}">
+    <label class="switch"  onclick="window.dataChart.updatevalues()">
+        <input type="checkbox" id="Highest">
+        <span class="slider"></span>
+    </label>
+    <label class="switch"  onclick="dataChart.options.scales.yAxes[0].ticks.max=document.getElementById('fixgraph').checked?window.values['max']:undefined;
+window.dataChart.updatevalues()">
+        <input type="checkbox" id="fixgraph">
+        <span class="slider"></span>
+    </label>
     <div class="valueslider">
         <button class="valueslider__button" name="AttackerSkill" disabled="disabled"></button>
     </div>
@@ -25,7 +34,7 @@
     <script>
         $.getJSON("{{ url_for('static', filename='graphdata.json')}}", function(json) {
             window.values=json;
-            console.log("data received!");
+            console.log("data received!" + window.values["Hash"]);
             window.dataChart.updatevalues(true);
 
             const sliders = document.querySelectorAll('.valueslider');
@@ -33,12 +42,12 @@
                 const span = el.nextElementSibling.querySelector('span'),
                     btn = el.firstElementChild;
                 if (i===2){
-                    span.textContent="0"
+                    span.textContent="0";
                     btn.value=0
                 }
 
                 else {
-                    btn.value=0
+                    btn.value=0;
                     span.textContent="1 1"
                 }
                 btn.disabled=false;
@@ -48,31 +57,12 @@
         window.dataChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                datasets: [
-                    {
-                        backgroundColor: 'rgba(235, 210, 12, 0.8)',
-                        borderColor: 'rgba(235, 210, 12, 1)',
-                        label: 'Hacken',
-                        data: []
-                    },
-                    {
-                        backgroundColor: 'rgba(25, 25, 210, 0.8)',
-                        borderColor: 'rgba(25, 25, 210, 1)',
-                        label: 'Stechen',
-                        data: []
-                    },
-                    {
-                        backgroundColor: 'rgba(205, 5, 9, 0.8)',
-                        borderColor:'rgba(255, 25, 0, 1)',
-                        label: 'Schneiden',
-                        data: []
-                    },
-                    {
-                        backgroundColor: 'rgba(50, 55, 10, 0.8)',
-                        borderColor: 'rgba(100, 105, 20, 1)',
-                        label: 'Schlagen',
-                        data: []
-                    }]
+                datasets: [{
+                    backgroundColor: 'rgba(185, 210, 180, 0.8)',
+                    borderColor: 'rgba(185, 210, 150, 1)',
+                    label: 'Maximum Damage',
+                    data: []
+                }]
             },
             options: {
                 scales: {
@@ -92,6 +82,13 @@
                 tuples.push((b+" "+a))
             }
         }
+        tuples.sort(function(a,b) {
+            let splita = a.split(" ");
+            let splitb = b.split(" ");
+            let ca = parseInt(splita[0]) + parseInt(splita[1]);
+            let cb = parseInt(splitb[0]) + parseInt(splitb[1]);
+            return ca - cb;
+        });
 
         window.dataChart.selval = [0,0,0];
         window.dataChart.updatevalues = function(init){
@@ -105,8 +102,52 @@
                 b = dataChart.selval[1],
                 c = dataChart.selval[2];
             let damagevalues = window.values[tuples[a]][tuples[b]][c];
-            for (let index = 0; index < dataChart.data.datasets.length; ++index) {
-                dataChart.data.datasets[index].data=damagevalues[index];
+            if (document.getElementById('Highest').checked){
+                if (dataChart.data.datasets[0].label === 'Maximum Damage')
+                    dataChart.data.datasets=[
+                        {
+                            backgroundColor: 'rgba(235, 210, 12, 0.8)',
+                            borderColor: 'rgba(235, 210, 12, 1)',
+                            label: 'Hacken',
+                            data: []
+                        },
+                        {
+                            backgroundColor: 'rgba(25, 25, 210, 0.8)',
+                            borderColor: 'rgba(25, 25, 210, 1)',
+                            label: 'Stechen',
+                            data: []
+                        },
+                        {
+                            backgroundColor: 'rgba(205, 5, 9, 0.8)',
+                            borderColor:'rgba(255, 25, 0, 1)',
+                            label: 'Schneiden',
+                            data: []
+                        },
+                        {
+                            backgroundColor: 'rgba(50, 55, 10, 0.8)',
+                            borderColor: 'rgba(100, 105, 20, 1)',
+                            label: 'Schlagen',
+                            data: []
+                        }];
+                for (let index = 0; index < dataChart.data.datasets.length; ++index) {
+                    dataChart.data.datasets[index].data=damagevalues[index];
+                }
+            }
+            else {
+                if (dataChart.data.datasets[0].label !== 'Maximum Damage')
+                    dataChart.data.datasets=[{
+                        backgroundColor: 'rgba(5, 210, 18, 0.8)',
+                        borderColor: 'rgba(85, 210, 50, 1)',
+                        label: 'Maximum Damage',
+                        data: []
+                    }];
+                let biggestval=damagevalues[0].slice();
+                for (let i = 1; i < damagevalues.length; i++){
+                    for (let j =0; j < damagevalues[i].length;j++){
+                        biggestval[j]= Math.max(biggestval[j],damagevalues[i][j])
+                    }
+                }
+                dataChart.data.datasets[0].data=biggestval;
             }
             dataChart.update()
 
@@ -125,7 +166,7 @@
                             max = el.offsetWidth - btn.offsetWidth,
                             mousePos = (e.pageX - el.offsetLeft - (btn.offsetWidth / 2)),
                             position = (mousePos > max ? max : mousePos < min ? min : mousePos),
-                            newvalue = Math.floor((position / max) * (i===2?13:(window.values["Names"].length)));
+                            newvalue = Math.floor((position / max) * (i===2?13:14));
                         let value=btn.value;
                         if (Number(newvalue) !== Number(value)){
                             value = newvalue;
@@ -155,6 +196,14 @@
 
                 document.addEventListener('mousemove', function(e) {
                     move(e);
+                });
+                $(document).keydown(function(event){
+                    console.log("loading data");
+                    $.getJSON("{{ url_for('static', filename='graphdata.json')}}", function(json) {
+                        window.values = json;
+                        console.log("data received!" + window.values["Hash"]);
+                        window.dataChart.updatevalues(true);
+                    });
                 });
             });
         });
