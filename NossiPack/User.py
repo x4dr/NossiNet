@@ -88,9 +88,13 @@ class Userlist(object):
         if sheets:
             cur = db.execute('SELECT username, passwordhash, funds, '
                              'sheet, oldsheets, defines, admin FROM users')
-            self.userlist = [User(username=row[0], passwordhash=row[1], funds=row[2],
-                                  sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6]) for row in
-                             cur.fetchall()]
+            try:
+                f_all = cur.fetchall()
+                self.userlist = [User(username=row[0], passwordhash=row[1], funds=row[2],
+                                      sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6]) for row in
+                                 f_all]
+            except:
+                print("weird exception with ", f_all)
         else:
             cur = db.execute('SELECT username, passwordhash, funds,'
                              'defines, admin FROM users')
