@@ -88,13 +88,13 @@ class Userlist(object):
         if sheets:
             cur = db.execute('SELECT username, passwordhash, funds, '
                              'sheet, oldsheets, defines, admin FROM users')
-            try:
-                f_all = cur.fetchall()
-                self.userlist = [User(username=row[0], passwordhash=row[1], funds=row[2],
-                                      sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6]) for row in
-                                 f_all]
-            except:
-                print("weird exception with ", f_all)
+            f_all = cur.fetchall()
+            for row in f_all:
+                try:
+                    self.userlist.append(User(username=row[0], passwordhash=row[1], funds=row[2],
+                                              sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6]))
+                except:
+                    print("weird exception with ", row)
         else:
             cur = db.execute('SELECT username, passwordhash, funds,'
                              'defines, admin FROM users')
