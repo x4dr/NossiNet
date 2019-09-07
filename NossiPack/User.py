@@ -22,9 +22,10 @@ class User(object):
     def __init__(self, username, password="", passwordhash=None, funds=0,
                  sheet=VampireCharacter().serialize(), oldsheets=b'', admin="", defines=''):
         self.username = username.strip()
-        self.pw_hash = generate_password_hash(password)
         if passwordhash is not None:
             self.pw_hash = passwordhash
+        else:
+            self.pw_hash = generate_password_hash(password)
         self.funds = funds
         try:
             self.sheet = VampireCharacter.deserialize(sheet)
