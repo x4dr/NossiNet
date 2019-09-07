@@ -93,8 +93,8 @@ class Userlist(object):
                 try:
                     self.userlist.append(User(username=row[0], passwordhash=row[1], funds=row[2],
                                               sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6]))
-                except:
-                    print("weird exception with ", row)
+                except Exception as e:
+                    print("weird exception with ", row, e, e.args)
         else:
             cur = db.execute('SELECT username, passwordhash, funds,'
                              'defines, admin FROM users')
@@ -186,5 +186,5 @@ class Userlist(object):
     def valid(self, user, password) -> bool:
         try:
             return self.loaduserbyname(user).check_password(password)
-        except:
-            print("exception while checking", user, password)
+        except Exception as e:
+            print("exception while checking", user, password, e, e.args)
