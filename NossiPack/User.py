@@ -184,4 +184,7 @@ class Userlist(object):
         return None
 
     def valid(self, user, password) -> bool:
-        return self.loaduserbyname(user).check_password(password)
+        try:
+            return self.loaduserbyname(user).check_password(password)
+        except:
+            print("exception while checking", user, password)

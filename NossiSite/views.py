@@ -557,7 +557,7 @@ def login():  # this is not clrs secure because it does not need to be
         ul = Userlist(preload=False, sheets=False)
         user = request.form['username']
         user = user.upper()
-        if not ul.valid(user, request.form['password']):
+        if not ul.valid(user, request.form.get('password',None)):
             error = 'invalid username/password combination'
         else:
             session['logged_in'] = True
