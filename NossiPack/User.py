@@ -167,13 +167,16 @@ class Userlist(object):
         db = connect_db()
         cur = db.execute('SELECT username, passwordhash, funds, '
                          'sheet, oldsheets, defines, admin FROM users WHERE username = (?)', (username,))
-        row = cur.fetchone()
-        newuser = User(username=row[0], passwordhash=row[1], funds=row[2],
-                       sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6])
+        try:
+            row = cur.fetchone()
+            newuser = User(username=row[0], passwordhash=row[1], funds=row[2],
+                           sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6])
 
-        if not all(u.username != newuser.username for u in self.userlist):
-            self.userlist.append(newuser)
-        db.close()
+            if not all(u.username != newuser.username for u in self.userlist):
+                self.userlist.append(newuser)
+        except Exception as e:
+            print("loading user by name, error :", e, e.args)
+            return None
         return newuser
 
     def getfunds(self, user=None, username=None):
