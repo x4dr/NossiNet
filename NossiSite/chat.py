@@ -454,6 +454,7 @@ def check_char(message):
 def disconnect_request():
     emit('Message',
          {'data': 'Disconnected!'})
+    print("received disconnect message for user", session.get("user","unknown user"))
     disconnect()
 
 
@@ -480,6 +481,7 @@ def cards_receive(message):
 # noinspection PyUnresolvedReferences
 @socketio.on('connect', namespace='/chat')
 def chat_connect():
+    print("connecting to chat:", session.get("user", "unknown user"))
     if not session.get('logged_in'):
         emit('Message', {'prefix': '', 'data': namedStrings['notLoggedIn']})
         return False

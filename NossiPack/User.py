@@ -169,6 +169,8 @@ class Userlist(object):
                          'sheet, oldsheets, defines, admin FROM users WHERE username = (?)', (username,))
         try:
             row = cur.fetchone()
+            if row is None:
+                return None
             newuser = User(username=row[0], passwordhash=row[1], funds=row[2],
                            sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6])
 
