@@ -1,13 +1,13 @@
 $(document).ready(function(){
-    var socket = io.connect('http://' + document.domain + ':' + location.port + '/chat');
-    var charsocket = io.connect('http://' +  document.domain + ':' +location.port + '/character')
-    var bell = new Audio("/static/bell.wav");
-    var ring = false;
-    var ringoverwrite = false;
+    let socket = io.connect('http://' + document.domain + ':' + location.port + '/chat');
+    let charsocket = io.connect('http://' +  document.domain + ':' +location.port + '/character');
+    let bell = new Audio("/static/bell.wav");
+    let ring = false;
+    let ringoverwrite = false;
     // event handler for server sent data
     // the data is displayed in the "Received" section of the page
     socket.on('Message', function(msg) {
-        var box = $('#chatbox');
+        let box = $('#chatbox');
         box.append('<br>' + $('<div/>').text(msg.data).html());
         box.scrollTop(box[0].scrollHeight);
         if (ring){
@@ -26,16 +26,16 @@ $(document).ready(function(){
     setInterval(keepAlive, 5000);
 
     function dotupdate(msg){
-        var input = msg.data.split("§");
-        var values = input[0].split("&");
-        var maxima = input[1].split("&");
-        var health = input[2].split("&")
-        var Bloodpool= 0;
-        var Bloodmax= 1;
-        var Willpower= 0;
-        var Willmax = 1;
-        for (i = 0; i < values.length; i++){
-            if (values[i].split("_")[0] == "Bloodpool"){
+        let input = msg.data.split("§");
+        let values = input[0].split("&");
+        let maxima = input[1].split("&");
+        let health = input[2].split("&");
+        let Bloodpool= 0;
+        let Bloodmax= 1;
+        let Willpower= 0;
+        let Willmax = 1;
+        for (let i = 0; i < values.length; i++){
+            if (values[i].split("_")[0] === "Bloodpool"){
                 Bloodpool = parseInt(values[i].split("_")[1]);
                 Bloodmax = parseInt(maxima[i].split("_")[1])
             }else {
@@ -45,10 +45,10 @@ $(document).ready(function(){
         }
         document.getElementById("bloodbar").style.width = (100*Bloodpool/Bloodmax).toString()+"%";
         document.getElementById("willbar").style.width = (100*Willpower/Willmax).toString()+"%";
-        var Bash= parseInt(health[0]);
-        var Lethal= parseInt(health[1]);
-        var Aggravated= parseInt(health[2]);
-        var Partial= parseInt(health[3]);
+        let Bash= parseInt(health[0]);
+        let Lethal= parseInt(health[1]);
+        let Aggravated= parseInt(health[2]);
+        let Partial= parseInt(health[3]);
         Aggravated = Aggravated-0.2*Partial;
         health = 7-(Bash+Lethal+Aggravated);
         document.getElementById("healthbar").style.width = (100*health/7).toString()+"%";
@@ -93,19 +93,23 @@ $(document).ready(function(){
         $('#message_data').focus();
     });
 
-    var prevCommand = [];
-    var commandCount = 0;
-    var keyCount = 0;
+    let prevCommand = [];
+    let commandCount = 0;
+    let keyCount = 0;
 
     $('form#message').submit(function() {
-        var message_data=$('#message_data').val();
-        if (message_data=="/ring off"){
-            ringoverwrite = true
+        let message_data=$('#message_data').val();
+        if (message_data==="/ring off"){
+            ringoverwrite = true;
+            document.getElementById('message_data').value = '';
+            return false
         }
-        if (message_data=="/ring on"){
-            ringoverwrite = false
+        if (message_data==="/ring on"){
+            ringoverwrite = false;
+            document.getElementById('message_data').value = '';
+            return false
         }
-        if(document.getElementById('message_data').value != ''){
+        if(document.getElementById('message_data').value !== ''){
             socket.emit('ClientServerEvent',
                 {data: message_data});
             commandCount++;
@@ -116,9 +120,9 @@ $(document).ready(function(){
     });
 
     $(document).keydown(function(event){
-        var msgdata = $('#message_data');
-        var index;
-        if(event.which == 32){
+        let msgdata = $('#message_data');
+        let index;
+        if(event.which === 32){
             if (!msgdata.is(':focus')){
                 msgdata.focus();
                 return false
@@ -126,8 +130,7 @@ $(document).ready(function(){
 
         }
 
-
-        if(event.which == 38){
+        if(event.which === 38){
             keyCount++;
             msgdata.focus();
             if(typeof prevCommand[keyCount] !== "undefined") {
@@ -139,7 +142,7 @@ $(document).ready(function(){
                 msgdata.val(prevCommand[index]);
             }
             return false;
-        }else if(event.which == 40) {
+        }else if(event.which === 40) {
             keyCount--;
             msgdata.focus();
             if(typeof prevCommand[keyCount] !== "undefined") {
