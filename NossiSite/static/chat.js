@@ -4,14 +4,12 @@ $(document).ready(function(){
     let bell = new Audio("/static/bell.wav");
     let ring = false;
     let ringoverwrite = false;
-    // event handler for server sent data
-    // the data is displayed in the "Received" section of the page
     socket.on('Message', function(msg) {
         let box = $('#chatbox');
         box.append('<br>' + $('<div/>').text(msg.data).html());
         box.scrollTop(box[0].scrollHeight);
         if (ring){
-            bell.play()
+            bell.play().then(r => r)
         }
     });
 

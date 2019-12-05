@@ -91,7 +91,7 @@ def stream_file(f):
 
 
 def generate_token(seed):
-    return generate_password_hash(str(seed) + str(time.clock()))
+    return generate_password_hash(str(seed) + str(time.perf_counter()))
 
 
 def init_db():

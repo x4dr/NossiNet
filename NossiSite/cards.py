@@ -76,7 +76,7 @@ def cards(message: str):
         return q_send("", False)
     elif session.get('cards_mode', None) is None:
         lobby(message)
-    elif session.get('cards_mode', None) is "duel":
+    elif session.get('cards_mode', None) == "duel":
         duel(message,)
     q_send(message)
 
