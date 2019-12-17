@@ -115,8 +115,7 @@ class WoDDice(object):
             i += 1
         reroll = self.rerolls
         if reroll:
-            self.log[-1:] = ';'
-            self.log += " reroll selection: "
+            self.log += "; reroll selection: "
         while reroll != 0:
             direction = reroll / abs(reroll)
             reroll -= reroll / abs(reroll)
