@@ -118,7 +118,7 @@ async def on_message(message):
     else:
         msg = msg.strip()
         if msg.endswith("v"):
-            msg[-1:] = " &verbose&"
+            msg = msg[:-1] + " &verbose&"
         p = WoDParser({})
         r = p.make_roll(msg)
         if p.triggers.get("verbose", None):
