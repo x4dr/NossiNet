@@ -142,7 +142,7 @@ class WoDDice(object):
         rolled = self.r
         if self.sort:
             rolled = sorted(rolled)
-        log += ", ".join(rolled)
+        log += ", ".join(str(x) for x in rolled)
         if len(self.r) < 1:
             return " ==> 0"
         log = log[:-2] + " ==> " + str(self.result if not len(self.selectors) else self.roll_sel())
@@ -154,7 +154,7 @@ class WoDDice(object):
             rolled = self.r
             log += "\n"
             rolled = sorted(rolled)
-            log += ", ".join(rolled)
+            log += ", ".join(str(x) for x in rolled)
         log += "==> " + str(self.result)
         return log
 
