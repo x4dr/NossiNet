@@ -163,7 +163,7 @@ class WoDDice(object):
         log += ", ".join(str(x) for x in rolled)
         if len(self.r) < 1:
             return " ==> 0"
-        log = log[:-2] + " ==> " + str(self.result if not len(self.selectors) else self.roll_sel())
+        log += " ==> " + str(self.result if not len(self.selectors) else self.roll_sel())
         return log
 
     def roll_vv(self, logslice=None):  # very verbose
