@@ -115,7 +115,8 @@ class WoDDice(object):
             i += 1
         reroll = self.rerolls
         if reroll:
-            self.log += "; Reroll selection:"
+            self.log[-1] = ';'
+            self.log += " reroll selection: "
         while reroll != 0:
             direction = reroll / abs(reroll)
             reroll -= reroll / abs(reroll)
@@ -123,6 +124,11 @@ class WoDDice(object):
             sel = min(self.r) if direction > 0 else max(self.r)
             self.log += str(sel)
             self.r.remove(sel)
+            if reroll == 0:
+                self.log += "; "
+        if self.sort:
+            self.r = sorted(self.r)
+            self.log += "sorted: " + ", ".join(self.r)
 
     @staticmethod
     def botchformat(succ, antisucc):
@@ -140,8 +146,6 @@ class WoDDice(object):
     def roll_v(self):  # verbose
         log = ""
         rolled = self.r
-        if self.sort:
-            rolled = sorted(rolled)
         log += ", ".join(str(x) for x in rolled)
         if len(self.r) < 1:
             return " ==> 0"
@@ -151,10 +155,8 @@ class WoDDice(object):
     def roll_vv(self):  # very verbose
         log = self.log
         if self.sort:
-            rolled = self.r
             log += "\n"
-            rolled = sorted(rolled)
-            log += ", ".join(str(x) for x in rolled)
+            log += ", ".join(str(x) for x in self.r) + " "
         log += "==> " + str(self.result)
         return log
 
