@@ -10,7 +10,7 @@ remindfile = os.path.expanduser("~/reminders.txt")
 remindnext= os.path.expanduser("~/reminers_next.txt")
 now = datetime.datetime.now
 
-TOKEN = 'NjU0ODIyNDQ3MDk4NDk1MDAz.XfLJPw.EK-vfv2n_oXmSFztrgMt33JSUFs'
+TOKEN = open(os.path.expanduser("~/token.discord"),"r").read().strip()
 
 description = '''NossiBot in Python'''
 print("selftest 1-100:", WoDParser({}).make_roll("1d100").roll_v())
