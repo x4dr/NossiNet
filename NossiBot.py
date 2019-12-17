@@ -116,7 +116,6 @@ async def on_message(message):
         newreminder(str(message.channel.id), msg[7:])
         await send(str(message))
     else:
-        msg = ""
         msg = msg.strip()
         if msg.endswith("v"):
             msg[-1:] = " &verbose&"
