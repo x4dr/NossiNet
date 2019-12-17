@@ -107,7 +107,7 @@ async def on_message(message):
         newreminder(str(message.channel.id), msg[7:])
         await send(str(message))
     else:
-        await send(message.author.mention+" "+ msg[1:]+":\n"+WoDParser({}).make_roll(msg).roll_vv())
+        await send(message.author.mention+" "+ msg+":\n"+WoDParser({}).make_roll(msg).roll_vv())
 
 #discord.on_message_edit(before, after)
 
