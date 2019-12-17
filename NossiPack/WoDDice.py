@@ -23,7 +23,7 @@ class WoDDice(object):
             self.explodeon = self.max + 1 - info.get('explode', 0)
             self.sort = info.get('sort')
             self.amount = info['amount']
-            self.rerolls = info.get("rerolls", 0)  # only used for fenrolls
+            self.rerolls = int(info.get("rerolls", 0))  # only used for fenrolls
             self.selectors = info.get("selectors", [])
             if "," in self.selectors:
                 self.selectors = [max(min(int(x), self.amount or 0), 0) for x in self.selectors.split(",")]
@@ -93,46 +93,60 @@ class WoDDice(object):
                 break
             else:
                 self.r.append(random.randint(self.min, self.max))
-            self.log += str(self.r[-1])
-            if not self.selectors:
-                if self.returnfun == "threshhold":
-                    self.log += ": "
-                    if self.r[-1] >= self.difficulty:  # last die face >= than the difficulty
-                        self.succ += 1
-                        self.log += "success "
-                    elif self.r[-1] <= self.subone:
-                        self.antisucc += 1
-                        self.log += "subtract "
-                    if self.r[-1] >= self.explodeon:
-                        amount += 1
-                        self.log += "exploding!"
+            if self.returnfun == "threshhold":
+                self.log += str(self.r[-1])
+                self.log += ": "
+                if self.r[-1] >= self.difficulty:  # last die face >= than the difficulty
+                    self.succ += 1
+                    self.log += "success "
+                elif self.r[-1] <= self.subone:
+                    self.antisucc += 1
+                    self.log += "subtract "
+                if self.r[-1] >= self.explodeon:
+                    amount += 1
+                    self.log += "exploding!"
                 self.log += "\n"
             else:
                 self.log += " "
             if i >= self.maxamount:
                 break
             i += 1
-        reroll = self.rerolls
-        if reroll:
-            self.log += "\n"
-            direction = int(reroll / abs(reroll))
-            filtered = []
+        self.log += "\n"
 
+        if self.rerolls:
+            direction = int(self.rerolls / abs(self.rerolls))
+            filtered = []
+            reroll = self.rerolls
+            tempr = self.r.copy()
             while reroll != 0:
                 reroll -= direction
-                sel = min(self.r) if direction > 0 else max(self.r)
+                sel = min(tempr) if direction > 0 else max(tempr)
                 filtered.append(sel)
-                self.r.remove(sel)
+                tempr.remove(sel)
 
             if self.sort:
-                filtered = "(" + ", ".join(str(x) for x in sorted(filtered)) + ")"
                 self.r = sorted(self.r)
-                self.log += (((filtered + ", ") if direction > 0 else "") +
-                             ", ".join(str(x) for x in self.r) +
-                             (", " + filtered if direction < 0 else ""))
-            else:
-                if filtered:
-                    self.log += "rerolled: " + ", ".join(str(x) for x in filtered)
+
+            if filtered:
+                tempstr = ""
+                tofilter = filtered.copy()
+                par = False
+                for i in range(len(self.r)):
+                    x = self.r[i]
+                    if x in tofilter and (direction < 0 and self.r[i:].count(x) <= tofilter.count(x)) or direction > 0:
+                        if not par:
+                            par = True
+                            tempstr += "("
+                        tofilter.remove(x)
+                    else:
+                        if par:
+                            par = False
+                            tempstr = tempstr[:-2] + "), "
+                    tempstr += str(x) + ", "
+                tempstr = tempstr[:-2] + (")" if par else "")
+                self.log += tempstr + "\n"
+            for sel in filtered:
+                self.r.remove(sel)
         else:
             if self.sort:
                 self.r = sorted(self.r)
@@ -152,9 +166,11 @@ class WoDDice(object):
         return self.botchformat(self.succ, self.antisucc) if not len(self.selectors) else self.roll_sel()
 
     def roll_v(self):  # verbose
-        log = ""
+        # log = ""
         rolled = self.r
-        log += ", ".join(str(x) for x in rolled)
+
+        # log += ", ".join(str(x) for x in rolled)
+        log = [x for x in self.log.split("\n") if x][-1]
         if len(self.r) < 1:
             return " ==> 0"
         res = self.result
@@ -164,7 +180,7 @@ class WoDDice(object):
 
     def roll_vv(self, logslice=None):  # very verbose
         log = self.log
-        if self.sort:
+        if 0 and self.sort:
             log += "\n"
             log += ", ".join(str(x) for x in self.r) + " "
         if isinstance(logslice, str):

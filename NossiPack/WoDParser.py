@@ -14,25 +14,26 @@ class WoDParser(object):
         self.defines.update(defines or {})
         self.altrolls = []  # if the last roll isnt interesting
 
+    diceparse = re.compile(  # the regex matching the roll (?# ) for indentation
+        r'(?# )\s*(?:(?P<selectors>(?:[0-9](?:,\s*)?)*)\s*@)?' +  # selector matching
+        r'(?# )\s*(?P<amount>[0-9]{1,4})\s*' +  # amount of dice 0-999
+        r'(?# )(d *(?P<sides>[0-9]{1,5}))? *' +  # sides of dice 0-99999
+        r'(?# )(?:[rR](?P<rerolls>-?\d+))?'  # reroll highest/lowest dice
+        r'(?#   )(?P<sort>s)?' +  # sorting rolls
+        r'(?# )(?P<operation>' +  # what is happening with the roll
+        r'(?#   )(?P<against>' +  # rolling against a value for successes
+        r'(?#     )(?P<onebehaviour>[ef]) *' +  # e is without subtracting 1, f is with subtracting a success on a 1
+        r'(?#     )(?P<difficulty>([1-9][0-9]{0,4})|([0-9]{0,4}[1-9])))|' +  # difficulty 1-99999
+        r'(?#   )(?P<sum>g)|' +  # summing rolls up instead
+        r'(?#   )(?P<maximum>h)| *' +  # taking the maximum value of the roll
+        r'(?#   )(?P<minimum>l))? *' +  # taking the minimum value of the roll
+        r'(?# )(?P<explosion>!+)? *$',  # explosion effects
+    )
+
+    usage = "[<Selectors>@]<dice>d<sides>[R<rerolls>][s][ef<difficulty>][ghl][!!!]"
+
     def extract_diceparams(self, message):
-        limit = "3" if not self.triggers.get("limitbreak", None) else "10"
-
-        info = re.match(  # the regex matching the roll (?# ) for indentation
-            r'(?# )\s*(?:(?P<selectors>(?:[0-9](?:,\s*)?)*)\s*@)?' +  # selector matching
-            r'(?# )\s*(?P<amount>[0-9]{1,' + limit + '}) *' +  # amount of dice 0-999
-            r'(?# )(d *(?P<sides>[0-9]{1,5}))? *' +  # sides of dice 0-99999
-            r'(?# )(?:[rR](?P<rerolls>-?\d+))?'  # reroll highest/lowest dice
-            r'(?#   )(?P<sort>s)|' +  # sorting rolls
-            r'(?# )(?P<operation>' +  # what is happening with the roll
-            r'(?#   )(?P<against>' +  # rolling against a value for successes
-            r'(?#     )(?P<onebehaviour>[ef]) *' +  # e is without subtracting 1, f is with subtracting a success on a 1
-            r'(?#     )(?P<difficulty>([1-9][0-9]{0,4})|([0-9]{0,4}[1-9])))|' +  # difficulty 1-99999
-            r'(?#   )(?P<sum>g)|' +  # summing rolls up instead
-            r'(?#   )(?P<maximum>h)| *' +  # taking the maximum value of the roll
-            r'(?#   )(?P<minimum>l))? *' +  # taking the minimum value of the roll
-            r'(?# )(?P<explosion>!+)? *$',  # explosion effects
-            message)
-
+        info = WoDParser.diceparse.match(message)
         info = {k: v for (k, v) in info.groupdict().items() if v} if info else {}
         if info.get('amount', None) is not None:
             info['amount'] = int(info['amount'])
@@ -40,7 +41,8 @@ class WoDParser(object):
             if self.triggers.get("ignore", None):
                 print("invalid dicecode:'" + message + "'")
                 return {}
-            raise Exception("invalid dicecode:'" + message + "'")
+            print(message, info)
+            raise Exception("invalid dicecode:'" + message + "'\n usage: "+WoDParser.usage)
         if "@" in message and info.get("selectors") is None:
             raise Exception("Missing Selectors!")
         if info.get('sides', None) is not None:

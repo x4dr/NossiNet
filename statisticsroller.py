@@ -366,7 +366,7 @@ def target_hit_chance(sel):
 if __name__ == "__main__":
 
     pars = WoDParser()
-    msg = "9s"
+    msg = "5d10sf7"
     r = pars.make_roll(msg)
     if isinstance(r, list):
         print(msg+":\n" + "\n".join(x.roll_v() for x in r))
