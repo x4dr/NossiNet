@@ -128,7 +128,7 @@ class WoDDice(object):
                 self.log += "; "
         if self.sort:
             self.r = sorted(self.r)
-            self.log += "sorted: " + ", ".join(self.r)
+            self.log += "sorted: " + ", ".join(str(x) for x in self.r)
 
     @staticmethod
     def botchformat(succ, antisucc):
