@@ -166,15 +166,14 @@ class WoDDice(object):
         return self.botchformat(self.succ, self.antisucc) if not len(self.selectors) else self.roll_sel()
 
     def roll_v(self):  # verbose
-        # log = ""
-        rolled = self.r
 
-        # log += ", ".join(str(x) for x in rolled)
-        log = [x for x in self.log.split("\n") if x][-1]
-        if len(self.r) < 1:
-            return " ==> 0"
+        log = [x for x in self.log.split("\n") if x][-1].strip()
+        if not log:
+            log += ", ".join(str(x) for x in self.r)
         res = self.result
         if res is not None:
+            if len(self.r) < 1:
+                return " ==> 0"
             log += " ==> " + str(res)
         return log
 
