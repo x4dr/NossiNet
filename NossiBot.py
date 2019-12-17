@@ -121,7 +121,9 @@ async def on_message(message):
             msg = msg[:-1] + " &verbose&"
         p = WoDParser({})
         r = p.make_roll(msg)
-        if p.triggers.get("verbose", None):
+        if isinstance(r, list):
+            await send(message.author.mention + " " + msg + ":\n" + "\n".join(x.roll_v() for x in r))
+        elif p.triggers.get("verbose", None):
             await send(message.author.mention + " " + msg + ":\n" + r.roll_vv(p.triggers.get("verbose")))
         else:
             await send(message.author.mention + " " + msg + ":\n" + r.roll_v())

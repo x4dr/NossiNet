@@ -9,17 +9,17 @@ class TestWoDParser(TestCase):
 
         info = p.extract_diceparams("99d7")
         self.assertEqual(info['amount'], 99)
-        self.assertEqual(info['sidedness'], 7)
+        self.assertEqual(info['sides'], 7)
 
         info = p.extract_diceparams("113d04f9")
         self.assertEqual(info['amount'], 113)
-        self.assertEqual(info['sidedness'], 4)
+        self.assertEqual(info['sides'], 4)
         self.assertEqual(info['difficulty'], 9)
         self.assertEqual(info['onebehaviour'], 1)
 
         info = p.extract_diceparams("999d77777e3000!!")
         self.assertEqual(info['amount'], 999)
-        self.assertEqual(info['sidedness'], 77777)
+        self.assertEqual(info['sides'], 77777)
         self.assertEqual(info['difficulty'], 3000)
         self.assertEqual(info['onebehaviour'], 0)
         self.assertEqual(info['explosion'], 2)

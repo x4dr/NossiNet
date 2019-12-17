@@ -45,7 +45,6 @@ def decider(message):
             echo(''.join(namedStrings['generalHelp']))
             return
         parser = WoDParser(defines())
-        parser.owner = session.get("user", "?")
         parser.rights = ["Administrator" if session.get("admin", None) else False]
         if not (("?" in message) or ("=" in message)):
             try:
@@ -172,7 +171,7 @@ def printroll(roll, parser=None, testing=False, message=""):
                         printroll(r, testing=testing)
                     else:
                         if len(r.r) > parser.triggers.get("cutoff", 20):
-                            deliver(str(r.roll_nv()), "'S SUBROLL: [" + str(len(r.r)) + " DICEROLLS] ==> ")
+                            deliver(str(r.roll_wodsuccesses()), "'S SUBROLL: [" + str(len(r.r)) + " DICEROLLS] ==> ")
                         else:
                             deliver(r.roll_v(), ("'S SUBROLL " if roll is not None else "'S ROLL: ") + r.name + ": ")
 
@@ -190,7 +189,7 @@ def printroll(roll, parser=None, testing=False, message=""):
     if not roll.rolled:
         return
     if roll.difficulty == 0 and roll.max == 1:
-        deliver(str(roll.roll_nv()) + ".", " IS ADDING UP TO: ")
+        deliver(str(roll.roll_wodsuccesses()) + ".", " IS ADDING UP TO: ")
         return
 
     if roll.explodeon <= roll.max:
@@ -199,7 +198,7 @@ def printroll(roll, parser=None, testing=False, message=""):
             deliver(i, " ROLL: ")
             time.sleep(float(parser.triggers.get("speed", 0.5)))
     elif len(roll.r) > (parser.triggers.get("cutoff", 20) if parser is not None else 20):
-        deliver(str(roll.roll_nv()), " ROLLS: [" + str(len(roll.r)) + " DICEROLLS] ==> ")
+        deliver(str(roll.roll_wodsuccesses()), " ROLLS: [" + str(len(roll.r)) + " DICEROLLS] ==> ")
     else:
         deliver(roll.roll_v(), " ROLLS: ")
 

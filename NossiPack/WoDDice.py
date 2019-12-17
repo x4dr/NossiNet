@@ -12,28 +12,19 @@ def str_to_slice(inp):
 class WoDDice(object):
     selectors: Union[List[int], str]
 
-    def __init__(self, maxroll=None, difficulty=6, subone=1, explodeon=0, minroll=1, rerolls=0, selectors=None):
+    def __init__(self, info):
         try:
-            if isinstance(maxroll, dict):
-                info = maxroll
-                self.min = info.get('additivebonus', 1)  # unlikely to get implemented
-                self.max = int(info.get('sidedness', 10)) + self.min - 1
-                self.difficulty = info.get('difficulty', difficulty)
-                self.subone = info.get('onebehaviour', subone)
-                self.returnfun = info.get('return')
-                self.sort = info.get('sort', None)
-                self.explodeon = self.max + 1 - info.get('explode', explodeon)
-                self.amount = info.get('amount', None)
-            else:
-                self.min = minroll
-                self.max = maxroll if maxroll is not None else 10
-                self.difficulty = difficulty  # 0 means sum; -1 means highest
-                self.subone = subone
-                self.explodeon = explodeon
-                self.returnfun = ""
-                self.amount = None
-            self.rerolls = rerolls  # only used for fenrolls
-            self.selectors = selectors
+
+            self.min = info.get('additivebonus', 1)  # unlikely to get implemented
+            self.max = int(info['sides']) + self.min - 1
+            self.difficulty = info['difficulty']
+            self.subone = info['onebehaviour']
+            self.returnfun = info['return']
+            self.explodeon = self.max + 1 - info.get('explode', 0)
+            self.sort = info.get('sort')
+            self.amount = info['amount']
+            self.rerolls = info.get("rerolls", 0)  # only used for fenrolls
+            self.selectors = info.get("selectors", [])
             if "," in self.selectors:
                 self.selectors = [max(min(int(x), self.amount or 0), 0) for x in self.selectors.split(",")]
             self.r = []
@@ -48,10 +39,11 @@ class WoDDice(object):
             if self.explodeon <= self.min:
                 self.explodeon = self.max + 1
             if self.amount is not None:
-                self.roll_next(int(maxroll.get('amount')))
+                self.roll_next(int(info.get('amount')))
+        except KeyError as e:
+            raise Exception("Missing Parameter: " + str(e.args[0]))
         except Exception as e:
-            print("exception during die creation:", e.args, e.__traceback__.tb_lineno,
-                  e.__traceback__.tb_next.tb_lineno)
+            print("exception during die creation:", e.args, e.__traceback__)
             raise
 
     def resonance(self, resonator: int):
@@ -63,7 +55,9 @@ class WoDDice(object):
             amount = ""
         else:
             amount = "#" + str(len(self.r))
-        return amount + "d" + str(self.max) + ((("f" if self.subone else "e") + str(self.difficulty)
+        return amount + "d" + str(self.max) + ((("f" if self.subone == 1 else
+                                                 "e" if self.subone == 0 else
+                                                 "no 1 behaviour") + str(self.difficulty)
                                                 ) if not self.returnfun else
                                                "h" if self.returnfun == "max" else
                                                "l" if self.returnfun == "min" else
@@ -75,17 +69,13 @@ class WoDDice(object):
             raise Exception("No Amount set for reroll!")
         else:
             return WoDDice({
-                'sidedness': self.max,
+                'sides': self.max,
                 'difficulty': self.difficulty,
                 'onebehaviour': self.subone,
                 'return': self.returnfun,
                 'explode': self.max - self.explodeon - 1,
                 'amount': self.amount
             })
-
-    def reroll(self):
-        self.roll_next(self.amount)
-        return self.result
 
     def roll_next(self, amount):
         self.maxamount += amount
@@ -105,7 +95,7 @@ class WoDDice(object):
                 self.r.append(random.randint(self.min, self.max))
             self.log += str(self.r[-1])
             if not self.selectors:
-                if not self.returnfun:
+                if self.returnfun == "threshhold":
                     self.log += ": "
                     if self.r[-1] >= self.difficulty:  # last die face >= than the difficulty
                         self.succ += 1
@@ -143,6 +133,10 @@ class WoDDice(object):
             else:
                 if filtered:
                     self.log += "rerolled: " + ", ".join(str(x) for x in filtered)
+        else:
+            if self.sort:
+                self.r = sorted(self.r)
+                self.log += ", ".join(str(x) for x in self.r)
 
     @staticmethod
     def botchformat(succ, antisucc):
@@ -154,8 +148,8 @@ class WoDDice(object):
         else:
             return 0 - antisucc
 
-    def roll_nv(self):  # non-verbose, returns int
-        return self.botchformat(self.succ, self.antisucc)
+    def roll_wodsuccesses(self):  # non-verbose, returns int
+        return self.botchformat(self.succ, self.antisucc) if not len(self.selectors) else self.roll_sel()
 
     def roll_v(self):  # verbose
         log = ""
@@ -163,7 +157,9 @@ class WoDDice(object):
         log += ", ".join(str(x) for x in rolled)
         if len(self.r) < 1:
             return " ==> 0"
-        log += " ==> " + str(self.result if not len(self.selectors) else self.roll_sel())
+        res = self.result
+        if res is not None:
+            log += " ==> " + str(res)
         return log
 
     def roll_vv(self, logslice=None):  # very verbose
@@ -175,7 +171,9 @@ class WoDDice(object):
             slices = (str_to_slice(x) for x in logslice.split(";"))
             loglines = log.split("\n")
             log = "\n".join("\n".join(loglines[s]) for s in slices)
-        log += " ==> " + str(self.result)
+        res = self.result
+        if res is not None:
+            log += " ==> " + str(res)
         return log
 
     def roll_max(self):  # returns max nonverbose as int
@@ -206,7 +204,7 @@ class WoDDice(object):
     @property
     def result(self):
         return (self.roll_sel() if self.selectors else
-                self.roll_nv() if not self.returnfun else
+                self.roll_wodsuccesses() if self.returnfun == "threshhold" else
                 max(self.r) if self.returnfun == "max" else
                 min(self.r) if self.returnfun == "min" else
                 sum(self.r) if self.returnfun == "sum" else None)

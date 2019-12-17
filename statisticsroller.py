@@ -294,7 +294,7 @@ def crafting(effort: int, adverse: int, increase_every: int, stats: Tuple[int, i
         rolls += 1
         if rolls % increase_adverse_every == 0:
             adverse += 1
-        result = craftingroll.reroll()
+        result = craftingroll.roll()
         botch = craftingroll.resonance(1)
         if botch > 0:
             #    print(rolls, "BOTCH:", botch)
@@ -365,10 +365,12 @@ def target_hit_chance(sel):
 
 if __name__ == "__main__":
 
-    pars = WoDParser({})
-    msg = "3d10"
+    pars = WoDParser()
+    msg = "9s"
     r = pars.make_roll(msg)
-    if pars.triggers.get("verbose", None):
+    if isinstance(r, list):
+        print(msg+":\n" + "\n".join(x.roll_v() for x in r))
+    elif pars.triggers.get("verbose", None):
         print(msg + ":\n" + r.roll_vv(pars.triggers.get("verbose")))
     else:
         print(msg + ":\n" + r.roll_v())

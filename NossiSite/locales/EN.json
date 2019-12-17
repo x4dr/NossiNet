@@ -5,7 +5,7 @@
           "\nmessages prefixed with # are passed to the diceroller",
           "\nit expects a number following # and then options",
           "\nfollowed by numbers again. Options are",
-          "\ndXX : sets sidedness of dice to XX. (standard: 10)",
+          "\ndXX : sets sides of dice to XX. (standard: 10)",
           "\neXX : sets difficulty to XX and discards 1s",
           "\nfXX : sets difficulty to XX and subtracts 1s (standard: 6)",
           "\n!   : sets explosions, use multiple for cumulative effect",

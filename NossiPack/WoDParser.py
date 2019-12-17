@@ -6,60 +6,62 @@ from NossiPack.WoDDice import WoDDice
 
 
 class WoDParser(object):
-    def __init__(self, defines):
+    def __init__(self, defines=None):
         self.dbg = ""
         self.triggers = {}
-        self.owner = ""
         self.rights = []
-        self.defines = defines
-        self.tmpdefines = {}
+        self.defines = {"difficulty": 6, "onebehaviour": 1, "sides": 10, "return": None}  # WoDbasic
+        self.defines.update(defines or {})
         self.altrolls = []  # if the last roll isnt interesting
 
     def extract_diceparams(self, message):
         limit = "3" if not self.triggers.get("limitbreak", None) else "10"
+
         info = re.match(  # the regex matching the roll (?# ) for indentation
-            r'(?# ) *(?P<amount>[0-9]{1,' + limit + '}) *' +  # amount of dice 0-999
-            r'(?# )(d *(?P<sidedness>[0-9]{1,5}))? *'  # sidedness of dice 0-99999
-            r'(?# )(?P<operation>'  # what is happening with the roll
-            r'(?#   )(?P<against>'  # rolling against a value for successes 
-            r'(?#     )(?P<onebehaviour>[ef]) *'  # e is without subtracting 1, f is with subtracting a success on a 1
-            r'(?#     )(?P<difficulty>([1-9][0-9]{0,4})|([0-9]{0,4}[1-9])))|'  # difficulty 1-99999
-            r'(?#   )(?P<sum>g)|'  # summing rolls up instead
-            r'(?#   )(?P<sort>s)|'  # summing rolls up instead
-            r'(?#   )(?P<maximum>h)| *'  # taking the maximum value of the roll
-            r'(?#   )(?P<minimum>l))? *'  # taking the minimum value of the roll
+            r'(?# )\s*(?:(?P<selectors>(?:[0-9](?:,\s*)?)*)\s*@)?' +  # selector matching
+            r'(?# )\s*(?P<amount>[0-9]{1,' + limit + '}) *' +  # amount of dice 0-999
+            r'(?# )(d *(?P<sides>[0-9]{1,5}))? *' +  # sides of dice 0-99999
+            r'(?# )(?:[rR](?P<rerolls>-?\d+))?'  # reroll highest/lowest dice
+            r'(?#   )(?P<sort>s)|' +  # sorting rolls
+            r'(?# )(?P<operation>' +  # what is happening with the roll
+            r'(?#   )(?P<against>' +  # rolling against a value for successes
+            r'(?#     )(?P<onebehaviour>[ef]) *' +  # e is without subtracting 1, f is with subtracting a success on a 1
+            r'(?#     )(?P<difficulty>([1-9][0-9]{0,4})|([0-9]{0,4}[1-9])))|' +  # difficulty 1-99999
+            r'(?#   )(?P<sum>g)|' +  # summing rolls up instead
+            r'(?#   )(?P<maximum>h)| *' +  # taking the maximum value of the roll
+            r'(?#   )(?P<minimum>l))? *' +  # taking the minimum value of the roll
             r'(?# )(?P<explosion>!+)? *$',  # explosion effects
             message)
+
         info = {k: v for (k, v) in info.groupdict().items() if v} if info else {}
         if info.get('amount', None) is not None:
             info['amount'] = int(info['amount'])
         else:
-            if ";" in message:
-                for m in message.split(";"):
-                    self.do_roll(m)
-                return {}
             if self.triggers.get("ignore", None):
                 print("invalid dicecode:'" + message + "'")
                 return {}
-
             raise Exception("invalid dicecode:'" + message + "'")
-        if info.get('sidedness', None) is not None:
-            info['sidedness'] = int(info['sidedness'])
-        else:
-            info.pop('sidedness', None)
-        info['operation'] = info.get('operation', "")
-        info['sum'] = info.get('sort', "")
-        info['against'] = info.get('against', "")
-        info['onebehaviour'] = 1 if info.get('onebehaviour', "f") == "f" else 0  # would need rewrite if more than 1
-        # desired
+        if "@" in message and info.get("selectors") is None:
+            raise Exception("Missing Selectors!")
+        if info.get('sides', None) is not None:
+            info['sides'] = int(info['sides'])
+        if info.get("onebehaviour") == "f":
+            info['onebehaviour'] = 1
+            info['return'] = "threshhold"
+        elif info.get("onebehaviour") == "e":
+            info['onebehaviour'] = 0
+            info['return'] = "threshhold"
+        # would need rewrite if more than 1 desired
         if info.get('difficulty', None) is not None:
             info['difficulty'] = int(info['difficulty'])
         else:
             info.pop('difficulty', None)
-
-        info['return'] = "sum" if info.pop("sum", 0) else "max" if info.get("maximum", 0) else "min" if info.get(
-            "minimum", 0) else ""
-
+        if info.pop("minimum", 0):
+            info['return'] = "minimum"
+        if info.pop("maximum", 0):
+            info['return'] = "maximum"
+        if info.pop("sum", 0):
+            info['return'] = "sum"
         info['explosion'] = len(info.get('explosion', ""))
 
         return info
@@ -71,32 +73,25 @@ class WoDParser(object):
         elif self.altrolls[-1] is None:
             raise Exception("Diceroll is missing. Probably a bug. Tell Maric about the dicecode you used.")
         else:
-            # print("do roll result:", self.altrolls[-1].result)
             return self.altrolls[-1].result
 
     def make_roll(self, roll: str):
-        # tacked on fenroll
+        # tacked on selectorroll
+        if ";" in roll:
+            return [self.make_roll(m) for m in roll.split(";")]
+
         try:
-            fenroll = \
-                re.compile(r' *(?P<selectors>([0-9](, *)?)*) *@(?P<roll>[^R]+)(R(?P<rerolls>-?\d+))?(?P<rest>.*)$',
-                           re.IGNORECASE)
-            selectors = []
-            rerolls = 0
-            selectorprocessing = fenroll.match(roll)
-            if selectorprocessing:
-                roll = selectorprocessing.group("roll")
-                selectors = selectorprocessing.group("selectors")
-                rerolls = int(selectorprocessing.group("rerolls") or 0)
-                roll += selectorprocessing.group("rest")
             roll = Node(roll)
             roll = self.resolveroll(roll)
             params = self.extract_diceparams(roll)
             if not params:
-                return None
-            v = WoDDice(params, rerolls=rerolls, selectors=selectors)
+                raise Exception("No Valid Parameters!", roll)
+            fullparams = self.defines.copy()
+            fullparams.update(params)
+            v = WoDDice(fullparams)
             return v
         except Exception as e:
-            print("Exception during make roll:", e.args, e.__traceback__.tb_lineno)
+            print("Exception during make roll:", e.args, e.__traceback__.tb_lineno, e.__traceback__.tb_frame.__repr__())
             raise
 
     def resolveroll(self, roll):
@@ -256,14 +251,13 @@ class WoDParser(object):
                     self.triggers[triggername] = False
                 message = message.replace("&", "", 1)
             elif triggername in ["loop", "loopsum"]:
-                times = min(int(trigger[trigger.rfind(" "):]),
-                            (self.triggers.get("max") or 39) if not self.triggers.get("limitbreak",
-                                                                                      None) else 100)
-                trigger = trigger[:trigger.rfind(" ")]
-                roll = self.make_roll(trigger)  # it is rolled but not added to the list so this one vanishes
-                loopsum = 0
-                for i in range(times):
-                    self.altrolls.append(roll.another())
+                times = int(trigger[trigger.rfind(" "):])  # everything to the right of the last space
+                times = min(times, (self.triggers.get("max") or 39)
+                if not self.triggers.get("limitbreak", None) else 100)
+                trigger = trigger[:trigger.rfind(" ")]  # roll in the left of the trigger
+                self.altrolls.append(self.make_roll(trigger))  # first one is constructed
+                for i in range(times - 1):  # need 1 less
+                    self.altrolls.append(self.altrolls[-1].another())  # rest are rerolls
                     loopsum += self.altrolls[-1].result
                 message = message.replace("&", ("&ignore&" if (triggername == "loop") else str(loopsum)),
                                           1)  # its ok for loops to not have dice outside the trigger
