@@ -133,7 +133,7 @@ class WoDDice(object):
                 par = False
                 for i in range(len(self.r)):
                     x = self.r[i]
-                    if x in tofilter and (direction < 0 and self.r[i:].count(x) <= tofilter.count(x)) or direction > 0:
+                    if x in tofilter and ((direction < 0 and self.r[i:].count(x) <= tofilter.count(x)) or direction > 0):
                         if not par:
                             par = True
                             tempstr += "("
