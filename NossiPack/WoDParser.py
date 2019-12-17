@@ -18,7 +18,7 @@ class WoDParser(object):
         r'(?# )\s*(?:(?P<selectors>(?:[0-9](?:,\s*)?)*)\s*@)?' +  # selector matching
         r'(?# )\s*(?P<amount>[0-9]{1,4})\s*' +  # amount of dice 0-999
         r'(?# )(d *(?P<sides>[0-9]{1,5}))? *' +  # sides of dice 0-99999
-        r'(?# )(?:[rR](?P<rerolls>-?\d+))?'  # reroll highest/lowest dice
+        r'(?# )(?:[rR]\s*(?P<rerolls>-?\d+))?'  # reroll highest/lowest dice
         r'(?#   )(?P<sort>s)?' +  # sorting rolls
         r'(?# )(?P<operation>' +  # what is happening with the roll
         r'(?#   )(?P<against>' +  # rolling against a value for successes
@@ -78,10 +78,9 @@ class WoDParser(object):
             return self.altrolls[-1].result
 
     def make_roll(self, roll: str):
-        # tacked on selectorroll
         if ";" in roll:
-            return [self.make_roll(m) for m in roll.split(";")]
-
+            self.altrolls.extend([self.make_roll(m) for m in roll.split(";")])
+            return None
         try:
             roll = Node(roll)
             roll = self.resolveroll(roll)

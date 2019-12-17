@@ -54,10 +54,10 @@ class WoDDice(object):
         if len(self.r) == 0:
             amount = ""
         else:
-            amount = "#" + str(len(self.r))
+            amount = str(len(self.r))
         return amount + "d" + str(self.max) + ((("f" if self.subone == 1 else
                                                  "e" if self.subone == 0 else
-                                                 "no 1 behaviour") + str(self.difficulty)
+                                                 "-") + str(self.difficulty)
                                                 ) if not self.returnfun else
                                                "h" if self.returnfun == "max" else
                                                "l" if self.returnfun == "min" else
@@ -106,12 +106,9 @@ class WoDDice(object):
                     amount += 1
                     self.log += "exploding!"
                 self.log += "\n"
-            else:
-                self.log += " "
             if i >= self.maxamount:
                 break
             i += 1
-        self.log += "\n"
 
         if self.rerolls:
             direction = int(self.rerolls / abs(self.rerolls))
@@ -144,7 +141,7 @@ class WoDDice(object):
                             tempstr = tempstr[:-2] + "), "
                     tempstr += str(x) + ", "
                 tempstr = tempstr[:-2] + (")" if par else "")
-                self.log += tempstr + "\n"
+                self.log += tempstr
             for sel in filtered:
                 self.r.remove(sel)
         else:
@@ -166,10 +163,11 @@ class WoDDice(object):
         return self.botchformat(self.succ, self.antisucc) if not len(self.selectors) else self.roll_sel()
 
     def roll_v(self):  # verbose
-
-        log = [x for x in self.log.split("\n") if x][-1].strip()
-        if not log:
-            log += ", ".join(str(x) for x in self.r)
+        log = ""
+        if self.log:
+            log = [x for x in self.log.split("\n") if x][-1].strip()
+        if not log or self.returnfun == "threshhold":
+            log = ", ".join(str(x) for x in self.r)
         res = self.result
         if res is not None:
             if len(self.r) < 1:
@@ -179,9 +177,6 @@ class WoDDice(object):
 
     def roll_vv(self, logslice=None):  # very verbose
         log = self.log
-        if 0 and self.sort:
-            log += "\n"
-            log += ", ".join(str(x) for x in self.r) + " "
         if isinstance(logslice, str):
             slices = (str_to_slice(x) for x in logslice.split(";"))
             loglines = log.split("\n")

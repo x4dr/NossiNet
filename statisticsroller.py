@@ -366,11 +366,12 @@ def target_hit_chance(sel):
 if __name__ == "__main__":
 
     pars = WoDParser()
-    msg = "5R2"
+    msg = "3, 2 @ (20sf6) R (1d3g) &verbose&"
     r = pars.make_roll(msg)
-    if isinstance(r, list):
-        print(msg+":\n" + "\n".join(x.roll_v() for x in r))
-    elif pars.triggers.get("verbose", None):
-        print(msg + ":\n" + r.roll_vv(pars.triggers.get("verbose")))
-    else:
+
+    if isinstance(pars.altrolls, list) and len(pars.altrolls) > 0:
+        print(msg + ":\n" + "\n".join(x.name+": "+x.roll_v() for x in pars.altrolls))
+    if r is not None and pars.triggers.get("verbose", None):
+        print(msg + ":\n" + r.name+": " + r.roll_vv(pars.triggers.get("verbose")))
+    elif r is not None:
         print(msg + ":\n" + r.roll_v())
