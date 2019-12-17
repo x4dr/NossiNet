@@ -11,6 +11,7 @@ class WoDDice(object):
                 self.difficulty = info.get('difficulty', difficulty)
                 self.subone = info.get('onebehaviour', subone)
                 self.returnfun = info.get('return')
+                self.sort = info.get('sort', None)
                 self.explodeon = self.max + 1 - info.get('explode', explodeon)
                 self.amount = info.get('amount', None)
             else:
@@ -116,10 +117,10 @@ class WoDDice(object):
         if reroll:
             self.log += "; Reroll selection:"
         while reroll != 0:
-            dir = reroll / abs(reroll)
+            direction = reroll / abs(reroll)
             reroll -= reroll / abs(reroll)
             self.log += " "
-            sel = min(self.r) if dir > 0 else max(self.r)
+            sel = min(self.r) if direction > 0 else max(self.r)
             self.log += str(sel)
             self.r.remove(sel)
 
@@ -138,8 +139,10 @@ class WoDDice(object):
 
     def roll_v(self):  # verbose
         log = ""
-        for i in self.r:
-            log += str(i) + ", "
+        rolled = self.r
+        if self.sort:
+            rolled = sorted(rolled)
+            log += ", ".join(rolled)
         if len(self.r) < 1:
             return " ==> 0"
         log = log[:-2] + " ==> " + str(self.result if not len(self.selectors) else self.roll_sel())

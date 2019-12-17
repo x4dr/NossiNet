@@ -25,6 +25,7 @@ class WoDParser(object):
             r'(?#     )(?P<onebehaviour>[ef]) *'  # e is without subtracting 1, f is with subtracting a success on a 1
             r'(?#     )(?P<difficulty>([1-9][0-9]{0,4})|([0-9]{0,4}[1-9])))|'  # difficulty 1-99999
             r'(?#   )(?P<sum>g)|'  # summing rolls up instead
+            r'(?#   )(?P<sort>s)|'  # summing rolls up instead
             r'(?#   )(?P<maximum>h)| *'  # taking the maximum value of the roll
             r'(?#   )(?P<minimum>l))? *'  # taking the minimum value of the roll
             r'(?# )(?P<explosion>!+)? *$',  # explosion effects
@@ -47,6 +48,7 @@ class WoDParser(object):
         else:
             info.pop('sidedness', None)
         info['operation'] = info.get('operation', "")
+        info['sum'] = info.get('sort', "")
         info['against'] = info.get('against', "")
         info['onebehaviour'] = 1 if info.get('onebehaviour', "f") == "f" else 0  # would need rewrite if more than 1
         # desired
@@ -354,7 +356,6 @@ class WoDParser(object):
 
     @staticmethod
     def shorthand():
-
         with open('./NossiSite/locales/EN.json') as json_data:
             return json.load(json_data)['shorthand']
 
