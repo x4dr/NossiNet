@@ -122,7 +122,7 @@ async def on_message(message):
         p = WoDParser({})
         r = p.make_roll(msg)
         if p.triggers.get("verbose", None):
-            await send(message.author.mention + " " + msg + ":\n" + r.roll_vv())
+            await send(message.author.mention + " " + msg + ":\n" + r.roll_vv(p.triggers.get("verbose")))
         else:
             await send(message.author.mention + " " + msg + ":\n" + r.roll_v())
 

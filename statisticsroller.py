@@ -366,9 +366,9 @@ def target_hit_chance(sel):
 if __name__ == "__main__":
 
     pars = WoDParser({})
-    msg = "2,3@5R3sv"
+    msg = "2,3@5R-3s &verbose 1;0&"
     r = pars.make_roll(msg)
     if pars.triggers.get("verbose", None):
-        print(msg + ":\n" + r.roll_vv())
+        print(msg + ":\n" + r.roll_vv(pars.triggers.get("verbose")))
     else:
         print(msg + ":\n" + r.roll_v())

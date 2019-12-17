@@ -74,12 +74,12 @@ class WoDParser(object):
             # print("do roll result:", self.altrolls[-1].result)
             return self.altrolls[-1].result
 
-    def make_roll(self, roll:str):
+    def make_roll(self, roll: str):
         # tacked on fenroll
         try:
             fenroll = \
                 re.compile(r' *(?P<selectors>([0-9](, *)?)*) *@(?P<roll>[^R]+)(R(?P<rerolls>-?\d+))?(?P<rest>.*)$',
-                                 re.IGNORECASE)
+                           re.IGNORECASE)
             selectors = []
             rerolls = 0
             selectorprocessing = fenroll.match(roll)
@@ -88,7 +88,6 @@ class WoDParser(object):
                 selectors = selectorprocessing.group("selectors")
                 rerolls = int(selectorprocessing.group("rerolls") or 0)
                 roll += selectorprocessing.group("rest")
-
             roll = Node(roll)
             roll = self.resolveroll(roll)
             params = self.extract_diceparams(roll)
@@ -103,13 +102,13 @@ class WoDParser(object):
     def resolveroll(self, roll):
         if isinstance(roll, str):
             return roll
-
         if roll.roll is None:
             self.expand(roll)
             return self.resolveroll(roll)
         if roll.is_leaf:
             roll.roll = self.parseadd(roll.roll)
         else:
+
             for i in range(len(roll.roll)):
                 roll.roll[i] = self.resolveroll(  # recursive
                     roll.dependent.get(roll.roll[i],  # either resolve all the dependencies
@@ -175,32 +174,34 @@ class WoDParser(object):
     @staticmethod
     def gettrigger(message):  # returns (newmessage,triggername, trigger)
         c = message.count("&")
-        if c > 0:
+        if c == 0:
+            return message, "", ""
+        else:
             if c % 2 != 0:
                 raise Exception("unmatched & in \"" + message + "\"")  # leftover & supposed to be cleared after usage
-            else:
 
-                m = message.split("&")
-                tail = "&".join(m[1:])
-                if tail.startswith("if "):  # special case for nested ifs/triggers
-                    end = tail.rfind("else")
-                    close = tail[end:].find("&")
+        m = message.split("&")
+        tail = "&".join(m[1:])
+        if tail.startswith("if "):  # special case for nested ifs/triggers
+            end = tail.rfind("else")
+            close = tail[end:].find("&")
 
-                    return m[0] + " & " + tail[end + close + 1:], m[1].split(" ")[0], tail[:end + close].strip()
+            return m[0] + " & " + tail[end + close + 1:], m[1].split(" ")[0], tail[:end + close].strip()
 
-                # message with first trigger removed (and rest of triggers appended
-                # name of first trigger
-                # command of the trigger (everything after a space until the &
-                return (m[0] + " & " + "&".join(m[2:]),
-                        m[1].split(" ")[0],
-                        " ".join(m[1].split(" ")[1:]))
-        else:
-            return message, "", ""
+        # message with first trigger removed (and rest of triggers appended
+        # name of first trigger
+        # command of the trigger (everything after a space until the &
+        newmessage = m[0]
+        if m[2]:
+            newmessage += " & " + "&".join(m[2:])
+        triggername = m[1].split(" ")[0]
+        triggercontent = " ".join(m[1].split(" ")[1:])
+        return newmessage, triggername, triggercontent
 
     def pretrigger(self, message):
         message, triggername, trigger = self.gettrigger(message)
         while triggername:
-            print("Triggering:", triggername)
+            print("Triggering:", triggername, "with", trigger)
             if triggername == "limitbreak":
                 print("RIGHTS:", self.rights)
                 if "Administrator" in self.rights:
@@ -250,21 +251,21 @@ class WoDParser(object):
                 message = message.replace("&", str(i), 1)
             elif triggername in ["ignore", "verbose", "suppress", "order"]:
                 if "off" not in trigger:
-                    self.triggers[triggername] = True
+                    self.triggers[triggername] = trigger if trigger else True
                 else:
                     self.triggers[triggername] = False
                 message = message.replace("&", "", 1)
             elif triggername in ["loop", "loopsum"]:
                 times = min(int(trigger[trigger.rfind(" "):]),
-                                (self.triggers.get("max") or 39) if not self.triggers.get("limitbreak",
-                                                                                                 None) else 100)
+                            (self.triggers.get("max") or 39) if not self.triggers.get("limitbreak",
+                                                                                      None) else 100)
                 trigger = trigger[:trigger.rfind(" ")]
                 roll = self.make_roll(trigger)  # it is rolled but not added to the list so this one vanishes
                 loopsum = 0
                 for i in range(times):
                     self.altrolls.append(roll.another())
                     loopsum += self.altrolls[-1].result
-                message = message.replace("&", ("&ignore&" if (triggername is "loop") else str(loopsum)),
+                message = message.replace("&", ("&ignore&" if (triggername == "loop") else str(loopsum)),
                                           1)  # its ok for loops to not have dice outside the trigger
             elif triggername == "values":
                 try:
@@ -308,7 +309,6 @@ class WoDParser(object):
                     message = message.replace("&", "(" + elsebranch.replace("$", str(-ifroll), 1) + ")", 1)
             else:
                 raise Exception("unknown Trigger: " + triggername)
-            # print("message:", message)
             message, triggername, trigger = self.gettrigger(message)
 
         return message

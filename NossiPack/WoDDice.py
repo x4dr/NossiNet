@@ -1,7 +1,17 @@
 import random
+from typing import List, Union
+
+
+def str_to_slice(inp):
+    s = [int(x) if x else None for x in inp.split(":")]
+    if len(s) == 1:
+        s.append(s[0] + 1)
+    return slice(*s)
 
 
 class WoDDice(object):
+    selectors: Union[List[int], str]
+
     def __init__(self, maxroll=None, difficulty=6, subone=1, explodeon=0, minroll=1, rerolls=0, selectors=None):
         try:
             if isinstance(maxroll, dict):
@@ -25,8 +35,7 @@ class WoDDice(object):
             self.rerolls = rerolls  # only used for fenrolls
             self.selectors = selectors
             if "," in self.selectors:
-                self.selectors = self.selectors.split(",")  # only used for fenrolls
-                self.selectors = [max(min(int(x), self.amount or 0), 0) for x in self.selectors]
+                self.selectors = [max(min(int(x), self.amount or 0), 0) for x in self.selectors.split(",")]
             self.r = []
             self.log = ""
             self.dbg = ""
@@ -115,19 +124,25 @@ class WoDDice(object):
             i += 1
         reroll = self.rerolls
         if reroll:
-            self.log += "; reroll selection: "
-        while reroll != 0:
-            direction = reroll / abs(reroll)
-            reroll -= reroll / abs(reroll)
-            self.log += " "
-            sel = min(self.r) if direction > 0 else max(self.r)
-            self.log += str(sel)
-            self.r.remove(sel)
-            if reroll == 0:
-                self.log += "; "
-        if self.sort:
-            self.r = sorted(self.r)
-            self.log += "sorted: " + ", ".join(str(x) for x in self.r)
+            self.log += "\n"
+            direction = int(reroll / abs(reroll))
+            filtered = []
+
+            while reroll != 0:
+                reroll -= direction
+                sel = min(self.r) if direction > 0 else max(self.r)
+                filtered.append(sel)
+                self.r.remove(sel)
+
+            if self.sort:
+                filtered = "(" + ", ".join(str(x) for x in sorted(filtered)) + ")"
+                self.r = sorted(self.r)
+                self.log += (((filtered + ", ") if direction > 0 else "") +
+                             ", ".join(str(x) for x in self.r) +
+                             (", " + filtered if direction < 0 else ""))
+            else:
+                if filtered:
+                    self.log += "rerolled: " + ", ".join(str(x) for x in filtered)
 
     @staticmethod
     def botchformat(succ, antisucc):
@@ -151,12 +166,16 @@ class WoDDice(object):
         log = log[:-2] + " ==> " + str(self.result if not len(self.selectors) else self.roll_sel())
         return log
 
-    def roll_vv(self):  # very verbose
+    def roll_vv(self, logslice=None):  # very verbose
         log = self.log
         if self.sort:
             log += "\n"
             log += ", ".join(str(x) for x in self.r) + " "
-        log += "==> " + str(self.result)
+        if isinstance(logslice, str):
+            slices = (str_to_slice(x) for x in logslice.split(";"))
+            loglines = log.split("\n")
+            log = "\n".join("\n".join(loglines[s]) for s in slices)
+        log += " ==> " + str(self.result)
         return log
 
     def roll_max(self):  # returns max nonverbose as int
@@ -164,7 +183,7 @@ class WoDDice(object):
 
     def roll_sel(self):
         if "," in self.selectors:
-            self.selectors = self.selectors.split(",")
+            self.selectors = [max(min(int(x), self.amount or 0), 0) for x in self.selectors.split(",")]
         self.selectors = [max(min(int(x), len(self.r)), 0) for x in self.selectors]
         return sum(sorted(self.r)[s - 1] for s in self.selectors)
 
@@ -186,11 +205,11 @@ class WoDDice(object):
 
     @property
     def result(self):
-        return self.roll_sel() if self.selectors else \
-            self.roll_nv() if not self.returnfun else \
-                max(self.r) if self.returnfun == "max" else \
-                    min(self.r) if self.returnfun == "min" else \
-                        sum(self.r) if self.returnfun == "sum" else None
+        return (self.roll_sel() if self.selectors else
+                self.roll_nv() if not self.returnfun else
+                max(self.r) if self.returnfun == "max" else
+                min(self.r) if self.returnfun == "min" else
+                sum(self.r) if self.returnfun == "sum" else None)
 
     def roll(self, amount):
         self.roll_next(amount)
