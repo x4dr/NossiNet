@@ -195,6 +195,7 @@ def chances(selector, modifier=0, img=False):
         buf = io.BytesIO()
         plt.savefig(buf, format='png')
         plt.close()
+        buf.seek(0)
         return buf
 
 
