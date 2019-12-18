@@ -137,5 +137,53 @@ def supply_graphdata():
         f.write(json.dumps(cmprjsn))
 
 
+def dataset(modifier):
+    import pandas
+    return pandas.read_csv("roll_frequencies_" + str(modifier) + ".csv",
+                           names=["D1", "D2", "D3", "D4", "D5", "frequency"])
+
+
+def select_modified(selector, series):
+    return sum(series[s - 1] for s in selector if 0 < s < 6), series[-1]
+
+
+def chances(selector, modifier=0):
+    selector = tuple(sorted(selector))
+    occurrences = {}
+    try:
+        with open("unordered_data") as f:
+            for line in f.readlines():
+                if line.startswith(str(selector)):
+                    occurrences = ast.literal_eval(line[len(str(selector)):])[modifier]
+                    break
+            if not occurrences:
+                print("did not find", selector)
+                raise Exception("no data found")
+    except Exception as e:
+        print(e)
+        occurrences = {}
+        with open("unordered_data", "w") as f:
+            for s1 in range(1, 6):
+                for s2 in range(0, s1 + 1):
+                    occurrences = {}
+                    for mod in range(-5, 6):
+                        df = dataset(mod)
+                        occ = {k: 0 for k in range(1, 21)}
+                        for row, series in df.iterrows():
+                            k, v = select_modified([s1, s2], series)
+                            occ[k] += v
+                        occurrences[mod] = occ
+                    print("writing", str(tuple(sorted([x for x in [s2, s1] if x]))), occurrences)
+                    f.write(str(tuple(sorted([x for x in [s2, s1] if x]))) + str(occurrences) + "\n")
+        return
+    max_val = max(occurrences.values())
+    total = sum(occurrences.values())
+    res = ""
+    for k in sorted(occurrences):
+        if occurrences[k]:
+            res += f"{k:5d} {100 * occurrences[k] / total: >5.2f} {'#' * int(40 * occurrences[k] / max_val)}\n"
+    print(res)
+
+
 if "__main__" == __name__:
     supply_graphdata()

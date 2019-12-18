@@ -364,14 +364,16 @@ def target_hit_chance(sel):
 
 
 if __name__ == "__main__":
+    import fengraph
 
+    df = fengraph.chances([3])
+    exit()
     pars = WoDParser()
     msg = "&loop 2,3@5r-1s 9&&loop 3,3@5r2s 2&"
     r = pars.make_roll(msg)
-
     if isinstance(pars.altrolls, list) and len(pars.altrolls) > 0:
-        print(msg + ":\n" + "\n".join(x.name+": "+x.roll_v() for x in pars.altrolls))
+        print(msg + ":\n" + "\n".join(x.name + ": " + x.roll_v() for x in pars.altrolls))
     if r is not None and pars.triggers.get("verbose", None):
-        print(msg + ":\n" + r.name+": " + r.roll_vv(pars.triggers.get("verbose")))
+        print(msg + ":\n" + r.name + ": " + r.roll_vv(pars.triggers.get("verbose")))
     elif r is not None:
         print(msg + ":\n" + r.roll_v())
