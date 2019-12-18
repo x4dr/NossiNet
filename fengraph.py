@@ -149,7 +149,8 @@ def select_modified(selector, series):
 
 
 def chances(selector, modifier=0, img=False):
-    selector = tuple(sorted(selector))
+    selector = tuple(sorted(int(x) for x in selector))
+    modifier = int(modifier)
     occurrences = {}
     try:
         with open("unordered_data") as f:
@@ -188,7 +189,7 @@ def chances(selector, modifier=0, img=False):
     else:
         import matplotlib.pyplot as plt
         plt.figure()
-        plt.bar(range(1, 21), [100*x/total for x in occurrences.values()],
+        plt.bar(range(1, 21), [100 * x / total for x in occurrences.values()],
                 facecolor='green', alpha=0.75, linewidth=1)
         plt.xticks(range(1, 21))
         buf = io.BytesIO()
