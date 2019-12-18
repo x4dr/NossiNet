@@ -1,3 +1,4 @@
+import io
 import json
 import math
 from _md5 import md5
@@ -147,7 +148,7 @@ def select_modified(selector, series):
     return sum(series[s - 1] for s in selector if 0 < s < 6), series[-1]
 
 
-def chances(selector, modifier=0):
+def chances(selector, modifier=0, img=False):
     selector = tuple(sorted(selector))
     occurrences = {}
     try:
@@ -161,7 +162,6 @@ def chances(selector, modifier=0):
                 raise Exception("no data found")
     except Exception as e:
         print(e)
-        occurrences = {}
         with open("unordered_data", "w") as f:
             for s1 in range(1, 6):
                 for s2 in range(0, s1 + 1):
@@ -183,6 +183,18 @@ def chances(selector, modifier=0):
         if occurrences[k]:
             res += f"{k:5d} {100 * occurrences[k] / total: >5.2f} {'#' * int(40 * occurrences[k] / max_val)}\n"
     print(res)
+    if not img:
+        return res
+    else:
+        import matplotlib.pyplot as plt
+        plt.figure()
+        plt.bar(range(1, 21), [100*x/total for x in occurrences.values()],
+                facecolor='green', alpha=0.75, linewidth=1)
+        plt.xticks(range(1, 21))
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        plt.close()
+        return buf
 
 
 if "__main__" == __name__:

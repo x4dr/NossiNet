@@ -117,10 +117,15 @@ async def on_message(message):
         await send(str(message))
     elif msg.startswith("oracle"):
         try:
-            parameters = msg[7:].split(" ")
-            send(message.author.mention+"\n +```"+fengraph.chances(parameters[:-1], parameters[-1])+"```")
+            if msg.startswith("oracle show"):
+                parameters = msg[12:].split(" ")
+                send(message.author.mention,
+                     file=discord.File(fengraph.chances(parameters[:-1], parameters[-1], True), 'cool_image.png'))
+            else:
+                parameters = msg[7:].split(" ")
+                send(message.author.mention + "\n +```" + fengraph.chances(parameters[:-1], parameters[-1]) + "```")
         except:
-            await send(message.author.mention+" selectors then -5 to 5")
+            await send(message.author.mention + " selectors then -5 to 5")
     else:
         msg = msg.strip()
         if msg.endswith("v"):
