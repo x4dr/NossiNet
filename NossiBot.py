@@ -119,11 +119,11 @@ async def on_message(message):
         try:
             if msg.startswith("oracle show"):
                 parameters = msg[12:].split(" ")
-                send(message.author.mention,
+                await send(message.author.mention,
                      file=discord.File(fengraph.chances(parameters[:-1], parameters[-1], True), 'graph.png'))
             else:
                 parameters = msg[7:].split(" ")
-                send(message.author.mention + "\n +```" + fengraph.chances(parameters[:-1], parameters[-1]) + "```")
+                await send(message.author.mention + "\n +```" + fengraph.chances(parameters[:-1], parameters[-1]) + "```")
         except:
             await send(message.author.mention + " selectors then -5 to 5")
     else:
