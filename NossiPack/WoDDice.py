@@ -55,13 +55,16 @@ class WoDDice(object):
             amount = ""
         else:
             amount = str(len(self.r))
-        return amount + "d" + str(self.max) + ((("f" if self.subone == 1 else
-                                                 "e" if self.subone == 0 else
-                                                 "-") + str(self.difficulty)
-                                                ) if not self.returnfun else
-                                               "h" if self.returnfun == "max" else
-                                               "l" if self.returnfun == "min" else
-                                               "g" if self.returnfun == "sum" else "") + (
+        return ((",".join(str(x) for x in self.selectors) + "@") if self.selectors else "") \
+               + amount + "d" + str(self.max) + \
+               ("R" + str(self.rerolls) if self.rerolls != 0 else "") + \
+               ((("f" if self.subone == 1 else
+                  "e" if self.subone == 0 else
+                  "-") + str(self.difficulty)
+                 ) if self.returnfun == "threshhold" else
+                "h" if self.returnfun == "max" else
+                "l" if self.returnfun == "min" else
+                "g" if self.returnfun == "sum" else "") + (
                    (" exploding on " + str(self.explodeon)) if self.explodeon <= self.max else "")
 
     def another(self):
@@ -74,7 +77,11 @@ class WoDDice(object):
                 'onebehaviour': self.subone,
                 'return': self.returnfun,
                 'explode': self.max - self.explodeon - 1,
-                'amount': self.amount
+                'amount': self.amount,
+                'selectors': self.selectors,
+                'additivebonus': self.min,
+                'sort': self.sort,
+                'rerolls': self.rerolls,
             })
 
     def roll_next(self, amount):
@@ -130,7 +137,8 @@ class WoDDice(object):
                 par = False
                 for i in range(len(self.r)):
                     x = self.r[i]
-                    if x in tofilter and ((direction< 0 and self.r[i:].count(x) <= tofilter.count(x)) or direction > 0):
+                    if x in tofilter and (
+                            (direction < 0 and self.r[i:].count(x) <= tofilter.count(x)) or direction > 0):
                         if not par:
                             par = True
                             tempstr += "("
@@ -167,7 +175,8 @@ class WoDDice(object):
         if self.log:
             log = [x for x in self.log.split("\n") if x][-1].strip()
         if not log or self.returnfun == "threshhold":
-            log = ", ".join(str(x) for x in self.r)
+            if not self.name.endswith("d1g"):  # just sum one sided dice
+                log = ", ".join(str(x) for x in self.r)
         res = self.result
         if res is not None:
             if len(self.r) < 1:

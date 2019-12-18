@@ -15,7 +15,7 @@ class WoDParser(object):
         self.altrolls = []  # if the last roll isnt interesting
 
     diceparse = re.compile(  # the regex matching the roll (?# ) for indentation
-        r'(?# )\s*(?:(?P<selectors>(?:[0-9](?:,\s*)?)*)\s*@)?' +  # selector matching
+        r'(?# )\s*(?:(?P<selectors>(?:[0-9](?:\s*,\s*)?)*)\s*@)?' +  # selector matching
         r'(?# )\s*(?P<amount>[0-9]{1,4})\s*' +  # amount of dice 0-999
         r'(?# )(d *(?P<sides>[0-9]{1,5}))? *' +  # sides of dice 0-99999
         r'(?# )(?:[rR]\s*(?P<rerolls>-?\d+))?'  # reroll highest/lowest dice
@@ -41,8 +41,9 @@ class WoDParser(object):
             if self.triggers.get("ignore", None):
                 print("invalid dicecode:'" + message + "'")
                 return {}
-            print(message, info)
-            raise Exception("invalid dicecode:'" + message + "'\n usage: "+WoDParser.usage)
+            if not message.strip():
+                return None
+            raise Exception("invalid dicecode:'" + message + "'\n usage: " + WoDParser.usage)
         if "@" in message and info.get("selectors") is None:
             raise Exception("Missing Selectors!")
         if info.get('sides', None) is not None:
@@ -85,8 +86,8 @@ class WoDParser(object):
             roll = Node(roll)
             roll = self.resolveroll(roll)
             params = self.extract_diceparams(roll)
-            if not params:
-                raise Exception("No Valid Parameters!", roll)
+            if not params: #no dice
+                return None
             fullparams = self.defines.copy()
             fullparams.update(params)
             v = WoDDice(fullparams)
@@ -187,9 +188,8 @@ class WoDParser(object):
         # message with first trigger removed (and rest of triggers appended
         # name of first trigger
         # command of the trigger (everything after a space until the &
-        newmessage = m[0]
-        if m[2]:
-            newmessage += " & " + "&".join(m[2:])
+        newmessage = m[0] + " & " + "&".join(m[2:])
+        # the remaining "&" is used in replacement operations by the triggers
         triggername = m[1].split(" ")[0]
         triggercontent = " ".join(m[1].split(" ")[1:])
         return newmessage, triggername, triggercontent
@@ -253,15 +253,19 @@ class WoDParser(object):
                 message = message.replace("&", "", 1)
             elif triggername in ["loop", "loopsum"]:
                 times = int(trigger[trigger.rfind(" "):])  # everything to the right of the last space
-                times = min(times, (self.triggers.get("max") or 39)
-                if not self.triggers.get("limitbreak", None) else 100)
+                times = min(times, ((self.triggers.get("max") or 39)
+                                    if not self.triggers.get("limitbreak", None) else 100))
                 trigger = trigger[:trigger.rfind(" ")]  # roll in the left of the trigger
                 self.altrolls.append(self.make_roll(trigger))  # first one is constructed
+                loopsum = self.altrolls[-1].result or 0
                 for i in range(times - 1):  # need 1 less
                     self.altrolls.append(self.altrolls[-1].another())  # rest are rerolls
-                    loopsum += self.altrolls[-1].result
-                message = message.replace("&", ("&ignore&" if (triggername == "loop") else str(loopsum)),
-                                          1)  # its ok for loops to not have dice outside the trigger
+                    loopsum += self.altrolls[-1].result or 0
+                if triggername == "loop":
+                    message = message.replace("&", "", 1)
+                elif triggername == "loopsum":
+                    print("message", message)
+                    message = message.replace("&", str(loopsum) + " d1g",1)
             elif triggername == "values":
                 try:
                     trigger = str(re.sub(r" *: *", ":", trigger))
