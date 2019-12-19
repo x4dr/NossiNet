@@ -117,18 +117,36 @@ async def on_message(message):
         await send(str(message))
     elif msg.startswith("oracle"):
         if msg.startswith("oracle show"):
+            sentmessage = None
             try:
                 parameters = msg[12:].split(" ")
-                await send(message.author.mention,
-                           file=discord.File(fengraph.chances(parameters[:-2], parameters[-2], parameters[-1]),
-                                             'graph.png'))
+                it = fengraph.chances(parameters[:-2], parameters[-2], parameters[-1])
+                sentmessage = await send(message.author.mention, next(it))
+                for n in it:
+                    if isinstance(n, str):
+                        await sentmessage.edit(message.author.mention + " " + n)
+                    else:
+                        await sentmessage.edit(message.author.mention,
+                                               file=discord.File(n, 'graph.png'))
             except:
+                if sentmessage:
+                    await sentmessage.delete(delay=3)
                 await send(message.author.mention + " <selectors> <modifier> <number of quantiles>")
         else:
             try:
                 parameters = msg[7:].split(" ")
-                await send(message.author.mention + "```" + fengraph.chances(parameters[:-1], parameters[-1]) + "```")
+                it = fengraph.chances(parameters[:-1], parameters[-1])
+                sentmessage = await send(message.author.mention + " " + next(it))
+                n = ""
+                for n in it:
+                    await sentmessage.edit(message.author.mention+" " + n)
+                if n:
+                    await sentmessage.edit(message.author.mention + "```" + n + "```")
+                else:
+                    raise Exception("no values past the first")
             except:
+                if sentmessage:
+                    await sentmessage.delete(delay=3)
                 await send(message.author.mention + " <selectors> <modifier>")
     else:
         msg = msg.strip()

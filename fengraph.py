@@ -177,9 +177,10 @@ def calc_percentiles(cnts_dict, percentiles_to_calc=range(101)):
 
 
 def chances(selector, modifier=0, number_of_quantiles=None):
-    selector = tuple(sorted(int(x) for x in selector))
+    selector = tuple(sorted(int(x) for x in selector if 0 < x <= 5))
     modifier = int(modifier)
     occurrences = {}
+    yield "processing"
     try:
         with open("unordered_data") as f:
             for line in f.readlines():
@@ -190,33 +191,32 @@ def chances(selector, modifier=0, number_of_quantiles=None):
                 print("did not find", selector)
                 raise Exception("no data found")
     except Exception as e:
-        print(e)
-        with open("unordered_data", "w") as f:
-            for s1 in range(1, 6):
-                for s2 in range(0, s1 + 1):
-                    occurrences = {}
-                    for mod in range(-5, 6):
-                        df = dataset(mod)
-                        occ = {k: 0 for k in range(1, 21)}
-                        for row, series in df.iterrows():
-                            k, v = select_modified([s1, s2], series)
-                            occ[k] += v
-                        occurrences[mod] = occ
-                    print("writing", str(tuple(sorted([x for x in [s2, s1] if x]))), occurrences)
-                    f.write(str(tuple(sorted([x for x in [s2, s1] if x]))) + str(occurrences) + "\n")
-        return
+        yield f"generating Data for {selector}..."
+        with open("unordered_data", "a") as f:
+            occurren = {}
+            for mod in range(-5, 6):
+                df = dataset(mod)
+                occ = {k: 0 for k in range(1, 10 * len(selector) + 1)}
+                for row, series in df.iterrows():
+                    k, v = select_modified(selector, series)
+                    occ[k] += v
+                occurren[mod] = occ
+            f.write(str(tuple(selector)) + str(occurren) + "\n")
+        occurrences = occurren[mod]
+        yield f"Data for {selector} has been generated"
     max_val = max(list(occurrences.values()))
     total = sum(occurrences.values())
     res = ""
     fy = [.0] + [100 * x / total for x in occurrences.values()] + [0]
-    fx = [0] + list(occurrences.keys()) + [21]
+    fx = [0] + sorted(list(occurrences.keys()))
+    fx.append(fx[-1]+1)  # values going to 0
     f = interp1d(fx, fy, kind=2)
 
     for k in sorted(occurrences):
         if occurrences[k]:
             res += f"{k:5d} {100 * occurrences[k] / total: >5.2f} {'#' * int(40 * occurrences[k] / max_val)}\n"
     if number_of_quantiles is None:
-        return res
+        yield res
     else:
         import matplotlib.pyplot as plt
         plt.figure()
@@ -243,7 +243,7 @@ def chances(selector, modifier=0, number_of_quantiles=None):
         plt.show()
         plt.close()
         buf.seek(0)
-        return buf
+        yield buf
 
 
 if "__main__" == __name__:
