@@ -229,7 +229,7 @@ def chances(selector, modifier=0, number_of_quantiles=None):
         integratedsum = 100
         quantiles = [0]
         if number_of_quantiles:
-            n = max(min(int(number_of_quantiles), 100), 0)
+            n = max(min(int(number_of_quantiles), 100), 0)+1
             for q in [1 / n] * (n - 1):
                 quantiles.append(fsolve(func=lambda x: quad(f,
                                                             quantiles[-1],
