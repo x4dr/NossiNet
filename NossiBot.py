@@ -116,16 +116,20 @@ async def on_message(message):
         newreminder(str(message.channel.id), msg[7:])
         await send(str(message))
     elif msg.startswith("oracle"):
-        try:
-            if msg.startswith("oracle show"):
+        if msg.startswith("oracle show"):
+            try:
                 parameters = msg[12:].split(" ")
                 await send(message.author.mention,
-                     file=discord.File(fengraph.chances(parameters[:-1], parameters[-1], True), 'graph.png'))
-            else:
+                           file=discord.File(fengraph.chances(parameters[:-2], parameters[-2], parameters[-1]),
+                                             'graph.png'))
+            except:
+                await send(message.author.mention + " <selectors> <modifier> <number of quantiles>")
+        else:
+            try:
                 parameters = msg[7:].split(" ")
                 await send(message.author.mention + "```" + fengraph.chances(parameters[:-1], parameters[-1]) + "```")
-        except:
-            await send(message.author.mention + " selectors then -5 to 5")
+            except:
+                await send(message.author.mention + " <selectors> <modifier>")
     else:
         msg = msg.strip()
         if msg.endswith("v"):

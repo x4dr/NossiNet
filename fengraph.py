@@ -5,8 +5,15 @@ from _md5 import md5
 from math import ceil
 from typing import List
 
+import numpy
 import requests
 import ast
+
+import scipy.stats
+from scipy.integrate import quad
+from scipy.interpolate import interp1d
+from scipy.linalg import solve
+from scipy.optimize import fsolve
 
 
 def modify_dmg(specific_modifiers, dmgstring, damage_type, armor):
@@ -148,7 +155,31 @@ def select_modified(selector, series):
     return sum(series[s - 1] for s in selector if 0 < s < 6), series[-1]
 
 
-def chances(selector, modifier=0, img=False):
+def calc_percentiles(cnts_dict, percentiles_to_calc=range(101)):
+    """Returns [(percentile, value)] with nearest rank percentiles.
+    Percentile 0: <min_value>, 100: <max_value>.
+    cnts_dict: { <value>: <count> }
+    percentiles_to_calc: iterable for percentiles to calculate; 0 <= ~ <= 100
+    """
+    assert all(0 <= p <= 100 for p in percentiles_to_calc)
+    percentiles = []
+    num = sum(cnts_dict.values())
+    cnts = sorted(cnts_dict.items())
+    curr_cnts_pos = 0  # current position in cnts
+    curr_pos = cnts[0][1]  # sum of freqs up to current_cnts_pos
+    for p in sorted(percentiles_to_calc):
+        if p < 100:
+            percentile_pos = p / 100.0 * num
+            while curr_pos <= percentile_pos and curr_cnts_pos < len(cnts):
+                curr_cnts_pos += 1
+                curr_pos += cnts[curr_cnts_pos][1]
+            percentiles.append((p, cnts[curr_cnts_pos][0]))
+        else:
+            percentiles.append((p, cnts[-1][0]))  # we could add a small value
+    return percentiles
+
+
+def chances(selector, modifier=0, number_of_quantiles=None):
     selector = tuple(sorted(int(x) for x in selector))
     modifier = int(modifier)
     occurrences = {}
@@ -180,20 +211,36 @@ def chances(selector, modifier=0, img=False):
     max_val = max(occurrences.values())
     total = sum(occurrences.values())
     res = ""
+    fy = [.0] + [100 * x / total for x in occurrences.values()] + [0]
+    fx = [0] + list(occurrences.keys()) + [21]
+    f = interp1d(fx, fy, kind=2)
+
     for k in sorted(occurrences):
         if occurrences[k]:
             res += f"{k:5d} {100 * occurrences[k] / total: >5.2f} {'#' * int(40 * occurrences[k] / max_val)}\n"
-    print(res)
-    if not img:
+    if number_of_quantiles is None:
         return res
     else:
         import matplotlib.pyplot as plt
         plt.figure()
         plt.bar(range(1, 21), [100 * x / total for x in occurrences.values()],
                 facecolor='green', alpha=0.75, linewidth=1)
-        plt.xticks(range(1, 21))
+        linx = numpy.linspace(1, 21, 200)
+        integratedsum = 100
+        quantiles = [0]
+        if number_of_quantiles:
+            n = max(min(int(number_of_quantiles), 100), 0)
+            for q in [1 / n] * (n - 1):
+                quantiles.append(fsolve(func=lambda x: quad(f,
+                                                            quantiles[-1],
+                                                            x)[0] - integratedsum * q,
+                                        x0=numpy.array([quantiles[-1] or 5])))
+        plt.plot(linx, f(linx), "--")
         buf = io.BytesIO()
+        for q in quantiles[1:]:
+            plt.axvline(q)
         plt.savefig(buf, format='png')
+        plt.show()
         plt.close()
         buf.seek(0)
         return buf
