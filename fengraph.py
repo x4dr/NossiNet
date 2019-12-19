@@ -176,11 +176,25 @@ def calc_percentiles(cnts_dict, percentiles_to_calc=range(101)):
     return percentiles
 
 
+def helper(f, integratedsum, q, lastquant):
+    def internalhelper(x):
+        try:
+            result = quad(f,
+                          lastquant,
+                          x)[0]
+            return result - integratedsum * q
+        except:
+            print("errvals:", q, lastquant, x)
+            raise
+
+    return internalhelper
+
+
 def chances(selector, modifier=0, number_of_quantiles=None):
-    selector = tuple(sorted(int(x) for x in selector if 0 < x <= 5))
+    selector = tuple(sorted(int(x) for x in selector if 0 < int(x) < 6))
     modifier = int(modifier)
     occurrences = {}
-    yield "processing"
+    yield "processing..."
     try:
         with open("unordered_data") as f:
             for line in f.readlines():
@@ -188,8 +202,9 @@ def chances(selector, modifier=0, number_of_quantiles=None):
                     occurrences = ast.literal_eval(line[len(str(selector)):])[modifier]
                     break
             if not occurrences:
-                print("did not find", selector)
+                yield "did not find" + str(selector)
                 raise Exception("no data found")
+        yield "data found..."
     except Exception as e:
         yield f"generating Data for {selector}..."
         with open("unordered_data", "a") as f:
@@ -204,43 +219,59 @@ def chances(selector, modifier=0, number_of_quantiles=None):
             f.write(str(tuple(selector)) + str(occurren) + "\n")
         occurrences = occurren[mod]
         yield f"Data for {selector} has been generated"
+    yield "generating result..."
     max_val = max(list(occurrences.values()))
     total = sum(occurrences.values())
-    res = ""
-    fy = [.0] + [100 * x / total for x in occurrences.values()] + [0]
-    fx = [0] + sorted(list(occurrences.keys()))
-    fx.append(fx[-1]+1)  # values going to 0
-    f = interp1d(fx, fy, kind=2)
-
-    for k in sorted(occurrences):
-        if occurrences[k]:
-            res += f"{k:5d} {100 * occurrences[k] / total: >5.2f} {'#' * int(40 * occurrences[k] / max_val)}\n"
     if number_of_quantiles is None:
+        res = ", ".join([str(x) for x in selector]) + "@5" + (("R" + str(modifier)) if modifier else "")
+        for k in sorted(occurrences):
+            if occurrences[k]:
+                res += f"{k:5d} {100 * occurrences[k] / total: >5.2f} {'#' * int(40 * occurrences[k] / max_val)}\n"
         yield res
     else:
+        yield "generating graph..."
+        res = ""
+        fy = [.0] + [100 * x / total for x in occurrences.values()] + [0]
+        fx = [0] + sorted(list(occurrences.keys()))
+        fx.append(fx[-1] + 1)  # values going to 0
+        f = interp1d(fx, fy, kind=2)
         import matplotlib.pyplot as plt
         plt.figure()
-        plt.bar(range(1, 21), [100 * x / total for x in occurrences.values()],
+        plt.bar(range(1, len(occurrences.values()) + 1), [100 * x / total for x in occurrences.values()],
                 facecolor='green', alpha=0.75, linewidth=1)
-        linx = numpy.linspace(1, 21, 200)
+        linx = numpy.linspace(1, max(occurrences.keys()) + 1, max(occurrences.keys()) * 10)
         integratedsum = 100
         quantiles = [0]
         if number_of_quantiles:
-            n = max(min(int(number_of_quantiles), 100), 0) + 1
-            for q in [1 / n] * (n - 1):
-                quantiles.append(fsolve(func=lambda x: quad(f,
-                                                            quantiles[-1],
-                                                            x)[0] - integratedsum * q,
-                                        x0=numpy.array([quantiles[-1] or 5])))
+            yield "calculating integrals"
+            tries = 0
+            while tries < 3:
+                try:
+                    n = max(min(int(number_of_quantiles), 100), 0) + 1
+                    quantiles = [0]
+                    for q in [1 / n for _ in range(n - 1)]:
+                        quantiles.append(fsolve(func=helper(f, integratedsum, q, quantiles[-1]),
+                                                x0=numpy.array([quantiles[-1] or
+                                                                sorted(list(occurrences.keys()))[
+                                                                    len(occurrences) // 3]])))
+                    tries += 3
+                except Exception as e:
+                    print("exception in calculating:", e, n)
+                    yield "WARNING: RECALCULATING"
+                    tries += 1
+        yield "finalizing graph"
         plt.plot(linx, f(linx), "--")
         buf = io.BytesIO()
         for q in quantiles[1:]:
             plt.axvline(q)
-        plt.xticks(list(range(1, 21)))
+        if max(occurrences.keys()) < 31:
+            plt.xticks(list(range(1, max(occurrences.keys()) + 1)))
         plt.ylim(ymin=0.0)
         plt.xlim(xmin=0.0)
-        plt.savefig(buf, format='png')
-        plt.show()
+        plt.title(", ".join([str(x) for x in selector]) + "@5" + (("R" + str(modifier)) if modifier else "")
+        plt.ylabel("%")
+        yield "sending data..."
+        plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
         plt.close()
         buf.seek(0)
         yield buf

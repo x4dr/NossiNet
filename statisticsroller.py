@@ -366,7 +366,7 @@ def target_hit_chance(sel):
 if __name__ == "__main__":
     import fengraph
 
-    for x in fengraph.chances([1, 2,3,5,4, 2, 1]):
+    for x in fengraph.chances([1, 2, 4, 5, 3], 0, 3):
         print(x)
     exit()
     pars = WoDParser()

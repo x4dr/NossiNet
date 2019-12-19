@@ -120,17 +120,19 @@ async def on_message(message):
             try:
                 parameters = msg[12:].split(" ")
                 it = fengraph.chances(parameters[:-2], parameters[-2], parameters[-1])
-                sentmessage = await send(message.author.mention, next(it))
+                sentmessage = await send(message.author.mention + " " + next(it))
                 for n in it:
                     if isinstance(n, str):
-                        await sentmessage.edit(message.author.mention + " " + n)
+                        await sentmessage.edit(content=message.author.mention + " " + n)
                     else:
-                        await sentmessage.edit(message.author.mention,
-                                               file=discord.File(n, 'graph.png'))
+                        await sentmessage.delete(delay=0.1)
+                        await send(message.author.mention, file=discord.File(n, 'graph.png'))
             except Exception as e:
                 print(e)
                 if sentmessage:
+                    await sentmessage.edit(content=message.author.mention + " ERROR")
                     await sentmessage.delete(delay=3)
+                raise
                 await send(message.author.mention + " <selectors> <modifier> <number of quantiles>")
         else:
             try:
@@ -139,15 +141,18 @@ async def on_message(message):
                 sentmessage = await send(message.author.mention + " " + next(it))
                 n = ""
                 for n in it:
-                    await sentmessage.edit(message.author.mention+" " + n)
+                    print(n)
+                    await sentmessage.edit(content=message.author.mention + " " + n)
                 if n:
-                    await sentmessage.edit(message.author.mention + "```" + n + "```")
+                    await sentmessage.edit(content=message.author.mention + "```" + n + "```")
                 else:
                     raise Exception("no values past the first")
             except Exception as e:
                 print(e)
                 if sentmessage:
+                    await sentmessage.edit(content=message.author.mention + " ERROR")
                     await sentmessage.delete(delay=3)
+                raise
                 await send(message.author.mention + " <selectors> <modifier>")
     else:
         msg = msg.strip()
