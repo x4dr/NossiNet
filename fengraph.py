@@ -3,16 +3,13 @@ import json
 import math
 from _md5 import md5
 from math import ceil
-from typing import List
 
 import numpy
 import requests
 import ast
 
-import scipy.stats
 from scipy.integrate import quad
 from scipy.interpolate import interp1d
-from scipy.linalg import solve
 from scipy.optimize import fsolve
 
 
@@ -208,7 +205,7 @@ def chances(selector, modifier=0, number_of_quantiles=None):
                     print("writing", str(tuple(sorted([x for x in [s2, s1] if x]))), occurrences)
                     f.write(str(tuple(sorted([x for x in [s2, s1] if x]))) + str(occurrences) + "\n")
         return
-    max_val = max(occurrences.values())
+    max_val = max(list(occurrences.values()))
     total = sum(occurrences.values())
     res = ""
     fy = [.0] + [100 * x / total for x in occurrences.values()] + [0]
@@ -229,7 +226,7 @@ def chances(selector, modifier=0, number_of_quantiles=None):
         integratedsum = 100
         quantiles = [0]
         if number_of_quantiles:
-            n = max(min(int(number_of_quantiles), 100), 0)+1
+            n = max(min(int(number_of_quantiles), 100), 0) + 1
             for q in [1 / n] * (n - 1):
                 quantiles.append(fsolve(func=lambda x: quad(f,
                                                             quantiles[-1],
@@ -239,6 +236,9 @@ def chances(selector, modifier=0, number_of_quantiles=None):
         buf = io.BytesIO()
         for q in quantiles[1:]:
             plt.axvline(q)
+        plt.xticks(list(range(1, 21)))
+        plt.ylim(ymin=0.0)
+        plt.xlim(xmin=0.0)
         plt.savefig(buf, format='png')
         plt.show()
         plt.close()
