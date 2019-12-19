@@ -128,7 +128,7 @@ async def on_message(message):
                         await sentmessage.delete(delay=0.1)
                         await send(message.author.mention, file=discord.File(n, 'graph.png'))
             except Exception as e:
-                print(e)
+                print("exception during oracle show", e)
                 if sentmessage:
                     await sentmessage.edit(content=message.author.mention + " ERROR")
                     await sentmessage.delete(delay=3)
@@ -141,14 +141,14 @@ async def on_message(message):
                 sentmessage = await send(message.author.mention + " " + next(it))
                 n = ""
                 for n in it:
-                    print(n)
+                    print("iterating:",n)
                     await sentmessage.edit(content=message.author.mention + " " + n)
                 if n:
                     await sentmessage.edit(content=message.author.mention + "```" + n + "```")
                 else:
                     raise Exception("no values past the first")
             except Exception as e:
-                print(e)
+                print("exception during oracle", e)
                 if sentmessage:
                     await sentmessage.edit(content=message.author.mention + " ERROR")
                     await sentmessage.delete(delay=3)

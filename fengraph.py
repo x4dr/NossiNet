@@ -268,7 +268,7 @@ def chances(selector, modifier=0, number_of_quantiles=None):
             plt.xticks(list(range(1, max(occurrences.keys()) + 1)))
         plt.ylim(ymin=0.0)
         plt.xlim(xmin=0.0)
-        plt.title(", ".join([str(x) for x in selector]) + "@5" + (("R" + str(modifier)) if modifier else "")
+        plt.title(", ".join([str(x) for x in selector]) + "@5" + (("R" + str(modifier)) if modifier else ""))
         plt.ylabel("%")
         yield "sending data..."
         plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
