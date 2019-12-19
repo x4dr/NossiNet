@@ -83,11 +83,10 @@ def newreminder(channelid, message):
 async def tick():
     next_call = time.time()
     while True:
-        print("debug:", time.time())
         try:
             await reminders()
         except Exception as e:
-            print("Exceptionreminding:", e, e.args, traceback.format_exc())
+            print("Exception reminding:", e, e.args, traceback.format_exc())
         next_call += 10
         await asyncio.sleep(next_call - time.time())
 
@@ -112,12 +111,12 @@ async def on_message(message):
 
     #    if "dump" in message.content :
     #        await send(str(message)+ str(message.channel))
+    sentmessage = None
     if msg.startswith("#remind"):
         newreminder(str(message.channel.id), msg[7:])
         await send(str(message))
     elif msg.startswith("oracle"):
         if msg.startswith("oracle show"):
-            sentmessage = None
             try:
                 parameters = msg[12:].split(" ")
                 it = fengraph.chances(parameters[:-2], parameters[-2], parameters[-1])
@@ -128,7 +127,8 @@ async def on_message(message):
                     else:
                         await sentmessage.edit(message.author.mention,
                                                file=discord.File(n, 'graph.png'))
-            except:
+            except Exception as e:
+                print(e)
                 if sentmessage:
                     await sentmessage.delete(delay=3)
                 await send(message.author.mention + " <selectors> <modifier> <number of quantiles>")
@@ -144,7 +144,8 @@ async def on_message(message):
                     await sentmessage.edit(message.author.mention + "```" + n + "```")
                 else:
                     raise Exception("no values past the first")
-            except:
+            except Exception as e:
+                print(e)
                 if sentmessage:
                     await sentmessage.delete(delay=3)
                 await send(message.author.mention + " <selectors> <modifier>")
