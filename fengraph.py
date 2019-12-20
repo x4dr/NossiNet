@@ -196,8 +196,8 @@ def chances(selector, modifier=0, number_of_quantiles=None):
     yield "generating result..."
     max_val = max(list(occurrences.values()))
     total = sum(occurrences.values())
-    if number_of_quantiles is None or 1:
-        res = ", ".join([str(x) for x in selector]) + "@5" + (("R" + str(modifier)) if modifier else "")
+    if number_of_quantiles is None:
+        res = ", ".join([str(x) for x in selector]) + "@5" + (("R" + str(modifier)) if modifier else "")+"\n"
         for k in sorted(occurrences):
             if occurrences[k]:
                 res += f"{k:5d} {100 * occurrences[k] / total: >5.2f} {'#' * int(40 * occurrences[k] / max_val)}\n"
