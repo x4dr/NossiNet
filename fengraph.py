@@ -152,37 +152,11 @@ def select_modified(selector, series):
     return sum(series[s - 1] for s in selector if 0 < s < 6), series[-1]
 
 
-def calc_percentiles(cnts_dict, percentiles_to_calc=range(101)):
-    """Returns [(percentile, value)] with nearest rank percentiles.
-    Percentile 0: <min_value>, 100: <max_value>.
-    cnts_dict: { <value>: <count> }
-    percentiles_to_calc: iterable for percentiles to calculate; 0 <= ~ <= 100
-    """
-    assert all(0 <= p <= 100 for p in percentiles_to_calc)
-    percentiles = []
-    num = sum(cnts_dict.values())
-    cnts = sorted(cnts_dict.items())
-    curr_cnts_pos = 0  # current position in cnts
-    curr_pos = cnts[0][1]  # sum of freqs up to current_cnts_pos
-    for p in sorted(percentiles_to_calc):
-        if p < 100:
-            percentile_pos = p / 100.0 * num
-            while curr_pos <= percentile_pos and curr_cnts_pos < len(cnts):
-                curr_cnts_pos += 1
-                curr_pos += cnts[curr_cnts_pos][1]
-            percentiles.append((p, cnts[curr_cnts_pos][0]))
-        else:
-            percentiles.append((p, cnts[-1][0]))  # we could add a small value
-    return percentiles
-
-
 def helper(f, integratedsum, q, lastquant):
     def internalhelper(x):
         try:
-            result = quad(f,
-                          lastquant,
-                          x)[0]
-            return result - integratedsum * q
+            result = quad(f, lastquant, x, limit=200)
+            return result[0] - integratedsum * q
         except:
             print("errvals:", q, lastquant, x)
             raise
@@ -217,30 +191,29 @@ def chances(selector, modifier=0, number_of_quantiles=None):
                     occ[k] += v
                 occurren[mod] = occ
             f.write(str(tuple(selector)) + str(occurren) + "\n")
-        occurrences = occurren[mod]
+        occurrences = occurren[modifier]
         yield f"Data for {selector} has been generated"
     yield "generating result..."
     max_val = max(list(occurrences.values()))
     total = sum(occurrences.values())
-    if number_of_quantiles is None:
+    if number_of_quantiles is None or 1:
         res = ", ".join([str(x) for x in selector]) + "@5" + (("R" + str(modifier)) if modifier else "")
         for k in sorted(occurrences):
             if occurrences[k]:
                 res += f"{k:5d} {100 * occurrences[k] / total: >5.2f} {'#' * int(40 * occurrences[k] / max_val)}\n"
         yield res
-    else:
+    if number_of_quantiles is not None:
         yield "generating graph..."
         res = ""
-        fy = [.0] + [100 * x / total for x in occurrences.values()] + [0]
-        fx = [0] + sorted(list(occurrences.keys()))
-        fx.append(fx[-1] + 1)  # values going to 0
-        f = interp1d(fx, fy, kind=2)
+        fy = [x / total for x in occurrences.values()]
+        fx = sorted(list(occurrences.keys()))
+        f = interp1d(fx, fy, kind=2, bounds_error=False,fill_value=0)
         import matplotlib.pyplot as plt
         plt.figure()
-        plt.bar(range(1, len(occurrences.values()) + 1), [100 * x / total for x in occurrences.values()],
+        plt.bar(range(1, len(occurrences.values()) + 1), [1 * x / total for x in occurrences.values()],
                 facecolor='green', alpha=0.75, linewidth=1)
         linx = numpy.linspace(1, max(occurrences.keys()) + 1, max(occurrences.keys()) * 10)
-        integratedsum = 100
+        integratedsum = 1
         quantiles = [0]
         if number_of_quantiles:
             yield "calculating integrals"
@@ -251,12 +224,12 @@ def chances(selector, modifier=0, number_of_quantiles=None):
                     quantiles = [0]
                     for q in [1 / n for _ in range(n - 1)]:
                         quantiles.append(fsolve(func=helper(f, integratedsum, q, quantiles[-1]),
-                                                x0=numpy.array([quantiles[-1] or
-                                                                sorted(list(occurrences.keys()))[
-                                                                    len(occurrences) // 3]])))
+                                                x0=numpy.array([quantiles[-1]] if quantiles[-1]
+                                                               else 1)))
                     tries += 3
                 except Exception as e:
                     print("exception in calculating:", e, n)
+                    raise
                     yield "WARNING: RECALCULATING"
                     tries += 1
         yield "finalizing graph"
@@ -272,6 +245,7 @@ def chances(selector, modifier=0, number_of_quantiles=None):
         plt.ylabel("%")
         yield "sending data..."
         plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
+        plt.show()
         plt.close()
         buf.seek(0)
         yield buf

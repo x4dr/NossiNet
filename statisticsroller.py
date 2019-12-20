@@ -366,7 +366,10 @@ def target_hit_chance(sel):
 if __name__ == "__main__":
     import fengraph
 
-    for x in fengraph.chances([1, 2, 4, 5, 3], 0, 3):
+#oracle show 2 3 5 1 4 2 -3 4
+    for x in fengraph.chances([2,5,3,2,2,4], -3, 4):
+        print(x)
+    for x in fengraph.chances([2,5, 3,3,2,4], -3, 0):
         print(x)
     exit()
     pars = WoDParser()
