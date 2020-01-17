@@ -1,9 +1,6 @@
-import os
 import random
-from time import time
 
 from NossiPack.WoDParser import WoDParser
-from NossiSite.helpers import connect_db, init_db
 
 
 def d10bulk(amount, rep, difficulty=6):
@@ -25,90 +22,6 @@ def sumdict(inp):
     return result
 
 
-def gendicedata(amount, difficulty, minimumocc=20, maxrolls=10000000):
-    oldsuc = {}
-
-    def addpacked(a, b):
-        a = [int(x) for x in a.split(" ") if x]
-        b = [int(x) for x in b.split(" ") if x]
-        if len(a) > len(b):  # if not all values are present, they are incompatible, prefer longer
-            return " ".join([str(x) for x in a])
-        if len(b) > len(a):
-            return " ".join([str(x) for x in b])
-        return " ".join([str(a[x] + b[x]) for x in range(len(a))])
-
-    def writetodb(inp):
-        nonlocal amount, difficulty
-        db = connect_db()
-        init_db()
-        data = pack(inp)
-        try:
-            cur = db.execute('SELECT * '
-                             'FROM dice '
-                             'WHERE amount = ? AND difficulty = ?',
-                             (amount, difficulty))
-            existingdata = cur.fetchall()[0][2]
-            data = addpacked(data, existingdata)
-            db.execute("UPDATE dice "
-                       "SET data = ?"
-                       "WHERE amount = ? AND difficulty = ?",
-                       (data, amount, difficulty))
-
-            print("updated data for amount %d, difficulty %d: \t%s " % (amount, difficulty, data))
-        except Exception as inst:
-            print("no data found for amount %d, difficulty %d, inserted new " % (amount, difficulty))
-            db.execute("INSERT INTO dice (amount, difficulty, data)"
-                       "VALUES (?,?,?)", (amount, difficulty, data))
-        db.commit()  # for x in successes.keys():
-
-    def recheck(successes):
-        delta = 0
-        newsuc = {}
-        total = sumdict(successes)
-        nonlocal oldsuc
-
-        for e in range(len(successes)):
-            newsuc[e] = successes[e] / total
-        for e in range(len(newsuc)):
-            delta += abs(newsuc[e] - oldsuc.get(e, 0))  # normalizes large discrepancies
-        for e in range(len(successes)):
-            if successes[e] < minimumocc:  # want a few of each at least
-                delta += 1
-        oldsuc = newsuc
-
-        return delta
-
-    def pack(inp):
-        result = ""
-        for i in range(len(inp)):
-            result += str(inp[i]) + " "
-
-        return result
-
-    def getindex(x):
-        if x >= 0:
-            return x * 2
-        else:
-            return (-1) * x * 2 - 1
-
-    i = 0
-    successes = [0] * (amount * 2 + 1)
-    delta = 1
-
-    while delta > 0.1:
-        x = d10(amount, difficulty)
-        successes[getindex(x)] += 1
-        i += 1
-        if i % 10000 == 0:
-            delta = recheck(successes)
-            if i >= maxrolls:
-                break
-    print(successes)
-    print(i, "rolls ended with delta", delta)
-
-    writetodb(successes)
-
-
 def d10(amt, diff, ones=True):  # faster than the WoDDice
     succ = 0
     anti = 0
@@ -128,6 +41,7 @@ def d10(amt, diff, ones=True):  # faster than the WoDDice
                 return 0 - anti
     else:
         return succ
+
 
 '''
 time1 = time()

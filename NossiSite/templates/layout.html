@@ -29,9 +29,11 @@
             {% if not session.logged_in %}
                 <a class=metanav href="{{ url_for('login') }}">log in</a>
                 <a class=metanav href="{{ url_for('register') }}">register</a>
+                <a class=metanav href="{{ url_for('wiki_index') }}">wiki</a>
             {% else %}
                 {%- block metanav -%}
                 {%- endblock -%}
+                <a class=metanav href="{{ url_for('wiki_index') }}">WIKI</a>
                 <a class=metanav href="https://www.google.com/maps/d/viewer?mid=1TH6vryHyVxv_xFjFJDXgXQegZO4"
                    secret="{{ url_for('berlinmap') }}">MAP</a>  &nbsp
                 <a class=metanav href="{{ url_for('charsheet') }}">SHEET</a>  &nbsp

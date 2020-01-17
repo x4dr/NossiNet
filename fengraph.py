@@ -14,21 +14,26 @@ from scipy.optimize import fsolve
 
 
 def modify_dmg(specific_modifiers, dmgstring, damage_type, armor):
-    dmg = [int(x) for x in dmgstring.split("|") if x.strip()]
+    dmg = [[int(y) for y in x.split(";")] for x in dmgstring.split("|") if x.strip()]
     total_damage = 0
     effectivedmg = []
     for damage_instance in dmg:
-        if damage_type == "Stechen":
-            effectivedmg.append(0 if damage_instance <= armor else math.ceil(damage_instance / 2))
-        elif damage_type == "Schlagen":
-            effective_dmg = damage_instance - int(armor / 2)
+        if len(damage_instance) > 1:
+            effective_dmg = damage_instance[0] - max(0,armor-damage_instance[1])
             effectivedmg.append(effective_dmg if effective_dmg > 0 else 0)
-        elif damage_type == "Schneiden":
-            effective_dmg = damage_instance - armor
-            effectivedmg.append(effective_dmg + ceil(effective_dmg / 5) * 3 if effective_dmg > 0 else 0)
         else:
-            effective_dmg = damage_instance - armor
-            effectivedmg.append(effective_dmg if effective_dmg > 0 else 0)
+            damage_instance = damage_instance[0]
+            if damage_type == "Stechen":
+                effectivedmg.append(0 if damage_instance <= armor else math.ceil(damage_instance / 2))
+            elif damage_type == "Schlagen":
+                effective_dmg = damage_instance - int(armor / 2)
+                effectivedmg.append(effective_dmg if effective_dmg > 0 else 0)
+            elif damage_type == "Schneiden":
+                effective_dmg = damage_instance - armor
+                effectivedmg.append(effective_dmg + ceil(effective_dmg / 5) * 3 if effective_dmg > 0 else 0)
+            else:
+                effective_dmg = damage_instance - armor
+                effectivedmg.append(effective_dmg if effective_dmg > 0 else 0)
 
     # print(specific_modifiers, dmgstring, dmgtype, armor)
     for i, damage_instance in enumerate(effectivedmg):
@@ -197,7 +202,7 @@ def chances(selector, modifier=0, number_of_quantiles=None):
     max_val = max(list(occurrences.values()))
     total = sum(occurrences.values())
     if number_of_quantiles is None:
-        res = ", ".join([str(x) for x in selector]) + "@5" + (("R" + str(modifier)) if modifier else "")+"\n"
+        res = ", ".join([str(x) for x in selector]) + "@5" + (("R" + str(modifier)) if modifier else "") + "\n"
         for k in sorted(occurrences):
             if occurrences[k]:
                 res += f"{k:5d} {100 * occurrences[k] / total: >5.2f} {'#' * int(40 * occurrences[k] / max_val)}\n"
@@ -207,7 +212,7 @@ def chances(selector, modifier=0, number_of_quantiles=None):
         res = ""
         fy = [x / total for x in occurrences.values()]
         fx = sorted(list(occurrences.keys()))
-        f = interp1d(fx, fy, kind=2, bounds_error=False,fill_value=0)
+        f = interp1d(fx, fy, kind=2, bounds_error=False, fill_value=0)
         import matplotlib.pyplot as plt
         plt.figure()
         plt.bar(range(1, len(occurrences.values()) + 1), [1 * x / total for x in occurrences.values()],

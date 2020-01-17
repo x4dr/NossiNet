@@ -5,32 +5,11 @@ import time
 from itertools import combinations
 from math import ceil
 from typing import Tuple
-from generate_dmgmods import tuples, dice5, dice4, dice3, dice2, dice1, selector as selectorq
 
 import pydealer
 
 from NossiPack.WoDParser import WoDParser
-
-
-def d10(amt, diff, ones=True):  # faster than the WoDDice
-    succ = 0
-    anti = 0
-    for i in range(amt):
-        x = random.randint(1, 10)
-        if x >= diff:
-            succ += 1
-        if ones and x == 1:
-            anti += 1
-    if anti > 0:
-        if succ > anti:
-            return succ - anti
-        else:
-            if succ > 0:
-                return 0
-            else:
-                return 0 - anti
-    else:
-        return succ
+from NossiPack.krypta import d10
 
 
 def selector(sel, addon=""):
@@ -60,6 +39,7 @@ def plot(data, showsucc=False, showgraph=True, showdmgmods=False, grouped=1):
     total = sum([v for k, v in data.items()])
     pt = total / 100
     width = 1
+    highest = 0
     if showsucc:
         print("Of the %d rolls, %d where successes, %d where failures and %d where botches, averaging %.2f" % (
             total, success, zeros, botches, (sum([k * v for k, v in data.items()]) / total)))
@@ -95,19 +75,53 @@ def run_duel(a, b, c=None, d=None, duration=60):
     if c is None:
         c = a
     if d is None:
-        d = a
+        d = b
+
+    weapon1 = [0, 2, 3, 3, 4, 5, 5, 6, 7, 7, 8]  # shortsword
+    weapon2 = [0, 3, 3, 3, 3, 3, 3, 7, 7, 7, 7]  # hammer => blunt
     successes = collections.defaultdict(lambda: 0)
     i = 0
     time1 = time.time()
     while True:
         i += 1
-        delta = selector([a, b]) - selector([c, d])
-        delta = min(10, max(delta, 0))
-        successes[delta] += 1
-        if i % 10000 == 0:
+        lp1 = lp2 = 20
+        armor1 = armor2 = 0
+        shield1 = 0
+        shield2 = 0
+        stun = 0
+        while lp1 > 0 and lp2 > 0:
+            r1 = selector([a, b]) - stun
+            r2 = selector([c, d])
+            off1 = r1
+            off2 = r2
+            def1 = r1 + shield1
+            def2 = r2 + shield2
+            stun = 0
+            if off1 > def2:
+                delta = off1 - def2
+                dmg = weapon1[max(0, min(delta, 10))]  # shield does not add damage
+                dmg = max(dmg - armor2, 0)
+                lp2 -= dmg
+                # hack damage
+            if off2 > def1:
+                delta = off2 - def1
+                dmg = weapon2[max(0, min(delta, 10))]
+                stun = round(dmg / 2)
+                # blunt damage
+                dmg = max(dmg - round(armor1 / 2), 0)
+                lp1 -= dmg
+        if lp1 > lp2:
+            successes[0] += 1
+
+        if lp1 < lp2:
+            successes[1] += 1
+
+        if i % 10 == 0:
             if time.time() - time1 >= duration:
                 break
-    print("rolling %s against %s for %.1f seconds" % (str(a) + ", " + str(b), str(c) + ", " + str(d), duration))
+    print("rolling %s against %s for %.1f seconds" % (
+        str(a) + ", " + str(b), str(c) + ", " + str(d), time.time() - time1))
+    print(sum(successes.values()))
     return plot(dict(successes))
 
 
@@ -147,14 +161,14 @@ def run():
 def get_multiples(xs):
     ys = sorted(xs) + [None]
     m = []
-    run = 1
+    i = 1
     for n in range(1, len(ys)):
         if ys[n] == ys[n - 1]:
-            run += 1
+            i += 1
         else:
-            if run > 1:
-                m.append((ys[n - 1], run - 1))
-                run = 1
+            if i > 1:
+                m.append((ys[n - 1], i - 1))
+                i = 1
     return m
 
 
@@ -322,7 +336,6 @@ def crafting(effort: int, adverse: int, increase_every: int, stats: Tuple[int, i
 
 
 def run_craft(total: int, effort: int, adverse: int, increase_every: int, sel: Tuple[int, int], addon: str):
-    # run_craft(10, 10, 0, 1, (2, 3), "")
     rolls, levels = [], []
     for i in range(total):
         rol, lev = crafting(effort, adverse, increase_every, sel, addon)
@@ -340,44 +353,5 @@ def run_craft(total: int, effort: int, adverse: int, increase_every: int, sel: T
           sum([k * v for k, v in levels.items()]) / len(rolls))
 
 
-def target_hit_chance(sel):
-    t = {}
-    for die, freq1 in dice5.items():
-        r = selectorq(sel, die)
-        freq1 = freq1 / sum(dice5.values())
-        skew = dice5 if 18 < r else \
-            dice4 if 14 < r else \
-                dice3 if 12 < r else \
-                    dice2 if 8 < r else \
-                        dice1 if 4 < r else None
-        if skew is None:
-            t[0] = t.get(0, 0) + freq1 * 1  # always the outcome
-            continue
-        skewtotal = sum(skew.values())
-        for die2, freq2 in skew.items():
-            freq2 = freq2 / skewtotal
-            deviation = die2[-1]
-            t[deviation] = t.get(deviation, 0) + freq1 * freq2
-    print(sum(t.values()), sel)
-    plot(t)
-    return t
-
-
 if __name__ == "__main__":
-    import fengraph
-
-#oracle show 2 3 5 1 4 2 -3 4
-    for x in fengraph.chances([2,5,3,2,2,4], -3, 4):
-        print(x)
-    for x in fengraph.chances([2,5, 3,3,2,4], -3, 0):
-        print(x)
-    exit()
-    pars = WoDParser()
-    msg = "&loop 2,3@5r-1s 9&&loop 3,3@5r2s 2&"
-    r = pars.make_roll(msg)
-    if isinstance(pars.altrolls, list) and len(pars.altrolls) > 0:
-        print(msg + ":\n" + "\n".join(x.name + ": " + x.roll_v() for x in pars.altrolls))
-    if r is not None and pars.triggers.get("verbose", None):
-        print(msg + ":\n" + r.name + ": " + r.roll_vv(pars.triggers.get("verbose")))
-    elif r is not None:
-        print(msg + ":\n" + r.roll_v())
+    print(run_duel(2, 3, duration=5))
