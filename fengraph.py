@@ -52,7 +52,7 @@ def supply_graphdata():
         dmgraw = r.content.decode()
         print("loaded weapons.md via web, because", e, e.args)
     armormax = 14
-    dmgtypes = ["Hacken", "Stechen", "Schneiden", "Schlagen"]
+    dmgtypes = ["Hacken", "Stechen", "Schneiden", "Schlagen", "Stab"]
     weapons = {}
     for dmgsect in dmgraw.split("###"):
         if not dmgsect.strip():
