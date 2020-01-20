@@ -146,7 +146,7 @@ def editentries(x=None):
                 if retrieve:
                     title = retrieve['title']
                     text = retrieve['text']
-                    tags = retrieve['tags']
+                    tags = retrieve['tags'].split(" ")
                 else:
                     title, tags, text = wikiload(x)
                 entry = dict(author=author, id=ident, title=title, tags=" ".join(tags), text=text)
