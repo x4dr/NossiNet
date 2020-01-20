@@ -8,13 +8,14 @@ import bleach
 import markdown
 from flask import Response
 from markupsafe import Markup
+from werkzeug.security import gen_salt, generate_password_hash
 
 from NossiPack.FenCharacter import FenCharacter
 from NossiPack.User import Userlist, User
 from NossiPack.VampireCharacter import VampireCharacter
 from NossiSite import app
 from NossiSite.helpers import g, session, checktoken, request, redirect, url_for, \
-    render_template, flash, generate_password_hash, init_db, abort, wikiload, wikindex, wikisave, token_clear
+    render_template, flash, init_db, abort, wikiload, wikindex, wikisave, checklogin
 
 # from NossiPack.krypta import  sumdict, gendicedata
 
@@ -26,9 +27,7 @@ init_db()
 
 @app.route('/setfromsource/')
 def setfromsource():
-    if not session.get('logged_in'):
-        flash('You are not logged in!')
-        return redirect(url_for('login', r=request.url))
+    checklogin()
     source = request.args.get('source')
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
@@ -118,9 +117,7 @@ def wikipage(page=None, raw=None):
 
 @app.route('/edit/<x>', methods=["GET", "POST"])
 def editentries(x=None):
-    if not session.get('logged_in'):
-        flash('You are not logged in!')
-        return redirect(url_for('login', r=request.url))
+    checklogin()
     if request.method == "GET":
         if x == "all":
             cur = g.db.execute('SELECT author, title, text, id, tags '
@@ -145,7 +142,13 @@ def editentries(x=None):
             try:
                 author = ""
                 ident = x,
-                title, tags, text = wikiload(x)
+                retrieve = session.get("retrieve", None)
+                if retrieve:
+                    title = retrieve['title']
+                    text = retrieve['text']
+                    tags = retrieve['tags']
+                else:
+                    title, tags, text = wikiload(x)
                 entry = dict(author=author, id=ident, title=title, tags=" ".join(tags), text=text)
                 return render_template('edit_entry.html', mode="wiki", wiki=x, entry=entry)
             except FileNotFoundError:
@@ -159,6 +162,7 @@ def editentries(x=None):
             if request.form.get("wiki", None) is not None:
                 wikisave(request.form['wiki'].lower(), session.get('user'), request.form['title'],
                          request.form['tags'].split(" "), request.form['text'])
+                session.pop("retrieve")
                 return redirect(url_for("wikipage", page=request.form['wiki']))
 
             cur = g.db.execute('SELECT author, title, text, id, tags '
@@ -171,12 +175,13 @@ def editentries(x=None):
                              [request.form['title'], request.form['text'], request.form['tags'], request.form['id']])
                 print('UPDATE entries SET title=?, text=?, tags=? WHERE id == ?',
                       [request.form['title'], request.form['text'], request.form['tags'], request.form['id']])
-
+                session.pop("retrieve")
                 g.db.commit()
                 flash('entry was successfully edited')
             else:
                 flash("not authorized: " + session.get('user').upper() + "!=" + entry['author'].upper())
-
+        else:
+            flash("go back and try again")
         return redirect(url_for('show_entries'))
 
 
@@ -207,9 +212,7 @@ def tagsearch(tag):
 
 @app.route('/charactersheet/')
 def charsheet():
-    if not session.get('logged_in'):
-        flash('You are not logged in!')
-        return redirect(url_for('login', r=request.url))
+    checklogin()
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
     sheet = u.sheet.getdictrepr()
@@ -224,9 +227,7 @@ def charsheet():
 
 @app.route('/showsheet/<name>')
 def showsheet(name="None"):
-    if not session.get('logged_in'):
-        flash('You are not logged in!')
-        return redirect(url_for('login', r=request.url))
+    checklogin()
     if name == "None":
         return "error"
     name = name.upper()
@@ -243,9 +244,7 @@ def showsheet(name="None"):
 
 @app.route('/deletesheet/', methods=["POST"])
 def del_sheet():
-    if not session.get('logged_in'):
-        flash('You are not logged in!')
-        return redirect(url_for('login', r=request.url))
+    checklogin()
     x = int(request.form["sheetnum"])
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
@@ -257,9 +256,7 @@ def del_sheet():
 
 @app.route('/restoresheet/', methods=["POST"])
 def res_sheet():
-    if not session.get('logged_in'):
-        flash('You are not logged in!')
-        return redirect(url_for('login', r=request.url))
+    checklogin()
     x = int(request.form["sheetnum"])
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
@@ -298,9 +295,7 @@ def mapdata():
 
 @app.route('/oldsheets/')
 def menu_oldsheets():
-    if not session.get('logged_in'):
-        flash('You are not logged in!')
-        return redirect(url_for('login', r=request.url))
+    checklogin()
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
     oldsheets = []
@@ -316,9 +311,7 @@ def menu_oldsheets():
 
 @app.route('/showoldsheets/<x>')
 def showoldsheets(x):
-    if not session.get('logged_in'):
-        flash('You are not logged in!')
-        return redirect(url_for('login', r=request.url))
+    checklogin()
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
     try:
@@ -330,17 +323,13 @@ def showoldsheets(x):
 
 @app.route('/new_fen_sheet/', methods=['GET'])
 def new_fen_sheet():
-    if not session.get('logged_in'):
-        flash('You are not logged in!')
-        return redirect(url_for('login', r=request.url))
+    checklogin()
     return render_template('fensheet_editor_new.html', character=FenCharacter())
 
 
 @app.route('/new_vamp_sheet/', methods=['GET'])
 def new_vamp_sheet():
-    if not session.get('logged_in'):
-        flash('You are not logged in!')
-        return redirect(url_for('login', r=request.url))
+    checklogin()
     return render_template('vampsheet_editor.html', character=VampireCharacter())
 
 
@@ -413,9 +402,7 @@ def fen_calc(inputstring: str, costs=None, penalty=None):  # move into fen sheet
 @app.route('/modify_sheet/', methods=['GET', 'POST'])
 @app.route('/modify_sheet/<t>', methods=['GET', 'POST'])
 def modify_sheet(t=None):
-    if not session.get('logged_in'):
-        flash('You are not logged in!')
-        return redirect(url_for('login', r=request.url))
+    checklogin()
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
     if t is not None:
@@ -442,9 +429,7 @@ def modify_sheet(t=None):
 @app.route('/delete_entry/<ident>', methods=['POST'])
 def delete_entry(ident):
     if checktoken():
-        if not session.get('logged_in'):
-            flash('You are not logged in!')
-            return redirect(url_for('login', r=request.url))
+        checklogin()
         entry = {}
         cur = g.db.execute('SELECT author, title, text, id FROM entries WHERE id = ?', [ident])
         for row in cur.fetchall():  # SHOULD only run once
@@ -469,9 +454,7 @@ def delete_entry(ident):
 
 @app.route('/add', methods=['POST'])
 def add_entry():
-    if not session.get('logged_in'):
-        flash('You are not logged in!')
-        return redirect(url_for('login', r=request.url))
+    checklogin()
     print(session.get('user', '?'), "adding", request.form)
     if checktoken():
         g.db.execute('INSERT INTO entries (author, title, text, tags) VALUES (?, ?, ?, ?)',
@@ -549,18 +532,18 @@ def register():  # this is not clrs secure because it does not need to be
 
 
 @app.route('/login', methods=['GET', 'POST'])
-@app.route('/login', methods=['GET', 'POST'])
-def login():  # this is not clrs secure because it does not need to be
+def login():
     error = None
     returnto = request.args.get('r', None)
     if request.method == 'POST':
         ul = Userlist(preload=False, sheets=False)
         user = request.form['username']
         user = user.upper()
-        if not ul.valid(user, request.form.get('password',None)):
+        if not ul.valid(user, request.form.get('password', None)):
             error = 'invalid username/password combination'
         else:
             session['logged_in'] = True
+            session['print'] = gen_salt(32)
             session['user'] = user
             session['admin'] = (ul.loaduserbyname(session.get('user')).admin == "Administrator")
             flash('You were logged in')
@@ -576,7 +559,6 @@ def login():  # this is not clrs secure because it does not need to be
 @app.route('/logout')
 def logout():
     session.clear()
-    token_clear()
     flash('You were logged out')
     return redirect(url_for('show_entries'))
 
@@ -724,9 +706,7 @@ def send_msg(username):
 
     error = None
     if checktoken():
-        if not session.get('logged_in'):
-            flash('You are not logged in!')
-            return redirect(url_for('login', r=request.url))
+        checklogin()
         g.db.execute('INSERT INTO messages (author,recipient,title,text,value,lock)'
                      ' VALUES (?, ?, ?, ?, ?, ?)',  # 6
                      [session.get('user'),  # 1 -author
@@ -779,9 +759,7 @@ def unlock(ident):
 
 @app.route('/resetpassword/', methods=['GET', 'POST'])
 def resetpassword():
-    if not session.get('logged_in'):
-        flash('You are not logged in!')
-        return redirect(url_for('login', r=request.url))
+    checklogin()
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
     if request.method == 'POST':
@@ -810,9 +788,7 @@ def resetpassword():
 
 @app.route('/payout/', methods=['GET', 'POST'])
 def payout():
-    if not session.get('logged_in'):
-        flash('You are not logged in!')
-        return redirect(url_for('login', r=request.url))
+    checklogin()
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
     error = None
@@ -862,4 +838,3 @@ def chargen(a, b, c, abia, abib, abic, shuffle):
 @app.route('/favicon.ico')
 def favicon():
     return redirect("/static/favicon.ico")
-

@@ -1,23 +1,19 @@
-import re
-
+import logging
 import os
-import traceback
-
-from NossiSite import app
+import re
 import sqlite3
+import time
+import traceback
 from contextlib import closing
-# noinspection PyUnresolvedReferences
+
 from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash, send_from_directory, Response
-# noinspection PyUnresolvedReferences
 from jinja2 import Environment
-from werkzeug.security import generate_password_hash
-import time
-import logging
+
+from NossiSite import app
 
 log = logging.Logger("helperlogger")
 wikipath = "~/wiki/"
-token = {}
 
 
 def stream_template(template_name, **context):
@@ -90,8 +86,10 @@ def stream_file(f):
         o.close()
 
 
-def generate_token(seed):
-    return generate_password_hash(str(seed) + str(time.perf_counter()))
+def generate_token():
+    if not session['logged_in']:
+        raise Exception("Not Logged in.")
+    return session['print']  # only one token per session for now.
 
 
 def init_db():
@@ -116,7 +114,7 @@ def connect_db(source):
         if db:
             return db
     except:
-        pass # just connect normally
+        pass  # just connect normally
     print("connecting to", app.config['DATABASE'], "from", source)
     return sqlite3.connect(app.config['DATABASE'])
 
@@ -167,41 +165,27 @@ def updatewikitags():
 @app.context_processor
 def gettoken():
     gentoken()
-    global token
-    return dict(token=token.get(session.get('user', None), [''])[-1])
+    return dict(token=session.get("print",None))
 
-
-def token_clear():
-    global token
-    if session.get('user'):
-        token.pop(session['user'])
-    else:
-        print("logging out nonexistent user...")
-        print("still logged in are " + ", ".join(token.keys()) + ".")
 
 
 def gentoken():
-    global token
-    if session.get('user', False):
-        token[session['user']] = token.get(session['user'], [])[-2:] + [generate_token(session)]
-        print("generated:", token[session['user']])
-        return token[session['user']][-1]
-    else:
-        return ''
+    return session.get('print',None)
+
+
+def checklogin():
+    if not session.get('logged_in'):
+        flash('You are not logged in!')
+        raise Exception("REDIR", redirect(url_for('login', r=request.url)))
 
 
 def checktoken():
-    global token
-    ts = token.get(session.get('user', None), None)
-    ts = ts if ts else []
-    if request.form.get('token', "None") not in ts:
-        # so that None != "None" but a forged token with just "None" inside never matches
+    if request.form.get('token', "None") != session.get("print", None):
         flash("invalid token!")
-        print("Token received:" + request.form.get('token', "None") + " Tokens expected:",
-              token.get(session.get('user', None), "INVALID"))
+        session['retrieve'] = request.form
+        print(session)
         return False
     else:
-        token[session.get('user', '')].remove(request.form.get('token', "None"))
         return True
 
 
