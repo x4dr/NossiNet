@@ -162,7 +162,7 @@ def editentries(x=None):
             if request.form.get("wiki", None) is not None:
                 wikisave(request.form['wiki'].lower(), session.get('user'), request.form['title'],
                          request.form['tags'].split(" "), request.form['text'])
-                session["retrieve"]=None
+                session["retrieve"] = None
                 return redirect(url_for("wikipage", page=request.form['wiki']))
 
             cur = g.db.execute('SELECT author, title, text, id, tags '
@@ -175,7 +175,7 @@ def editentries(x=None):
                              [request.form['title'], request.form['text'], request.form['tags'], request.form['id']])
                 print('UPDATE entries SET title=?, text=?, tags=? WHERE id == ?',
                       [request.form['title'], request.form['text'], request.form['tags'], request.form['id']])
-                session.pop("retrieve")
+                session["retrieve"] = None
                 g.db.commit()
                 flash('entry was successfully edited')
             else:
