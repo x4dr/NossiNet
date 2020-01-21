@@ -145,11 +145,11 @@ async def on_message(message):
         await send(str(message))
     msg, comment = msg.split("//", 1) if "//" in msg else (msg, "")
     comment = (" " + comment.strip())
-    if msg.startswith("weapon"):
-        n = requests.get("http://nosferatu.vampir.es/"+"/".join(msg.split(":")+"/txt"))
+    if msg.startswith("weapon:"):
+        n = requests.get("http://nosferatu.vampir.es/" + "/".join(msg.split(":")) + "/txt")
         if n.status_code == 200:
             n = n.content.decode("utf-8")
-            await send(message.author.mention + comment + "```" + n + "```")
+            await send(message.author.mention + comment + "```" + msg + "\n" + n + "```")
         else:
             return
 
@@ -212,7 +212,7 @@ async def on_message(message):
             try:
                 await send(message.author.mention + comment + " " + msg + ":\n" + r.roll_v())
             except:
-                print("big oof during rolling ",r, msg)
+                print("big oof during rolling ", r, msg)
 
 
 # discord.on_message_edit(before, after)

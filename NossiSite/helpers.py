@@ -208,12 +208,12 @@ def weapontable(w, mods="", json=False):
         data = {k.lower(): v for k, v in data.items()}
         weapon = data.get(w.lower(), None)
         if weapon is None:
-            raise Exception(w.lower()+" does not exist in "+" ".join(data.keys()))
+            raise Exception(w.lower() + " does not exist in " + " ".join(data.keys()))
         for mod in mods.split(","):
             mod = mod.strip()
             if not mod:
                 continue
-            modregex = re.compile(r"^(?P<direction>[LR])(?P<sharp>X?)(?P<amount>\d+)(?P<apply>[HSCB]+)$")
+            modregex = re.compile(r"^(?P<direction>[LR])(?P<sharp>X?)(?P<amount>-?\d+)(?P<apply>[HSCB]+)$")
             match = modregex.match(mod)
             if not match:
                 raise Exception("Modifier Code " + mod + " does not match the format!")
@@ -230,9 +230,10 @@ def weapontable(w, mods="", json=False):
             amount = int(match["amount"])
             apply = match["apply"]
             addition = [0] * 12
-            while amount > 0:
-                amount -= 1
-                addition[pos] += 1
+            inc = 1 if amount > 0 else -1
+            while amount != 0:
+                amount -= inc
+                addition[pos] += inc
                 pos += direction
                 pos = 10 if pos == 0 else (1 if pos == 11 else pos)
 
@@ -249,7 +250,7 @@ def weapontable(w, mods="", json=False):
             return weapon
         else:
             return markdown.markdown(render_template("weapontable.html",
-                                                 data=weapon), extensions=["tables"])
+                                                     data=weapon), extensions=["tables"])
     except Exception as e:
         raise
         return '<div style="color: red"> WeaponCode Invalid: ' + " ".join(e.args) + ' </div>'
