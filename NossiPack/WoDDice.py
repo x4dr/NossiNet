@@ -20,7 +20,7 @@ class WoDDice(object):
             self.difficulty = info['difficulty']
             self.subone = info['onebehaviour']
             self.returnfun = info['return']
-            self.explodeon = self.max + 1 - info.get('explode', 0)
+            self.explodeon = self.max + 1 - info.get('explosion', 0)
             self.sort = info.get('sort')
             self.amount = info['amount']
             self.rerolls = int(info.get("rerolls", 0))  # only used for fenrolls
@@ -110,9 +110,10 @@ class WoDDice(object):
                     self.antisucc += 1
                     self.log += "subtract "
                 if self.r[-1] >= self.explodeon:
-                    amount += 1
                     self.log += "exploding!"
                 self.log += "\n"
+            if self.r[-1] >= self.explodeon:
+                amount += 1
             if i >= self.maxamount:
                 break
             i += 1

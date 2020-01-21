@@ -140,7 +140,7 @@ async def on_message(message):
     if msg.startswith("#remind"):
         newreminder(str(message.channel.id), msg[7:])
         await send(str(message))
-    msg, comment = msg.split(";", 1) if ";" in msg else (msg, "")
+    msg, comment = msg.split("//", 1) if "//" in msg else (msg, "")
     comment = (" " + comment.strip())
     if msg.startswith("oracle"):
         if msg.startswith("oracle show"):
@@ -183,14 +183,14 @@ async def on_message(message):
         msg = msg.strip()
         if msg == "+":
             msg = lastroll.get(message.author, "")
-        lastroll[message.author] = msg
         if msg.endswith("v"):
             msg = msg[:-1] + " &verbose&"
         p = WoDParser({})
         try:
             r = p.make_roll(msg)
-        except:
-            return
+        except Exception as e:
+            return " ".join(e.args)
+        lastroll[message.author] = msg
         if isinstance(p.altrolls, list) and len(p.altrolls) > 0:
             await send(message.author.mention + comment + " " + msg + ":\n" +
                        "\n".join(x.name + ": " + x.roll_v() for x in p.altrolls))
@@ -198,7 +198,10 @@ async def on_message(message):
             await send(message.author.mention + comment + " " + msg + ":\n" +
                        r.name + ": " + r.roll_vv(p.triggers.get("verbose")))
         else:
-            await send(message.author.mention + comment + " " + msg + ":\n" + r.roll_v())
+            try:
+                await send(message.author.mention + comment + " " + msg + ":\n" + r.roll_v())
+            except:
+                print("big oof during rolling ",r, msg)
 
 
 # discord.on_message_edit(before, after)

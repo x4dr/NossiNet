@@ -47,7 +47,7 @@ class TestWoDParser(TestCase):
         p = WoDParser({})
         print("parenthesisroll:", p.do_roll("4(3)(9(3))"))
         for r in p.altrolls[:-1]:
-            print("rollv:",r.roll_v())
+            print("rollv:", r.roll_v())
 
     def test_parseadd(self):
         p = WoDParser({})
@@ -67,8 +67,6 @@ class TestWoDParser(TestCase):
         p = WoDParser({})
         p.make_roll("&loop 7 2&;6;&loop 4 3&")
 
-
-
     def test_pretrigger(self):
         ##print("start pretrigger")
         p = WoDParser({"shoot": "dex fire", "dex": "Dexterity", "fire": "Firearms", "Dexterity": "3", "Firearms": "4",
@@ -86,6 +84,15 @@ class TestWoDParser(TestCase):
         self.assertEqual(
             [[y.roll for y in x] for x in [list(y.values()) for y in [x.dependent for x in r.dependent.values()]]],
             [[['e', 'f'], ['3'], ['1']]])
+
+    def test_explosion(self):
+        p = WoDParser()
+        for i in range(1000):
+            if len(p.make_roll("5!").r) > 5:
+                break
+
+
+        self.assertGreater(1000, i)
 
     def test_fullparenthesis(self):
         p = WoDParser({})
