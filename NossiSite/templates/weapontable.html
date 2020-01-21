@@ -1,0 +1,32 @@
+{% macro row(values, name) -%}
+    {% if values is not defined%}
+        {% set val = range(1,11) %}
+    {% endif -%} |
+    {%- for val in values -%}
+        {%- if loop.first -%}
+            {{ name }} |
+        {%- else -%}
+            {%- if not loop.last -%}
+                {%- for subdmg in val -%}
+                    {%- if subdmg == 0 -%}
+                        {%- set skip = 1  -%}
+                    {%- endif -%}
+                    {%- if skip is undefined -%}
+                        {%- if not loop.first -%}
+                        ;
+                        {%- endif -%}
+                             {{ subdmg }}
+                    {%- endif -%}
+                {%- endfor -%}
+                |
+            {%- endif -%}
+        {% endif %}
+    {%- endfor -%}
+{%- endmacro %}
+
+| Wert | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+{% for damagetype in data.keys() -%}
+{{ row(data[damagetype],damagetype) }}
+{% endfor %}
+

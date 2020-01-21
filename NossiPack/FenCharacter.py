@@ -10,12 +10,12 @@ class FenCharacter(object):
         self.Tags = ""
         self.Name = name
         self.Meta = meta
-        self.Categories = {"Stärke": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Zeit": {}},
-                           "Können": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Zeit": {}},
-                           "Magie": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Zeit": {}},
-                           "Weisheit": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Zeit": {}},
-                           "Charisma": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Zeit": {}},
-                           "Schicksal": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Zeit": {}}}
+        self.Categories = {"Stärke": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Fortschritt": {}},
+                           "Können": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Fortschritt": {}},
+                           "Magie": {"Quelle": {}, "Konzepte": {}, "Aspekte": {}, "Vorteile": {}, "Fortschritt": {}},
+                           "Weisheit": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Fortschritt": {}},
+                           "Charisma": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Fortschritt": {}},
+                           "Schicksal": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Fortschritt": {}}}
         self.Wounds = []
         self.Modifiers = {}
         self.Inventory = {}
@@ -25,9 +25,9 @@ class FenCharacter(object):
     @staticmethod
     def costs(cat, val):
         if cat == "Attribute":
-            return -20 if val < 2 else \
-                0 if val == 2 else \
-                    FenCharacter.costs(cat, val - 1) + (val - 2) * 20  # [-20, 0, 20, 60, 120],
+            return (-20 if val < 2 else
+                    0 if val == 2 else
+                    FenCharacter.costs(cat, val - 1) + (val - 2) * 20)  # [-20, 0, 20, 60, 120],
         elif cat == "Fähigkeiten":
             return 0 if val == 0 else \
                 FenCharacter.costs(cat, val - 1) + 5 * val  # [5, 15, 30, 50, 75],
@@ -62,7 +62,7 @@ class FenCharacter(object):
         return result
 
     def checksum(self):
-        return abs(self.allcosts())+1
+        return abs(self.allcosts()) + 1
 
     def unify(self):
         unified = {}
@@ -82,6 +82,8 @@ class FenCharacter(object):
         self.Name = title
         self.Tags = tags
         f = templatemd.split("\n")
+        for b in body.split("###"):
+            print("->",b[:100])
         for line in f:
             line = line.strip()
             if not line:

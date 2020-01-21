@@ -14,7 +14,6 @@ from scipy.optimize import fsolve
 
 
 def modify_dmg(specific_modifiers, dmgstring, damage_type, armor):
-    dmg = [[int(y) for y in x.split(";")] for x in dmgstring.split("|") if x.strip()]
     total_damage = 0
     effectivedmg = []
     for damage_instance in dmg:
@@ -42,43 +41,11 @@ def modify_dmg(specific_modifiers, dmgstring, damage_type, armor):
 
 
 def supply_graphdata():
-    try:
-        import os
-        with open(os.path.expanduser("~/wiki/weapons.md")) as f:
-            dmgraw = f.read()
-            print("successfully loaded", len(dmgraw), "weapons.md locally")
-    except Exception as e:
-        r = requests.get("http://nosferatu.vampir.es/wiki/weapons/raw")
-        dmgraw = r.content.decode()
-        print("loaded weapons.md via web, because", e, e.args)
-    armormax = 14
     dmgtypes = ["Hacken", "Stechen", "Schneiden", "Schlagen", "Stab"]
-    weapons = {}
-    for dmgsect in dmgraw.split("###"):
-        if not dmgsect.strip() or "[TOC]" in dmgsect:
-            continue
-
-        # if not all(x in dmgsect for x in ["Wert"] + dmgtypes):
-        #    continue
-        weapon = dmgsect[:dmgsect.find("\n")].strip()
-        weapons[weapon] = {}
-        for dmgline in dmgsect.split("\n"):
-            if "Wert" in dmgline or "---" in dmgline or len(dmgline) < 50:
-                continue
-            if "|" not in dmgline:
-                break
-            dmgtype = dmgline[dmgline.find("[") + 1:dmgline.find("]")].strip()
-            weapons[weapon][dmgtype] = dmgline[35:]
-        if "##" in dmgsect:
-            break
-
-    for weapon in weapons.keys():
-        for dt in dmgtypes:
-            weapons[weapon][dt] = weapons[weapon].get(dt, "")
-        print(weapon, weapons[weapon])
+    weapons = weapondata()
+    armormax = 14
     wmd5 = md5(str(weapons).encode("utf-8")).hexdigest()
     damages = {}
-    print(wmd5)
     try:
         with open("weaponstuff_internal") as f:
             nmd5 = f.readline()
@@ -150,6 +117,45 @@ def supply_graphdata():
     cmprjsn["max"] = math.ceil(maxdmg)
     with open("NossiSite/static/graphdata.json", "w") as f:
         f.write(json.dumps(cmprjsn))
+
+
+def weapondata():
+    try:
+        import os
+        with open(os.path.expanduser("~/wiki/weapons.md")) as f:
+            dmgraw = f.read()
+            print("successfully loaded", len(dmgraw), "weapons.md locally")
+    except Exception as e:
+        r = requests.get("http://nosferatu.vampir.es/wiki/weapons/raw")
+        dmgraw = r.content.decode()
+        print("loaded weapons.md via web, because", e, e.args)
+
+    weapons = {}
+    for dmgsect in dmgraw.split("###"):
+        if not dmgsect.strip() or "[TOC]" in dmgsect:
+            continue
+        weapon = dmgsect[:dmgsect.find("\n")].strip()
+        weapons[weapon] = {}
+        for dmgline in dmgsect.split("\n"):
+            if "Wert" in dmgline or "---" in dmgline or len(dmgline) < 50:
+                continue
+            if "|" not in dmgline:
+                break
+            dmgtype = dmgline[dmgline.find("[") + 1:dmgline.find("]")].strip()
+            weapons[weapon][dmgtype] = dmgline[35:]
+        if "##" in dmgsect:
+            break
+
+    dmgtypes = set()
+    for weapon in weapons.keys():
+        for dt in weapons[weapon].keys():
+            dmgtypes.add(dt)
+
+    for weapon in weapons.keys():
+        for dt in dmgtypes:
+            weapons[weapon][dt] = [[int(y) for y in x.split(";")] if x.strip() else [0]
+                                   for x in weapons[weapon].get(dt, "|"*11).split("|")]
+    return weapons
 
 
 def dataset(modifier):

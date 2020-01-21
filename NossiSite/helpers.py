@@ -6,11 +6,13 @@ import time
 import traceback
 from contextlib import closing
 
-from flask import Flask, request, session, g, redirect, url_for, \
-    abort, render_template, flash, send_from_directory, Response
+import markdown
+from flask import request, session, g, redirect, url_for, \
+    render_template, flash
 from jinja2 import Environment
 
 from NossiSite import app
+from fengraph import weapondata
 
 log = logging.Logger("helperlogger")
 wikipath = "~/wiki/"
@@ -132,16 +134,16 @@ def before_request():
 #    except:
 #        print("exception while printing before request")
 
-
-# @app.after_request
-# def after_request(x):
-#    try:
-#        print(x)
-#        print(request.remote_addr, " done ", request.path,
-#              ">", session.get('user', '?'), "<")
-#    except:
-#        print("exception while printing after request")
-#    return x
+"""
+@app.after_request
+def after_request(x):
+    return x
+    try:
+        print(request.remote_addr, " done ", request.path,
+              ">", session.get('user', '?'), "<")
+    except:
+        print("exception while printing after request")
+    return x"""
 
 
 @app.teardown_request
@@ -150,6 +152,8 @@ def teardown_request(exception: Exception):
     if db is not None:
         db.close()
     if exception:
+        if exception.args[0] == "REDIR":
+            return exception.args[1]
         print("exception caught by teardown:", exception, exception.args)
         traceback.print_exc()
 
@@ -165,12 +169,11 @@ def updatewikitags():
 @app.context_processor
 def gettoken():
     gentoken()
-    return dict(token=session.get("print",None))
-
+    return dict(token=session.get("print", None))
 
 
 def gentoken():
-    return session.get('print',None)
+    return session.get('print', None)
 
 
 def checklogin():
@@ -179,11 +182,89 @@ def checklogin():
         raise Exception("REDIR", redirect(url_for('login', r=request.url)))
 
 
+@app.errorhandler(Exception)
+def internal_error(error: Exception):
+    if error.args[0] == "REDIR":
+        return error.args[1]
+    else:
+        logging.exception("Unhandled internal error")
+    flash("internal error. sorry", category="error")
+    return render_template('show_entries.html'), 500
+
+
+def weaponadd(weapon_damage_array, b, ind=0):
+    if len(weapon_damage_array) != len(b):
+        raise Exception("Length mismatch!", weapon_damage_array, b)
+    c = []
+    for i in range(len(weapon_damage_array)):
+        c.append((weapon_damage_array[i] + [0, 0])[:2])
+        c[-1][ind] += b[i]
+    return c
+
+
+def weapontable(w, mods=""):
+    try:
+        data = weapondata()
+        data = {k.lower(): v for k, v in data.items()}
+        weapon = data.get(w.lower(), None)
+        for mod in mods.split(","):
+            if not mod:
+                continue
+            modregex = re.compile(r"^(?P<direction>[LR])(?P<sharp>X?)(?P<amount>\d+)(?P<apply>[HSCB]+)$")
+            match = modregex.match(mod)
+            if not match:
+                raise Exception("Modifier Code " + mod + " does not match the format!")
+            match = match.groupdict()
+            if match["direction"] == "L":
+                direction = -1
+                pos = 10
+            elif match["direction"] == "R":
+                direction = 1
+                pos = 1
+            else:
+                continue
+            sharp = 1 if match.get("sharp", None) else 0
+            amount = int(match["amount"])
+            apply = match["apply"]
+            addition = [0] * 12
+            while amount > 0:
+                amount -= 1
+                addition[pos] += 1
+                pos += direction
+                pos = 10 if pos == 0 else (1 if pos == 11 else pos)
+
+            for a in apply:
+                if a == "H":
+                    weapon["Hacken"] = weaponadd(weapon["Hacken"], addition, sharp)
+                if a == "S":
+                    weapon["Stechen"] = weaponadd(weapon["Stechen"], addition, sharp)
+                if a == "C":
+                    weapon["Schneiden"] = weaponadd(weapon["Schneiden"], addition, sharp)
+                if a == "B":
+                    weapon["Schlagen"] = weaponadd(weapon["Schlagen"], addition, sharp)
+        for k,v in weapon.items():
+            print(k)
+            for i,x in enumerate(v):
+                print(i,x)
+        return markdown.markdown(render_template("weapontable.html",
+                                                 data=weapon), extensions=["tables"])
+    except Exception as e:
+        raise
+        return '<div style="color: red"> WeaponCode Invalid: ' + " ".join(e.args) + ' </div>'
+
+
+def fillweapontables(body):
+    def gettable(match):
+        return weapontable(match.group(1), match.group(2))
+
+    regex = re.compile(r"\[\[Weapon:(.*?):(.*?)\]\]", re.IGNORECASE)
+    return regex.sub(gettable, body)
+
+
 def checktoken():
     if request.form.get('token', "None") != session.get("print", None):
         flash("invalid token!")
         session['retrieve'] = request.form
-        print(session)
         return False
     else:
         return True

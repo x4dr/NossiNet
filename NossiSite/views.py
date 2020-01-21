@@ -6,19 +6,19 @@ from typing import List, Tuple
 
 import bleach
 import markdown
-from flask import Response
+from flask import Response, abort
 from markupsafe import Markup
 from werkzeug.security import gen_salt, generate_password_hash
 
 from NossiPack.FenCharacter import FenCharacter
 from NossiPack.User import Userlist, User
 from NossiPack.VampireCharacter import VampireCharacter
-from NossiSite import app
+from NossiSite import app, helpers
 from NossiSite.helpers import g, session, checktoken, request, redirect, url_for, \
-    render_template, flash, init_db, abort, wikiload, wikindex, wikisave, checklogin
+    render_template, flash, init_db, wikiload, wikindex, wikisave, checklogin, fillweapontables
 
 # from NossiPack.krypta import  sumdict, gendicedata
-
+from fengraph import modify_dmg, weapondata
 
 bleach.ALLOWED_TAGS += ["br", "u", "p", "table", "th", "tr", "td", "tbody", "thead", "tfoot"]
 
@@ -110,6 +110,7 @@ def wikipage(page=None, raw=None):
         if raw != "raw":
             body = bleach.clean(body)
             body = Markup(markdown.markdown(body, extensions=["tables", "toc", "nl2br"]))
+            body = fillweapontables(body)
             return render_template("wikipage.html", title=title, tags=tags, body=body, wiki=page)
         else:
             return body
@@ -199,6 +200,11 @@ def fensheet(c):
     print(char.Categories)
     return render_template("fensheet.html", character=char)
 
+
+@app.route('/weapon/<w>')
+@app.route('/weapon/<w>/<mods>')
+def weapontable(w, mods=None):
+    return helpers.weapontable(w, mods)
 
 @app.route('/bytag/<tag>')
 def tagsearch(tag):
