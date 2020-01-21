@@ -203,7 +203,7 @@ def fensheet(c):
 
 @app.route('/weapon/<w>')
 @app.route('/weapon/<w>/<mods>')
-def weapontable(w, mods=None):
+def weapontable(w, mods=""):
     return helpers.weapontable(w, mods)
 
 @app.route('/bytag/<tag>')
