@@ -207,7 +207,7 @@ def weapontable(w, mods=""):
         data = weapondata()
         data = {k.lower(): v for k, v in data.items()}
         weapon = data.get(w.lower(), None)
-        if weapon is None
+        if weapon is None:
             raise Exception(w.lower()+" does not exist in "+" ".join(data.keys()))
         for mod in mods.split(","):
             if not mod:
