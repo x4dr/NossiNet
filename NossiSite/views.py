@@ -201,11 +201,12 @@ def fensheet(c):
     return render_template("fensheet.html", character=char)
 
 
-@app.route('/weapon/<w>'.encode('utf-8'))
-@app.route('/weapon/<w>/<mods>'.encode('utf-8'))
+@app.route('/weapon/<w>')
+@app.route('/weapon/<w>/<mods>')
 def weapontable(w, mods=""):
-
+    print("weapontable for",w)
     return helpers.weapontable(w, mods)
+
 
 @app.route('/bytag/<tag>')
 def tagsearch(tag):
