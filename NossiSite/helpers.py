@@ -198,7 +198,7 @@ def weaponadd(weapon_damage_array, b, ind=0):
     c = []
     for i in range(len(weapon_damage_array)):
         c.append((weapon_damage_array[i] + [0, 0])[:2])
-        c[-1][ind] += b[i]
+        c[-1][ind] = max(c[-1][ind] + b[i],0)
     return c
 
 
