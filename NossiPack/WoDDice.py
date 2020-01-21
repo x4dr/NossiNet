@@ -211,14 +211,14 @@ class WoDDice(object):
         self.log = log[:-2] + "= " + str(self.roll_max())
         return self.roll_max()
 
-    def roll_sum(self):  # returns sum nonverbose as int
+    def result_sum(self):  # returns sum nonverbose as int
         return sum(self.r)
 
-    def roll_vsum(self):  # returns sum verbose 
+    def result_vsum(self):  # returns sum verbose
         log = ""
         for n in self.r:
             log += str(n) + " + "
-        self.log = log[:-2] + "= " + str(self.roll_sum())
+        self.log = log[:-2] + "= " + str(self.result_sum())
 
     @property
     def result(self):

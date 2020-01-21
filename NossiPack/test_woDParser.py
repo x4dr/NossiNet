@@ -29,13 +29,13 @@ class TestWoDParser(TestCase):
 
         self.assertGreaterEqual(p.do_roll("3d10h"), 1)
         self.assertLessEqual(p.do_roll("3d10h"), 10)
-        print("altrolls[-1].roll_vv():\n" + p.altrolls[-1].roll_vv())
-        print("altrolls[-1].roll_v():\n" + p.altrolls[-1].roll_v())
-        print("do_roll:", p.do_roll("3d10h"))
+        ##print("altrolls[-1].roll_vv():\n" + p.altrolls[-1].roll_vv())
+        ##print("altrolls[-1].roll_v():\n" + p.altrolls[-1].roll_v())
+        ##print("do_roll:", p.do_roll("3d10h"))
 
     def test_parenthesis_roll(self):
         p = WoDParser({})
-        print("parenthesisroll:", p.do_roll("4(3)"))
+        ##print("parenthesisroll:", p.do_roll("4(3)"))
 
     def test_resolveroll(self):
         node = Node("a d1g")
@@ -47,7 +47,7 @@ class TestWoDParser(TestCase):
         p = WoDParser({})
         print("parenthesisroll:", p.do_roll("4(3)(9(3))"))
         for r in p.altrolls[:-1]:
-            print(r.roll_v())
+            print("rollv:",r.roll_v())
 
     def test_parseadd(self):
         p = WoDParser({})
@@ -70,14 +70,14 @@ class TestWoDParser(TestCase):
 
 
     def test_pretrigger(self):
-        print("start pretrigger")
+        ##print("start pretrigger")
         p = WoDParser({"shoot": "dex fire", "dex": "Dexterity", "fire": "Firearms", "Dexterity": "3", "Firearms": "4",
                        "gundamage": "4", "sum": "d1g"})
-        print("firstshoot")
-        print(p.do_roll("5 sum"))
-        print("firstshootdone")
+        ##print("firstshoot")
+        ##print(p.do_roll("5 sum"))
+        ##print("firstshootdone")
         r = p.do_roll("&param difficulty& &if shoot difficulty then gundamage $ -1 e6 else 0 done& sum ")
-        print(r, "\nend pretrigger")
+        ##print(r, "\nend pretrigger")
 
     def test_resolvedefine(self):
         p = WoDParser({"a": "b c d", "b": "e f", "c": "3", "d": "1", "e": "9", "f": "10"})
@@ -90,6 +90,5 @@ class TestWoDParser(TestCase):
     def test_fullparenthesis(self):
         p = WoDParser({})
         self.assertEqual(p.fullparenthesis("f______(-----((^^^^)~~~~~)---)___"), "-----((^^^^)~~~~~)---")
-
         with self.assertRaises(Exception):
             print(p.fullparenthesis("_____(######"))

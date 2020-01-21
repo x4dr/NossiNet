@@ -100,6 +100,8 @@ async def on_ready():
     print("ID:", client.user.id)
     print('------')
     asyncio.create_task(tick())
+    p = discord.Permissions(117824)
+    print(discord.utils.oauth_url(client.user.id, p))
 
 
 @client.event
@@ -120,7 +122,7 @@ async def on_message(message):
     send = message.channel.send
     if message.author == client.user:
         return
-    if str(message.channel) not in ["würfel", "dice", "remind"]:
+    if str(message.channel) not in ["würfel", "dice", "remind", "dice-rolls"]:
         return
     if message.channel not in active_channels:
         active_channels.append(message.channel)
@@ -162,19 +164,19 @@ async def on_message(message):
             try:
                 parameters = msg[7:].split(" ")
                 it = fengraph.chances(parameters[:-1], parameters[-1])
-                sentmessage = await send(message.author.mention +comment+ " " + next(it))
+                sentmessage = await send(message.author.mention + comment + " " + next(it))
                 n = ""
                 for n in it:
                     print("iterating:", n)
-                    await sentmessage.edit(content=message.author.mention+comment + " " + n)
+                    await sentmessage.edit(content=message.author.mention + comment + " " + n)
                 if n:
-                    await sentmessage.edit(content=message.author.mention +comment+ "```" + n + "```")
+                    await sentmessage.edit(content=message.author.mention + comment + "```" + n + "```")
                 else:
                     raise Exception("no values past the first")
             except Exception as e:
                 print("exception during oracle", e)
                 if sentmessage:
-                    await sentmessage.edit(content=message.author.mention+ " ERROR")
+                    await sentmessage.edit(content=message.author.mention + " ERROR")
                     await sentmessage.delete(delay=3)
                 await send(message.author.mention + " <selectors> <modifier>")
     else:
@@ -190,13 +192,13 @@ async def on_message(message):
         except:
             return
         if isinstance(p.altrolls, list) and len(p.altrolls) > 0:
-            await send(message.author.mention+comment + " " + msg + ":\n" +
+            await send(message.author.mention + comment + " " + msg + ":\n" +
                        "\n".join(x.name + ": " + x.roll_v() for x in p.altrolls))
         if p.triggers.get("verbose", None):
-            await send(message.author.mention+comment + " " + msg + ":\n" +
+            await send(message.author.mention + comment + " " + msg + ":\n" +
                        r.name + ": " + r.roll_vv(p.triggers.get("verbose")))
         else:
-            await send(message.author.mention+comment + " " + msg + ":\n" + r.roll_v())
+            await send(message.author.mention + comment + " " + msg + ":\n" + r.roll_v())
 
 
 # discord.on_message_edit(before, after)

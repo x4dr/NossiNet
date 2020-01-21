@@ -1,4 +1,5 @@
 import re
+from typing import List, Any
 
 from flask import json
 
@@ -6,11 +7,13 @@ from NossiPack.WoDDice import WoDDice
 
 
 class WoDParser(object):
+    altrolls: List[WoDDice]
+
     def __init__(self, defines=None):
         self.dbg = ""
         self.triggers = {}
         self.rights = []
-        self.defines = {"difficulty": 6, "onebehaviour": 1, "sides": 10, "return": None}  # WoDbasic
+        self.defines = {"difficulty": 6, "onebehaviour": 1, "sides": 10, "return": None, "standard_function":"threshhold"}  # WoDbasic
         self.defines.update(defines or {})
         self.altrolls = []  # if the last roll isnt interesting
 
@@ -60,22 +63,30 @@ class WoDParser(object):
         else:
             info.pop('difficulty', None)
         if info.pop("minimum", 0):
-            info['return'] = "minimum"
+            info['return'] = "min"
         if info.pop("maximum", 0):
-            info['return'] = "maximum"
+            info['return'] = "max"
         if info.pop("sum", 0):
             info['return'] = "sum"
         info['explosion'] = len(info.get('explosion', ""))
 
         return info
 
-    def do_roll(self, roll):
+    def do_roll(self, roll, default=None):
+        print("doing roll:" + roll)
         self.altrolls.append(self.make_roll(roll))
+
         if self.triggers.get("ignore", None) and self.altrolls[-1] is None:
-            return None
-        elif self.altrolls[-1] is None:
+            return 0
+        elif self.altrolls[-1] is None:  # #shouldneverhappen
             raise Exception("Diceroll is missing. Probably a bug. Tell Maric about the dicecode you used.")
         else:
+            default = self.defines.get("standard_function", None) if not default else default
+            if self.altrolls[-1].result is None:
+                if default:
+                    self.altrolls[-1].returnfun = default
+                else:
+                    raise Exception("No return function one of \"@efghl\" for \"" + roll+"\"")
             return self.altrolls[-1].result
 
     def make_roll(self, roll: str):
@@ -86,17 +97,19 @@ class WoDParser(object):
             roll = Node(roll)
             roll = self.resolveroll(roll)
             params = self.extract_diceparams(roll)
-            if not params: #no dice
+            if not params:  # no dice
                 return None
             fullparams = self.defines.copy()
             fullparams.update(params)
             v = WoDDice(fullparams)
             return v
         except Exception as e:
-            print("Exception during make roll:", e.args, e.__traceback__.tb_lineno, e.__traceback__.tb_frame.__repr__())
+            # print("Exception during make roll:", e.args, e.__traceback__.tb_lineno,
+            # e.__traceback__.tb_frame.__repr__())
             raise
 
     def resolveroll(self, roll):
+        # print("[WodParser:resolveroll]: "+str(roll))
         if isinstance(roll, str):
             return roll
         if roll.roll is None:
@@ -264,8 +277,8 @@ class WoDParser(object):
                 if triggername == "loop":
                     message = message.replace("&", "", 1)
                 elif triggername == "loopsum":
-                    print("message", message)
-                    message = message.replace("&", str(loopsum) + " d1g",1)
+                    print("loopsum message", message)
+                    message = message.replace("&", str(loopsum) + " d1g", 1)
             elif triggername == "values":
                 try:
                     trigger = str(re.sub(r" *: *", ":", trigger))
@@ -301,7 +314,6 @@ class WoDParser(object):
 
                 ifroller = WoDParser(self.defines.copy())
                 ifroll = ifroller.do_roll(ifbranch)
-
                 if ifroll > 0:
                     message = message.replace("&", "(" + thenbranch.replace("$", str(ifroll), 1) + ")", 1)
                 else:
@@ -373,3 +385,9 @@ class Node(object):
     @property
     def is_leaf(self):
         return len(self.dependent.keys()) == 0
+
+    def __repr__(self):
+        return str(self.depth) + "|" + str(self.message) + "|" + str(self.roll)
+
+    def __str__(self):
+        return self.__repr__()
