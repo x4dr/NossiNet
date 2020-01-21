@@ -242,10 +242,6 @@ def weapontable(w, mods=""):
                     weapon["Schneiden"] = weaponadd(weapon["Schneiden"], addition, sharp)
                 if a == "B":
                     weapon["Schlagen"] = weaponadd(weapon["Schlagen"], addition, sharp)
-        for k,v in weapon.items():
-            print(k)
-            for i,x in enumerate(v):
-                print(i,x)
         return markdown.markdown(render_template("weapontable.html",
                                                  data=weapon), extensions=["tables"])
     except Exception as e:
