@@ -246,6 +246,10 @@ def weapontable(w, mods="", json=False):
                     weapon["Schneiden"] = weaponadd(weapon["Schneiden"], addition, sharp)
                 if a == "B":
                     weapon["Schlagen"] = weaponadd(weapon["Schlagen"], addition, sharp)
+
+        for k in list(weapon.keys()):
+            if sum(sum(x for x in dmg) for dmg in weapon[k]) == 0:
+                weapon.pop(k)
         if json:
             return weapon
         else:
