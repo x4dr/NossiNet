@@ -213,7 +213,7 @@ def weapontable(w, mods=""):
     w = w.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
     weapon = helpers.weapontable(w, mods, format_json or format_txt)
     if format_txt:
-        result = ""
+        result = f"{'Wert': <11}" + "".join(f"{x: <4}" for x in range(1,11)) + "\n"
         for key in weapon.keys():
             weapon[key] = [x if (len(x) > 1 and x[1] > 0) else ([x[0]] if x[0] else "") for x in
                            weapon[key]]
