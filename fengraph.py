@@ -13,9 +13,10 @@ from scipy.interpolate import interp1d
 from scipy.optimize import fsolve
 
 
-def modify_dmg(specific_modifiers, dmgstring, damage_type, armor):
+def modify_dmg(specific_modifiers, dmg, damage_type, armor):
     total_damage = 0
     effectivedmg = []
+    dmg = dmg[1:-1]  # first and last should be 0
     for damage_instance in dmg:
         if len(damage_instance) > 1:
             effective_dmg = damage_instance[0] - max(0, armor - damage_instance[1])
@@ -154,7 +155,7 @@ def weapondata():
     for weapon in weapons.keys():
         for dt in dmgtypes:
             weapons[weapon][dt] = [[int(y) for y in x.split(";")] if x.strip() else [0]
-                                   for x in weapons[weapon].get(dt, "|"*11).split("|")]
+                                   for x in weapons[weapon].get(dt, "|" * 11).split("|")]
     return weapons
 
 
