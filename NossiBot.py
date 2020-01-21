@@ -3,6 +3,9 @@ import datetime
 import os
 import string
 import time
+
+import requests
+
 import fengraph
 import discord
 import random
@@ -142,6 +145,14 @@ async def on_message(message):
         await send(str(message))
     msg, comment = msg.split("//", 1) if "//" in msg else (msg, "")
     comment = (" " + comment.strip())
+    if msg.startswith("weapon"):
+        n = requests.get("http://nosferatu.vampir.es/"+"/".join(msg.split(":")+"/txt"))
+        if n.status_code == 200:
+            n = n.content.decode("utf-8")
+            await send(message.author.mention + comment + "```" + n + "```")
+        else:
+            return
+
     if msg.startswith("oracle"):
         if msg.startswith("oracle show"):
             try:

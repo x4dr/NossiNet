@@ -203,10 +203,21 @@ def fensheet(c):
 
 @app.route('/weapon/<w>')
 @app.route('/weapon/<w>/<mods>')
+@app.route('/weapon/<w>/json')
+@app.route('/weapon/<w>/<mods>/json')
+@app.route('/weapon/<w>/<mods>/txt')
+@app.route('/weapon/<w>/txt')
 def weapontable(w, mods=""):
+    format_json = request.url.endswith("/json")
+    format_txt = request.url.endswith("/txt")
     w = w.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
-    print("weapontable for", w)
-    return helpers.weapontable(w, mods)
+    weapon = helpers.weapontable(w, mods, format_json or format_txt)
+    if format_txt:
+        result = ""
+        for key in weapon.keys():
+            result += f"{key: <10} " + "".join(f"{';'.join(str(y) for y in x): <4}" for x in weapon[key][1:-1])+"\n"
+        return result
+    return weapon
 
 
 @app.route('/bytag/<tag>')

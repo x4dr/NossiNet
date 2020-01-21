@@ -202,7 +202,7 @@ def weaponadd(weapon_damage_array, b, ind=0):
     return c
 
 
-def weapontable(w, mods=""):
+def weapontable(w, mods="", json=False):
     try:
         data = weapondata()
         data = {k.lower(): v for k, v in data.items()}
@@ -210,6 +210,7 @@ def weapontable(w, mods=""):
         if weapon is None:
             raise Exception(w.lower()+" does not exist in "+" ".join(data.keys()))
         for mod in mods.split(","):
+            mod = mod.strip()
             if not mod:
                 continue
             modregex = re.compile(r"^(?P<direction>[LR])(?P<sharp>X?)(?P<amount>\d+)(?P<apply>[HSCB]+)$")
@@ -244,7 +245,10 @@ def weapontable(w, mods=""):
                     weapon["Schneiden"] = weaponadd(weapon["Schneiden"], addition, sharp)
                 if a == "B":
                     weapon["Schlagen"] = weaponadd(weapon["Schlagen"], addition, sharp)
-        return markdown.markdown(render_template("weapontable.html",
+        if json:
+            return weapon
+        else:
+            return markdown.markdown(render_template("weapontable.html",
                                                  data=weapon), extensions=["tables"])
     except Exception as e:
         raise
