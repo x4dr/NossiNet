@@ -19,7 +19,7 @@ def modify_dmg(specific_modifiers, dmgstring, damage_type, armor):
     effectivedmg = []
     for damage_instance in dmg:
         if len(damage_instance) > 1:
-            effective_dmg = damage_instance[0] - max(0,armor-damage_instance[1])
+            effective_dmg = damage_instance[0] - max(0, armor - damage_instance[1])
             effectivedmg.append(effective_dmg if effective_dmg > 0 else 0)
         else:
             damage_instance = damage_instance[0]
@@ -55,11 +55,11 @@ def supply_graphdata():
     dmgtypes = ["Hacken", "Stechen", "Schneiden", "Schlagen", "Stab"]
     weapons = {}
     for dmgsect in dmgraw.split("###"):
-        if not dmgsect.strip():
+        if not dmgsect.strip() or "[TOC]" in dmgsect:
             continue
 
-        if not all(x in dmgsect for x in ["Wert"] + dmgtypes):
-            continue
+        # if not all(x in dmgsect for x in ["Wert"] + dmgtypes):
+        #    continue
         weapon = dmgsect[:dmgsect.find("\n")].strip()
         weapons[weapon] = {}
         for dmgline in dmgsect.split("\n"):
@@ -72,6 +72,10 @@ def supply_graphdata():
         if "##" in dmgsect:
             break
 
+    for weapon in weapons.keys():
+        for dt in dmgtypes:
+            weapons[weapon][dt] = weapons[weapon].get(dt, "")
+        print(weapon, weapons[weapon])
     wmd5 = md5(str(weapons).encode("utf-8")).hexdigest()
     damages = {}
     print(wmd5)
@@ -130,6 +134,7 @@ def supply_graphdata():
         for defenderstat, damage in defender.items():
             cmprjsn[attackerstat][defenderstat] = []
             for per_armor in damage:
+                print(per_armor)
                 # noinspection PyTypeChecker
                 cmprjsn[attackerstat][defenderstat].append(list(
                     list(per_armor[weapon][damagetype]

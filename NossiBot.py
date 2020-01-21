@@ -21,6 +21,8 @@ description = '''NossiBot in Python'''
 print("selftest 1-100:", WoDParser({}).make_roll("1d100").roll_v())
 client = discord.Client()
 repeats = {}
+lastroll = {}
+active_channels = []
 
 
 async def reminders(clearjob=None):
@@ -101,73 +103,100 @@ async def on_ready():
 
 
 @client.event
+async def on_raw_message_edit(payload: discord.RawMessageUpdateEvent):
+    message = None
+    for ch in active_channels:
+        try:
+            message = await ch.fetch_message(payload.message_id)
+        except:
+            pass
+    if message is not None:
+        await on_message(message)
+
+
+@client.event
 async def on_message(message):
     msg = message.content
     send = message.channel.send
     if message.author == client.user:
         return
-    if str(message.channel) not in ["würfel", "dice"]:
+    if str(message.channel) not in ["würfel", "dice", "remind"]:
         return
-
+    if message.channel not in active_channels:
+        active_channels.append(message.channel)
+        print("new channel:", message.channel.name, "on", message.channel.guild.name)
     #    if "dump" in message.content :
     #        await send(str(message)+ str(message.channel))
     sentmessage = None
+    if "\n" in msg:
+        for m in msg.split("\n"):
+            n = message
+            n.content = m
+            await on_message(n)
+        return
+
     if msg.startswith("#remind"):
         newreminder(str(message.channel.id), msg[7:])
         await send(str(message))
-    elif msg.startswith("oracle"):
+    msg, comment = msg.split(";", 1) if ";" in msg else (msg, "")
+    comment = (" " + comment.strip())
+    if msg.startswith("oracle"):
         if msg.startswith("oracle show"):
             try:
                 parameters = msg[12:].split(" ")
                 it = fengraph.chances(parameters[:-2], parameters[-2], parameters[-1])
-                sentmessage = await send(message.author.mention + " " + next(it))
+                sentmessage = await send(message.author.mention + comment + " " + next(it))
                 for n in it:
                     if isinstance(n, str):
-                        await sentmessage.edit(content=message.author.mention + " " + n)
+                        await sentmessage.edit(content=message.author.mention + comment + " " + n)
                     else:
                         await sentmessage.delete(delay=0.1)
-                        await send(message.author.mention, file=discord.File(n, 'graph.png'))
+                        await send(message.author.mention + comment, file=discord.File(n, 'graph.png'))
             except Exception as e:
                 print("exception during oracle show", e)
                 if sentmessage:
                     await sentmessage.edit(content=message.author.mention + " ERROR")
                     await sentmessage.delete(delay=3)
-                raise
                 await send(message.author.mention + " <selectors> <modifier> <number of quantiles>")
         else:
             try:
                 parameters = msg[7:].split(" ")
                 it = fengraph.chances(parameters[:-1], parameters[-1])
-                sentmessage = await send(message.author.mention + " " + next(it))
+                sentmessage = await send(message.author.mention +comment+ " " + next(it))
                 n = ""
                 for n in it:
-                    print("iterating:",n)
-                    await sentmessage.edit(content=message.author.mention + " " + n)
+                    print("iterating:", n)
+                    await sentmessage.edit(content=message.author.mention+comment + " " + n)
                 if n:
-                    await sentmessage.edit(content=message.author.mention + "```" + n + "```")
+                    await sentmessage.edit(content=message.author.mention +comment+ "```" + n + "```")
                 else:
                     raise Exception("no values past the first")
             except Exception as e:
                 print("exception during oracle", e)
                 if sentmessage:
-                    await sentmessage.edit(content=message.author.mention + " ERROR")
+                    await sentmessage.edit(content=message.author.mention+ " ERROR")
                     await sentmessage.delete(delay=3)
-                raise
                 await send(message.author.mention + " <selectors> <modifier>")
     else:
         msg = msg.strip()
+        if msg == "+":
+            msg = lastroll.get(message.author, "")
+        lastroll[message.author] = msg
         if msg.endswith("v"):
             msg = msg[:-1] + " &verbose&"
         p = WoDParser({})
-        r = p.make_roll(msg)
+        try:
+            r = p.make_roll(msg)
+        except:
+            return
         if isinstance(p.altrolls, list) and len(p.altrolls) > 0:
-            await send(message.author.mention + " " + msg + ":\n" +
+            await send(message.author.mention+comment + " " + msg + ":\n" +
                        "\n".join(x.name + ": " + x.roll_v() for x in p.altrolls))
         if p.triggers.get("verbose", None):
-            await send(message.author.mention + " " + msg + ":\n" +
+            await send(message.author.mention+comment + " " + msg + ":\n" +
                        r.name + ": " + r.roll_vv(p.triggers.get("verbose")))
         else:
-            await send(message.author.mention + " " + msg + ":\n" + r.roll_v())
+            await send(message.author.mention+comment + " " + msg + ":\n" + r.roll_v())
 
 
 # discord.on_message_edit(before, after)
