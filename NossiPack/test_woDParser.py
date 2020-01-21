@@ -91,8 +91,13 @@ class TestWoDParser(TestCase):
             if len(p.make_roll("5!").r) > 5:
                 break
 
+    def test_selection(self):
+        p = WoDParser()
 
-        self.assertGreater(1000, i)
+        r = p.make_roll("99,99@20s!!")
+        print(r.roll_v())
+        if r.result != 20:
+            self.assertFalse(True)
 
     def test_fullparenthesis(self):
         p = WoDParser({})

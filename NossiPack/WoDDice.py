@@ -26,7 +26,7 @@ class WoDDice(object):
             self.rerolls = int(info.get("rerolls", 0))  # only used for fenrolls
             self.selectors = info.get("selectors", [])
             if "," in self.selectors:
-                self.selectors = [max(min(int(x), self.amount or 0), 0) for x in self.selectors.split(",")]
+                self.selectors = [int(x)  for x in self.selectors.split(",")]
             self.r = []
             self.log = ""
             self.dbg = ""
