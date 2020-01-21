@@ -204,7 +204,8 @@ def fensheet(c):
 @app.route('/weapon/<w>')
 @app.route('/weapon/<w>/<mods>')
 def weapontable(w, mods=""):
-    print("weapontable for",w)
+    w = w.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
+    print("weapontable for", w)
     return helpers.weapontable(w, mods)
 
 
