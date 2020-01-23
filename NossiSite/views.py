@@ -213,7 +213,36 @@ def weapontable(w, mods=""):
     w = w.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
     weapon = helpers.weapontable(w, mods, format_json or format_txt)
     if format_txt:
-        result = f"{'Wert': <11}" + "".join(f"{x: <4}" for x in range(1,11)) + "\n"
+        result = f"{'Wert': <11}" + "".join(f"{x: <4}" for x in range(1, 11)) + "\n"
+        for key in weapon.keys():
+            weapon[key] = [x if (len(x) > 1 and x[1] > 0) else ([x[0]] if x[0] else "") for x in
+                           weapon[key]]
+            result += f"{key: <10} " + "".join(f"{';'.join(str(y) for y in x): <4}" for x in weapon[key][1:-1]) + "\n"
+        return result
+    return weapon
+
+
+@app.route('/magicalweapon/<w>')
+@app.route('/magicalweapon/<w>/<par>')
+@app.route('/magicalweapon/<w>/json')
+@app.route('/magicalweapon/<w>/<par>/json')
+@app.route('/magicalweapon/<w>/<par>/txt')
+@app.route('/magicalweapon/<w>/txt')
+def magicweapons(w, par=None):
+    print("BEGIN WITH", w)
+    format_json = request.url.endswith("/json")
+    format_txt = request.url.endswith("/txt")
+    w = w.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
+    code = wikiload("magicweapons")[-1].upper()
+    if w.upper() in code:
+        code = code[code.find(w.upper()):]  # find the right headline
+        code = code[code.find("\n") + 1:]  # skip over the newline
+        code = code[:code.find("\n")]  # code should be on the next line
+    else:
+        raise Exception(w.upper(), "not foundin ", code)
+    weapon = helpers.magicalweapontable(code, par, format_json or format_txt)
+    if format_txt:
+        result = f"{'Wert': <11}" + "".join(f"{x: <4}" for x in range(1, 11)) + "\n"
         for key in weapon.keys():
             weapon[key] = [x if (len(x) > 1 and x[1] > 0) else ([x[0]] if x[0] else "") for x in
                            weapon[key]]

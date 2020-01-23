@@ -7,9 +7,9 @@ import traceback
 from contextlib import closing
 
 import markdown
+import numexpr
 from flask import request, session, g, redirect, url_for, \
     render_template, flash
-from jinja2 import Environment
 
 from NossiSite import app
 from fengraph import weapondata
@@ -198,8 +198,49 @@ def weaponadd(weapon_damage_array, b, ind=0):
     c = []
     for i in range(len(weapon_damage_array)):
         c.append((weapon_damage_array[i] + [0, 0])[:2])
-        c[-1][ind] = max(c[-1][ind] + b[i],0)
+        c[-1][ind] = max(c[-1][ind] + b[i], 0)
     return c
+
+
+def magicalweapontable(code: str, par=None, json=False):
+    calc = re.compile(r"<(?P<x>.*?)>")
+    code = code.strip()
+    for match in calc.findall(code):
+        code = code.replace(f"<{match}>", str(calculate(match, par)))
+    code = re.sub(r"^CODE\s+", "", code)
+    step = code.split(":")
+    if step[0].strip() == "WEAPON":
+        return weapontable(step[1], step[2], json)
+    else:
+        raise Exception("Dont know what do do with " + code)
+
+
+def calculate(calc, par):
+    loose_par = [None]
+    if par is None:
+        par = {}
+
+    else:
+        print(par)
+        loose_par += [x for x in par.split(",") if ":" not in x]
+        par = {x.upper(): y for x, y in [pair.split(":") for pair in par.split(",") if ":" in pair]}
+    for k, v in par.items():
+        calc = calc.replace(k, v)
+    missing = None
+    while len(loose_par) > 0:
+        try:
+            print("PAR:", par,loose_par)
+            res = numexpr.evaluate(calc, local_dict=par).item()
+            missing = None  # success
+            break
+        except KeyError as e:
+            missing = e
+            print("LOOSE:",loose_par)
+            par[e.args[0]] = int(loose_par.pop())  # try autofilling
+    if missing:
+        raise Exception("Parameter " + missing.args[0] + " is missing!")
+    print("calcing", calc, res)
+    return round(res)
 
 
 def weapontable(w, mods="", json=False):
