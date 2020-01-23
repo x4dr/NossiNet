@@ -88,10 +88,14 @@ def newreminder(channelid, message):
 
 
 async def oraclehandle(msg, comment, send, author):
+    msg = msg[6:].strip()
+    errreport = msg.startswith("?")
+    if errreport:
+        msg = msg[1:].strip()
     sentmessage = None
-    if msg.startswith("oracle show"):
+    if msg.startswith("show"):
         try:
-            parameters = msg[12:].split(" ")
+            parameters = msg[5:].split(" ")
             it = fengraph.chances(parameters[:-2], parameters[-2], parameters[-1])
             sentmessage = await send(author.mention + comment + " " + next(it))
             for n in it:
@@ -102,13 +106,15 @@ async def oraclehandle(msg, comment, send, author):
                     await send(author.mention + comment, file=discord.File(n, 'graph.png'))
         except Exception as e:
             print("exception during oracle show", e)
+            if errreport:
+                await author.send("oracle show error:" + " ".join(e.args))
             if sentmessage:
                 await sentmessage.edit(content=author.mention + " ERROR")
                 await sentmessage.delete(delay=3)
             await send(author.mention + " <selectors> <modifier> <number of quantiles>")
     else:
         try:
-            parameters = msg[7:].split(" ")
+            parameters = msg.split(" ")
             it = fengraph.chances(parameters[:-1], parameters[-1])
             sentmessage = await send(author.mention + comment + " " + next(it))
             n = ""
@@ -124,11 +130,17 @@ async def oraclehandle(msg, comment, send, author):
             if sentmessage:
                 await sentmessage.edit(content=author.mention + " ERROR")
                 await sentmessage.delete(delay=3)
+            if errreport:
+                await author.send("Oracle error: " + " ".join(str(x) for x in e.args))
             await send(author.mention + " <selectors> <modifier>")
 
 
 async def rollhandle(msg, comment, send, author):
+    errreport = msg.startswith("?")
+    if errreport:
+        msg = msg[1:]
     msg = msg.strip()
+
     if msg == "+":
         msg = lastroll.get(author, "")
     if msg.endswith("v"):
@@ -137,7 +149,9 @@ async def rollhandle(msg, comment, send, author):
     try:
         r = p.make_roll(msg)
     except Exception as e:
-        return " ".join(e.args)
+        if errreport:  # query for error
+            await author.send(" ".join(e.args))
+        return
     lastroll[author] = msg
     if isinstance(p.altrolls, list) and len(p.altrolls) > 0:
         await send(author.mention + comment + " " + msg + ":\n" +
@@ -148,8 +162,44 @@ async def rollhandle(msg, comment, send, author):
     else:
         try:
             await send(author.mention + comment + " " + msg + ":\n" + r.roll_v())
-        except:
-            print("big oof during rolling ", r, msg)
+        except Exception as e:
+            if errreport:  # query for error
+                await author.send("big oof during rolling ", r, msg, " ".join(e.args))
+            print("big oof during rolling ", r, msg, " ".join(e.args))
+
+
+async def weaponhandle(msg, comment, send, author):
+    n = requests.get("http://nosferatu.vampir.es/" + "/".join(msg.split(":", 2)) + "/txt")
+    if n.status_code == 200:
+        n = n.content.decode("utf-8")
+        await send(author.mention + comment + "```" + msg + "\n" + n + "```")
+    else:
+        print("failed request:", n.status_code, n.url, n.content[:100])
+        return
+
+
+async def handle_defines(msg, send, message):
+    try:
+        defines = persist[message.author.name + "#" + message.author.discriminator + ":defines"]
+    except KeyError:
+        defines = {}
+    if msg.startswith("def") and "=" in msg:
+        msg = msg[3:].strip()
+        define, value = [x.strip() for x in msg.split("=", 1)]
+        defines[define] = value
+        persist[message.author.name + "#" + message.author.discriminator + ":defines"] = defines
+        await message.add_reaction('\N{THUMBS UP SIGN}')
+    else:
+        oldmsg = ""
+        counter = 0
+        while oldmsg != msg:
+            oldmsg = msg
+            counter += 1
+            if counter > 1000:
+                await send("... i think i have some issues with the defines.\n" + msg[:1000])
+            for k, v in defines.items():
+                msg = msg.replace(k, v)
+    return msg
 
 
 async def tick():
@@ -180,15 +230,15 @@ async def on_raw_message_edit(payload: discord.RawMessageUpdateEvent):
     for ch in active_channels:
         try:
             message = await ch.fetch_message(payload.message_id)
-        except:
+        except:  # not found here
             pass
     if message is not None:
         await on_message(message)
 
 
 @client.event
-async def on_message(message):
-    msg = message.content
+async def on_message(message: discord.Message):
+    msg: str = message.content
     send = message.channel.send
     if message.author == client.user:
         return
@@ -204,10 +254,12 @@ async def on_message(message):
             await send("I have been invoked and shall do my duties here until BANISHed.")
 
     if message.channel.id not in persist["allowed_rooms"]:
-        return
+        if isinstance(message.channel, discord.TextChannel):  # skip nonallowed textchannels
+            return  # all other channels should be ok as long as the bot can read it
     if message.channel not in active_channels:
         active_channels.append(message.channel)
-        print("new channel:", message.channel.name, "on", message.channel.guild.name)
+        if isinstance(message.channel, discord.TextChannel):
+            print("new channel:", message.channel.name, "on", message.channel.guild.name)
     if "\n" in msg:
         for m in msg.split("\n"):
             n = message
@@ -220,23 +272,10 @@ async def on_message(message):
         await send(str(message))
     msg, comment = msg.split("//", 1) if "//" in msg else (msg, "")
     comment = (" " + comment.strip())
-    if msg.startswith("weapon:"):
-        n = requests.get("http://nosferatu.vampir.es/" + "/".join(msg.split(":")) + "/txt")
-        if n.status_code == 200:
-            n = n.content.decode("utf-8")
-            await send(message.author.mention + comment + "```" + msg + "\n" + n + "```")
-        else:
-            print("failed request:", n.status_code, n.url, n.content[:100])
-            return
-    elif msg.startswith("magicalweapon:"):
-        n = requests.get("http://nosferatu.vampir.es/" + "/".join(msg.split(":", maxsplit=2)) + "/txt")
-        if n.status_code == 200:
-            n = n.content.decode("utf-8")
-            await send(message.author.mention + comment + "```" + msg + "\n" + n + "```")
-        else:
-            print("failed request:", n.status_code, n.url, n.content[:100])
-            return
+    msg = await handle_defines(msg, send, message)
 
+    if msg.startswith("weapon:") or msg.startswith("magicalweapon"):
+        await weaponhandle(msg, comment, send, message.author)
     elif msg.startswith("oracle"):
         await oraclehandle(msg, comment, send, message.author)
     else:

@@ -183,6 +183,8 @@ def helper(f, integratedsum, q, lastquant):
 
 def chances(selector, modifier=0, number_of_quantiles=None):
     selector = tuple(sorted(int(x) for x in selector if 0 < int(x) < 6))
+    if not selector:
+        raise Exception("No Selectors!")
     modifier = int(modifier)
     occurrences = {}
     yield "processing..."
