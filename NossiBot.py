@@ -198,7 +198,7 @@ async def on_message(message):
             await send("I will no longer listen here.")
         elif "INVOKE" in msg:
             try:
-                persist["allowed_rooms"] = persist["allowed_rooms"]|{message.channel.id}
+                persist["allowed_rooms"] = persist["allowed_rooms"] | {message.channel.id}
             except KeyError:
                 persist["allowed_rooms"] = {message.channel.id}
             await send("I have been invoked and shall do my duties here until BANISHed.")
@@ -226,6 +226,7 @@ async def on_message(message):
             n = n.content.decode("utf-8")
             await send(message.author.mention + comment + "```" + msg + "\n" + n + "```")
         else:
+            print("failed request:", n.status_code, n.url, n.content[:100])
             return
     elif msg.startswith("magicalweapon:"):
         n = requests.get("http://nosferatu.vampir.es/" + "/".join(msg.split(":", maxsplit=2)) + "/txt")
@@ -233,7 +234,9 @@ async def on_message(message):
             n = n.content.decode("utf-8")
             await send(message.author.mention + comment + "```" + msg + "\n" + n + "```")
         else:
+            print("failed request:", n.status_code, n.url, n.content[:100])
             return
+
     elif msg.startswith("oracle"):
         await oraclehandle(msg, comment, send, message.author)
     else:
