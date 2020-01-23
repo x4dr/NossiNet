@@ -268,7 +268,8 @@ async def on_message(message: discord.Message):
         if msg.strip() == "help":
             with open("nossibot_help.txt") as f:
                 helpmsg = f.read()
-                await message.author.send(helpmsg)
+                for replypart in [helpmsg[i:i + 1950] for i in range(0, len(helpmsg), 1950)]:
+                    await message.author.send(replypart)
         if not isinstance(message.channel, discord.DMChannel):
             if "BANISH" in msg:
                 persist["allowed_rooms"].remove(message.channel.id)
