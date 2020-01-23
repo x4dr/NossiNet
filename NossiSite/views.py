@@ -233,7 +233,7 @@ def magicweapons(w, par=None):
     format_json = request.url.endswith("/json")
     format_txt = request.url.endswith("/txt")
     w = w.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
-    code = wikiload("magicweapons")[-1].upper()
+    code = wikiload("magicalweapons")[-1].upper()
     if w.upper() in code:
         code = code[code.find(w.upper()):]  # find the right headline
         code = code[code.find("\n") + 1:]  # skip over the newline

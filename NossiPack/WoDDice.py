@@ -26,7 +26,7 @@ class WoDDice(object):
             self.rerolls = int(info.get("rerolls", 0))  # only used for fenrolls
             self.selectors = info.get("selectors", [])
             if "," in self.selectors:
-                self.selectors = [int(x)  for x in self.selectors.split(",")]
+                self.selectors = [int(x) for x in self.selectors.split(",")]
             self.r = []
             self.log = ""
             self.dbg = ""
@@ -100,8 +100,8 @@ class WoDDice(object):
                 break
             else:
                 self.r.append(random.randint(self.min, self.max))
-            if self.returnfun == "threshhold":
                 self.log += str(self.r[-1])
+            if self.returnfun == "threshhold":
                 self.log += ": "
                 if self.r[-1] >= self.difficulty:  # last die face >= than the difficulty
                     self.succ += 1
@@ -112,11 +112,15 @@ class WoDDice(object):
                 if self.r[-1] >= self.explodeon:
                     self.log += "exploding!"
                 self.log += "\n"
+            else:
+                self.log += ", "
             if self.r[-1] >= self.explodeon:
                 amount += 1
             if i >= self.maxamount:
                 break
             i += 1
+        if self.log.endswith(", "):
+            self.log = self.log[:-2]
 
         if self.rerolls:
             direction = int(self.rerolls / abs(self.rerolls))
@@ -191,6 +195,7 @@ class WoDDice(object):
             slices = (str_to_slice(x) for x in logslice.split(";"))
             loglines = log.split("\n")
             log = "\n".join("\n".join(loglines[s]) for s in slices)
+
         res = self.result
         if res is not None:
             log += " ==> " + str(res)

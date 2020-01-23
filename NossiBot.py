@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import os
+import re
 import shelve
 import string
 import time
@@ -157,6 +158,8 @@ async def rollhandle(msg, comment, send, author):
         await send(author.mention + comment + " " + msg + ":\n" +
                    "\n".join(x.name + ": " + x.roll_v() for x in p.altrolls))
     if p.triggers.get("verbose", None):
+        if r is None:
+            print(msg, "lead to noneroll!")
         await send(author.mention + comment + " " + msg + ":\n" +
                    r.name + ": " + r.roll_vv(p.triggers.get("verbose")))
     else:
@@ -185,10 +188,28 @@ async def handle_defines(msg, send, message):
         defines = {}
     if msg.startswith("def") and "=" in msg:
         msg = msg[3:].strip()
+        q = re.compile("^=\s*?")
+        if q.match(msg):
+            msg = q.sub(msg, "").strip()
+            if not msg:
+                defstring = "defines are:\n"
+                for k, v in defines.items():
+                    defstring += "def " + k + " = " + v + "\n"
+                for replypart in [defstring[i:i + 1950] for i in range(0, len(defstring), 1950)]:
+                    await message.author.send(replypart)
+                return None
         define, value = [x.strip() for x in msg.split("=", 1)]
         defines[define] = value
         persist[message.author.name + "#" + message.author.discriminator + ":defines"] = defines
         await message.add_reaction('\N{THUMBS UP SIGN}')
+        msg = None
+    elif msg.startswith("undef "):
+        msg = msg[6:]
+        if msg.strip() in defines.keys():
+            del defines[msg]
+            persist[message.author.name + "#" + message.author.discriminator + ":defines"] = defines
+            await message.add_reaction('\N{THUMBS UP SIGN}')
+        msg = None
     else:
         oldmsg = ""
         counter = 0
@@ -198,7 +219,8 @@ async def handle_defines(msg, send, message):
             if counter > 1000:
                 await send("... i think i have some issues with the defines.\n" + msg[:1000])
             for k, v in defines.items():
-                msg = msg.replace(k, v)
+                pat = r"\b" + re.escape(k) + r"\b"
+                msg = re.sub(pat, v, msg)
     return msg
 
 
@@ -242,16 +264,23 @@ async def on_message(message: discord.Message):
     send = message.channel.send
     if message.author == client.user:
         return
-    if msg.startswith("NossiBotNossiBotNossiBot"):
-        if "BANISH" in msg:
-            persist["allowed_rooms"].remove(message.channel.id)
-            await send("I will no longer listen here.")
-        elif "INVOKE" in msg:
-            try:
-                persist["allowed_rooms"] = persist["allowed_rooms"] | {message.channel.id}
-            except KeyError:
-                persist["allowed_rooms"] = {message.channel.id}
-            await send("I have been invoked and shall do my duties here until BANISHed.")
+    if msg.startswith("NossiBot") or isinstance(message.channel, discord.DMChannel):
+        if msg.strip() == "help":
+            with open("nossibot_help.txt") as f:
+                helpmsg = f.read()
+                await message.author.send(helpmsg)
+        if not isinstance(message.channel, discord.DMChannel):
+            if "BANISH" in msg:
+                persist["allowed_rooms"].remove(message.channel.id)
+                await send("I will no longer listen here.")
+                return
+            elif "INVOKE" in msg:
+                try:
+                    persist["allowed_rooms"] = persist["allowed_rooms"] | {message.channel.id}
+                except KeyError:
+                    persist["allowed_rooms"] = {message.channel.id}
+                await send("I have been invoked and shall do my duties here until BANISHed.")
+                return
 
     if message.channel.id not in persist["allowed_rooms"]:
         if isinstance(message.channel, discord.TextChannel):  # skip nonallowed textchannels
@@ -273,8 +302,9 @@ async def on_message(message: discord.Message):
     msg, comment = msg.split("//", 1) if "//" in msg else (msg, "")
     comment = (" " + comment.strip())
     msg = await handle_defines(msg, send, message)
-
-    if msg.startswith("weapon:") or msg.startswith("magicalweapon"):
+    if not msg:
+        return
+    if msg.startswith("weapon:") or msg.startswith("magicalweapon:"):
         await weaponhandle(msg, comment, send, message.author)
     elif msg.startswith("oracle"):
         await oraclehandle(msg, comment, send, message.author)
