@@ -198,7 +198,7 @@ async def on_message(message):
             await send("I will no longer listen here.")
         elif "INVOKE" in msg:
             try:
-                persist["allowed_rooms"] = persist["allowed_rooms"].add(message.channel.id)
+                persist["allowed_rooms"] = persist["allowed_rooms"]|{message.channel.id}
             except KeyError:
                 persist["allowed_rooms"] = {message.channel.id}
             await send("I have been invoked and shall do my duties here until BANISHed.")
