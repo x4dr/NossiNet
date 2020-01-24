@@ -123,6 +123,7 @@ class WoDDice(object):
             self.log = self.log[:-2]
 
         if self.rerolls:
+            self.log = ""
             direction = int(self.rerolls / abs(self.rerolls))
             filtered = []
             reroll = self.rerolls
@@ -159,6 +160,7 @@ class WoDDice(object):
                 self.r.remove(sel)
         else:
             if self.sort:
+                self.log = ""
                 self.r = sorted(self.r)
                 self.log += ", ".join(str(x) for x in self.r)
 
