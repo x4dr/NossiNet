@@ -337,7 +337,7 @@ def fill_infolets(body):
         for seek in a[1:]:
             article = traverse_md(article, seek)
         if not article:
-            article = "not found"
+            article = "[[not found]]"
         return markdown.markdown(bleach.clean(article, tags=bleach_ok_list), extensions=["tables", "toc", "nl2br"])
 
     weapons = re.compile(r"\[\[weapon:(.*?):(.*?)\]\]", re.IGNORECASE)
