@@ -15,7 +15,7 @@ from NossiPack.User import Userlist, User
 from NossiPack.VampireCharacter import VampireCharacter
 from NossiSite import app, helpers
 from NossiSite.helpers import g, session, checktoken, request, redirect, url_for, \
-    render_template, flash, init_db, wikiload, wikindex, wikisave, checklogin, fillweapontables, traverse_md
+    render_template, flash, init_db, wikiload, wikindex, wikisave, checklogin, fill_infolets, traverse_md
 
 bleach.ALLOWED_TAGS += ["br", "u", "p", "table", "th", "tr", "td", "tbody", "thead", "tfoot"]
 
@@ -107,7 +107,7 @@ def wikipage(page=None, raw=None):
         if raw != "raw":
             body = bleach.clean(body)
             body = Markup(markdown.markdown(body, extensions=["tables", "toc", "nl2br"]))
-            body = fillweapontables(body)
+            body = fill_infolets(body)
             return render_template("wikipage.html", title=title, tags=tags, body=body, wiki=page)
         else:
             return body

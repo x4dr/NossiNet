@@ -1,3 +1,4 @@
+import decimal
 import logging
 import os
 import re
@@ -5,9 +6,9 @@ import sqlite3
 import time
 import traceback
 from contextlib import closing
-import decimal
-from typing import Tuple
+from typing import Tuple, List
 
+import bleach
 import markdown
 import numexpr
 from flask import request, session, g, redirect, url_for, \
@@ -78,7 +79,7 @@ def traverse_md(md: str, seek: str) -> str:
     return result
 
 
-def wikiload(page: str) -> Tuple[str, str, str]:
+def wikiload(page: str) -> Tuple[str, List[str], str]:
     with open(os.path.expanduser(wikipath + page + ".md")) as f:
         mode = "meta"
         title = ""
@@ -319,16 +320,30 @@ def weapontable(w, mods="", json=False):
             return markdown.markdown(render_template("weapontable.html",
                                                      data=weapon), extensions=["tables"])
     except Exception as e:
-        raise
         return '<div style="color: red"> WeaponCode Invalid: ' + " ".join(e.args) + ' </div>'
 
 
-def fillweapontables(body):
+def fill_infolets(body):
+    bleach_ok_list = ["br", "u", "p", "table", "th", "tr", "td",
+                      "tbody", "thead", "tfoot", "h2", "h3", "h4", "h5", "h6",
+                      "div", "hr"]
+
     def gettable(match):
         return weapontable(match.group(1), match.group(2))
 
-    regex = re.compile(r"\[\[Weapon:(.*?):(.*?)\]\]", re.IGNORECASE)
-    return regex.sub(gettable, body)
+    def getinfo(match):
+        a = match.group(1).split(":")
+        article: str = wikiload(a[0])[-1]
+        for seek in a[1:]:
+            article = traverse_md(article, seek)
+        if not article:
+            article = "not found"
+            return markdown.markdown(bleach.clean(article, tags=bleach_ok_list), extensions=["tables", "toc", "nl2br"])
+
+    weapons = re.compile(r"\[\[weapon:(.*?):(.*?)\]\]", re.IGNORECASE)
+
+    infos = re.compile(r"\[\[specific:(.+?)\]\]", re.IGNORECASE)
+    return weapons.sub(gettable, infos.sub(getinfo, body))
 
 
 def checktoken():
