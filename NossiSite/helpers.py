@@ -329,21 +329,33 @@ def fill_infolets(body):
                       "div", "hr"]
 
     def gettable(match):
+        print("getting table", match)
         return weapontable(match.group(1), match.group(2))
 
     def getinfo(match):
         a = match.group(1).split(":")
-        article: str = wikiload(a[0])[-1]
+        try:
+            article: str = wikiload(a[0])[-1]
+        except FileNotFoundError:
+            article = ""
         for seek in a[1:]:
             article = traverse_md(article, seek)
         if not article:
             article = "[[not found]]"
         return markdown.markdown(bleach.clean(article, tags=bleach_ok_list), extensions=["tables", "toc", "nl2br"])
 
-    weapons = re.compile(r"\[\[weapon:(.*?):(.*?)\]\]", re.IGNORECASE)
+    def hide(func):
+        def hidden(text):
+            header = text.group(0).strip("[]")
+            return "<div class=hideable><b> " + header + "</b></div>""<div>" + func(text) + "</div>"
+        return hidden
 
+    hiddenweapons = re.compile(r"\[\[\[weapon:(.+?):(.*?)\]\]\]", re.IGNORECASE)
+    weapons = re.compile(r"\[\[weapon:(.+?):(.*?)\]\]", re.IGNORECASE)
+    hiddeninfos = re.compile(r"\[\[\[specific:(.+?)\]\]\]", re.IGNORECASE)
     infos = re.compile(r"\[\[specific:(.+?)\]\]", re.IGNORECASE)
-    return weapons.sub(gettable, infos.sub(getinfo, body))
+    body = infos.sub(getinfo, hiddeninfos.sub(hide(getinfo), body))
+    return weapons.sub(gettable, hiddenweapons.sub(hide(gettable), body))
 
 
 def checktoken():

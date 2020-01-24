@@ -5,6 +5,20 @@
     {% else %}
     {% endfor %}
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="wiki.css") }}">
+    <script>
+        $(document).ready(function() {
+        $(".hideable").click(function () {
+            let $hideable = $(this);
+            let $content = $hideable.next();
+            $content.slideToggle(800, function () {
+                $hideable.text(function () {
+                    return ($content.is(":visible") ? "-" : "+") + $hideable.text().slice(1);
+                });
+            });
+        });
+        $(".hideable").click()
+})
+    </script>
 {% endblock %}
 {% block title %}
     <title xmlns="http://www.w3.org/1999/html">{{ title }}</title>
