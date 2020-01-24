@@ -5,6 +5,7 @@ import sqlite3
 import time
 import traceback
 from contextlib import closing
+import decimal
 
 import markdown
 import numexpr
@@ -216,7 +217,7 @@ def magicalweapontable(code: str, par=None, json=False):
 
 
 def calculate(calc, par):
-    loose_par = [None]
+    loose_par = [0] # last pop ends the loop
     if par is None:
         par = {}
 
@@ -227,20 +228,22 @@ def calculate(calc, par):
     for k, v in par.items():
         calc = calc.replace(k, v)
     missing = None
+    res = 0
     while len(loose_par) > 0:
         try:
-            print("PAR:", par,loose_par)
-            res = numexpr.evaluate(calc, local_dict=par).item()
+            print("PAR:", par, loose_par)
+            res = numexpr.evaluate(calc, local_dict=par, truediv=True).item()
             missing = None  # success
             break
         except KeyError as e:
+
             missing = e
-            print("LOOSE:",loose_par)
+            print("LOOSE:", loose_par)
             par[e.args[0]] = int(loose_par.pop())  # try autofilling
     if missing:
         raise Exception("Parameter " + missing.args[0] + " is missing!")
-    print("calcing", calc, res)
-    return round(res)
+    return decimal.Decimal(res).quantize(1, decimal.ROUND_HALF_UP)
+
 
 
 def weapontable(w, mods="", json=False):
