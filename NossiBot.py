@@ -5,6 +5,7 @@ import re
 import shelve
 import string
 import time
+from asyncio import sleep
 
 import requests
 
@@ -265,11 +266,27 @@ async def on_message(message: discord.Message):
     if message.author == client.user:
         return
     if msg.startswith("NossiBot") or isinstance(message.channel, discord.DMChannel):
+        msg = msg.lstrip("NossiBot")
         if msg.strip() == "help":
             with open("nossibot_help.txt") as f:
                 helpmsg = f.read()
-                for replypart in [helpmsg[i:i + 1950] for i in range(0, len(helpmsg), 1950)]:
-                    await message.author.send("```"+replypart+"```")
+                replypart = ""
+                lines = helpmsg.split("\n")
+                i = 0
+                while len(replypart) < 1950 and i <= len(lines):
+
+                    if i < len(lines) and len(replypart) + len(lines[i]) < 1950:
+                        replypart += lines[i] + "\n"
+                        i += 1
+                    else:
+                        if replypart:
+                            await message.author.send("```" + replypart + "```")
+                            await sleep(1)
+                            replypart = ""
+                        else:
+                            if i < len(lines):
+                                await message.author.send("```" + lines[i][:1990] + "```")
+            return
         if not isinstance(message.channel, discord.DMChannel):
             if "BANISH" in msg:
                 persist["allowed_rooms"].remove(message.channel.id)

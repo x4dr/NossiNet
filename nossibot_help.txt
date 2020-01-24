@@ -25,7 +25,8 @@ weapon: : prefix for the fen weapon parser
                 P is the Parameter to be filled in to <formulas>.
                 they can be given in the format key:value or just as values. Order SHOULD be from left to right but
                 testing is advised. Delimiter is ","
-        example:  magicalweapon:blitzsäbel:roll:13,res7:0
+        example:  magicalweapon:blitzsäbel:roll:13,res7:0  this uses exact names
+                  magicalweapon:glassäbel:13 this tries to match names to the parameters in the order they are used
 oracle : prefix for selector system standard 5 dice (+modifiers) roll graphs
     it expects a list of at least 2 integers as a parameter. the last one is the bonus/malusdice, all previous are selectors
     Subcommand:
