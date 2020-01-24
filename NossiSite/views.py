@@ -15,10 +15,7 @@ from NossiPack.User import Userlist, User
 from NossiPack.VampireCharacter import VampireCharacter
 from NossiSite import app, helpers
 from NossiSite.helpers import g, session, checktoken, request, redirect, url_for, \
-    render_template, flash, init_db, wikiload, wikindex, wikisave, checklogin, fillweapontables
-
-# from NossiPack.krypta import  sumdict, gendicedata
-from fengraph import modify_dmg, weapondata
+    render_template, flash, init_db, wikiload, wikindex, wikisave, checklogin, fillweapontables, traverse_md
 
 bleach.ALLOWED_TAGS += ["br", "u", "p", "table", "th", "tr", "td", "tbody", "thead", "tfoot"]
 
@@ -220,6 +217,24 @@ def weapontable(w, mods=""):
             result += f"{key: <10} " + "".join(f"{';'.join(str(y) for y in x): <4}" for x in weapon[key][1:-1]) + "\n"
         return result
     return weapon
+
+
+@app.route("/specific/<a>")
+@app.route("/specific/<a>/raw")
+def specific(a: str):
+    parse_md = not request.url.endswith("/raw")
+    a = a.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
+    a = a.split(":")
+    article: str = wikiload(a[0])[-1]
+
+    for seek in a[1:]:
+        article = traverse_md(article, seek)
+    if not article:
+        article = "not found"
+    if parse_md:
+        return Markup(markdown.markdown(article, extensions=["tables", "toc", "nl2br"]))
+    else:
+        return article
 
 
 @app.route('/magicalweapon/<w>')

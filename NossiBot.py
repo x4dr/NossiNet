@@ -178,8 +178,20 @@ async def weaponhandle(msg, comment, send, author):
         n = n.content.decode("utf-8")
         await send(author.mention + comment + "```" + msg + "\n" + n + "```")
     else:
-        print("failed request:", n.status_code, n.url, n.content[:100])
+        print("failed request:", n.status_code, n.url)
         return
+
+
+async def specifichandle(msg, comment, send, author):
+    msg = msg[len("specific:"):].strip()
+    n = requests.get("http://nosferatu.vampir.es/specific/" + msg + "/raw")
+    if n.status_code == 200:
+        n = n.content.decode("utf-8")
+        await send(author.mention + comment + "```" + msg + "\n" + n + "```")
+        return True
+    else:
+        print("failed request:", n.status_code, n.url)
+        return False
 
 
 async def handle_defines(msg, send, message):
@@ -266,7 +278,7 @@ async def on_message(message: discord.Message):
     if message.author == client.user:
         return
     if msg.startswith("NossiBot") or isinstance(message.channel, discord.DMChannel):
-        msg = msg.lstrip("NossiBot")
+        msg = msg[len("NossiBot"):] if msg.startswith("NossiBot") else msg
         if msg.strip() == "help":
             with open("nossibot_help.txt") as f:
                 helpmsg = f.read()
@@ -274,7 +286,6 @@ async def on_message(message: discord.Message):
                 lines = helpmsg.split("\n")
                 i = 0
                 while len(replypart) < 1950 and i <= len(lines):
-
                     if i < len(lines) and len(replypart) + len(lines[i]) < 1950:
                         replypart += lines[i] + "\n"
                         i += 1
@@ -324,6 +335,8 @@ async def on_message(message: discord.Message):
         return
     if msg.startswith("weapon:") or msg.startswith("magicalweapon:"):
         await weaponhandle(msg, comment, send, message.author)
+    elif msg.startswith("specific:"):
+        await specifichandle(msg, comment, send, message.author)
     elif msg.startswith("oracle"):
         await oraclehandle(msg, comment, send, message.author)
     else:

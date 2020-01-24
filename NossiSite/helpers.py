@@ -6,6 +6,7 @@ import time
 import traceback
 from contextlib import closing
 import decimal
+from typing import Tuple
 
 import markdown
 import numexpr
@@ -58,7 +59,26 @@ def wikisave(page, author, title, tags, body):
     os.system(os.path.expanduser("~/") + "bin/wikiupdate & ")
 
 
-def wikiload(page):
+def traverse_md(md: str, seek: str) -> str:
+    result = ""
+    level = 0
+    for line in md.split("\n"):
+        line = line.strip()
+        if not line or not line.strip("_"):
+            continue
+        if line.startswith("#") or level:
+            current_level = len(line) - len(line.lstrip("#"))
+            if current_level and level >= current_level:
+                level = 0
+                continue
+            if level or line.lstrip("#").strip().upper() == seek.upper():
+                if not level:
+                    level = current_level
+                result += line + "\n"
+    return result
+
+
+def wikiload(page: str) -> Tuple[str, str, str]:
     with open(os.path.expanduser(wikipath + page + ".md")) as f:
         mode = "meta"
         title = ""
@@ -217,7 +237,7 @@ def magicalweapontable(code: str, par=None, json=False):
 
 
 def calculate(calc, par):
-    loose_par = [0] # last pop ends the loop
+    loose_par = [0]  # last pop ends the loop
     if par is None:
         par = {}
 
@@ -243,7 +263,6 @@ def calculate(calc, par):
     if missing:
         raise Exception("Parameter " + missing.args[0] + " is missing!")
     return decimal.Decimal(res).quantize(1, decimal.ROUND_HALF_UP)
-
 
 
 def weapontable(w, mods="", json=False):

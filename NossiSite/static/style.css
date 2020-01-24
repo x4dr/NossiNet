@@ -11,15 +11,21 @@ body {
 a, h1, h2 { color: #00f700; }
 
 h1 { border-bottom: 2px solid #000000; }
-h2 { font-size: 1.3em; }
-h3 { font-size: 1.29em; }
-h4 { font-size: 1.28em; }
-h5 { font-size: 1.27em; }
-h6 { font-size: 1.26em; }
-h3 { color: #00d700; }
-h4 { color: #00c700; }
-h5 { color: #00b700; }
-h6 { color: #00a700; }
+h2 { font-size: 2em; }
+h3 { font-size: 1.5em; }
+h4 { font-size: 1.25em; }
+h5 { font-size: 1.125em; }
+h6 { font-size: 1em; }
+h3 { color: #00d710; }
+h4 { color: #10b720; }
+h5 { color: #209730; }
+h6 { color: #307740; }
+
+hr {
+    border: 0;
+    height: 0; /* Firefox... */
+    box-shadow: 0 0 2px 1px  #109010;
+}
 
 .page {
     margin: 1em auto;
