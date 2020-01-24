@@ -19,7 +19,7 @@ from NossiPack import WoDParser
 
 remindfile = os.path.expanduser("~/reminders.txt")
 remindnext = os.path.expanduser("~/reminers_next.txt")
-persist = shelve.open(os.path.expanduser("~/NossiBot.storage"))
+persist = {} #shelve.open(os.path.expanduser("~/NossiBot.storage"))
 now = datetime.datetime.now
 
 TOKEN = open(os.path.expanduser("~/token.discord"), "r").read().strip()
@@ -213,14 +213,14 @@ async def handle_defines(msg, send, message):
                 return None
         define, value = [x.strip() for x in msg.split("=", 1)]
         defines[define] = value
-        persist[message.author.name + "#" + message.author.discriminator + ":defines"] = defines
+        #persist[message.author.name + "#" + message.author.discriminator + ":defines"] = defines
         await message.add_reaction('\N{THUMBS UP SIGN}')
         msg = None
     elif msg.startswith("undef "):
         msg = msg[6:]
         if msg.strip() in defines.keys():
             del defines[msg]
-            persist[message.author.name + "#" + message.author.discriminator + ":defines"] = defines
+            # persist[message.author.name + "#" + message.author.discriminator + ":defines"] = defines
             await message.add_reaction('\N{THUMBS UP SIGN}')
         msg = None
     else:
