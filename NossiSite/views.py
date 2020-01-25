@@ -276,6 +276,19 @@ def tagsearch(tag):
     return render_template("wikindex.html", entries=entries, tags=tags, heads=heads)
 
 
+@app.route("/change_discord", methods=["GET", "POST"])
+def change_discord():
+    checklogin()
+    if request.method == "GET":
+        return render_template("change_discord.html")
+    else:
+        ul = Userlist()
+        u = ul.loaduserbyname(session.get('user'))
+        u.discord = request.form["discord"]
+        ul.saveuserlist()
+        return redirect(url_for('show_user_profile', username=u.username))
+
+
 @app.route('/charactersheet/')
 def charsheet():
     checklogin()
@@ -666,7 +679,6 @@ def show_user_profile(username):
         u = ul.getuserbyname(username)
     else:
         u = User(username, "")
-
     site = render_template('userinfo.html', user=u, msgs=msgs)
     return site
 

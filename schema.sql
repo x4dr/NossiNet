@@ -27,8 +27,11 @@ CREATE TABLE IF NOT EXISTS users (
   oldsheets    TEXT,
   defines      TEXT,
   ip           TEXT,
-  admin        INTEGER
+  admin        INTEGER,
+  discord_ident TEXT default NULL
 );
+
+
 --DROP TABLE chatlogs;
 CREATE TABLE IF NOT EXISTS chatlogs (
   linenr        INTEGER             NOT NULL,

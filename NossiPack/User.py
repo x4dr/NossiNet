@@ -1,7 +1,7 @@
 import os
 import sys
 import pickle
-from typing import Union
+from typing import Union, List, Any
 
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
@@ -20,7 +20,7 @@ def connect_db():
 
 class User(object):
     def __init__(self, username, password="", passwordhash=None, funds=0,
-                 sheet=VampireCharacter().serialize(), oldsheets=b'', admin="", defines=''):
+                 sheet=VampireCharacter().serialize(), oldsheets=b'', admin="", defines='', discord=""):
         self.username = username.strip()
         if passwordhash is not None:
             self.pw_hash = passwordhash
@@ -38,6 +38,7 @@ class User(object):
         if defines:
             self.defines = pickle.loads(defines)
         self.defines = {**self.defines, **self.sheet.unify()}
+        self.discord = discord or "not set"
 
     def set_password(self, newpassword):
         self.pw_hash = generate_password_hash(newpassword)
@@ -77,6 +78,8 @@ class User(object):
 
 
 class Userlist(object):
+    userlist: List[User]
+
     def __init__(self, key="", preload=False, sheets=True):
         self.key = key
         self.userlist = []
@@ -88,22 +91,23 @@ class Userlist(object):
         db = connect_db()
         if sheets:
             cur = db.execute('SELECT username, passwordhash, funds, '
-                             'sheet, oldsheets, defines, admin FROM users')
+                             'sheet, oldsheets, defines, admin, discord_ident FROM users')
             f_all = cur.fetchall()
             for row in f_all:
                 try:
                     self.userlist.append(User(username=row[0], passwordhash=row[1], funds=row[2],
-                                              sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6]))
+                                              sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6],
+                                              discord=row[7]))
                 except Exception as e:
-                    print("weird exception with ", row, e, e.args)
+                    print("weird db exception with ", row, e, e.args)
         else:
             cur = db.execute('SELECT username, passwordhash, funds,'
-                             'defines, admin FROM users')
+                             'defines, admin, discord_ident FROM users')
             import time
             print("fetching userlist")
             t1 = time.time()
             self.userlist = [User(username=row[0], passwordhash=row[1], funds=row[2],
-                                  defines=row[3], admin=row[4]) for row in
+                                  defines=row[3], admin=row[4], discord=row[5]) for row in
                              cur.fetchall()]
             print("fetched in", time.time() - t1)
         db.close()
@@ -111,26 +115,25 @@ class Userlist(object):
     def saveuserlist(self):
         # writes/overwrites the SQL table with the maybe changed list. this is not performant at all
         db = connect_db()
-
         for u in self.userlist:
             if u.sheet.checksum() != 0:
                 d = dict(username=u.username, pwhash=u.pw_hash, funds=u.funds,
                          sheet=u.sheet.serialize(), oldsheets=u.serialize_old_sheets(), defines=pickle.dumps(u.defines),
-                         admin=u.admin)
-                db.execute(
-                    "INSERT OR REPLACE INTO users (username, passwordhash, funds, "
-                    "sheet, oldsheets, defines, admin) "
-                    "VALUES (:username,:pwhash, :funds, :sheet, :oldsheets, :defines, :admin)", d)
+                         admin=u.admin, discord=u.discord)
+                db.execute('INSERT OR REPLACE INTO users (username, passwordhash, funds, '
+                           'sheet, oldsheets, defines, admin, discord_ident) '
+                           'VALUES (:username,:pwhash, :funds, :sheet, :oldsheets, :defines, :admin, :discord)', d)
             else:
                 d = dict(username=u.username, pwhash=u.pw_hash, funds=u.funds,
-                         defines=pickle.dumps(u.defines), admin=u.admin, emptysheet=VampireCharacter().serialize())
+                         defines=pickle.dumps(u.defines), admin=u.admin, emptysheet=VampireCharacter().serialize(),
+                         discord_ident=u.discord)
                 db.execute(
                     "INSERT OR REPLACE INTO users (username, passwordhash, funds,  "
-                    "sheet, oldsheets, defines, admin) "
+                    "sheet, oldsheets, defines, admin, discord_ident) "
                     "VALUES (:username,:pwhash, :funds,"
                     "COALESCE((SELECT sheet FROM users WHERE username = :username), :emptysheet),"
                     "COALESCE((SELECT oldsheets FROM users WHERE username = :username), ''),"
-                    " :defines, :admin)", d)
+                    " :defines, :admin, :discord_ident)", d)
 
         db.commit()
         db.close()
@@ -166,15 +169,16 @@ class Userlist(object):
     def loaduserbyname(self, username) -> Union[User, None]:
         db = connect_db()
         cur = db.execute('SELECT username, passwordhash, funds, '
-                         'sheet, oldsheets, defines, admin FROM users WHERE username = (?)', (username,))
+                         'sheet, oldsheets, defines, admin, discord_ident FROM users WHERE username = (?)', (username,))
         try:
             row = cur.fetchone()
             if row is None:
                 return None
+            print("loading user by name:",row)
             newuser = User(username=row[0], passwordhash=row[1], funds=row[2],
-                           sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6])
+                           sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6], discord=row[7])
 
-            if not all(u.username != newuser.username for u in self.userlist):
+            if newuser.username not in self.userlist:
                 self.userlist.append(newuser)
         except Exception as e:
             print("loading user by name, error :", e, e.args)

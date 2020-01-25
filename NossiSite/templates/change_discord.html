@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+{% block body %}
+    <h2>Buy Credits</h2>
+    Your Discord account (name#number) that will be able to remote control your Nosferatunet Account.
+    <form action="{{ url_for('change_discord') }}" method=post>
+        <dl>
+            <input type="hidden" name="token" value={{ token }}>
+                <dd><input class=leet type=text name=discord>
+            <dd><input class=leet type=submit value=Send>
+        </dl>
+    </form>
+{% endblock %}
