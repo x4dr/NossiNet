@@ -1,21 +1,83 @@
 import re
-from typing import List, Any
+import traceback
+from typing import List, Union
 
-from flask import json
+import numexpr
 
 from NossiPack.WoDDice import WoDDice
 
 
+class Node(object):
+    def __init__(self, roll: str, depth):
+        self.dbg = ""
+        self.message = roll
+        self.depth = depth
+        self.dependent = {}
+        if self.depth > 100:
+            raise Exception("recursion depth exceeded")
+        self.buildroll()
+
+    def buildroll(self):
+        unparsed = self.message
+        while unparsed:
+            next_pos = unparsed.find("(")
+            if next_pos == -1:
+                break
+            unparsed = unparsed[next_pos:]
+            paren = fullparenthesis(unparsed)
+            if paren:
+                self.dependent["(" + paren + ")"] = Node(paren, self.depth + 1)
+                unparsed = unparsed[len(paren) + 2:]
+
+    def calculate(self):
+        self.message = Node._calculate(self.message)
+
+    @staticmethod
+    def _calculate(message, a=0):
+        parts = message.split(" ")
+        i = len(parts)
+        oldmessage = message
+        while i > a:
+            try:
+                try:
+                    part = "+".join(parts[a:i])
+                    replace = " ".join(parts[a:i])
+                    message = message.replace(replace, str(numexpr.evaluate(part)))
+                except:
+                    part = " ".join(parts[a:i])
+                    message = message.replace(part, str(numexpr.evaluate(part)))
+                break
+            except:
+                i -= 1
+
+        if oldmessage != message:
+            message = Node._calculate(message)  # recursive
+        else:
+            if a < len(parts):  # stop recursion
+                message = Node._calculate(message, a + 1)
+        return message
+
+    @property
+    def is_leaf(self):
+        return len(self.dependent.keys()) == 0
+
+    def __repr__(self):
+        return str(self.depth) + "|" + str(self.message)
+
+    def __str__(self):
+        return self.__repr__()
+
+
 class WoDParser(object):
-    altrolls: List[WoDDice]
+    rolllogs: List[WoDDice]
 
     def __init__(self, defines=None):
         self.dbg = ""
         self.triggers = {}
         self.rights = []
-        self.defines = {"difficulty": 6, "onebehaviour": 1, "sides": 10, "return": None, "standard_function":"threshhold"}  # WoDbasic
+        self.defines = {"difficulty": 6, "onebehaviour": 1, "sides": 10, "return": ""}  # WoDbasic
         self.defines.update(defines or {})
-        self.altrolls = []  # if the last roll isnt interesting
+        self.rolllogs = []  # if the last roll isnt interesting
 
     diceparse = re.compile(  # the regex matching the roll (?# ) for indentation
         r'(?# )\s*(?:(?P<selectors>(?:[0-9](?:\s*,\s*)?)*)\s*@)?' +  # selector matching
@@ -72,113 +134,56 @@ class WoDParser(object):
 
         return info
 
-    def do_roll(self, roll, default=None):
-        print("doing roll:" + roll)
-        self.altrolls.append(self.make_roll(roll))
-
-        if self.triggers.get("ignore", None) and self.altrolls[-1] is None:
-            return 0
-        elif self.altrolls[-1] is None:  # #shouldneverhappen
-            raise Exception("Diceroll is missing. Probably a bug. Tell Maric about the dicecode you used.")
-        else:
-            default = self.defines.get("standard_function", None) if not default else default
-            if self.altrolls[-1].result is None:
-                if default:
-                    self.altrolls[-1].returnfun = default
-                else:
-                    raise Exception("No return function one of \"@efghl\" for \"" + roll+"\"")
-            return self.altrolls[-1].result
-
-    def make_roll(self, roll: str):
+    def do_roll(self, roll, default=None, depth=0) -> WoDDice:
         if ";" in roll:
-            self.altrolls.extend([self.make_roll(m) for m in roll.split(";")])
-            return None
-        try:
-            roll = Node(roll)
-            roll = self.resolveroll(roll)
-            params = self.extract_diceparams(roll)
-            if not params:  # no dice
-                return None
-            fullparams = self.defines.copy()
-            fullparams.update(params)
-            v = WoDDice(fullparams)
-            return v
-        except Exception as e:
-            # print("Exception during make roll:", e.args, e.__traceback__.tb_lineno,
-            # e.__traceback__.tb_frame.__repr__())
-            raise
-
-    def resolveroll(self, roll):
-        # print("[WodParser:resolveroll]: "+str(roll))
-        if isinstance(roll, str):
-            return roll
-        if roll.roll is None:
-            self.expand(roll)
-            return self.resolveroll(roll)
-        if roll.is_leaf:
-            roll.roll = self.parseadd(roll.roll)
+            roll = "(" + ")(".join(roll.split(";")) + ")"
+        if depth == 0:  # otherwise assume roll is resolved
+            self.resolveroll(roll, depth)
+            return self.rolllogs[-1]
         else:
+            roll = roll.strip()
+            if roll:
+                self.rolllogs.append(self.make_roll(roll))
+            else:
+                self.rolllogs.append(WoDDice.empty())
 
-            for i in range(len(roll.roll)):
-                roll.roll[i] = self.resolveroll(  # recursive
-                    roll.dependent.get(roll.roll[i],  # either resolve all the dependencies
-                                       roll.roll[i]))  # if not dependent just return the string
+            default = self.defines.get("return", None) if not default else default
+            if self.rolllogs[-1].result is None:
+                if default is not None:
+                    self.rolllogs[-1].returnfun = default
+                else:
+                    raise Exception("No return function! Should be one of \"@efghl\" for \"" + roll + "\"")
+            return self.rolllogs[-1]
 
-            roll.roll = self.parseadd(roll.roll)
-        paren = ""
-        for p in roll.roll:
-            if "(" in p:
-                paren = "yes"
-                break  # if there are parenthesis left process them
-        if paren:
-            x = " ".join(roll.roll)
-            paren = self.fullparenthesis(x, include=True)
-            roller = WoDParser(self.defines.copy())
-            result = str(roller.do_roll(self.fullparenthesis(x)))
-            self.altrolls += roller.altrolls
+    def make_roll(self, roll: Union[str]) -> WoDDice:
+        """Uses full and valid Rolls and returns WoDDice."""
+        params = self.extract_diceparams(roll)
+        if not params:  # no dice
+            raise Exception("No Valid Dice in \"" + roll + "\"")
+        fullparams = self.defines.copy()
+        fullparams.update(params)
+        return WoDDice(fullparams)
 
-            x = x.replace(paren, " " + result + " ", 1).replace("  ", " ")
-            roll.roll = None
-            roll.message = x
-            return self.resolveroll(roll)
-        return " ".join(roll.roll)
-
-    @staticmethod
-    def parseadd(roll):
-        roll = roll[:]  # copy
-        #
-        adding = None
-        result = []
-        if not roll:
-            return result
-        for current in roll:  # consume everything
-            try:
-                #
-                adding = int(current) + (adding if adding else 0)  # and they are numbers
-            except:
-                #
-                if current != "+":  # plus and writing things next to each other are equivalent
-                    if adding is not None:  # if adding has been set
-                        #
-                        result.append(str(adding))
-                    adding = None
-                    #
-                    result.append(current) if current else None  # only appends if current not ""
-
-        if adding is not None:
-            result.append(str(adding))
-        #
-        return result
-
-    def expand(self, node):
-        self.resolvedefine(node)
+    def resolveroll(self, roll: Union[Node, str], depth):
+        if isinstance(roll, str):
+            roll = self.resolvedefines(roll)
+            roll = self.pretrigger(roll)
+            return self.resolveroll(Node(roll, depth + 1), depth + 1)
+        for k in list(roll.dependent.keys()):
+            toreplace = " " + str(self.resolveroll(roll.dependent[k], depth + 1)) + " "
+            roll.message = roll.message.replace(k, toreplace)
+            del roll.dependent[k]
+        roll.calculate()
+        res = self.do_roll(roll.message, depth=depth + 1).result
+        return res
 
     def assume(self, message):
+        """consumes a parenthesis"""
         if message.strip()[0] == "(":
-            p = self.fullparenthesis(message)
+            p = fullparenthesis(message)
             if len(message.replace(p, "").strip()[1:].strip()[1:].strip()) > 0:
                 raise Exception("Leftovers after " + message + ":" + message.replace(p, ""))
-            return self.do_roll(self.fullparenthesis(message))
+            return self.do_roll(fullparenthesis(message))
         return message
 
     @staticmethod
@@ -230,34 +235,55 @@ class WoDParser(object):
                 self.triggers[triggername] = x
                 message = message.replace("&", "", 1)
             elif triggername == "breakthrough":
-                goal = int(self.assume(trigger[trigger.rfind(" "):]))
-                trigger = trigger[:trigger.rfind(" ")]
-                current = int(self.assume(trigger[trigger.rfind(" "):]))
-                trigger = trigger[:trigger.rfind(" ")]
-                i = 0
-                log = ""
-                adversity = self.triggers.get("adversity", 0)
-                print("limit:", self.triggers.get("limitbreak", False))
-                while i < (self.triggers.get("max") or 100) if not self.triggers.get("limitbreak", None) else 1000:
-                    x = self.do_roll(trigger)
-                    log += str(x) + " : "
-                    i += 1
-                    while x < 0:
-                        log += str(current) + "/2 = "
-                        current //= 2
+                try:
+                    nextpart = trigger.rfind(" ")
+                    if nextpart == -1:
+                        raise Exception("No parameters")
+                    goal = int(self.assume(trigger[nextpart:]))
+                    print("goal", goal)
+                    trigger = trigger[:nextpart]
+                    print("newtrigger", trigger)
+                    nextpart = trigger.rfind(" ")
+                    if nextpart == -1:
+                        raise Exception("No second parameter")
+                    current = int(self.assume(trigger[nextpart:]))
+                    print("current", current)
+                    nextpart = trigger.rfind(" ")
+                    if nextpart == -1:
+                        raise Exception("No third parameter")
+                    trigger = trigger[:nextpart]
+                    print("newtrigger", trigger)
+                    i = 0
+                    log = ""
+                    adversity = self.triggers.get("adversity", 0)
+                    print("limit:", self.triggers.get("limitbreak", False))
+                    while i < (self.triggers.get("max") or 100) if not self.triggers.get("limitbreak", None) else 1000:
+                        x = self.do_roll(trigger).result
+                        log += str(x) + " : "
+                        i += 1
+                        while x < 0:
+                            log += str(current) + "/2 = "
+                            current //= 2
+                            log += str(current) + "\n"
+                            x += 1
+                            if x < 0:
+                                log += str(x) + " : "
+                        if x > 0:
+                            log += str(current) + " + " + str(x) + (
+                                (" - " + str(adversity)) if adversity != 0 else "") + " = "
+                        current += x - adversity
                         log += str(current) + "\n"
-                        x += 1
-                        if x < 0:
-                            log += str(x) + " : "
-                    if x > 0:
-                        log += str(current) + " + " + str(x) + (
-                            (" - " + str(adversity)) if adversity != 0 else "") + " = "
-                    current += x - adversity
-                    log += str(current) + "\n"
-                    if current >= goal:
-                        break
-                self.triggers[triggername] = (i, current, goal, log)
-                message = message.replace("&", str(i), 1)
+                        if current >= goal:
+                            break
+                    self.triggers[triggername] = (i, current, goal, log)
+                    message = message.replace("&", str(i), 1)
+                except TypeError:
+                    raise Exception(trigger + " does not have a result")  # probably
+                except Exception as e:
+                    print(e, e.__class__, e.args, traceback.format_exc())
+                    raise Exception("Breakthrough Parameters: roll, current, goal\n" +
+                                    "Optionally &adversity x& to the left of breakthrough")
+
             elif triggername in ["ignore", "verbose", "suppress", "order"]:
                 if "off" not in trigger:
                     self.triggers[triggername] = trigger if trigger else True
@@ -269,16 +295,11 @@ class WoDParser(object):
                 times = min(times, ((self.triggers.get("max") or 39)
                                     if not self.triggers.get("limitbreak", None) else 100))
                 trigger = trigger[:trigger.rfind(" ")]  # roll in the left of the trigger
-                self.altrolls.append(self.make_roll(trigger))  # first one is constructed
-                loopsum = self.altrolls[-1].result or 0
-                for i in range(times - 1):  # need 1 less
-                    self.altrolls.append(self.altrolls[-1].another())  # rest are rerolls
-                    loopsum += self.altrolls[-1].result or 0
-                if triggername == "loop":
-                    message = message.replace("&", "", 1)
-                elif triggername == "loopsum":
-                    print("loopsum message", message)
-                    message = message.replace("&", str(loopsum) + " d1g", 1)
+                loopsum = 0
+                for i in range(times):
+                    # looprolls.append(roll) # never to be seen again
+                    loopsum += self.do_roll(trigger).result or 0
+                message = message.replace("&", str(loopsum) if triggername == "loopsum" else "", 1)
             elif triggername == "values":
                 try:
                     trigger = str(re.sub(r" *: *", ":", trigger))
@@ -304,16 +325,16 @@ class WoDParser(object):
 
             elif "if" == triggername:
                 # &if a then b else c&
-                ifbranch = self.fullparenthesis(trigger, opening="if", closing="then")
-                thenbranch = self.fullparenthesis(trigger, opening="then", closing="else")
-                elsebranch = self.fullparenthesis(trigger, opening="else", closing="done")
+                ifbranch = fullparenthesis(trigger, opening="if", closing="then")
+                thenbranch = fullparenthesis(trigger, opening="then", closing="else")
+                elsebranch = fullparenthesis(trigger, opening="else", closing="done")
                 #                ifbranch = trigger.split("then")[0][2:].strip()
                 #                thenbranch = trigger.split("then")[1].strip()
                 #                elsebranch = thenbranch.split("else")[1].strip()
                 #                thenbranch = thenbranch.split("else")[0].strip()
 
                 ifroller = WoDParser(self.defines.copy())
-                ifroll = ifroller.do_roll(ifbranch)
+                ifroll = ifroller.do_roll(ifbranch).result
                 if ifroll > 0:
                     message = message.replace("&", "(" + thenbranch.replace("$", str(ifroll), 1) + ")", 1)
                 else:
@@ -324,70 +345,40 @@ class WoDParser(object):
 
         return message
 
-    def resolvedefine(self, node):
-        # makes node.roll into array
-        if (not node.roll) or isinstance(node.roll, str):
-            node.message = self.pretrigger(node.message)
-            node.roll = node.message.replace('_', ' ').replace('  ', ' ').split(' ')  # get rid of _ and split
-            node.roll = [n for n in node.roll if n]  # deletes ''
-
-        for b in node.roll:
-            if b in self.defines.keys():
-                node.dependent[b] = Node(self.defines.get(b), node.depth + 1)
-
-                self.resolvedefine(node.dependent[b])  # depth first
-
-    @staticmethod
-    def fullparenthesis(message, opening="(", closing=")", include=False):
-        if opening not in message:
-            return message
-        i = -1
-        lvl = 0
-        begun = None
-        while ((lvl > 0) or begun is None) and (i <= len(message) + 5):
-            i += 1
-            if (message[i:i + len(closing)] == closing) \
-                    and (((i == 0 or (not message[i - 1].isalnum()))
-                          and not (message + " " * len(closing) * 2)[i + len(closing)].isalnum())
-                         or len(closing) == 1):
-                if begun is None:
-                    continue  # ignore closing parenthesis if not opened yet
-                lvl -= 1
-            if (message[i:i + len(opening)] == opening) \
-                    and (((i == 0 or (not message[i - 1].isalnum()))
-                          and not message[i + len(opening)].isalnum())
-                         or len(opening) == 1):
-                lvl += 1
-                if begun is None:
-                    begun = i
-        if i > len(message) + 5:
-            raise Exception("unmatched " + opening + " " + closing + ": " + message)
-        result = message[begun + (len(opening) if not include else 0): i + (len(closing) if include else 0)]
-        return result
-
-    @staticmethod
-    def shorthand():
-        with open('./NossiSite/locales/EN.json') as json_data:
-            return json.load(json_data)['shorthand']
+    def resolvedefines(self, message: str) -> str:
+        newmessage = ""
+        counter = 0
+        while newmessage != message and counter < 1000:
+            newmessage = message
+            counter += 1
+            for k, v in self.defines.items():
+                message = message.replace(k, str(v))
+        return message
 
 
-class Node(object):
-    def __init__(self, roll, depth=0):
-        self.dbg = ""
-        self.message = roll
-        self.roll = None
-        self.special = None
-        self.depth = depth
-        self.dependent = {}
-        if self.depth > 100:
-            raise Exception("recursion depth exceeded")
-
-    @property
-    def is_leaf(self):
-        return len(self.dependent.keys()) == 0
-
-    def __repr__(self):
-        return str(self.depth) + "|" + str(self.message) + "|" + str(self.roll)
-
-    def __str__(self):
-        return self.__repr__()
+def fullparenthesis(message, opening="(", closing=")", include=False):
+    if opening not in message:
+        return message
+    i = -1
+    lvl = 0
+    begun = None
+    while ((lvl > 0) or begun is None) and (i <= len(message) + 5):
+        i += 1
+        if (message[i:i + len(closing)] == closing) \
+                and (((i == 0 or (not message[i - 1].isalnum()))
+                      and not (message + " " * len(closing) * 2)[i + len(closing)].isalnum())
+                     or len(closing) == 1):
+            if begun is None:
+                continue  # ignore closing parenthesis if not opened yet
+            lvl -= 1
+        if (message[i:i + len(opening)] == opening) \
+                and (((i == 0 or (not message[i - 1].isalnum()))
+                      and not message[i + len(opening)].isalnum())
+                     or len(opening) == 1):
+            lvl += 1
+            if begun is None:
+                begun = i
+    if i > len(message) + 5:
+        raise Exception("unmatched " + opening + " " + closing + ": " + message)
+    result = message[begun + (len(opening) if not include else 0): i + (len(closing) if include else 0)]
+    return result

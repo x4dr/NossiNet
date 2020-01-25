@@ -16,13 +16,22 @@ class WoDDice(object):
         try:
 
             self.min = info.get('additivebonus', 1)  # unlikely to get implemented
-            self.max = int(info['sides']) + self.min - 1
-            self.difficulty = info['difficulty']
-            self.subone = info['onebehaviour']
-            self.returnfun = info['return']
+            try:
+                self.max = int(info['sides']) + self.min - 1
+            except:
+                raise Exception("No Sides!")
+            self.difficulty = info.get('difficulty', None)
+            self.subone = info.get('onebehaviour', 0)
+            try:
+                self.returnfun = info['return']
+            except:
+                raise Exception("No return function!")
             self.explodeon = self.max + 1 - info.get('explosion', 0)
             self.sort = info.get('sort')
-            self.amount = info['amount']
+            try:
+                self.amount = info['amount']
+            except:
+                raise Exception("No amount!")
             self.rerolls = int(info.get("rerolls", 0))  # only used for fenrolls
             self.selectors = info.get("selectors", [])
             if "," in self.selectors:
@@ -49,14 +58,17 @@ class WoDDice(object):
     def resonance(self, resonator: int):
         return self.r.count(resonator) - 1
 
+    def __repr__(self):
+        return self.name
+
     @property
     def name(self):
         if len(self.r) == 0:
             amount = ""
         else:
             amount = str(len(self.r))
-        return ((",".join(str(x) for x in self.selectors) + "@") if self.selectors else "") \
-               + amount + "d" + str(self.max) + \
+        return ((",".join(str(x) for x in self.selectors) + "@")
+                if self.selectors else "") + amount + "d" + str(self.max) + \
                ("R" + str(self.rerolls) if self.rerolls != 0 else "") + \
                ((("f" if self.subone == 1 else
                   "e" if self.subone == 0 else
@@ -103,7 +115,11 @@ class WoDDice(object):
                 self.log += str(self.r[-1])
             if self.returnfun == "threshhold":
                 self.log += ": "
-                if self.r[-1] >= self.difficulty:  # last die face >= than the difficulty
+                try:
+                    diff = int(self.difficulty)
+                except:
+                    raise Exception("No Difficulty set!")
+                if self.r[-1] >= diff:  # last die face >= than the difficulty
                     self.succ += 1
                     self.log += "success "
                 elif self.r[-1] <= self.subone:
@@ -180,7 +196,8 @@ class WoDDice(object):
     def roll_v(self):  # verbose
         log = ""
         if self.log:
-            log = [x for x in self.log.split("\n") if x][-1].strip()
+            if not self.name.endswith("d1g"):
+                log = [x for x in self.log.split("\n") if x][-1].strip()
         if not log or self.returnfun == "threshhold":
             if not self.name.endswith("d1g"):  # just sum one sided dice
                 log = ", ".join(str(x) for x in self.r)
@@ -229,13 +246,25 @@ class WoDDice(object):
         self.log = log[:-2] + "= " + str(self.result_sum())
 
     @property
-    def result(self):
+    def result(self) -> int:
         return (self.roll_sel() if self.selectors else
                 self.roll_wodsuccesses() if self.returnfun == "threshhold" else
                 max(self.r) if self.returnfun == "max" else
                 min(self.r) if self.returnfun == "min" else
-                sum(self.r) if self.returnfun == "sum" else None)
+                sum(self.r) if self.returnfun == "sum" else
+                None if self.returnfun == "" else error("No return function!"))
 
     def roll(self, amount):
         self.roll_next(amount)
         return self.result
+
+    @classmethod
+    def empty(cls) -> "WoDDice":
+        return WoDDice({"max": 0, "amount": 0, "return": "", "sides": 0})
+
+    def isempty(self):
+        return len(self.r) == 0 and self.amount == 0
+
+
+def error(err):
+    raise Exception(err)

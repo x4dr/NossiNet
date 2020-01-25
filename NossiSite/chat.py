@@ -130,7 +130,7 @@ def defines(message="=", user=None):
         if workdef == {}:
             workdef = u.sheet.unify()
             echo("Definitions reset.")
-        workdef = {**workdef, **WoDParser.shorthand(), **WoDData.disciplines(workdef)}
+        workdef = {**workdef, **shorthand(), **WoDData.disciplines(workdef)}
         echo("Presets setup.")
     elif message[0] != "=":  # actually saving a new define
         parts = message.split("=")
@@ -142,6 +142,10 @@ def defines(message="=", user=None):
     if user == session['user']:
         ul.saveuserlist()
     return workdef
+
+def shorthand():
+    with open('./NossiSite/locales/EN.json') as json_data:
+        return json.load(json_data)['shorthand']
 
 
 def printroll(roll, parser=None, testing=False, message=""):

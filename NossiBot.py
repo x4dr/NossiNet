@@ -9,7 +9,6 @@ from asyncio import sleep
 from urllib.parse import urlencode
 
 import requests
-
 import fengraph
 import discord
 import random
@@ -20,6 +19,8 @@ from NossiPack import WoDParser
 
 remindfile = os.path.expanduser("~/reminders.txt")
 remindnext = os.path.expanduser("~/reminers_next.txt")
+numemoji = ("1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟")
+numemoji_2 = ("❗", "‼️", "\U0001F386")
 
 
 class MutationLoggingDict(dict):
@@ -158,19 +159,17 @@ async def rollhandle(msg, comment, send, author):
 
     if msg == "+":
         msg = lastroll.get(author, "")
-    if msg.endswith("v"):
-        msg = msg[:-1] + " &verbose&"
-    p = WoDParser({})
+    p = WoDParser(persist[discordname(author) + ":defines"])
     try:
-        r = p.make_roll(msg)
+        r = p.do_roll(msg)
     except Exception as e:
         if errreport:  # query for error
             await author.send(" ".join(e.args))
         return
     lastroll[author] = msg
-    if isinstance(p.altrolls, list) and len(p.altrolls) > 0:
-        await send(author.mention + comment + " " + msg + ":\n" +
-                   "\n".join(x.name + ": " + x.roll_v() for x in p.altrolls))
+    reply = ""
+    if isinstance(p.rolllogs, list) and len(p.rolllogs) > 1:
+        reply += "\n".join(x.name + ": " + x.roll_v() for x in p.rolllogs if x.roll_v())+"\n"
     if p.triggers.get("verbose", None):
         if r is None:
             print(msg, "lead to noneroll!")
@@ -178,7 +177,17 @@ async def rollhandle(msg, comment, send, author):
                    r.name + ": " + r.roll_vv(p.triggers.get("verbose")))
     else:
         try:
-            await send(author.mention + comment + " " + msg + ":\n" + r.roll_v())
+            sent = await send(author.mention + comment + " " + msg + ":\n" + reply + r.roll_v())
+            if r.selectors and r.result >= r.max * len(r.selectors):
+                await sent.add_reaction("\U0001f4a5")
+            if r.max == 10 and (r.selectors or r.amount == 5):
+                for frequency in range(1, 11):
+                    amplitude = r.resonance(frequency)
+                    if 0 < amplitude:
+                        await sent.add_reaction(numemoji[frequency - 1])
+                    if 1 < amplitude and len(r.r) == 5:
+                        await sent.add_reaction(numemoji_2[amplitude - 2])
+
         except Exception as e:
             if errreport:  # query for error
                 await author.send("big oof during rolling ", r, msg, " ".join(e.args))
@@ -209,7 +218,7 @@ async def specifichandle(msg, comment, send, author):
 
 async def handle_defines(msg, send, message):
     try:
-        defines = persist[message.author.name + "#" + message.author.discriminator + ":defines"]
+        defines = persist[discordname(message.author) + ":defines"]
     except KeyError:
         defines = {}
     if msg.startswith("def") and "=" in msg:
@@ -226,14 +235,14 @@ async def handle_defines(msg, send, message):
                 return None
         define, value = [x.strip() for x in msg.split("=", 1)]
         defines[define] = value
-        persist[message.author.name + "#" + message.author.discriminator + ":defines"] = defines
+        persist[discordname(message.author) + ":defines"] = defines
         await message.add_reaction('\N{THUMBS UP SIGN}')
         msg = None
     elif msg.startswith("undef "):
         msg = msg[6:]
         if msg.strip() in defines.keys():
             del defines[msg]
-            persist[message.author.name + "#" + message.author.discriminator + ":defines"] = defines
+            persist[discordname(message.author) + ":defines"] = defines
             await message.add_reaction('\N{THUMBS UP SIGN}')
         msg = None
     else:
@@ -250,9 +259,14 @@ async def handle_defines(msg, send, message):
     return msg
 
 
+def discordname(user):
+    return user.name + "#" + user.discriminator
+
+
 async def tick():
     next_call = time.time()
     while True:
+        k = "remind"
         try:
             await reminders()
         except Exception as e:
@@ -265,8 +279,10 @@ async def tick():
                             continue  # mutated will never be saved!
                         shelvingfile[k] = persist[k]
         except Exception as e:
-            print("Exception reminding:", e, e.args, traceback.format_exc())
+            print(f"Exception in tick with {k}:", e, e.args, traceback.format_exc())
         next_call += 10
+        if client.is_closed():
+            break
         await asyncio.sleep(next_call - time.time())
 
 
@@ -279,6 +295,8 @@ async def on_ready():
     asyncio.create_task(tick())
     p = discord.Permissions(117824)
     print(discord.utils.oauth_url(client.user.id, p))
+    info = await client.application_info()
+    persist["owner"] = discordname(info.owner)
 
 
 @client.event
@@ -319,6 +337,11 @@ async def on_message(message: discord.Message):
                         else:
                             if i < len(lines):
                                 await message.author.send("```" + lines[i][:1990] + "```")
+            return
+        elif "DIE" in msg and discordname(message.author) == persist["owner"]:
+            await message.add_reaction("\U0001f480")
+            await send("I shall die.")
+            await client.close()
             return
         if not isinstance(message.channel, discord.DMChannel):
             if "BANISH" in msg:
@@ -364,4 +387,6 @@ async def on_message(message: discord.Message):
     else:
         await rollhandle(msg, comment, send, message.author)
 
+
 client.run(TOKEN)
+print("Done.")
