@@ -373,7 +373,7 @@ async def on_message(message: discord.Message):
     if msg.startswith("#remind"):
         newreminder(str(message.channel.id), msg[7:])
         await send(str(message))
-    msg, comment = msg.split("//", 1) if "//" in msg else (msg, "")
+    msg, comment = msg.rsplit("//", 1) if "//" in msg else (msg, "")
     comment = (" " + comment.strip())
     msg = await handle_defines(msg, send, message)
     if not msg:
