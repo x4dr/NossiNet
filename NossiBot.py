@@ -19,13 +19,25 @@ from NossiPack import WoDParser
 
 remindfile = os.path.expanduser("~/reminders.txt")
 remindnext = os.path.expanduser("~/reminers_next.txt")
-persist = {} #shelve.open(os.path.expanduser("~/NossiBot.storage"))
+
+
+class MutationLoggingDict(dict):
+    def __setitem__(self, key, value):
+        dict.__setitem__(self, "mutated", True)
+        dict.__setitem__(self, key, value)
+
+
+storagefile = "~/NossiBot.storage"
+persist = MutationLoggingDict()
+with shelve.open(os.path.expanduser(storagefile)) as shelvefile:
+    for shelvekey in shelvefile.keys():
+        persist[shelvekey] = shelvefile[shelvekey]  # copy everything out
+    persist["mutated"] = False
 now = datetime.datetime.now
 
 TOKEN = open(os.path.expanduser("~/token.discord"), "r").read().strip()
 
 description = '''NossiBot in Python'''
-print("selftest 1-100:", WoDParser({}).make_roll("1d100").roll_v())
 client = discord.Client()
 repeats = {}
 lastroll = {}
@@ -201,7 +213,7 @@ async def handle_defines(msg, send, message):
         defines = {}
     if msg.startswith("def") and "=" in msg:
         msg = msg[3:].strip()
-        q = re.compile("^=\s*?")
+        q = re.compile(r"^=\s*?")
         if q.match(msg):
             msg = q.sub(msg, "").strip()
             if not msg:
@@ -213,14 +225,14 @@ async def handle_defines(msg, send, message):
                 return None
         define, value = [x.strip() for x in msg.split("=", 1)]
         defines[define] = value
-        #persist[message.author.name + "#" + message.author.discriminator + ":defines"] = defines
+        persist[message.author.name + "#" + message.author.discriminator + ":defines"] = defines
         await message.add_reaction('\N{THUMBS UP SIGN}')
         msg = None
     elif msg.startswith("undef "):
         msg = msg[6:]
         if msg.strip() in defines.keys():
             del defines[msg]
-            # persist[message.author.name + "#" + message.author.discriminator + ":defines"] = defines
+            persist[message.author.name + "#" + message.author.discriminator + ":defines"] = defines
             await message.add_reaction('\N{THUMBS UP SIGN}')
         msg = None
     else:
@@ -242,6 +254,15 @@ async def tick():
     while True:
         try:
             await reminders()
+        except Exception as e:
+            print("Exception reminding:", e, e.args, traceback.format_exc())
+        try:
+            if persist["mutated"]:
+                with shelve.open(os.path.expanduser(storagefile)) as shelvingfile:
+                    for k in persist:
+                        if k == "mutated":
+                            continue  # mutated will never be saved!
+                        shelvingfile[k] = persist[k]
         except Exception as e:
             print("Exception reminding:", e, e.args, traceback.format_exc())
         next_call += 10
@@ -341,8 +362,5 @@ async def on_message(message: discord.Message):
         await oraclehandle(msg, comment, send, message.author)
     else:
         await rollhandle(msg, comment, send, message.author)
-
-
-# discord.on_message_edit(before, after)
 
 client.run(TOKEN)
