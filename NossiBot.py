@@ -159,7 +159,7 @@ async def rollhandle(msg, comment, send, author):
 
     if msg == "+":
         msg = lastroll.get(author, "")
-    p = WoDParser(persist[discordname(author) + ":defines"])
+    p = WoDParser(persist.get(discordname(author) + ":defines", {}))
     try:
         r = p.do_roll(msg)
     except Exception as e:
