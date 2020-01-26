@@ -65,7 +65,13 @@
         </tr> <tr>
         {%- for key,val in character.Character.items() -%}
             <td style="text-align: right; ">{{ key }}</td>
-            <td style="text-align: left; white-space: pre-wrap">{{ "\n".join(val) }}</td>
+            <td style="text-align: left; white-space: pre-wrap">
+                {%- if val is string -%}
+                    {{ val }}
+                {%- else -%}
+                    {{ val|join("\n") }}
+                {%- endif -%}
+            </td>
             {%- if loop.index%3==0 and not loop.last -%}
                 </tr><tr>
             {% endif -%}
@@ -83,16 +89,16 @@
     {% for key,data in character.Meta.items() %}
         <h2 class="hideable">*{{ key }}</h2>
         <div>
-        {% for section,sectiondata in data.items() -%}
-            {% if section|trim|length %}
-            <h3 class="hideable">*{{ section}}</h3>
-            {% endif %}
-            <div>
-                {%- for line in sectiondata %}
-                    {{ line }}<br>
-                {% endfor -%}
-            </div>
-        {%- endfor -%}
+            {% for section,sectiondata in data.items() -%}
+                {% if section|trim|length %}
+                    <h3 class="hideable">*{{ section}}</h3>
+                {% endif %}
+                <div>
+                    {%- for line in sectiondata %}
+                        {{ line }}<br>
+                    {% endfor -%}
+                </div>
+            {%- endfor -%}
         </div>
     {%- endfor -%}
 

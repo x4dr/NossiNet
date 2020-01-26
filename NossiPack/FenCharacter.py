@@ -16,10 +16,10 @@ def process_table(table):
     headers = arr[0]
     line = headers
     try:
-        if len(headers) == 2 and all("-" in m for m in arr[1]):
+        if all("-" in m for m in arr[1]):
             result = OrderedDict()
             for line in arr[2:]:
-                x, y = line
+                x, y = line[:2]
                 result[x] = y
             return result
     except:
@@ -103,7 +103,6 @@ class FenCharacter(object):
             for cat in self.Categories[kind].keys():
                 for spec in self.Categories[kind][cat].keys():
                     unified[spec] = self.Categories[kind][cat][spec]
-        # print("unified fensheet:", unified)
         return unified
 
     def process_trigger(self, trigger):
@@ -118,12 +117,10 @@ class FenCharacter(object):
             firstline = category.find("\n")
             categoryname = category[:firstline].strip()
             category = category[firstline + 1:].strip()
-            print("found category:", categoryname)
             result[categoryname] = OrderedDict()
             for section in [x for x in re.split(r"\n###(?!#)", "\n" + category, 1000, re.MULTILINE) if x.strip()]:
                 firstline = section.find("\n")
                 sectionname = section[:firstline].strip()
-                print("found section:", sectionname)
                 section = section[firstline + 1:].strip()
                 tableslurp = ""
                 li = []
@@ -153,20 +150,32 @@ class FenCharacter(object):
         if len("sheetparts") == 0:
             sheetparts = [body]
         for s in sheetparts:
-            print("sheetpart:", s[:25] + "/sheetpart")
             firstline = s.find("\n")
             partname = s[:firstline]
             s = s[firstline:]
             if partname.strip().startswith("Werte") or len(sheetparts) == 1:
-                tmp = self.parse_part(s)
-                self.Categories.update(tmp)
+                parsed_parts = self.parse_part(s)
+                self.Categories.update(parsed_parts)
             else:
                 if partname.strip() in ["", "Charakter"]:
-                    self.Character = self.parse_part(s, True)
+                    parsed_parts = self.pull_up(self.parse_part(s, True))
+                    self.Character = parsed_parts
                 else:
-                    self.Meta[partname] = self.parse_part(s, True)
-        print(self.Categories.keys(), self.Meta)
+                    parsed_parts = self.pull_up(self.parse_part(s, True))
+                    self.Meta[partname] = parsed_parts
         return self.Categories
+
+    @staticmethod
+    def pull_up(layered: dict):
+        new = OrderedDict()
+        if "" in layered.keys():
+            if isinstance(layered[""], dict):
+                for k, v in list(layered[""].items()):
+                    if k.strip():
+                        new[k] = v
+                del layered[""]
+        new.update(layered)
+        return new
 
     def validate_char(self, ):
         comment = self.Name + "NOT IMPLEMENTED"
@@ -208,7 +217,6 @@ class FenCharacter(object):
                                  ('Inventory', self.Inventory),
                                  ('Notes', self.Notes),
                                  ('Type', "FEN")])
-        # print("character:", character)
         return character
 
     def serialize(self):
