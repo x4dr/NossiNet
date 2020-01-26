@@ -12,6 +12,8 @@ from scipy.integrate import quad
 from scipy.interpolate import interp1d
 from scipy.optimize import fsolve
 
+from NossiPack.krypta import DescriptiveError
+
 
 def modify_dmg(specific_modifiers, dmg, damage_type, armor):
     total_damage = 0
@@ -184,7 +186,7 @@ def helper(f, integratedsum, q, lastquant):
 def chances(selector, modifier=0, number_of_quantiles=None):
     selector = tuple(sorted(int(x) for x in selector if 0 < int(x) < 6))
     if not selector:
-        raise Exception("No Selectors!")
+        raise DescriptiveError("No Selectors!")
     modifier = int(modifier)
     occurrences = {}
     yield "processing..."
@@ -196,9 +198,9 @@ def chances(selector, modifier=0, number_of_quantiles=None):
                     break
             if not occurrences:
                 yield "did not find" + str(selector)
-                raise Exception("no data found")
+                raise DescriptiveError("no data found")
         yield "data found..."
-    except Exception as e:
+    except DescriptiveError as e:
         yield f"generating Data for {selector}..."
         with open("unordered_data", "a") as f:
             occurren = {}
@@ -238,6 +240,7 @@ def chances(selector, modifier=0, number_of_quantiles=None):
             yield "calculating integrals"
             tries = 0
             while tries < 3:
+                n = -1
                 try:
                     n = max(min(int(number_of_quantiles), 100), 0) + 1
                     quantiles = [0]
@@ -249,8 +252,6 @@ def chances(selector, modifier=0, number_of_quantiles=None):
                 except Exception as e:
                     print("exception in calculating:", e, n)
                     raise
-                    yield "WARNING: RECALCULATING"
-                    tries += 1
         yield "finalizing graph"
         plt.plot(linx, f(linx), "--")
         buf = io.BytesIO()

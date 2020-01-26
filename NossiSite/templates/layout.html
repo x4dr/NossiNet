@@ -46,7 +46,7 @@
     {% endblock %}
     {% if error %}<p class=error><strong>Error:</strong> {{ error }}{% endif %}
     {% for message in get_flashed_messages() %}
-        <div class=flash onclick="this.parentNode.removeChild(this)">{{ message }}</div>
+        <div class=flash style="white-space: pre-wrap;" onclick="this.parentNode.removeChild(this)">{{ message }}</div>
     {% endfor %}
 
 

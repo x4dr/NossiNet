@@ -1,6 +1,8 @@
 import datetime
 from flask_socketio import emit
 from flask import session
+
+from NossiPack.krypta import DescriptiveError
 from NossiSite.helpers import connect_db
 import re
 import time
@@ -70,12 +72,12 @@ class Chatroom(object):
 
     def addline(self, line, supresssave=False):
         if not session["user"] in self.presentusers.keys():
-            raise Exception("You left this room or were inactive. (Testphase)")
+            raise DescriptiveError("You left this room or were inactive.")
         try:
             if len(self.chatlog) < 1:
                 self.chatlog.append([0, line, time.time()])  # initial line
             self.chatlog.append([self.chatlog[-1][0] + 1, line, time.time()])
-        except Exception as inst:  # # DEBUG! DUMP SHOULDNT BE NECESSARY
+        except Exception as inst:
             print("self.chatlog:", self.chatlog, "\n\nline:", line, inst.args)
             emit("Message", {'data': "a fun little error occured, please inform maric"}, room=self.name)
         try:

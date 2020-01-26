@@ -1,15 +1,8 @@
 import random
 
-from NossiPack.WoDParser import WoDParser
 
-
-def d10bulk(amount, rep, difficulty=6):
-    roll = WoDParser({}).make_roll(str(amount) + "d10f" + str(difficulty))
-    res = []
-    while rep >= 1:
-        res.append(roll.roll())
-        rep -= 1
-    return res
+class DescriptiveError(Exception):
+    pass
 
 
 def sumdict(inp):

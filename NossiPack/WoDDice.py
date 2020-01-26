@@ -1,6 +1,8 @@
 import random
 from typing import List, Union
 
+from NossiPack.krypta import DescriptiveError
+
 
 def str_to_slice(inp):
     s = [int(x) if x else None for x in inp.split(":")]
@@ -19,19 +21,19 @@ class WoDDice(object):
             try:
                 self.max = int(info['sides']) + self.min - 1
             except:
-                raise Exception("No Sides!")
+                raise DescriptiveError("Dice without sides!")
             self.difficulty = info.get('difficulty', None)
             self.subone = info.get('onebehaviour', 0)
             try:
                 self.returnfun = info['return']
             except:
-                raise Exception("No return function!")
+                raise DescriptiveError("No evaluation function for dice!")
             self.explodeon = self.max + 1 - info.get('explosion', 0)
             self.sort = info.get('sort')
             try:
                 self.amount = info['amount']
             except:
-                raise Exception("No amount!")
+                raise DescriptiveError("No amount of dice!!")
             self.rerolls = int(info.get("rerolls", 0))  # only used for fenrolls
             self.selectors = info.get("selectors", [])
             if "," in self.selectors:
@@ -50,7 +52,7 @@ class WoDDice(object):
             if self.amount is not None:
                 self.roll_next(int(info.get('amount')))
         except KeyError as e:
-            raise Exception("Missing Parameter: " + str(e.args[0]))
+            raise DescriptiveError("Missing Parameter: " + str(e.args[0]))
         except Exception as e:
             print("exception during die creation:", e.args, e.__traceback__)
             raise
@@ -81,7 +83,7 @@ class WoDDice(object):
 
     def another(self):
         if not self.amount:
-            raise Exception("No Amount set for reroll!")
+            raise DescriptiveError("No Amount set for reroll!")
         else:
             return WoDDice({
                 'sides': self.max,
@@ -118,7 +120,7 @@ class WoDDice(object):
                 try:
                     diff = int(self.difficulty)
                 except:
-                    raise Exception("No Difficulty set!")
+                    raise DescriptiveError("No Difficulty set!")
                 if self.r[-1] >= diff:  # last die face >= than the difficulty
                     self.succ += 1
                     self.log += "success "
@@ -267,4 +269,4 @@ class WoDDice(object):
 
 
 def error(err):
-    raise Exception(err)
+    raise DescriptiveError(err)

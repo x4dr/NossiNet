@@ -7,6 +7,8 @@ import time
 import pickle
 import urllib
 
+from NossiPack.krypta import DescriptiveError
+
 __author__ = "maric"
 
 
@@ -67,7 +69,7 @@ class Character(object):
             try:
                 result += int(a)
             except:
-                raise Exception("could not add up", a)
+                raise DescriptiveError("could not add up", a)
         return result
 
     @staticmethod

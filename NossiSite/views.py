@@ -193,7 +193,7 @@ def update_filter():
 @app.route('/fensheet/<c>')
 def fensheet(c):
     char = FenCharacter()
-    char.load_from_md(wikiload("3d10fcharacter")[2], *wikiload(c + "_character"))
+    char.load_from_md(*wikiload(c + "_character"))
     print(char.Categories)
     return render_template("fensheet.html", character=char)
 
@@ -254,7 +254,7 @@ def magicweapons(w, par=None):
         code = code[code.find("\n") + 1:]  # skip over the newline
         code = code[:code.find("\n")]  # code should be on the next line
     else:
-        raise Exception(w.upper(), "not foundin ", code)
+        raise DescriptiveError(w.upper(), "not foundin ", code)
     weapon = helpers.magicalweapontable(code, par, format_json or format_txt)
     if format_txt:
         result = f"{'Wert': <11}" + "".join(f"{x: <4}" for x in range(1, 11)) + "\n"
@@ -614,7 +614,9 @@ def register():  # this is not clrs secure because it does not need to be
 def login():
     error = None
     returnto = request.args.get('r', None)
+    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", request.form)
     if request.method == 'POST':
+
         ul = Userlist(preload=False, sheets=False)
         user = request.form['username']
         user = user.upper()

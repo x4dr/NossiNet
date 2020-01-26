@@ -14,6 +14,7 @@ import numexpr
 from flask import request, session, g, redirect, url_for, \
     render_template, flash
 
+from NossiPack.krypta import DescriptiveError
 from NossiSite import app
 from fengraph import weapondata
 
@@ -112,7 +113,7 @@ def stream_file(f):
 
 def generate_token():
     if not session['logged_in']:
-        raise Exception("Not Logged in.")
+        raise DescriptiveError("Not Logged in.")
     return session['print']  # only one token per session for now.
 
 
@@ -209,14 +210,18 @@ def internal_error(error: Exception):
     if error.args[0] == "REDIR":
         return error.args[1]
     else:
-        logging.exception("Unhandled internal error")
-    flash("internal error. sorry", category="error")
-    return render_template('show_entries.html'), 500
+        if type(error) == DescriptiveError:
+            flash(error.args[0])
+        else:
+            flash("internal error. sorry", category="error")
+            logging.exception("Unhandled internal error")
+
+    return redirect(url_for('show_entries'))
 
 
 def weaponadd(weapon_damage_array, b, ind=0):
     if len(weapon_damage_array) != len(b):
-        raise Exception("Length mismatch!", weapon_damage_array, b)
+        raise DescriptiveError("Length mismatch!", weapon_damage_array, b)
     c = []
     for i in range(len(weapon_damage_array)):
         c.append((weapon_damage_array[i] + [0, 0])[:2])
@@ -234,7 +239,7 @@ def magicalweapontable(code: str, par=None, json=False):
     if step[0].strip() == "WEAPON":
         return weapontable(step[1], step[2], json)
     else:
-        raise Exception("Dont know what do do with " + code)
+        raise DescriptiveError("Dont know what do do with " + code)
 
 
 def calculate(calc, par):
@@ -262,7 +267,7 @@ def calculate(calc, par):
             print("LOOSE:", loose_par)
             par[e.args[0]] = int(loose_par.pop())  # try autofilling
     if missing:
-        raise Exception("Parameter " + missing.args[0] + " is missing!")
+        raise DescriptiveError("Parameter " + missing.args[0] + " is missing!")
     return decimal.Decimal(res).quantize(1, decimal.ROUND_HALF_UP)
 
 
@@ -272,7 +277,7 @@ def weapontable(w, mods="", json=False):
         data = {k.lower(): v for k, v in data.items()}
         weapon = data.get(w.lower(), None)
         if weapon is None:
-            raise Exception(w.lower() + " does not exist in " + " ".join(data.keys()))
+            raise DescriptiveError(w.lower() + " does not exist in " + " ".join(data.keys()))
         for mod in mods.split(","):
             mod = mod.strip()
             if not mod:
@@ -280,7 +285,7 @@ def weapontable(w, mods="", json=False):
             modregex = re.compile(r"^(?P<direction>[LR])(?P<sharp>X?)(?P<amount>-?\d+)(?P<apply>[HSCB]+)$")
             match = modregex.match(mod)
             if not match:
-                raise Exception("Modifier Code " + mod + " does not match the format!")
+                raise DescriptiveError("Modifier Code " + mod + " does not match the format!")
             match = match.groupdict()
             if match["direction"] == "L":
                 direction = -1

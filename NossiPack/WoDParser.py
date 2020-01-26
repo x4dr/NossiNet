@@ -5,6 +5,7 @@ from typing import List, Union
 import numexpr
 
 from NossiPack.WoDDice import WoDDice
+from NossiPack.krypta import DescriptiveError
 
 
 class Node(object):
@@ -14,7 +15,7 @@ class Node(object):
         self.depth = depth
         self.dependent = {}
         if self.depth > 100:
-            raise Exception("recursion depth exceeded")
+            raise DescriptiveError("recursion depth exceeded")
         self.buildroll()
 
     def buildroll(self):
@@ -108,9 +109,9 @@ class WoDParser(object):
                 return {}
             if not message.strip():
                 return None
-            raise Exception("invalid dicecode:'" + message + "'\n usage: " + WoDParser.usage)
+            raise DescriptiveError("invalid dicecode:'" + message + "'\n usage: " + WoDParser.usage)
         if "@" in message and info.get("selectors") is None:
-            raise Exception("Missing Selectors!")
+            raise DescriptiveError("Missing Selectors!")
         if info.get('sides', None) is not None:
             info['sides'] = int(info['sides'])
         if info.get("onebehaviour") == "f":
@@ -152,14 +153,14 @@ class WoDParser(object):
                 if default is not None:
                     self.rolllogs[-1].returnfun = default
                 else:
-                    raise Exception("No return function! Should be one of \"@efghl\" for \"" + roll + "\"")
+                    raise DescriptiveError("No return function! Should be one of \"@efghl\" for \"" + roll + "\"")
             return self.rolllogs[-1]
 
     def make_roll(self, roll: Union[str]) -> WoDDice:
         """Uses full and valid Rolls and returns WoDDice."""
         params = self.extract_diceparams(roll)
         if not params:  # no dice
-            raise Exception("No Valid Dice in \"" + roll + "\"")
+            raise DescriptiveError("No Valid Dice in \"" + roll + "\"")
         fullparams = self.defines.copy()
         fullparams.update(params)
         return WoDDice(fullparams)
@@ -182,7 +183,7 @@ class WoDParser(object):
         if message.strip()[0] == "(":
             p = fullparenthesis(message)
             if len(message.replace(p, "").strip()[1:].strip()[1:].strip()) > 0:
-                raise Exception("Leftovers after " + message + ":" + message.replace(p, ""))
+                raise DescriptiveError("Leftovers after " + message + ":" + message.replace(p, ""))
             return self.do_roll(fullparenthesis(message))
         return message
 
@@ -193,7 +194,7 @@ class WoDParser(object):
             return message, "", ""
         else:
             if c % 2 != 0:
-                raise Exception("unmatched & in \"" + message + "\"")  # leftover & supposed to be cleared after usage
+                raise DescriptiveError("unmatched & in \"" + message + "\"")  # leftover & supposed to be cleared after usage
 
         m = message.split("&")
         tail = "&".join(m[1:])
@@ -238,19 +239,19 @@ class WoDParser(object):
                 try:
                     nextpart = trigger.rfind(" ")
                     if nextpart == -1:
-                        raise Exception("No parameters")
+                        raise DescriptiveError("No parameters")
                     goal = int(self.assume(trigger[nextpart:]))
                     print("goal", goal)
                     trigger = trigger[:nextpart]
                     print("newtrigger", trigger)
                     nextpart = trigger.rfind(" ")
                     if nextpart == -1:
-                        raise Exception("No second parameter")
+                        raise DescriptiveError("No second parameter")
                     current = int(self.assume(trigger[nextpart:]))
                     print("current", current)
                     nextpart = trigger.rfind(" ")
                     if nextpart == -1:
-                        raise Exception("No third parameter")
+                        raise DescriptiveError("No third parameter")
                     trigger = trigger[:nextpart]
                     print("newtrigger", trigger)
                     i = 0
@@ -278,10 +279,12 @@ class WoDParser(object):
                     self.triggers[triggername] = (i, current, goal, log)
                     message = message.replace("&", str(i), 1)
                 except TypeError:
-                    raise Exception(trigger + " does not have a result")  # probably
+                    raise DescriptiveError(trigger + " does not have a result")  # probably
+                except DescriptiveError:
+                    raise
                 except Exception as e:
                     print(e, e.__class__, e.args, traceback.format_exc())
-                    raise Exception("Breakthrough Parameters: roll, current, goal\n" +
+                    raise DescriptiveError("Breakthrough Parameters: roll, current, goal\n" +
                                     "Optionally &adversity x& to the left of breakthrough")
 
             elif triggername in ["ignore", "verbose", "suppress", "order"]:
@@ -307,7 +310,7 @@ class WoDParser(object):
                         self.defines[d.split(":")[0].strip()] = d.split(":")[1].strip()
                         message = message.replace("&", "", 1)  # no substitution to be made
                 except:
-                    raise Exception("Values malformed. Expected: \"&values key:value, key:value, key:value&\"")
+                    raise DescriptiveError("Values malformed. Expected: \"&values key:value, key:value, key:value&\"")
 
             elif triggername == "param":
                 try:
@@ -320,7 +323,7 @@ class WoDParser(object):
 
                     message = message.replace("&", "", 1)  # no substitution to be made
                 except:
-                    raise Exception(
+                    raise DescriptiveError(
                         "Parameter malformed. Expected: \"&param key1,key2,key3&[...]value1,value2,value3\"")
 
             elif "if" == triggername:
@@ -340,7 +343,7 @@ class WoDParser(object):
                 else:
                     message = message.replace("&", "(" + elsebranch.replace("$", str(-ifroll), 1) + ")", 1)
             else:
-                raise Exception("unknown Trigger: " + triggername)
+                raise DescriptiveError("unknown Trigger: " + triggername)
             message, triggername, trigger = self.gettrigger(message)
 
         return message
@@ -379,6 +382,6 @@ def fullparenthesis(message, opening="(", closing=")", include=False):
             if begun is None:
                 begun = i
     if i > len(message) + 5:
-        raise Exception("unmatched " + opening + " " + closing + ": " + message)
+        raise DescriptiveError("unmatched " + opening + " " + closing + ": " + message)
     result = message[begun + (len(opening) if not include else 0): i + (len(closing) if include else 0)]
     return result

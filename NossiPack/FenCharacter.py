@@ -1,8 +1,27 @@
 import pickle
+import re
 import time
-from collections import OrderedDict
+
+from NossiPack.krypta import DescriptiveError
 
 __author__ = "maric"
+
+
+def process_table(table):
+    lines = [x for x in table.split("\n") if x]
+    arr = [m.strip().strip("|").split("|") for m in lines]
+    headers = arr[0]
+    line=headers
+    try:
+        if len(headers) == 2 and all("-" in m for m in arr[1]):
+            result = {}
+            for line in arr[2:]:
+                x, y = line
+                result[x] = y
+            return result
+    except:
+        pass
+    raise DescriptiveError("Problem with: "+"|".join(line)+"\nin\n" + table)
 
 
 class FenCharacter(object):
@@ -10,12 +29,13 @@ class FenCharacter(object):
         self.Tags = ""
         self.Name = name
         self.Meta = meta
-        self.Categories = {"Stärke": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Fortschritt": {}},
-                           "Können": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Fortschritt": {}},
-                           "Magie": {"Quelle": {}, "Konzepte": {}, "Aspekte": {}, "Vorteile": {}, "Fortschritt": {}},
-                           "Weisheit": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Fortschritt": {}},
-                           "Charisma": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Fortschritt": {}},
-                           "Schicksal": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Fortschritt": {}}}
+        self.Categories = {}
+        self._Cats = {"Stärke": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Fortschritt": {}},
+                      "Können": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Fortschritt": {}},
+                      "Magie": {"Quelle": {}, "Konzepte": {}, "Aspekte": {}, "Vorteile": {}, "Fortschritt": {}},
+                      "Weisheit": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Fortschritt": {}},
+                      "Charisma": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Fortschritt": {}},
+                      "Schicksal": {"Attribute": {}, "Fähigkeiten": {}, "Vorteile": {}, "Fortschritt": {}}}
         self.Wounds = []
         self.Modifiers = {}
         self.Inventory = {}
@@ -76,81 +96,47 @@ class FenCharacter(object):
     def process_trigger(self, trigger):
         pass  # for when triggers are being built in
 
-    def load_from_md(self, templatemd, title, tags, body):
-        cursec = ""
-        subsection = ""
+    def parse_stats(self, s):
+        categories = [x for x in re.split(r"\n##(?!#)", "\n" + s, re.MULTILINE) if x.strip()]
+        print("cats: ", categories)
+        for category in categories:
+            firstline = category.find("\n")
+            categoryname = category[:firstline]
+            category = category[firstline + 1:]
+            print("found category:", categoryname, "and", category)
+            self.Categories[categoryname] = {}
+            for section in [x for x in re.split(r"\n###(?!#)", "\n" + category, re.MULTILINE) if x]:
+                firstline = section.find("\n")
+                sectionname = section[:firstline]
+                print("found section:", sectionname)
+                section = section[firstline + 1:]
+                tableslurp = ""
+                print("processing section " + section)
+                for l in section.split("\n"):
+                    if "|" in l:
+                        tableslurp += l + "\n"
+                    else:
+                        break
+                if tableslurp:
+                    self.Categories[categoryname][sectionname] = process_table(tableslurp)
+                else:
+                    self.Categories[categoryname][sectionname] = {}
+                print(self.Categories)
+
+    def load_from_md(self, title, tags, body):
         self.Name = title
         self.Tags = tags
-        f = templatemd.split("\n")
-        for b in body.split("###"):
-            print("->",b[:100])
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            if line.startswith("*") and subsection:
-                item = line[2:]
-                self.Categories[cursec][subsection][item] = 0
-            else:
-                subsection = ""
-            if line.startswith("##") and not line.startswith("###"):
-                cursec = line[2:]
-                self.Categories[cursec] = OrderedDict()
-            if line.startswith("###") and cursec:
-                subsection = line[3:]
-                self.Categories[cursec][subsection] = OrderedDict()
 
-        cursec = ""
-        subsection = ""
-        keys = []
-
-        for line in (body + "\n").split("\n"):
-            line = line.strip()
-            if "|" in line and subsection:
-                line = line.strip("|")
-                key = line.split("|")
-                try:
-                    value = key[1]
-                except Exception:
-                    value = "0"
-                key = key[0]
-                keys.append(key)
-                try:
-                    self.Categories[cursec][subsection][key] = int(value)
-                except Exception:
-                    pass
-                continue
-            else:
-                if subsection:  # table ends found process the current one and empty subsection
-                    try:
-                        for k in self.Categories[cursec][subsection].keys():
-                            if k not in keys:
-                                if subsection.startswith("Attribute"):
-                                    self.Categories[cursec][subsection][k] = 2
-                                else:
-                                    self.Categories[cursec][subsection][k] = 0
-                    except KeyError:
-                        pass
-                    finally:
-                        subsection = ""
-
-            if line.startswith("##") and not line.startswith("###"):
-                if cursec:  # if new section found, process the current table and continue
-                    for subsect in self.Categories[cursec].keys():
-                        if self.Categories[cursec].get(subsect, None) is None:
-                            for newitem in self.Categories[cursec][subsect]:
-                                if subsection.startswith("Attribute"):
-                                    self.Categories[cursec][subsection][newitem] = 2
-                                else:
-                                    self.Categories[cursec][subsection][newitem] = 0
-
-                cursec = line.strip('#')
-                self.Categories[cursec] = self.Categories.get(cursec, OrderedDict())
-
-            if line.startswith("###") and cursec:
-                subsection = line[3:]
-                self.Categories[cursec][subsection] = self.Categories[cursec].get(cursec, OrderedDict())
-
+        sheetparts = re.split(r"\n#(?!#)","\n"+body, re.MULTILINE)
+        if len("sheetparts") ==0:
+            sheetparts=body
+        for s in sheetparts:
+            print("sheetpart:", s[:25] + "/sheetpart")
+            if s.strip().startswith("Werte"):
+                firstline = s.find("\n") + 1
+                s = s[firstline:]
+                self.parse_stats(s)
+        print("categories:", self.Categories)
         return self.Categories
 
     def validate_char(self, ):

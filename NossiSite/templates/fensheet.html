@@ -34,7 +34,7 @@
                 {% for vk,vv in v.items() -%}
                     <tr>
                         <td style="text-align: left; word-wrap: break-word">{{ vk }} </td>
-                        <td>{{ dots(vv) }} </td>
+                        <td>{{ vv }} </td>
                     </tr>
                 {% endfor %}
                 <tr><td><br></td></tr>
@@ -89,7 +89,7 @@
     <br>
     <div style="text-align: center ">
         {% for category,data in character.Categories.items() %}
-            <div style="display: inline-block; vertical-align: top;">{{ catformat(data,category)}}</div>
+            <div style="display: inline-block; width: 30%; vertical-align: top;">{{ catformat(data,category)}}</div>
         {% endfor %}
     </div>
 

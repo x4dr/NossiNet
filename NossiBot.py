@@ -16,6 +16,7 @@ import traceback
 from dateparser import parse as dateparse
 
 from NossiPack import WoDParser
+from NossiPack.krypta import DescriptiveError
 
 remindfile = os.path.expanduser("~/reminders.txt")
 remindnext = os.path.expanduser("~/reminers_next.txt")
@@ -140,7 +141,7 @@ async def oraclehandle(msg, comment, send, author):
             if n:
                 await sentmessage.edit(content=author.mention + comment + "```" + n + "```")
             else:
-                raise Exception("no values past the first")
+                raise DescriptiveError("no values past the first")
         except Exception as e:
             print("exception during oracle", e)
             if sentmessage:
