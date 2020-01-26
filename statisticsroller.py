@@ -14,29 +14,6 @@ from NossiPack.WoDParser import WoDParser
 from NossiPack.krypta import d10
 
 
-def wikiload(page: str) -> Tuple[str, List[str], str]:
-    with open(os.path.expanduser("~/wiki/" + page + ".md")) as f:
-        mode = "meta"
-        title = ""
-        tags = []
-        body = ""
-        for line in f.readlines():
-            if mode and line.startswith("tags:"):
-                tags += [t for t in line.strip("tags:").strip().split(" ") if t]
-                continue
-            if mode and line.startswith("title:"):
-                title = line.strip("title:").strip()
-                continue
-            if mode and not line.strip():
-                mode = ""
-            body += line
-        return title, tags, body
-
-
-FenCharacter().load_from_md(*wikiload("ranikyr_character"))
-exit()
-
-
 def selector(sel, addon=""):
     sel = [str(x) for x in sel]
     p = WoDParser({})

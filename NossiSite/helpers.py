@@ -205,6 +205,7 @@ def checklogin():
         raise Exception("REDIR", redirect(url_for('login', r=request.url)))
 
 
+@app.errorhandler(Exception)
 def internal_error(error: Exception):
     if error.args[0] == "REDIR":
         return error.args[1]
@@ -215,10 +216,6 @@ def internal_error(error: Exception):
             flash("internal error. sorry", category="error")
             logging.exception("Unhandled internal error")
     return redirect(url_for('show_entries'))
-
-
-if app.debug:
-    app.register_error_handler(Exception, internal_error())
 
 
 def weaponadd(weapon_damage_array, b, ind=0):
