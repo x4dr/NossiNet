@@ -361,7 +361,7 @@ def fill_infolets(body):
     infos = re.compile(r"\[\[specific:(.+?)\]\]", re.IGNORECASE)
     links = re.compile(r"\[(.+?)\]\((.+?)\)")
 
-    body = links.sub(r'<a href="\g<2>"> \g<1> </a>', body)
+    body = links.sub(r'<a href="/wiki/\g<2>"> \g<1> </a>', body)
 
     body = infos.sub(getinfo, hiddeninfos.sub(hide(getinfo), body))
     return weapons.sub(gettable, hiddenweapons.sub(hide(gettable), body))
