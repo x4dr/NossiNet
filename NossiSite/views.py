@@ -196,8 +196,8 @@ def update_filter():
 def fensheet(c):
     char = FenCharacter()
     char.load_from_md(*wikiload(c + "_character"))
-    print(char.Categories)
-    return render_template("fensheet.html", character=char)
+    body = render_template("fensheet.html", character=char)
+    return fill_infolets(body)
 
 
 @app.route('/weapon/<w>')

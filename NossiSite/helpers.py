@@ -333,7 +333,6 @@ def fill_infolets(body):
                       "div", "hr"]
 
     def gettable(match):
-        print("getting table", match)
         return weapontable(match.group(1), match.group(2))
 
     def getinfo(match):
@@ -359,6 +358,10 @@ def fill_infolets(body):
     weapons = re.compile(r"\[\[weapon:(.+?):(.*?)\]\]", re.IGNORECASE)
     hiddeninfos = re.compile(r"\[\[\[specific:(.+?)\]\]\]", re.IGNORECASE)
     infos = re.compile(r"\[\[specific:(.+?)\]\]", re.IGNORECASE)
+    links = re.compile(r"\[(.+?)\]\((.+?)\)")
+
+    body = links.sub(r"<a href=\"\g<2>\"> \g<1> </a>", body)
+
     body = infos.sub(getinfo, hiddeninfos.sub(hide(getinfo), body))
     return weapons.sub(gettable, hiddenweapons.sub(hide(gettable), body))
 
