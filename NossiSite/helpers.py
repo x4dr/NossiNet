@@ -212,6 +212,7 @@ def internal_error(error: Exception):
     else:
         if type(error) == DescriptiveError:
             flash(error.args[0])
+            logging.exception("Handled Descriptive Error")
         else:
             flash("internal error. sorry", category="error")
             logging.exception("Unhandled internal error")
