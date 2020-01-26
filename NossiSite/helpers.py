@@ -205,7 +205,6 @@ def checklogin():
         raise Exception("REDIR", redirect(url_for('login', r=request.url)))
 
 
-@app.errorhandler(Exception)
 def internal_error(error: Exception):
     if error.args[0] == "REDIR":
         return error.args[1]
@@ -215,8 +214,11 @@ def internal_error(error: Exception):
         else:
             flash("internal error. sorry", category="error")
             logging.exception("Unhandled internal error")
-
     return redirect(url_for('show_entries'))
+
+
+if app.debug:
+    app.register_error_handler(Exception, internal_error())
 
 
 def weaponadd(weapon_damage_array, b, ind=0):
@@ -353,6 +355,7 @@ def fill_infolets(body):
         def hidden(text):
             header = text.group(0).strip("[]")
             return "<div class=hideable><b> " + header + "</b></div>""<div>" + func(text) + "</div>"
+
         return hidden
 
     hiddenweapons = re.compile(r"\[\[\[weapon:(.+?):(.*?)\]\]\]", re.IGNORECASE)

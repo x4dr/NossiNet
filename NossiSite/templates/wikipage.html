@@ -5,52 +5,38 @@
     {% else %}
     {% endfor %}
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="wiki.css") }}">
-    <script>
-        $(document).ready(function() {
-        $(".hideable").click(function () {
-            let $hideable = $(this);
-            let $content = $hideable.next();
-            $content.slideToggle(800, function () {
-                $hideable.text(function () {
-                    return ($content.is(":visible") ? "-" : "+") + $hideable.text().slice(1);
-                });
-            });
-        });
-        $(".hideable").click()
-})
-    </script>
 {% endblock %}
 {% block title %}
     <title xmlns="http://www.w3.org/1999/html">{{ title }}</title>
 {% endblock %}
 {% block pagetitle %}
-        <h1><a href={{ url_for('wiki_index') }}>{{ title }}</h1>
+    <h1><a href={{ url_for('wiki_index') }}>{{ title }}</h1>
 {% endblock %}
 {% block metanavcomplete %}
     <div class=metanav>
-    {% if not session.logged_in %}
-        <a class=metanav href="{{ url_for('login') }}">log in</a>
-        <a class=metanav href="{{ url_for('register') }}">register</a>
-    {% else %}
+        {% if not session.logged_in %}
+            <a class=metanav href="{{ url_for('login') }}">log in</a>
+            <a class=metanav href="{{ url_for('register') }}">register</a>
+        {% else %}
             <a class=metanav href="{{ url_for('charsheet') }}">SHEET</a>  &nbsp
             <a class=metanav href="{{ url_for('chatsite') }}">CHAT</a>  &nbsp
             <a class=metanav href="{{ url_for('show_user_profile',username=session.user) }}">{{ session.user }}</a>
             &nbsp
             <a class=metanav href="{{ url_for('logout') }}">LOG OUT</a>
-    {% endif %}
+        {% endif %}
     </div>
 {% endblock %}
 
 {% block body %}
     <div class="entry" style="word-wrap:break-word;border:1px solid">{{ body|safe }}
-          <br> {#dangerous body has to be cleaned before being sent here#}
+        <br> {#dangerous body has to be cleaned before being sent here#}
     </div>
     <div style="margin: 2em">|
-    {% for t in tags %}
-    <a href="{{ url_for('tagsearch',tag = t) }}">{{ t }}</a> |
-    {% endfor %}
-    <br>
+        {% for t in tags %}
+            <a href="{{ url_for('tagsearch',tag = t) }}">{{ t }}</a> |
+        {% endfor %}
+        <br>
 
-    <a href="{{ url_for("editentries", x=wiki) }}"><input type="button" class="leeet" style="margin-top: 1em" value="Edit"></a>
+        <a href="{{ url_for("editentries", x=wiki) }}"><input type="button" class="leeet" style="margin-top: 1em" value="Edit"></a>
     </div>
 {% endblock %}
