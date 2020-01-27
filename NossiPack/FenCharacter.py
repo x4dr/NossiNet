@@ -8,25 +8,6 @@ from NossiPack.krypta import DescriptiveError
 __author__ = "maric"
 
 
-def process_table(table):
-    lines = [x.strip() for x in table.split("\n") if x.strip()]
-    if not lines:
-        return OrderedDict()
-    arr = [m.strip().strip("|").split("|") for m in lines]
-    headers = arr[0]
-    line = headers
-    try:
-        if all("-" in m for m in arr[1]):
-            result = OrderedDict()
-            for line in arr[2:]:
-                x, y = line[:2]
-                result[x] = y
-            return result
-    except:
-        pass
-    raise DescriptiveError("Problem with: " + "|".join(line) + "\nin\n" + table)
-
-
 class FenCharacter(object):
     def __init__(self, name="", meta=None):
         self.Tags = ""
@@ -41,11 +22,11 @@ class FenCharacter(object):
 
         self.Categories = OrderedDict([("Stärke", sublvl()),
                                        ("Können", sublvl()),
-                                       ("Magie", OrderedDict([("Quelle", None),
-                                                              ("Konzepte", None),
-                                                              ("Aspekte", None),
-                                                              ("Zauber", None),
-                                                              ("Vorteile", None)])),
+                                       ("Magie", OrderedDict([("Quelle", {}),
+                                                              ("Konzepte", {}),
+                                                              ("Aspekte", {}),
+                                                              ("Zauber", {}),
+                                                              ("Vorteile", {})])),
                                        ("Weisheit", sublvl()),
                                        ("Charisma", sublvl()),
                                        ("Schicksal", sublvl())])
@@ -109,7 +90,7 @@ class FenCharacter(object):
         pass  # for when triggers are being built in
 
     @staticmethod
-    def parse_part(s, all_lines=False):
+    def parse_part(s, parse_table):
         result = OrderedDict()
         categories = [x for x in re.split(r"\n##(?!#)", "\n" + s,
                                           maxsplit=1000, flags=re.MULTILINE) if x.strip()]
@@ -124,22 +105,43 @@ class FenCharacter(object):
                 section = section[firstline + 1:].strip()
                 tableslurp = ""
                 li = []
-                for l in section.split("\n"):
-                    li.append(l)
-                    if "|" in l or tableslurp and tableslurp[-1] != " ":
-                        tableslurp += l.strip() + "\n"
+                result[categoryname][sectionname] = OrderedDict()
+                result[categoryname][sectionname]["_lines"] = []
+                tablestate = 0
+                for line in section.split("\n"):
+                    line = line.strip()
+                    candidate = line.split("|")
+                    candidate = (candidate if len(candidate) == 2
+                                 else line[1 if line.startswith("|") else 0:
+                                           -1 if line.startswith("|") else len(line)].split("|"))
+                    if parse_table and len(candidate) == 2:
+                        tablestate += 1
+                        if tablestate > 2:  # 1: header, 2: alignment
+                            result[categoryname][sectionname][candidate[0]] = candidate[1]
                     else:
-                        tableslurp += " "
-                tableslurp = tableslurp.strip()
-                if tableslurp:
-                    result[categoryname][sectionname] = process_table(tableslurp)
-                else:
-                    if all_lines:
-                        result[categoryname][sectionname] = li
-                    else:
-                        result[categoryname][sectionname] = OrderedDict()
-            if len(result[categoryname].keys()) == 1 and not list(result[categoryname].keys())[0].strip():
+                        tablestate = 0
+                        result[categoryname][sectionname]["_lines"].append(line)
+
+                result[categoryname][sectionname]["_lines"].extend(li)
+                if len(result[categoryname][sectionname]["_lines"]) == 0:
+                    del result[categoryname][sectionname]["_lines"]
+                if len(result[categoryname][sectionname].keys()) == 1:
+                    if not sectionname:
+                        for k, v in result[categoryname][sectionname].items():
+                            result[categoryname][k] = v
+                        del result[categoryname][sectionname]
+            if len(result[categoryname].keys()) == 1 and "_lines" in result[categoryname].keys():
                 result[categoryname] = list(result[categoryname].values())[0]
+        for cn in list(result.keys()):
+            if not cn:
+                if isinstance(result[cn], dict):
+                    for k, v in result[cn].items():
+                        result[k] = v
+                    del result[cn]
+                else:
+                    print("Wikiparse unnamed lines:", result[cn], "in", result)
+            else:
+                result.move_to_end(cn, True)
         return result
 
     def load_from_md(self, title, tags, body):
@@ -154,28 +156,21 @@ class FenCharacter(object):
             partname = s[:firstline]
             s = s[firstline:]
             if partname.strip().startswith("Werte") or len(sheetparts) == 1:
-                parsed_parts = self.parse_part(s)
+                parsed_parts = self.parse_part(s, True)
                 self.Categories.update(parsed_parts)
             else:
                 if partname.strip() in ["", "Charakter"]:
-                    parsed_parts = self.pull_up(self.parse_part(s, True))
-                    self.Character = parsed_parts
+                    self.Character = self.parse_part(s, True)
                 else:
-                    parsed_parts = self.pull_up(self.parse_part(s, True))
+                    parsed_parts = self.parse_part(s, False)
                     self.Meta[partname] = parsed_parts
+        for cat, catv in self.Categories.items():
+            for sec, secv in list(catv.items()):
+                for itemn, itemv in list(secv.items()):
+                    if itemn == "_lines":
+                        secv[""] = "\n".join(itemv)
+                        del secv["_lines"]
         return self.Categories
-
-    @staticmethod
-    def pull_up(layered: dict):
-        new = OrderedDict()
-        if "" in layered.keys():
-            if isinstance(layered[""], dict):
-                for k, v in list(layered[""].items()):
-                    if k.strip():
-                        new[k] = v
-                del layered[""]
-        new.update(layered)
-        return new
 
     def validate_char(self, ):
         comment = self.Name + "NOT IMPLEMENTED"

@@ -22,14 +22,41 @@
         hideables.click(function () {
             let $hideable = $(this);
             let $content = $hideable.next();
-            $content.slideToggle(800, function () {
+            $content.slideToggle(100, function () {
                 $hideable.text(function () {
                     return ($content.is(":visible") ? "-" : "+") + $hideable.text().slice(1);
                 });
             });
+
         });
         hideables.click();
-    })</script>
+
+        let topButton = document.getElementById("TopButton");
+        if (topButton != null) {
+            window.onscroll = function () {
+                scrollFunction()
+            };
+
+            function topFunction() {
+                document.body.scrollTop = 0;
+                document.documentElement.scrollTop = 0;
+            }
+
+            topButton.onclick = topFunction;
+
+
+            function scrollFunction() {
+                if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
+                    topButton.style.display = "block";
+                } else {
+                    topButton.style.display = "none";
+                }
+            }
+        }
+    });
+
+
+    </script>
     {% block head %}{% endblock %}
 </head>
 <body>

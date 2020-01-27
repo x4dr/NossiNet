@@ -13,6 +13,7 @@ import markdown
 import numexpr
 from flask import request, session, g, redirect, url_for, \
     render_template, flash
+from markupsafe import Markup
 
 from NossiPack.krypta import DescriptiveError
 from NossiSite import app
@@ -81,22 +82,25 @@ def traverse_md(md: str, seek: str) -> str:
 
 
 def wikiload(page: str) -> Tuple[str, List[str], str]:
-    with open(os.path.expanduser(wikipath + page + ".md")) as f:
-        mode = "meta"
-        title = ""
-        tags = []
-        body = ""
-        for line in f.readlines():
-            if mode and line.startswith("tags:"):
-                tags += [t for t in line.strip("tags:").strip().split(" ") if t]
-                continue
-            if mode and line.startswith("title:"):
-                title = line.strip("title:").strip()
-                continue
-            if mode and not line.strip():
-                mode = ""
-            body += line
-        return title, tags, body
+    try:
+        with open(os.path.expanduser(wikipath + page + ".md")) as f:
+            mode = "meta"
+            title = ""
+            tags = []
+            body = ""
+            for line in f.readlines():
+                if mode and line.startswith("tags:"):
+                    tags += [t for t in line.strip("tags:").strip().split(" ") if t]
+                    continue
+                if mode and line.startswith("title:"):
+                    title = line.strip("title:").strip()
+                    continue
+                if mode and not line.strip():
+                    mode = ""
+                body += line
+            return title, tags, body
+    except FileNotFoundError:
+        raise DescriptiveError(page + " not found in wiki.")
 
 
 def stream_file(f):
@@ -131,6 +135,19 @@ def quoted(s):
     if quotedstring:
         return quotedstring[0]
     return None
+
+
+@app.template_filter('markdown')
+def markdownfilter(s):
+    if isinstance(s, str):
+        return Markup(markdown.markdown(s, extensions=["tables", "toc", "nl2br"]))
+    elif isinstance(s, list):
+        next_try = "\n".join(s)
+        n = Markup(markdown.markdown(next_try, extensions=["tables", "toc", "nl2br"]))
+        print(s, "is not a string, but a", type(s), next_try, "____", n, "<<<<<")
+        return n.split("\n")
+    else:
+        DescriptiveError("Templating error:" + str(s) + "does not belong")
 
 
 def connect_db(source):
@@ -205,7 +222,7 @@ def checklogin():
         raise Exception("REDIR", redirect(url_for('login', r=request.url)))
 
 
-@app.errorhandler(Exception)
+# @app.errorhandler(Exception)
 def internal_error(error: Exception):
     if error.args[0] == "REDIR":
         return error.args[1]
@@ -334,10 +351,15 @@ def fill_infolets(body):
                       "div", "hr"]
 
     def gettable(match):
-        return weapontable(match.group(1), match.group(2))
+        return weapontable(match.group("ref"), match.group("mod"))
 
     def getinfo(match):
-        a = match.group(1).split(":")
+        a = match.group("ref").split(":")
+        if a[-1] == "-":
+            a = a[:-1]
+            hide_headline = 1
+        else:
+            hide_headline = 0
         try:
             article: str = wikiload(a[0])[-1]
         except FileNotFoundError:
@@ -346,20 +368,22 @@ def fill_infolets(body):
             article = traverse_md(article, seek)
         if not article:
             article = "[[not found]]"
+        elif hide_headline:
+            article = article[article.find("\n") * hide_headline:]
         return markdown.markdown(bleach.clean(article, tags=bleach_ok_list), extensions=["tables", "toc", "nl2br"])
 
     def hide(func):
         def hidden(text):
-            header = text.group(0).strip("[]")
+            header = text.group("name") or text.group(0).strip("[]")
             return "<div class=hideable><b> " + header + "</b></div>""<div>" + func(text) + "</div>"
 
         return hidden
 
-    hiddenweapons = re.compile(r"\[\[\[weapon:(.+?):(.*?)\]\]\]", re.IGNORECASE)
-    weapons = re.compile(r"\[\[weapon:(.+?):(.*?)\]\]", re.IGNORECASE)
-    hiddeninfos = re.compile(r"\[\[\[specific:(.+?)\]\]\]", re.IGNORECASE)
-    infos = re.compile(r"\[\[specific:(.+?)\]\]", re.IGNORECASE)
-    links = re.compile(r"\[(.+?)\]\((.+?)\)")
+    hiddenweapons = re.compile(r"\[(?P<name>.*?)\[\[weapon:(?P<ref>.+?):(?P<mod>.*?)\]\]\]", re.IGNORECASE)
+    weapons = re.compile(r"\[\[weapon:(?P<ref>.+?):(?P<mod>.*?)\]\]", re.IGNORECASE)
+    hiddeninfos = re.compile(r"\[(?P<name>.*?)\[\[specific:(?P<ref>.+?)\]\]\]", re.IGNORECASE)
+    infos = re.compile(r"\[\[specific:(?P<ref>.+?)\]\]", re.IGNORECASE)
+    links = re.compile(r"\[(.+?)\]\((?P<ref>.+?)\)")
 
     body = links.sub(r'<a href="/wiki/\g<2>"> \g<1> </a>', body)
 

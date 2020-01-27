@@ -227,12 +227,19 @@ def specific(a: str):
     parse_md = not request.url.endswith("/raw")
     a = a.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
     a = a.split(":")
-    article: str = wikiload(a[0])[-1]
+    if a[-1] == "-":
+        a = a[:-1]
+        hide_headline = 1
+    else:
+        hide_headline = 0
 
+    article: str = wikiload(a[0])[-1]
     for seek in a[1:]:
         article = traverse_md(article, seek)
     if not article:
         article = "not found"
+    else:
+        article = article[article.find("\n") * hide_headline:]
     if parse_md:
         return Markup(markdown.markdown(article, extensions=["tables", "toc", "nl2br"]))
     else:

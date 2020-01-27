@@ -28,6 +28,7 @@
 {% endblock %}
 
 {% block body %}
+    <a href="{{ url_for("editentries", x=wiki) }}"><input type="button" class="leeet" style="margin-bottom: 1em" value="Edit"></a><br/>
     <div class="entry" style="word-wrap:break-word;border:1px solid">{{ body|safe }}
         <br> {#dangerous body has to be cleaned before being sent here#}
     </div>
@@ -36,7 +37,6 @@
             <a href="{{ url_for('tagsearch',tag = t) }}">{{ t }}</a> |
         {% endfor %}
         <br>
-
-        <a href="{{ url_for("editentries", x=wiki) }}"><input type="button" class="leeet" style="margin-top: 1em" value="Edit"></a>
     </div>
+    <div><button id="TopButton" title="Upwards">Top</button></div>
 {% endblock %}

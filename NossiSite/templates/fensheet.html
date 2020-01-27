@@ -1,60 +1,55 @@
 
-{% extends "layout.html" %}
-{% macro dots(val,max=5) -%}
-    {% if val is not defined%}
-        {% set val = 0 %}
-    {% endif %}
-    {% for i in range(val) -%}
+{%- extends "layout.html" -%}
+{%- macro dots(val,max=5) -%}
+    {%- if val is not defined -%}
+        {%- set val = 0 -%}
+    {%- endif -%}
+    {%- for i in range(val) -%}
+        {%- if loop.index0%5 == 0 and loop.index0 > 0 %} {% endif -%}
         ●
     {%- endfor -%}
     {%- for i in range(max-val) -%}
         ○
-    {%- endfor %}
-{%- endmacro %}
-{% macro catformat(cat, name) -%}
-    <br/>
+    {%- endfor -%}
+{%- endmacro -%}
+{%- macro catformat(cat, name) -%}
     <table style = "width: 100%">
-        {%-set l = [0] %}
-        {% for k,v in cat.items()  -%}
-            {% if l[0]==0 %}
-                {% if v.items()|length > 0  %}
+        <tr>
+            <td colspan="2" style="text-align: center;" class="leeet">{{ name }}</td>
+        </tr>
+        {%- if cat is mapping  -%}
+            {%- for k,v in cat.items() -%}
+                {%- if v is mapping -%}
                     <tr>
-                        <td colspan="2" style="text-align: center;" class="leeet">{{ name }}</td>
+                        <td colspan="2" style="text-align: center;" class="leet">{{ k }}</td>
                     </tr>
-                    {%- if l.insert(0, l[0] + 1) -%}{% endif %}
-                {% endif %}
 
-            {% endif %}
-        {% endfor %}
-        {% for k,v in cat.items() -%}
-            {% if v.items()|length > 0 %}
-                <tr>
-                    <td colspan="2" style="text-align: center;" class="leet">{{ k }}</td>
-                </tr>
-                {% for vk,vv in v.items() -%}
-                    <tr>
-                        <td style="text-align: left; word-wrap: break-word">{{ vk }} </td>
-                        <td>{% if vv|int(-1) != -1 -%}{{ dots(vv|int) }}
-                        {%- else -%}{{ vv }}{%- endif -%}</td>
-                    </tr>
-                {% endfor %}
-                <tr><td><br></td></tr>
-            {% endif %}
-        {%- endfor -%}
+                    {%- for vk,vv in v.items() -%}
+                        <tr>
+                            <td style="text-align: left; word-wrap: break-word">{{ vk }} </td>
+                            <td>{%- if vv|int(-1) != -1 -%}{{ dots(vv|int) }}
+                            {%- else -%}{{ vv }}{%- endif -%}</td>
+                        </tr>
+                    {%- endfor -%}
+                {% else %}
+                    {{ v }} has no items :OOOOO
+                {%- endif -%}
+            {%- endfor %}
+        {% else %}
+            {{ cat }} is no dic
+        {% endif %}
     </table>
-{%- endmacro %}
-{% block title %}
+{%- endmacro -%}
+{%- block title -%}
     {%- if character.Name -%}
         <title>{{ character.Name }}</title>
     {%- else -%}
         <title>Charactersheet</title>
     {%- endif -%}
-{% endblock %}
+{%- endblock -%}
 
-{% block body %}
-
-
-    <table width="100%" class="leet dividedtable" border="1">
+{%- block body -%}
+    <table style ="width:100%; " class="leet dividedtable">
         <tr>
             <td colspan="6" style="text-align: center; font-size: 1.5em" class="leeet">
                 {%- if character.Name -%}
@@ -64,8 +59,8 @@
                 {%- endif -%}</td>
         </tr> <tr>
         {%- for key,val in character.Character.items() -%}
-            <td style="text-align: right; ">{{ key }}</td>
-            <td style="text-align: left; white-space: pre-wrap">
+            <td class="dividedtable" style="text-align: center; width: 15%; border-bottom-color: #0d9318; border-left-color: #0d9318;  ">{{ key }}</td>
+            <td class="dividedtable" style="text-align: center; width: 15%; border-bottom-color: #0d9318; border-right-color: #0d9318;  white-space: pre-wrap">
                 {%- if val is string -%}
                     {{ val }}
                 {%- else -%}
@@ -74,41 +69,34 @@
             </td>
             {%- if loop.index%3==0 and not loop.last -%}
                 </tr><tr>
-            {% endif -%}
-        {%- if loop.last %}
+            {%- endif -%}
+        {%- if loop.last -%}
             </tr>
         {%- endif -%}
-        {% endfor %}
+        {%- endfor -%}
     </table>
-    <br>
     <div style="text-align: center ">
-        {% for category,data in character.Categories.items() %}
-            <div style="display: inline-block; width: 30%; vertical-align: top;">{{ catformat(data,category)}}</div>
-        {% endfor %}
+        {%- for category,data in character.Categories.items() -%}
+            <div style="display: inline-block; width: 30%; vertical-align: top;">
+                {{- catformat(data,category)-}}
+            </div>
+        {% endfor -%}
     </div>
-    {% for key,data in character.Meta.items() %}
+    {%- for key,data in character.Meta.items() -%}
         <h2 class="hideable">*{{ key }}</h2>
         <div>
-            {% for section,sectiondata in data.items() -%}
-                {% if section|trim|length %}
-                    <h3 class="hideable">*{{ section}}</h3>
-                {% endif %}
+            {%- for section,sectiondata in data.items() -%}
+                {%- if section|trim|length -%}
+                    <h3 class="hideable">*{{ section|markdown}}</h3>
+                {%- endif -%}
                 <div>
-                    {%- for line in sectiondata %}
-                        {{ line }}<br>
-                    {% endfor -%}
+                    {%- for line in sectiondata|markdown -%}
+                        {{ line }}
+                    {%- endfor %}
                 </div>
             {%- endfor -%}
         </div>
     {%- endfor -%}
+<div><button id="TopButton" title="Upwards">Top</button></div>
 
-    {% if own %}
-        <form action="{{ url_for('modify_sheet') }}" >
-            <input type="submit" class="leet bigbtn" value="EDIT">
-        </form>
-        <div style="text-align: left ">
-            {{ character.Notes }}
-        </div>
-    {% endif %}
-
-{% endblock %}
+{%- endblock -%}
