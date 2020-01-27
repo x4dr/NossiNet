@@ -222,7 +222,7 @@ def checklogin():
         raise Exception("REDIR", redirect(url_for('login', r=request.url)))
 
 
-# @app.errorhandler(Exception)
+@app.errorhandler(Exception)
 def internal_error(error: Exception):
     if error.args[0] == "REDIR":
         return error.args[1]

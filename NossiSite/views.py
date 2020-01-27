@@ -13,6 +13,7 @@ from werkzeug.security import gen_salt, generate_password_hash
 from NossiPack.FenCharacter import FenCharacter
 from NossiPack.User import Userlist, User
 from NossiPack.VampireCharacter import VampireCharacter
+from NossiPack.krypta import DescriptiveError
 from NossiSite import app, helpers
 from NossiSite.helpers import g, session, checktoken, request, redirect, url_for, \
     render_template, flash, init_db, wikiload, wikindex, wikisave, checklogin, fill_infolets, traverse_md
@@ -94,7 +95,9 @@ def wikipage(page=None, raw=None):
         try:
             page = page.lower()
             title, tags, body = wikiload(page)
-        except FileNotFoundError:
+        except DescriptiveError as e:
+            if e.args[0] != page + "not found in wiki":
+                raise
             if session.get('logged_in'):
                 entry = dict(id=0, text="", tags="", author=session.get('user'))
                 print(entry)
@@ -196,6 +199,8 @@ def update_filter():
 def fensheet(c):
     char = FenCharacter()
     char.load_from_md(*wikiload(c + "_character"))
+    print("FENSHEET FOR VALS", char.Character.keys(), char.Character.values(), )
+
     body = render_template("fensheet.html", character=char)
     return fill_infolets(body)
 
