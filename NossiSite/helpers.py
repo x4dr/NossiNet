@@ -362,7 +362,8 @@ def fill_infolets(body):
             hide_headline = 0
         try:
             article: str = wikiload(a[0])[-1]
-        except FileNotFoundError:
+        except DescriptiveError as e:
+            flash(e.args[0])
             article = ""
         for seek in a[1:]:
             article = traverse_md(article, seek)
