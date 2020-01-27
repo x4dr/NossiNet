@@ -96,7 +96,7 @@ def wikipage(page=None, raw=None):
             page = page.lower()
             title, tags, body = wikiload(page)
         except DescriptiveError as e:
-            if e.args[0] != page + "not found in wiki":
+            if e.args[0] != page + " not found in wiki":
                 raise
             if session.get('logged_in'):
                 entry = dict(id=0, text="", tags="", author=session.get('user'))
