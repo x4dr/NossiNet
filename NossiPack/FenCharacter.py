@@ -103,7 +103,6 @@ class FenCharacter(object):
                 firstline = section.find("\n")
                 sectionname = section[:firstline].strip()
                 section = section[firstline + 1:].strip()
-                tableslurp = ""
                 li = []
                 result[categoryname][sectionname] = OrderedDict()
                 result[categoryname][sectionname]["_lines"] = []
@@ -117,19 +116,19 @@ class FenCharacter(object):
                     if parse_table and len(candidate) == 2:
                         tablestate += 1
                         if tablestate > 2:  # 1: header, 2: alignment
+                            while candidate[0] in result[categoryname][sectionname]:
+                                candidate[0] = "_"+candidate[0]
                             result[categoryname][sectionname][candidate[0]] = candidate[1]
                     else:
                         tablestate = 0
                         result[categoryname][sectionname]["_lines"].append(line)
-
                 result[categoryname][sectionname]["_lines"].extend(li)
                 if len(result[categoryname][sectionname]["_lines"]) == 0:
                     del result[categoryname][sectionname]["_lines"]
-                if len(result[categoryname][sectionname].keys()) == 1:
-                    if not sectionname:
-                        for k, v in result[categoryname][sectionname].items():
-                            result[categoryname][k] = v
-                        del result[categoryname][sectionname]
+                if not sectionname:
+                    for k, v in result[categoryname][sectionname].items():
+                        result[categoryname][k] = v
+                    del result[categoryname][sectionname]
             if len(result[categoryname].keys()) == 1 and "_lines" in result[categoryname].keys():
                 result[categoryname] = list(result[categoryname].values())[0]
         for cn in list(result.keys()):

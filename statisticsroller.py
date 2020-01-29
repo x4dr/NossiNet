@@ -1,4 +1,5 @@
 import collections
+import math
 import os
 import random
 import sys
@@ -310,7 +311,7 @@ def crafting(effort: int, adverse: int, increase_every: int, stats: Tuple[int, i
         rolls += 1
         if rolls % increase_adverse_every == 0:
             adverse += 1
-        result = craftingroll.roll()
+        result = craftingroll.roll(5)
         botch = craftingroll.resonance(1)
         if botch > 0:
             #    print(rolls, "BOTCH:", botch)
@@ -348,7 +349,7 @@ def run_craft(total: int, effort: int, adverse: int, increase_every: int, sel: T
     nrolls = {int(x / 5): sum(rolls[x + i] if x + i in rolls else 0 for i in range(5)) for x in
               range(0, max(rolls) + 1, 5)}
     print("rolls")
-    plot(nrolls, grouped=5)
+    plot(nrolls, grouped=1)
     print("levels:")
     plot(levels)
     print("averages=", sum([k * v for k, v in rolls.items()]) / len(rolls),
@@ -356,4 +357,4 @@ def run_craft(total: int, effort: int, adverse: int, increase_every: int, sel: T
 
 
 if __name__ == "__main__":
-    print(run_duel(2, 3, duration=5))
+    print(run_craft(10000, 40, 0, 1, (3, 2), ""))

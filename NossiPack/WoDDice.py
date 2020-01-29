@@ -256,7 +256,11 @@ class WoDDice(object):
                 sum(self.r) if self.returnfun == "sum" else
                 None if self.returnfun == "" else error("No return function!"))
 
-    def roll(self, amount):
+    def roll(self, amount=None):
+        if amount is None:
+            amount = self.amount
+        if not amount:
+            raise Exception("No Amount saved!")
         self.roll_next(amount)
         return self.result
 

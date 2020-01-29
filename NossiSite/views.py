@@ -16,7 +16,7 @@ from NossiPack.VampireCharacter import VampireCharacter
 from NossiPack.krypta import DescriptiveError
 from NossiSite import app, helpers
 from NossiSite.helpers import g, session, checktoken, request, redirect, url_for, \
-    render_template, flash, init_db, wikiload, wikindex, wikisave, checklogin, fill_infolets, traverse_md
+    render_template, flash, init_db, wikiload, wikindex, wikisave, checklogin, fill_infolets, traverse_md, log
 
 bleach.ALLOWED_TAGS += ["br", "u", "p", "table", "th", "tr", "td", "tbody", "thead", "tfoot"]
 
@@ -39,13 +39,13 @@ def setfromsource():
             new = FenCharacter()
             char = wikiload(source + "_character")
             if char:
-                new.load_from_md(wikiload("3d10fcharacter")[2], char[0], char[1], char[2])
+                new.load_from_md(char[0], char[1], char[2])
                 u.sheet = new
                 ul.saveuserlist()
             else:
                 flash("Problem with provided sheet source!")
-    except Exception as e:
-        print(e)
+    except Exception:
+        log.exception("setfromsource:")
         flash("Sorry " + session.get('user').capitalize() + ", I can not let you do that.")
 
     return redirect(url_for('charsheet'))
@@ -64,7 +64,6 @@ def show_entries():
                     skip = False
         else:
             if "default" in (e.get("tags") if e.get("tags") else "").split(" "):
-                print("displaying:", e.get("title"))
                 skip = False
         if skip:
             e["author"] = e.get("author").lower()  # "delete" nonmatching tags
@@ -100,7 +99,6 @@ def wikipage(page=None, raw=None):
                 raise
             if session.get('logged_in'):
                 entry = dict(id=0, text="", tags="", author=session.get('user'))
-                print(entry)
                 return render_template("edit_entry.html", mode="wiki", wiki=page, entry=entry
                                        )
             else:
@@ -156,16 +154,15 @@ def editentries(x=None):
                 flash("entry " + str(x) + " not found.")
         return redirect(url_for('editentries', x="all"))
     if request.method == "POST":
-        print(session.get('user', '?'), "editing id " + request.form['id'], request.form)
+        log.info(f"{session.get('user', '?')} editing id  {request.form['id']} {request.form}")
         if request.form["id"] == "new":
             add_entry()
         if checktoken():
             if request.form.get("wiki", None) is not None:
-                print("saving wiki file", request.form["wiki"])
+                log.info(f"saving wiki file {request.form['wiki']}")
                 wikisave(request.form['wiki'].lower(), session.get('user'), request.form['title'],
                          request.form['tags'].split(" "), request.form['text'])
                 session["retrieve"] = None
-                print("saved.")
                 return redirect(url_for("wikipage", page=request.form['wiki']))
 
             cur = g.db.execute('SELECT author, title, text, id, tags '
@@ -173,11 +170,9 @@ def editentries(x=None):
             entry = [dict(author=row[0], title=row[1], text=row[2], id=row[3], tags=row[4]) for row in
                      cur.fetchall()][0]
             if (session.get('user').upper() == entry['author'].upper()) or session.get('admin'):
-                print(session.get('user', '?'), "editing id " + request.form['id'], request.form)
+                log.info(f"{session.get('user', '?')} editing id {request.form['id']} {request.form}")
                 g.db.execute('UPDATE entries SET title=?, text=?, tags=? WHERE id == ?',
                              [request.form['title'], request.form['text'], request.form['tags'], request.form['id']])
-                print('UPDATE entries SET title=?, text=?, tags=? WHERE id == ?',
-                      [request.form['title'], request.form['text'], request.form['tags'], request.form['id']])
                 session["retrieve"] = None
                 g.db.commit()
                 flash('entry was successfully edited')
@@ -199,8 +194,6 @@ def update_filter():
 def fensheet(c):
     char = FenCharacter()
     char.load_from_md(*wikiload(c + "_character"))
-    print("FENSHEET FOR VALS", char.Character.keys(), char.Character.values(), )
-
     body = render_template("fensheet.html", character=char)
     return fill_infolets(body)
 
@@ -217,13 +210,17 @@ def weapontable(w, mods=""):
     w = w.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
     weapon = helpers.weapontable(w, mods, format_json or format_txt)
     if format_txt:
-        result = f"{'Wert': <11}" + "".join(f"{x: <4}" for x in range(1, 11)) + "\n"
-        for key in weapon.keys():
-            weapon[key] = [x if (len(x) > 1 and x[1] > 0) else ([x[0]] if x[0] else "") for x in
-                           weapon[key]]
-            result += f"{key: <10} " + "".join(f"{';'.join(str(y) for y in x): <4}" for x in weapon[key][1:-1]) + "\n"
-        return result
+        return format_weapon(weapon)
     return weapon
+
+
+def format_weapon(weapon):
+    result = f"{'Wert': <11}" + "".join(f"{x: <4}" for x in range(1, 11)) + "\n"
+    for key in weapon.keys():
+        weapon[key] = [x if (len(x) > 1 and x[1] > 0) else ([x[0]] if x[0] else "") for x in
+                       weapon[key]]
+        result += f"{key: <10} " + "".join(f"{';'.join(str(y) for y in x): <4}" for x in weapon[key][1:-1]) + "\n"
+    return result
 
 
 @app.route("/specific/<a>")
@@ -258,7 +255,6 @@ def specific(a: str):
 @app.route('/magicalweapon/<w>/<par>/txt')
 @app.route('/magicalweapon/<w>/txt')
 def magicweapons(w, par=None):
-    print("BEGIN WITH", w)
     format_json = request.url.endswith("/json")
     format_txt = request.url.endswith("/txt")
     w = w.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
@@ -271,12 +267,7 @@ def magicweapons(w, par=None):
         raise DescriptiveError(w.upper(), "not foundin ", code)
     weapon = helpers.magicalweapontable(code, par, format_json or format_txt)
     if format_txt:
-        result = f"{'Wert': <11}" + "".join(f"{x: <4}" for x in range(1, 11)) + "\n"
-        for key in weapon.keys():
-            weapon[key] = [x if (len(x) > 1 and x[1] > 0) else ([x[0]] if x[0] else "") for x in
-                           weapon[key]]
-            result += f"{key: <10} " + "".join(f"{';'.join(str(y) for y in x): <4}" for x in weapon[key][1:-1]) + "\n"
-        return result
+        return format_weapon(weapon)
     return weapon
 
 
@@ -369,7 +360,7 @@ def berlinmap():
 
 @app.route('/berlinmap/data.dat')
 def mapdata():
-    print("generating mapdata", end=" ")
+    log.debug("generating mapdata")
     time0 = time.time()
     cur = g.db.execute('SELECT name, owner,tags,data FROM property')
     plzs = {}
@@ -382,7 +373,7 @@ def mapdata():
                 plzs[plz]['tags'] += " ".join([x for x in row[1:] if x])
                 if row[1]:
                     plzs[plz]['faction'] = row[1]
-    print("took:", time.time() - time0, "seconds.")
+    log.debug(f"took: {time.time() - time0} seconds.")
     return json.dumps(plzs)
 
 
@@ -438,7 +429,7 @@ def ddos(costs, penalty):
                 res = []
                 for i in range(605):
                     r = fen_calc(str(i), costs, penalty)
-                    print(i, res)
+                    log.debug(f"Fencalc {i} {res}")
                     if i == 0 or r != res[-1][1]:
                         res.append([(str(i) + "   ")[:4] + " : ", r])
                 r = "\n".join([x[0] + x[1] for x in res])
@@ -457,7 +448,6 @@ def fen_calc(inputstring: str, costs=None, penalty=None):  # move into fen sheet
         pen = 0
         for ip, p in enumerate(internal_penalty):
             pen += (max(sum([1 for a in att if a >= ip]), 1) - 1) * p
-            print("penalty", p, ip, att, pen)
         return sum([internal_costs[a] for a in att]) + pen
 
     if costs is not None:
@@ -504,7 +494,7 @@ def modify_sheet(t=None):
         if t == "OWOD":
             u.sheet = VampireCharacter()
     if request.method == 'POST':
-        print("incoming modify:", request.form)
+        log.info(f"incoming modify: {request.form}")
         u.update_sheet(request.form)
         ul.saveuserlist()
 
@@ -548,7 +538,7 @@ def delete_entry(ident):
 @app.route('/add', methods=['POST'])
 def add_entry():
     checklogin()
-    print(session.get('user', '?'), "adding", request.form)
+    log.info(f"{session.get('user', '?')} adding {request.form}")
     if checktoken():
         g.db.execute('INSERT INTO entries (author, title, text, tags) VALUES (?, ?, ?, ?)',
                      [session.get('user'), request.form['title'], request.form['text'], request.form['tags']])
@@ -573,9 +563,7 @@ def add_funds():
                 if amount > 0:
                     key = int(time.time())
                     key = generate_password_hash(str(key))
-                    print("REQUEST BY", u.username, end=" FOR")
-                    print(amount, "CREDITS.")
-                    print("KEY: ", key)
+                    log.info(f"REQUEST BY {u.username} FOR {amount} CREDITS. KEY: {key}.")
                     session['key'] = key[-10:]
                     session['amount'] = amount
                     keyprovided = True
@@ -610,7 +598,7 @@ def register():  # this is not clrs secure because it does not need to be
             if request.form['password'] == request.form['passwordcheck']:
                 password = request.form['password']
                 if len(password) > 0:
-                    print("creating user", username)
+                    log.info(f"creating user {username}")
                     error = u.adduser(username, password)
                     if error is None:
                         flash('User successfully created.')
@@ -628,7 +616,6 @@ def register():  # this is not clrs secure because it does not need to be
 def login():
     error = None
     returnto = request.args.get('r', None)
-    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", request.form)
     if request.method == 'POST':
 
         ul = Userlist(preload=False, sheets=False)
@@ -642,7 +629,7 @@ def login():
             session['user'] = user
             session['admin'] = (ul.loaduserbyname(session.get('user')).admin == "Administrator")
             flash('You were logged in')
-            print("logged in as", user)
+            log.info(f"logged in as {user}")
             returnto = request.form.get('returnto', None)
             if returnto is None:
                 return redirect(url_for('show_entries'))
@@ -890,14 +877,16 @@ def payout():
         if checktoken():
             try:
                 amount = int(request.form['amount'])
+
                 u.funds += -amount
-                print('DEDUCT BY', end=" ")
-                print(session.get('user'), end=": ")
-                print(amount)
+                log.info(f"DEDUCT BY {session.get('user')}: {amount}")
+                if u.funds < 0:
+                    flash("not enough funds")
+                    raise Exception()
                 flash('Deduct successfull')
+                ul.saveuserlist()
             except:
                 error = "Error deducting \"" + request.form.get('amount', 'nothing') + "\"."
-    ul.saveuserlist()
 
     return render_template('payout.html', user=u, error=error)
 

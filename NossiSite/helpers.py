@@ -137,6 +137,13 @@ def quoted(s):
     return None
 
 
+@app.template_filter('remove_leading_underscore')
+def underscore_remove(s):
+    while s and s[0] == "_":
+        s = s[1:]
+    return s
+
+
 @app.template_filter('markdown')
 def markdownfilter(s):
     if isinstance(s, str):
@@ -144,7 +151,6 @@ def markdownfilter(s):
     elif isinstance(s, list):
         next_try = "\n".join(s)
         n = Markup(markdown.markdown(next_try, extensions=["tables", "toc", "nl2br"]))
-        print(s, "is not a string, but a", type(s), next_try, "____", n, "<<<<<")
         return n.split("\n")
     else:
         DescriptiveError("Templating error:" + str(s) + "does not belong")

@@ -26,7 +26,7 @@
 
                     {%- for vk,vv in v.items() -%}
                         <tr>
-                            <td style="text-align: left; word-wrap: break-word">{{ vk }} </td>
+                            <td style="text-align: left; word-wrap: break-word">{{ vk|remove_leading_underscore }} </td>
                             <td>{%- if vv|int(-1) != -1 -%}{{ dots(vv|int) }}
                             {%- else -%}{{ vv }}{%- endif -%}</td>
                         </tr>
