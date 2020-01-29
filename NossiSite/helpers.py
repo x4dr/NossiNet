@@ -20,8 +20,8 @@ from NossiSite import app
 from fengraph import weapondata
 
 logging.basicConfig(filename='nossilog.log', level=logging.DEBUG)
-log = logging.Logger("frontend", propagate=True)
-
+logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s')
+log = logging.getLogger("frontend")
 wikipath = "~/wiki/"
 
 
