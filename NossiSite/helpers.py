@@ -19,7 +19,9 @@ from NossiPack.krypta import DescriptiveError
 from NossiSite import app
 from fengraph import weapondata
 
-log = logging.Logger("helperlogger")
+logging.basicConfig(filename='nossilog.log', level=logging.DEBUG)
+log = logging.Logger("frontend")
+
 wikipath = "~/wiki/"
 
 
