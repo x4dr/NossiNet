@@ -6,7 +6,7 @@ import shelve
 import string
 import time
 from asyncio import sleep
-from urllib.parse import urlencode
+from urllib.parse import quote
 
 import requests
 import fengraph
@@ -196,7 +196,7 @@ async def rollhandle(msg, comment, send, author):
 
 
 async def weaponhandle(msg, comment, send, author):
-    n = requests.get("http://nosferatu.vampir.es/" + "/".join(urlencode(x) for x in msg.split(":", 2)) + "/txt")
+    n = requests.get("http://nosferatu.vampir.es/" + "/".join(quote(x) for x in msg.split(":", 2)) + "/txt")
     if n.status_code == 200:
         n = n.content.decode("utf-8")
         await send(author.mention + comment + "```" + msg + "\n" + n + "```")
@@ -207,7 +207,8 @@ async def weaponhandle(msg, comment, send, author):
 
 async def specifichandle(msg, comment, send, author):
     msg = msg[len("specific:"):].strip()
-    n = requests.get("http://nosferatu.vampir.es/specific/" + urlencode(msg) + "/raw")
+    print("calling specific/"+msg+"/raw")
+    n = requests.get("http://nosferatu.vampir.es/specific/" + quote(msg) + "/raw")
     if n.status_code == 200:
         n = n.content.decode("utf-8")
         await send(author.mention + comment + "```" + msg + "\n" + n + "```")
