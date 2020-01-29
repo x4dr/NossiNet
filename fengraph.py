@@ -218,12 +218,15 @@ def chances(selector, modifier=0, number_of_quantiles=None):
     max_val = max(list(occurrences.values()))
     total = sum(occurrences.values())
     if number_of_quantiles is None:
-        res = ", ".join([str(x) for x in selector]) + "@5" + (("R" + str(modifier)) if modifier else "") + "\n"
+        res = ""
         for k in sorted(occurrences):
             if occurrences[k]:
                 res += f"{k:5d} {100 * occurrences[k] / total: >5.2f} {'#' * int(40 * occurrences[k] / max_val)}\n"
-        yield res
-    if number_of_quantiles is not None:
+        total = sum(occurrences.values())
+        avg = sum(k * v for k, v in occurrences.items()) / total
+        dev = math.sqrt(sum(((k - avg)**2)*v for k, v in occurrences.items()) / total)
+        yield (res, avg, dev)
+    else:
         yield "generating graph..."
         res = ""
         fy = [x / total for x in occurrences.values()]

@@ -135,13 +135,18 @@ async def oraclehandle(msg, comment, send, author):
             it = fengraph.chances(parameters[:-1], parameters[-1])
             sentmessage = await send(author.mention + comment + " " + next(it))
             n = ""
+            p = ", ".join([str(x) for x in parameters[:-1]]) + "@5" + (
+                ("R" + str(parameters[-1])) if parameters[-1] else "")
             for n in it:
-                print("iterating:", n)
-                await sentmessage.edit(content=author.mention + comment + " " + n)
+                if isinstance(n, str):
+                    await sentmessage.edit(content=author.mention + comment + " " + n)
             if n:
-                await sentmessage.edit(content=author.mention + comment + "```" + n + "```")
+                n, avg, dev = n
+                await sentmessage.edit(
+                    content=(author.mention + comment + "```" + p + " avg:" + str(avg) + " dev: " + str(dev) +
+                             "\n" + n + "```"))
             else:
-                raise DescriptiveError("no values past the first")
+                raise DescriptiveError("no data!")
         except Exception as e:
             print("exception during oracle", e)
             if sentmessage:
@@ -170,7 +175,7 @@ async def rollhandle(msg, comment, send, author):
     lastroll[author] = msg
     reply = ""
     if isinstance(p.rolllogs, list) and len(p.rolllogs) > 1:
-        reply += "\n".join(x.name + ": " + x.roll_v() for x in p.rolllogs if x.roll_v())+"\n"
+        reply += "\n".join(x.name + ": " + x.roll_v() for x in p.rolllogs if x.roll_v()) + "\n"
     if p.triggers.get("verbose", None):
         if r is None:
             print(msg, "lead to noneroll!")
@@ -207,7 +212,7 @@ async def weaponhandle(msg, comment, send, author):
 
 async def specifichandle(msg, comment, send, author):
     msg = msg[len("specific:"):].strip()
-    print("calling specific/"+msg+"/raw")
+    print("calling specific/" + msg + "/raw")
     n = requests.get("http://nosferatu.vampir.es/specific/" + quote(msg) + "/raw")
     if n.status_code == 200:
         n = n.content.decode("utf-8")
