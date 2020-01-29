@@ -635,6 +635,7 @@ def login():
                 return redirect(url_for('show_entries'))
             else:
                 return redirect(returnto)
+    log.debug(f"returnto during login: {returnto} r {request.args}")
     return render_template('login.html', returnto=returnto, error=error)
 
 
