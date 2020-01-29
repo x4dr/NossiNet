@@ -617,7 +617,6 @@ def login():
     error = None
     returnto = request.args.get('r', None)
     if request.method == 'POST':
-
         ul = Userlist(preload=False, sheets=False)
         user = request.form['username']
         user = user.upper()
