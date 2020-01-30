@@ -613,9 +613,10 @@ def register():  # this is not clrs secure because it does not need to be
 
 
 @app.route('/login', methods=['GET', 'POST'])
-def login():
+@app.route('/login/<r>', methods=['GET', 'POST'])
+def login(r=None):
     error = None
-    returnto = request.args.get('r', None)
+    returnto = r
     if request.method == 'POST':
         ul = Userlist(preload=False, sheets=False)
         user = request.form['username']
@@ -634,7 +635,7 @@ def login():
                 return redirect(url_for('show_entries'))
             else:
                 return redirect(returnto)
-    log.debug(f"returnto during login: {returnto} r {request.args} f {request.args} u {request.url}")
+    log.debug(f"returnto during login: {returnto}")
     return render_template('login.html', returnto=returnto, error=error)
 
 
