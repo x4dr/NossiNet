@@ -613,7 +613,7 @@ def register():  # this is not clrs secure because it does not need to be
 
 
 @app.route('/login', methods=['GET', 'POST'])
-@app.route('/login/<r>', methods=['GET', 'POST'])
+@app.route('/login/<path:r>', methods=['GET', 'POST'])
 def login(r=None):
     error = None
     returnto = r
