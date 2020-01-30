@@ -230,7 +230,7 @@ def gentoken():
 def checklogin():
     if not session.get('logged_in'):
         flash('You are not logged in!')
-        raise Exception("REDIR", redirect(url_for('login', r=request.url)))
+        raise Exception("REDIR", redirect(url_for('login', r=request.path[1:])))
 
 
 @app.errorhandler(Exception)
