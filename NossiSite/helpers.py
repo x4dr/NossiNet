@@ -72,8 +72,6 @@ def traverse_md(md: str, seek: str) -> str:
     level = 0
     for line in md.split("\n"):
         line = line.strip()
-        if not line or not line.strip("_"):
-            continue
         if line.startswith("#") or level:
             current_level = len(line) - len(line.lstrip("#"))
             if current_level and level >= current_level:
