@@ -82,36 +82,35 @@ def wiki_index():
 
 
 @app.route('/wiki')
-@app.route('/wiki/<page>', methods=["GET"])
+@app.route('/wiki/<page>', methods=["GET", "POST"])
 @app.route('/wiki/<page>/<raw>', methods=["GET"])
 def wikipage(page=None, raw=None):
-    if request.method == "GET":
+    if page is None:
+        page = request.form.get('n', None)
         if page is None:
-            page = request.form.get('n', None)
-            if page is None:
-                return wiki_index()
-            return redirect(url_for("wikipage", page=page))
-        try:
-            page = page.lower()
-            title, tags, body = wikiload(page)
-        except DescriptiveError as e:
-            if str(e.args[0]) != page + " not found in wiki.":
-                raise
-            if session.get('logged_in'):
-                entry = dict(id=0, text="", tags="", author=session.get('user'))
-                return render_template("edit_entry.html", mode="wiki", wiki=page, entry=entry
-                                       )
-            else:
-                flash("That page doesn't exist. Log in to create it!")
-
-                return redirect(url_for("wiki_index"))
-        if raw != "raw":
-            body = bleach.clean(body)
-            body = Markup(markdown.markdown(body, extensions=["tables", "toc", "nl2br"]))
-            body = fill_infolets(body)
-            return render_template("wikipage.html", title=title, tags=tags, body=body, wiki=page)
+            return wiki_index()
+        return redirect(url_for("wikipage", page=page))
+    try:
+        page = page.lower()
+        title, tags, body = wikiload(page)
+    except DescriptiveError as e:
+        if str(e.args[0]) != page + " not found in wiki.":
+            raise
+        if session.get('logged_in'):
+            entry = dict(id=0, text="", tags="", author=session.get('user'))
+            return render_template("edit_entry.html", mode="wiki", wiki=page, entry=entry
+                                   )
         else:
-            return body
+            flash("That page doesn't exist. Log in to create it!")
+
+            return redirect(url_for("wiki_index"))
+    if raw != "raw":
+        body = bleach.clean(body)
+        body = Markup(markdown.markdown(body, extensions=["tables", "toc", "nl2br"]))
+        body = fill_infolets(body)
+        return render_template("wikipage.html", title=title, tags=tags, body=body, wiki=page)
+    else:
+        return body
 
 
 @app.route('/edit/<x>', methods=["GET", "POST"])
