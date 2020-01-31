@@ -201,7 +201,7 @@ def teardown_request(exception: Exception):
     if db is not None:
         db.close()
     if exception:
-        if exception.args[0] == "REDIR":
+        if exception.args and exception.args[0] == "REDIR":
             return exception.args[1]
         print("exception caught by teardown:", exception, exception.args)
         traceback.print_exc()

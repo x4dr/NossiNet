@@ -81,7 +81,7 @@ def wiki_index():
     return render_template("wikindex.html", entries=r[0], tags=r[1], heads=heads)
 
 
-@app.route('/wiki')
+@app.route('/wiki', methods=["GET", "POST"])
 @app.route('/wiki/<page>', methods=["GET", "POST"])
 @app.route('/wiki/<page>/<raw>', methods=["GET"])
 def wikipage(page=None, raw=None):
