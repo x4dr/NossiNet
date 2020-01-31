@@ -149,6 +149,8 @@ def underscore_remove(s):
 
 @app.template_filter('markdown')
 def markdownfilter(s):
+    if s is None:
+        return ""
     if isinstance(s, str):
         return Markup(markdown.markdown(s, extensions=["tables", "toc", "nl2br"]))
     elif isinstance(s, list):

@@ -357,4 +357,4 @@ def run_craft(total: int, effort: int, adverse: int, increase_every: int, sel: T
 
 
 if __name__ == "__main__":
-    print(run_craft(10000, 40, 0, 1, (3, 2), ""))
+    print(run_craft(1000, 40, 0, 1, (5, 5), ""))

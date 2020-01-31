@@ -201,7 +201,7 @@ async def rollhandle(msg, comment, send, author):
 
 
 async def weaponhandle(msg, comment, send, author):
-    n = requests.get("http://nosferatu.vampir.es/" + "/".join(quote(x) for x in msg.split(":", 2)) + "/txt")
+    n = requests.get("http://nosferatu.vampir.es/" + "/".join(quote(x.strip()) for x in msg.split(":", 2)) + "/txt")
     if n.status_code == 200:
         n = n.content.decode("utf-8")
         await send(author.mention + comment + "```" + msg + "\n" + n + "```")
@@ -213,7 +213,7 @@ async def weaponhandle(msg, comment, send, author):
 async def specifichandle(msg, comment, send, author):
     msg = msg[len("specific:"):].strip()
     print("calling specific/" + msg + "/raw")
-    n = requests.get("http://nosferatu.vampir.es/specific/" + quote(msg) + "/raw")
+    n = requests.get("http://nosferatu.vampir.es/specific/" + quote(msg.strip()) + "/raw")
     if n.status_code == 200:
         n = n.content.decode("utf-8")
         await send(author.mention + comment + "```" + msg + "\n" + n + "```")

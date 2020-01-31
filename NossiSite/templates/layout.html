@@ -67,9 +67,9 @@
     {% block metanavcomplete %}
         <div class=metanav>
             {% if not session.logged_in %}
+                <a class=metanav href="{{ url_for('wiki_index') }}">wiki</a>
                 <a class=metanav href="{{ url_for('login') }}">log in</a>
                 <a class=metanav href="{{ url_for('register') }}">register</a>
-                <a class=metanav href="{{ url_for('wiki_index') }}">wiki</a>
             {% else %}
                 {%- block metanav -%}
                 {%- endblock -%}
