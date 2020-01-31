@@ -8,9 +8,6 @@
         {%- if loop.index0%5 == 0 and loop.index0 > 0 %} {% endif -%}
         ●
     {%- endfor -%}
-    {%- for i in range(max-val) -%}
-        ○
-    {%- endfor -%}
 {%- endmacro -%}
 {%- macro catformat(cat, name) -%}
     <table style = "width: 100%">
