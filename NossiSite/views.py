@@ -87,7 +87,7 @@ def wiki_index():
 def wikipage(page=None, raw=None):
     if request.method == "GET":
         if page is None:
-            page = request.args.get('n', None)
+            page = request.form.get('n', None)
             if page is None:
                 return wiki_index()
             return redirect(url_for("wikipage", page=page))
