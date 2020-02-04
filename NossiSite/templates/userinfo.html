@@ -25,7 +25,7 @@
             <a href = "{{ url_for('showsheet', name=user.username) }}">Sheet of {{ user.username }}</a>
         {% else %}
             <h3>You have {{ user.funds }} Credits.</h3>
-            <h3>Your Discord account is {{ user.discord }}. <a href="{{ url_for('change_discord') }}"> CHANGE </a></h3>
+            <h3>Your Discord account is {{ user.discord }}. <a href="{{ url_for('config') }}"> CHANGE </a></h3>
             <h3><a href="{{ url_for('add_funds') }}"> BUY CREDITS </a></h3>
             <h3><a href="{{ url_for('payout') }}"> SELL CREDITS </a></h3>
             <h3><a href="{{ url_for('editentries', x="all") }}">MAKE OR EDIT POSTS</a></h3>

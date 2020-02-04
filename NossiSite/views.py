@@ -280,11 +280,13 @@ def tagsearch(tag):
     return render_template("wikindex.html", entries=entries, tags=tags, heads=heads)
 
 
-@app.route("/change_discord", methods=["GET", "POST"])
-def change_discord():
+@app.route("/config/<str:x>", methods=["GET", "POST"])
+def config(x):
     checklogin()
     if request.method == "GET":
-        return render_template("change_discord.html")
+        if x == "discord":
+            desc = "Your Discord account (name#number) that will be able to remote control your Nosferatunet Account."
+        return render_template("config.html", heading=heading, description=desc, config=x)
     else:
         ul = Userlist()
         u = ul.loaduserbyname(session.get('user'))
