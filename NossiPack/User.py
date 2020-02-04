@@ -30,7 +30,7 @@ class User(object):
         try:
             self.sheet = VampireCharacter.deserialize(sheet)
         except:
-            log.debug("could not load sheet " + sheet[:100])
+            log.debug("could not load sheet " + str(sheet[:100]))
         self.oldsheets = self.deserialize_old_sheets(oldsheets)
         self.admin = admin
         self.defines = {}
