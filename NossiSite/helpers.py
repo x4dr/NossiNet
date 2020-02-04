@@ -234,8 +234,8 @@ def checklogin():
 
 @app.errorhandler(Exception)
 def internal_error(error: Exception):
-    if error.args[0] == "REDIR":
-        return error.args[1]
+    if error.args and error.args[0] == "REDIR":
+            return error.args[1]
     else:
         if type(error) == DescriptiveError:
             flash(error.args[0])

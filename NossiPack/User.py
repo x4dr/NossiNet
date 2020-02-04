@@ -1,12 +1,11 @@
 import os
-import sys
 import pickle
-from typing import Union, List, Any
+import sqlite3
+import sys
+from typing import Union, List
 
 from werkzeug.security import generate_password_hash, check_password_hash
-import sqlite3
 
-from NossiPack.FenCharacter import FenCharacter
 from NossiPack.VampireCharacter import VampireCharacter
 
 __author__ = 'maric'
@@ -27,11 +26,7 @@ class User(object):
         else:
             self.pw_hash = generate_password_hash(password)
         self.funds = funds
-        try:
-            self.sheet = VampireCharacter.deserialize(sheet)
-        except:
-            self.sheet = FenCharacter.deserialize(sheet)
-
+        self.sheet = VampireCharacter.deserialize(sheet)
         self.oldsheets = self.deserialize_old_sheets(oldsheets)
         self.admin = admin
         self.defines = {}
@@ -78,9 +73,38 @@ class User(object):
 
 class Config(object):
     @staticmethod
-    def load(user, option):
-        db = connect_db()
-        return db.execute('SELECT value FROM configs WHERE user LIKE :user AND option LIKE :option;').fetchone()
+    def load(user, option, db=None):
+        db = db or connect_db()
+        res = db.execute('SELECT value FROM configs WHERE user LIKE :user AND option LIKE :option;',
+                         dict(user=user, option=option)).fetchone()
+        return res[0] if res else None
+
+    @staticmethod
+    def loadall(user, db=None):
+        db = db or connect_db()
+        res = db.execute('SELECT option, value FROM configs WHERE user LIKE :user;',
+                         dict(user=user)).fetchall()
+        return {r[0]: r[1] for r in res} if res else {}
+
+    @staticmethod
+    def save(user, option, value, db=None):
+        db = db or connect_db()
+        if Config.load(user, option, db) is not None:
+            db.execute('UPDATE configs SET value = :value WHERE user LIKE :user AND option LIKE :option;',
+                       dict(user=user, option=option, value=value))
+        else:
+            db.execute('INSERT INTO configs(user,option,value) VALUES (:user, :option, :value);',
+                       dict(user=user, option=option, value=value))
+        db.commit()
+
+    @staticmethod
+    def delete(user, option, db=None):
+        db = db or connect_db()
+        if Config.load(user, option, db) is not None:
+            db.execute('DELETE FROM configs WHERE user LIKE :user AND option LIKE :option;',
+                       dict(user=user, option=option))
+        db.commit()
+        # else it does not exist
 
 
 class Userlist(object):

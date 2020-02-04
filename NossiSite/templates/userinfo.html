@@ -21,29 +21,40 @@
                     <dd><input class=leeet type=submit value=Send></dd>
                 </dl>
             </form>
-           <br>
+            <br>
             <a href = "{{ url_for('showsheet', name=user.username) }}">Sheet of {{ user.username }}</a>
         {% else %}
             <h3>You have {{ user.funds }} Credits.</h3>
-            <h3>Your Discord account is {{ user.discord }}. <a href="{{ url_for('config') }}"> CHANGE </a></h3>
+            <h3>Your Discord account is {{ configs.get("discord", "not set") }}. <a href="{{ url_for('config', x="discord") }}"> CHANGE </a></h3>
             <h3><a href="{{ url_for('add_funds') }}"> BUY CREDITS </a></h3>
             <h3><a href="{{ url_for('payout') }}"> SELL CREDITS </a></h3>
             <h3><a href="{{ url_for('editentries', x="all") }}">MAKE OR EDIT POSTS</a></h3>
             <h3><a href="{{ url_for('resetpassword') }}"> CHANGE PASSWORD </a></h3>
-
-
+            <form action="{{ url_for('config') }}" method=post>
+                <input class=leeet type="text" name="configuration"/>
+                <input class=leeet type="submit" value="Edit"/>
+            </form>
+            <h4 class="hideable">oConfiguration</h4>
+            <div>
+                {% for a,b in configs.items() %}
+                    <form action="{{ url_for('config') }}" method=post>
+                        <input class=leeet type="hidden" name="configuration" value="{{a}}">
+                        <input class=leeet type="submit" value="{{a}}"> = {{ b }}
+                    </form>
+                {% endfor %}
+            </div>
         {% endif %}
 
         {% for msg in msgs %}
             <br>__________________________________________________________<br>
-            <h2>"{{ msg.title }}" {% if msg.author == user.username%}
+            <h2>"{{ msg.title }}" {% if msg.author == user.username %}
                 to <a href="{{ url_for('show_user_profile', username=msg.recipient) }}">{{ msg.recipient }}
-                {% else %}
-                 by <a href="{{ url_for('show_user_profile', username=msg.author) }}">{{ msg.author }} {% endif %}</a>
+            {% else %}
+                by <a href="{{ url_for('show_user_profile', username=msg.author) }}">{{ msg.author }} {% endif %}</a>
             </h2>{{ msg.text|safe }}
             {% if msg.value != 0 %}
                 <br><h3>This message has a price of {{ msg.value }} Credit{% if msg.value!=1 %}s{% endif %}
-                   and is{% if msg.lock %} locked{% else %} unlocked{% endif %}.
+                and is{% if msg.lock %} locked{% else %} unlocked{% endif %}.
 
                 {% if msg.lock %}
                     </h3><br>

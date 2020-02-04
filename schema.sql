@@ -1,66 +1,91 @@
---DROP TABLE entries;
-CREATE TABLE IF NOT EXISTS entries (
-  id     INTEGER PRIMARY KEY AUTOINCREMENT,
-  author TEXT NOT NULL,
-  title  TEXT NOT NULL,
-  text   TEXT NOT NULL,
-  tags   TEXT,
-  plusoned TEXT
-);
---DROP TABLE messages;
-CREATE TABLE IF NOT EXISTS messages (
-  id      INTEGER PRIMARY KEY AUTOINCREMENT,
-  author    TEXT NOT NULL,
-  recipient TEXT NOT NULL,
-  title     TEXT NOT NULL,
-  text      TEXT NOT NULL,
-  value   INTEGER,
-  lock    BOOLEAN
+
+create table if not exists  actors
+(
+	name TEXT not null
+		constraint unq
+			unique,
+	faction TEXT,
+	allegiance TEXT,
+	clan TEXT,
+	tags TEXT
 );
 
---DROP TABLE users;
-CREATE TABLE IF NOT EXISTS users (
-  username     TEXT PRIMARY KEY NOT NULL,
-  passwordhash TEXT             NOT NULL,
-  funds        INTEGER          NOT NULL,
-  sheet        TEXT             NOT NULL,
-  oldsheets    TEXT,
-  defines      TEXT,
-  ip           TEXT,
-  admin        INTEGER,
-  discord_ident TEXT default NULL
+create table if not exists chatlogs
+(
+	linenr INTEGER not null,
+	line TEXT not null,
+	time INTEGER not null,
+	room TEXT not null,
+	constraint unq
+		unique (linenr, room)
 );
 
+create table if not exists dice
+(
+	amount INTEGER not null,
+	difficulty INTEGER not null,
+	data TEXT not null,
+	constraint unq
+		unique (amount, difficulty)
+);
 
---DROP TABLE chatlogs;
-CREATE TABLE IF NOT EXISTS chatlogs (
-  linenr        INTEGER             NOT NULL,
-  line          TEXT                NOT NULL,
-  time          INTEGER             NOT NULL,
-  room          TEXT                NOT NULL,
-  CONSTRAINT unq UNIQUE (linenr, room)
+create table if not exists entries
+(
+	id INTEGER
+		primary key autoincrement,
+	author TEXT not null,
+	title TEXT not null,
+	text TEXT not null,
+	tags TEXT,
+	plusoned TEXT
 );
---DROP TABLE dice;
-CREATE TABLE IF NOT EXISTS dice (
-  amount        INTEGER             NOT NULL,
-  difficulty    INTEGER             NOT NULL,
-  data          TEXT                NOT NULL,
-  CONSTRAINT unq UNIQUE (amount, difficulty)
+
+create table if not exists messages
+(
+	id INTEGER
+		primary key autoincrement,
+	author TEXT not null,
+	recipient TEXT not null,
+	title TEXT not null,
+	text TEXT not null,
+	value INTEGER,
+	lock BOOLEAN
 );
---DROP TABLE property;
-CREATE TABLE IF NOT EXISTS property (
-  name          TEXT                NOT NULL,
-  owner         TEXT                NOT NULL,
-  tags          TEXT,
-  data          TEXT,
-  CONSTRAINT unq UNIQUE (name)
+
+create table if not exists property
+(
+	name TEXT not null
+		constraint unq
+			unique,
+	owner TEXT not null,
+	tags TEXT,
+	data TEXT
 );
---DROP TABLE actors;
-CREATE TABLE IF NOT EXISTS actors (
-  name          TEXT                NOT NULL,
-  faction       TEXT,
-  allegiance    TEXT,
-  clan          TEXT,
-  tags          TEXT,
-  CONSTRAINT unq UNIQUE (name)
+
+create table if not exists users
+(
+	username TEXT not null
+		primary key,
+	passwordhash TEXT not null,
+	funds INTEGER not null,
+	sheet TEXT not null,
+	oldsheets TEXT,
+	defines TEXT,
+	ip TEXT,
+	admin INTEGER
 );
+
+create table if not exists configs
+(
+	user TEXT not null
+		references users
+			on update cascade on delete cascade,
+	option TEXT not null,
+	value TEXT not null,
+	constraint configs_pk
+		unique (user, option)
+);
+
+create unique index if not exists configs_user_option_uindex
+	on configs (user, option);
+

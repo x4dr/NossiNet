@@ -2,11 +2,16 @@
 {% block body %}
     <h2>{{ heading }}</h2>
     {{ description }}
-    <form action="{{ url_for('config',config) }}" method=post>
+    <form action="{{ url_for('config', x=config) }}" method=post>
         <dl>
-            <input type="hidden" name="token" value="{{ token }}">
-                <dd><input class=leet type=text name=discord, value="{{ curval }}">
-            <dd><input class=leet type=submit value=Send>
+            <input type="hidden" name="token" value="{{ token }}"/>
+            <dd><input class=leet type=text name="configuration" value="{{ curval }}">
+            <input class=leet type=submit value=Save>
         </dl>
+    </form>
+    <form action="{{ url_for('config', x=config) }}" method=post>
+        <input type="hidden" name="token" value="{{ token }}"/>
+        <input type="hidden" name="delete" value="true">
+        <input class=leet type=submit value=Delete>
     </form>
 {% endblock %}

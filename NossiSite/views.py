@@ -281,24 +281,31 @@ def tagsearch(tag):
     return render_template("wikindex.html", entries=entries, tags=tags, heads=heads)
 
 
-@app.route("/config/<string:x>", methods=["GET", "POST"])
-def config(x):
+@app.route("/config/", methods=["POST"])
+@app.route("/config/<path:x>", methods=["GET", "POST"])
+def config(x=None):
     checklogin()
     if request.method == "GET":
-        c = Config.load(session["user"], x)
+        c = Config.load(session["user"], x) or ""
         print("Config:", c)
-        heading = "Change " + x
+        heading = "Change " + x.title()
         if x == "discord":
             desc = "Your Discord account (name#number) that will be able to remote control your Nosferatunet Account:"
         else:
-            desc = f"What would you like {x} to be?"
+            desc = f"What would you like {x.title()} to be?"
         return render_template("config.html", heading=heading, description=desc, config=x, curval=c)
-    else:
-        ul = Userlist()
-        u = ul.loaduserbyname(session.get('user'))
-        u.discord = request.form["discord"]
-        ul.saveuserlist()
-        return redirect(url_for('show_user_profile', username=u.username))
+    elif request.method == "POST":
+        if not x:
+            return redirect(url_for("config", x=request.form["configuration"]))
+        if request.form.get("delete", None):
+            log.info(f"Deleting {x} of user {session['user']}.")
+            Config.delete(session["user"], x.lower())
+            flash(f"Deleted {x}!")
+        else:
+            print("RFORM:", request.form["configuration"])
+            Config.save(session["user"], x.lower(), request.form["configuration"])
+            flash(f"Saved {x}!")
+        return redirect(url_for('show_user_profile', username=session["user"]))
 
 
 @app.route('/charactersheet/')
@@ -690,7 +697,7 @@ def show_user_profile(username):
         u = ul.getuserbyname(username)
     else:
         u = User(username, "")
-    site = render_template('userinfo.html', user=u, msgs=msgs)
+    site = render_template('userinfo.html', user=u, msgs=msgs, configs=Config.loadall(username))
     return site
 
 
