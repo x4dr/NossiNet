@@ -210,7 +210,7 @@ class Userlist(object):
                 self.userlist.append(newuser)
         except Exception as e:
             print("loading user by name, error :", e, e.args)
-            return None
+            raise
         return newuser
 
     def getfunds(self, user=None, username=None):
