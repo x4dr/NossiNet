@@ -11,7 +11,7 @@ from markupsafe import Markup
 from werkzeug.security import gen_salt, generate_password_hash
 
 from NossiPack.FenCharacter import FenCharacter
-from NossiPack.User import Userlist, User
+from NossiPack.User import Userlist, User, Config
 from NossiPack.VampireCharacter import VampireCharacter
 from NossiPack.krypta import DescriptiveError
 from NossiSite import app, helpers
@@ -78,13 +78,16 @@ def show_entries():
 def wiki_index():
     r = wikindex()
     heads = []
-    return render_template("wikindex.html", entries=r[0], tags=r[1], heads=heads)
+    return render_template("wikindex.html", entries=[x.with_suffix("").as_posix() for x in r[0]], tags=r[1])
 
 
 @app.route('/wiki', methods=["GET", "POST"])
-@app.route('/wiki/<page>', methods=["GET", "POST"])
-@app.route('/wiki/<page>/<raw>', methods=["GET"])
-def wikipage(page=None, raw=None):
+@app.route('/wiki/<path:page>', methods=["GET", "POST"])
+def wikipage(page=None):
+    raw = request.url.endswith("/raw")
+    if raw:
+        page = page[:4]
+    print("received message:", page, raw)
     if page is None:
         page = request.form.get('n', None)
         if page is None:
@@ -98,13 +101,11 @@ def wikipage(page=None, raw=None):
             raise
         if session.get('logged_in'):
             entry = dict(id=0, text="", tags="", author=session.get('user'))
-            return render_template("edit_entry.html", mode="wiki", wiki=page, entry=entry
-                                   )
+            return render_template("edit_entry.html", mode="wiki", wiki=page, entry=entry)
         else:
             flash("That page doesn't exist. Log in to create it!")
-
             return redirect(url_for("wiki_index"))
-    if raw != "raw":
+    if not raw:
         body = bleach.clean(body)
         body = Markup(markdown.markdown(body, extensions=["tables", "toc", "nl2br"]))
         body = fill_infolets(body)
@@ -113,7 +114,7 @@ def wikipage(page=None, raw=None):
         return body
 
 
-@app.route('/edit/<x>', methods=["GET", "POST"])
+@app.route('/edit/<path:x>', methods=["GET", "POST"])
 def editentries(x=None):
     checklogin()
     if request.method == "GET":
@@ -159,7 +160,7 @@ def editentries(x=None):
         if checktoken():
             if request.form.get("wiki", None) is not None:
                 log.info(f"saving wiki file {request.form['wiki']}")
-                wikisave(request.form['wiki'].lower(), session.get('user'), request.form['title'],
+                wikisave(x, session.get('user'), request.form['title'],
                          request.form['tags'].split(" "), request.form['text'])
                 session["retrieve"] = None
                 return redirect(url_for("wikipage", page=request.form['wiki']))
@@ -280,13 +281,18 @@ def tagsearch(tag):
     return render_template("wikindex.html", entries=entries, tags=tags, heads=heads)
 
 
-@app.route("/config/<str:x>", methods=["GET", "POST"])
+@app.route("/config/<string:x>", methods=["GET", "POST"])
 def config(x):
     checklogin()
     if request.method == "GET":
+        c = Config.load(session["user"], x)
+        print("Config:", c)
+        heading = "Change " + x
         if x == "discord":
-            desc = "Your Discord account (name#number) that will be able to remote control your Nosferatunet Account."
-        return render_template("config.html", heading=heading, description=desc, config=x)
+            desc = "Your Discord account (name#number) that will be able to remote control your Nosferatunet Account:"
+        else:
+            desc = f"What would you like {x} to be?"
+        return render_template("config.html", heading=heading, description=desc, config=x, curval=c)
     else:
         ul = Userlist()
         u = ul.loaduserbyname(session.get('user'))

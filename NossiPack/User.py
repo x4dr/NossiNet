@@ -20,7 +20,7 @@ def connect_db():
 
 class User(object):
     def __init__(self, username, password="", passwordhash=None, funds=0,
-                 sheet=VampireCharacter().serialize(), oldsheets=b'', admin="", defines='', discord=""):
+                 sheet=VampireCharacter().serialize(), oldsheets=b'', admin="", defines=''):
         self.username = username.strip()
         if passwordhash is not None:
             self.pw_hash = passwordhash
@@ -38,7 +38,6 @@ class User(object):
         if defines:
             self.defines = pickle.loads(defines)
         self.defines = {**self.defines, **self.sheet.unify()}
-        self.discord = discord or "not set"
 
     def set_password(self, newpassword):
         self.pw_hash = generate_password_hash(newpassword)
@@ -77,6 +76,13 @@ class User(object):
         return "public" in self.sheet.meta["Notes"][:22]
 
 
+class Config(object):
+    @staticmethod
+    def load(user, option):
+        db = connect_db()
+        return db.execute('SELECT value FROM configs WHERE user LIKE :user AND option LIKE :option;').fetchone()
+
+
 class Userlist(object):
     userlist: List[User]
 
@@ -91,23 +97,22 @@ class Userlist(object):
         db = connect_db()
         if sheets:
             cur = db.execute('SELECT username, passwordhash, funds, '
-                             'sheet, oldsheets, defines, admin, discord_ident FROM users')
+                             'sheet, oldsheets, defines, admin FROM users')
             f_all = cur.fetchall()
             for row in f_all:
                 try:
                     self.userlist.append(User(username=row[0], passwordhash=row[1], funds=row[2],
-                                              sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6],
-                                              discord=row[7]))
+                                              sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6]))
                 except Exception as e:
                     print("weird db exception with ", row, e, e.args)
         else:
             cur = db.execute('SELECT username, passwordhash, funds,'
-                             'defines, admin, discord_ident FROM users')
+                             'defines, admin FROM users')
             import time
             print("fetching userlist")
             t1 = time.time()
             self.userlist = [User(username=row[0], passwordhash=row[1], funds=row[2],
-                                  defines=row[3], admin=row[4], discord=row[5]) for row in
+                                  defines=row[3], admin=row[4]) for row in
                              cur.fetchall()]
             print("fetched in", time.time() - t1)
         db.close()
@@ -119,21 +124,20 @@ class Userlist(object):
             if u.sheet.checksum() != 0:
                 d = dict(username=u.username, pwhash=u.pw_hash, funds=u.funds,
                          sheet=u.sheet.serialize(), oldsheets=u.serialize_old_sheets(), defines=pickle.dumps(u.defines),
-                         admin=u.admin, discord=u.discord)
+                         admin=u.admin)
                 db.execute('INSERT OR REPLACE INTO users (username, passwordhash, funds, '
-                           'sheet, oldsheets, defines, admin, discord_ident) '
-                           'VALUES (:username,:pwhash, :funds, :sheet, :oldsheets, :defines, :admin, :discord)', d)
+                           'sheet, oldsheets, defines, admin) '
+                           'VALUES (:username,:pwhash, :funds, :sheet, :oldsheets, :defines, :admin, )', d)
             else:
                 d = dict(username=u.username, pwhash=u.pw_hash, funds=u.funds,
-                         defines=pickle.dumps(u.defines), admin=u.admin, emptysheet=VampireCharacter().serialize(),
-                         discord_ident=u.discord)
+                         defines=pickle.dumps(u.defines), admin=u.admin, emptysheet=VampireCharacter().serialize())
                 db.execute(
                     "INSERT OR REPLACE INTO users (username, passwordhash, funds,  "
-                    "sheet, oldsheets, defines, admin, discord_ident) "
+                    "sheet, oldsheets, defines, admin) "
                     "VALUES (:username,:pwhash, :funds,"
                     "COALESCE((SELECT sheet FROM users WHERE username = :username), :emptysheet),"
                     "COALESCE((SELECT oldsheets FROM users WHERE username = :username), ''),"
-                    " :defines, :admin, :discord_ident)", d)
+                    " :defines, :admin)", d)
 
         db.commit()
         db.close()
@@ -169,14 +173,14 @@ class Userlist(object):
     def loaduserbyname(self, username) -> Union[User, None]:
         db = connect_db()
         cur = db.execute('SELECT username, passwordhash, funds, '
-                         'sheet, oldsheets, defines, admin, discord_ident FROM users WHERE username = (?)', (username,))
+                         'sheet, oldsheets, defines, admin FROM users WHERE username = (?)', (username,))
         try:
             row = cur.fetchone()
             if row is None:
                 return None
-            print("loading user by name:",row)
+            print("loading user by name:", row)
             newuser = User(username=row[0], passwordhash=row[1], funds=row[2],
-                           sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6], discord=row[7])
+                           sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6])
 
             if newuser.username not in self.userlist:
                 self.userlist.append(newuser)

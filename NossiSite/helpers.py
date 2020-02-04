@@ -6,7 +6,8 @@ import sqlite3
 import time
 import traceback
 from contextlib import closing
-from typing import Tuple, List
+from typing import Tuple, List, Union, Dict
+from pathlib import Path
 
 import bleach
 import markdown
@@ -20,12 +21,12 @@ from NossiSite import app
 from fengraph import weapondata
 
 log = logging.getLogger("frontend")
-fh=logging.FileHandler("nossilog.log", mode="w")
+fh = logging.FileHandler("nossilog.log", mode="w")
 fh.setLevel(logging.DEBUG)
 log.addHandler(fh)
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s')
 log.setLevel(logging.DEBUG)
-wikipath = "~/wiki/"
+wikipath = Path.home() / "wiki"
 
 
 def stream_template(template_name, **context):
@@ -40,30 +41,24 @@ wikitags = {}
 wikistamp = [0.0]
 
 
-def wikindex():
+def wikindex() -> Tuple[List[Path], Dict]:
     global wikitags
     mds = []
-    for p in os.listdir(os.path.expanduser(wikipath)):
-        if p.endswith(".md"):
-            mds.append(p[:-3])
+    for p in wikipath.glob("**/*.md"):
+        mds.append(p.relative_to(wikipath))
     return sorted(mds), wikitags
-
-
-def stream_string(s):
-    for l in s:
-        yield l
 
 
 def wikisave(page, author, title, tags, body):
     print("saving ...")
-    with open(os.path.expanduser(wikipath + page + ".md"), 'w+') as f:
+    with (wikipath / (page + ".md")).open('w+') as f:
         f.write("title: " + title + "  \n")
         f.write("tags: " + " ".join(tags) + "  \n")
         f.write(body.replace("\n", ""))
-    with open(os.path.expanduser(wikipath) + "control", "a+") as h:
+    with (wikipath/"control").open("a+") as h:
         h.write(page + " edited by " + author + "\n")
-    with open(os.path.expanduser(wikipath) + "control", "r") as f:
-        print(os.path.expanduser(wikipath) + "control", ":", f.read())
+    with (wikipath/"control").open("r") as f:
+        print((wikipath/"control").as_posix() + "control", ":", f.read())
     os.system(os.path.expanduser("~/") + "bin/wikiupdate & ")
 
 
@@ -84,9 +79,13 @@ def traverse_md(md: str, seek: str) -> str:
     return result
 
 
-def wikiload(page: str) -> Tuple[str, List[str], str]:
+def wikiload(page: Union[str, Path]) -> Tuple[str, List[str], str]:
     try:
-        with open(os.path.expanduser(wikipath + page + ".md")) as f:
+        if isinstance(page, str):
+            p = wikipath / (page + ".md")
+        else:
+            p = wikipath / page.with_suffix(".md")
+        with p.open() as f:
             mode = "meta"
             title = ""
             tags = []

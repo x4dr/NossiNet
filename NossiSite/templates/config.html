@@ -4,8 +4,8 @@
     {{ description }}
     <form action="{{ url_for('config',config) }}" method=post>
         <dl>
-            <input type="hidden" name="token" value={{ token }}>
-                <dd><input class=leet type=text name=discord>
+            <input type="hidden" name="token" value="{{ token }}">
+                <dd><input class=leet type=text name=discord, value="{{ curval }}">
             <dd><input class=leet type=submit value=Send>
         </dl>
     </form>
