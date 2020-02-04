@@ -26,7 +26,10 @@ class User(object):
         else:
             self.pw_hash = generate_password_hash(password)
         self.funds = funds
-        self.sheet = VampireCharacter.deserialize(sheet)
+        try:
+            self.sheet = VampireCharacter.deserialize(sheet)
+        except:
+            print("could not load sheet", sheet[:100])
         self.oldsheets = self.deserialize_old_sheets(oldsheets)
         self.admin = admin
         self.defines = {}
