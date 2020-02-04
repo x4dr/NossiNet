@@ -7,6 +7,7 @@ from typing import Union, List
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from NossiPack.VampireCharacter import VampireCharacter
+from NossiSite.helpers import log
 
 __author__ = 'maric'
 
@@ -29,7 +30,8 @@ class User(object):
         try:
             self.sheet = VampireCharacter.deserialize(sheet)
         except:
-            print("could not load sheet", sheet[:100])
+            log.debug("could not load sheet " + str(sheet[:100]))
+            self.sheet = VampireCharacter()
         self.oldsheets = self.deserialize_old_sheets(oldsheets)
         self.admin = admin
         self.defines = {}
@@ -212,8 +214,8 @@ class Userlist(object):
             if newuser.username not in self.userlist:
                 self.userlist.append(newuser)
         except Exception as e:
-            print("loading user by name, error :", e, e.args)
-            return None
+            log.exception("loading user by name, error :", e, e.args)
+            raise
         return newuser
 
     def getfunds(self, user=None, username=None):
@@ -228,4 +230,5 @@ class Userlist(object):
         try:
             return self.loaduserbyname(user).check_password(password)
         except Exception as e:
-            print("exception while checking", user, password, e, e.args)
+            log.exception("exception while checking user credentials for ", user)
+            raise
