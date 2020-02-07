@@ -174,7 +174,7 @@ class Userlist(object):
                          admin=u.admin)
                 db.execute('INSERT OR REPLACE INTO users (username, passwordhash, funds, '
                            'sheet, oldsheets, defines, admin) '
-                           'VALUES (:username,:pwhash, :funds, :sheet, :oldsheets, :defines, :admin, )', d)
+                           'VALUES (:username,:pwhash, :funds, :sheet, :oldsheets, :defines, :admin)', d)
             else:
                 d = dict(username=u.username, pwhash=u.pw_hash, funds=u.funds,
                          defines=pickle.dumps(u.defines), admin=u.admin, emptysheet=VampireCharacter().serialize())
