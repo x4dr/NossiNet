@@ -2,12 +2,12 @@ import os
 import pickle
 import sqlite3
 import sys
-from typing import Union, List
+from typing import Union, List, Dict
 
 from werkzeug.security import generate_password_hash, check_password_hash
 
+from NossiPack import VampireCharacter
 from NossiPack.VampireCharacter import VampireCharacter
-from NossiSite.helpers import log
 
 __author__ = 'maric'
 
@@ -19,6 +19,8 @@ def connect_db():
 
 
 class User(object):
+    sheet: VampireCharacter
+
     def __init__(self, username, password="", passwordhash=None, funds=0,
                  sheet=VampireCharacter().serialize(), oldsheets=b'', admin="", defines=''):
         self.username = username.strip()
@@ -27,6 +29,8 @@ class User(object):
         else:
             self.pw_hash = generate_password_hash(password)
         self.funds = funds
+        from NossiSite import log
+        log.info("making User")
         try:
             self.sheet = VampireCharacter.deserialize(sheet)
         except:
@@ -51,6 +55,21 @@ class User(object):
             oldsheetserialized.append(s)
         return pickle.dumps(oldsheetserialized)
 
+    def configs(self) -> Dict[str, str]:  # central place to store default values for users
+        res = {
+            "discord": "not set",
+            "fensheet_dots": "1",
+            "fensheet_dot_max": "5",
+            "character_sheet": ""  # anything but a valid charactersheet defaults to vampire sheet
+        }
+
+        res.update(Config.loadall(self.username))
+        return res
+
+    def config(self, option, default=None):
+        val = Config.load(self.username, option)
+        return val if val is not None else default
+
     @staticmethod
     def deserialize_old_sheets(inp):
         if inp == b'':
@@ -65,7 +84,6 @@ class User(object):
         return check_password_hash(self.pw_hash, password)
 
     def update_sheet(self, form):
-        print("logging character change\n", form)
         if "newsheet" in form.keys():
             self.oldsheets.append(VampireCharacter())
             self.oldsheets[-1].setfromform(form)
@@ -85,7 +103,7 @@ class Config(object):
         return res[0] if res else None
 
     @staticmethod
-    def loadall(user, db=None):
+    def loadall(user: str, db=None) -> Dict[str, str]:
         db = db or connect_db()
         res = db.execute('SELECT option, value FROM configs WHERE user LIKE :user;',
                          dict(user=user)).fetchall()
@@ -187,9 +205,9 @@ class Userlist(object):
         db.close()
         return None
 
-    def contains(self, user):
+    def contains(self, user: str):
         for u in self.userlist:
-            if u.username == user:
+            if u.username.upper() == user.upper():
                 return True
         return False
 
@@ -207,13 +225,13 @@ class Userlist(object):
             row = cur.fetchone()
             if row is None:
                 return None
-            print("loading user by name:", row)
             newuser = User(username=row[0], passwordhash=row[1], funds=row[2],
                            sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6])
 
             if newuser.username not in self.userlist:
                 self.userlist.append(newuser)
         except Exception as e:
+            from NossiSite import log
             log.exception("loading user by name, error :", e, e.args)
             raise
         return newuser
@@ -229,6 +247,7 @@ class Userlist(object):
     def valid(self, user, password) -> bool:
         try:
             return self.loaduserbyname(user).check_password(password)
-        except Exception as e:
+        except Exception:
+            from NossiSite import log
             log.exception("exception while checking user credentials for ", user)
             raise

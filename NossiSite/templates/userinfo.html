@@ -30,12 +30,12 @@
             <h3><a href="{{ url_for('payout') }}"> SELL CREDITS </a></h3>
             <h3><a href="{{ url_for('editentries', x="all") }}">MAKE OR EDIT POSTS</a></h3>
             <h3><a href="{{ url_for('resetpassword') }}"> CHANGE PASSWORD </a></h3>
-            <form action="{{ url_for('config') }}" method=post>
-                <input class=leeet type="text" name="configuration"/>
-                <input class=leeet type="submit" value="Edit"/>
-            </form>
             <h4 class="hideable">oConfiguration</h4>
             <div>
+                <form action="{{ url_for('config') }}" method=post>
+                    <input class=leeet type="text" name="configuration"/>
+                    <input class=leeet type="submit" value="Add New"/>
+                </form>
                 {% for a,b in configs.items() %}
                     <form action="{{ url_for('config') }}" method=post>
                         <input class=leeet type="hidden" name="configuration" value="{{a}}">
