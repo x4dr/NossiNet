@@ -201,7 +201,7 @@ async def rollhandle(msg, comment, send, author):
 
 
 async def weaponhandle(msg, comment, send, author):
-    n = requests.get("http://nosferatu.vampir.es/" + "/".join(quote(x.strip()) for x in msg.split(":", 2)) + "/txt")
+    n = requests.get("http://127.0.0.1/" + "/".join(quote(x.strip()) for x in msg.split(":", 2)) + "/txt")
     if n.status_code == 200:
         n = n.content.decode("utf-8")
         await send(author.mention + comment + "```" + msg + "\n" + n + "```")
@@ -213,10 +213,12 @@ async def weaponhandle(msg, comment, send, author):
 async def specifichandle(msg, comment, send, author):
     msg = msg[len("specific:"):].strip()
     print("calling specific/" + msg + "/raw")
-    n = requests.get("http://nosferatu.vampir.es/specific/" + quote(msg.strip()) + "/raw")
+    n = requests.get("http://127.0.0.1/specific/" + quote(msg.strip()) + "/raw")
     if n.status_code == 200:
         n = n.content.decode("utf-8")
-        await send(author.mention + comment + "```" + msg + "\n" + n + "```")
+        await send(author.mention + comment + "```" + msg + "\n" + n[:1950] + "```")
+        for replypart in [n[i:i + 1950] for i in range(1950, len(n), 1950)]:
+            await send(replypart)
         return True
     else:
         print("failed request:", n.status_code, n.url)
