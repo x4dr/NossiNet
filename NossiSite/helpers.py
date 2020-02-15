@@ -240,6 +240,8 @@ def internal_error(error: Exception):
         if type(error) == DescriptiveError:
             flash(error.args[0])
             logging.exception("Handled Descriptive Error")
+            if request.url.endswith("/raw"):
+                return error.args[0]
         else:
             flash("internal error. sorry", category="error")
             logging.exception("Unhandled internal error")

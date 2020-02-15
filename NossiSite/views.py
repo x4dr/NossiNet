@@ -155,7 +155,6 @@ def editentries(x=None):
                 flash("entry " + str(x) + " not found.")
         return redirect(url_for('editentries', x="all"))
     if request.method == "POST":
-        log.info(f"{session.get('user', '?')} editing id  {request.form['id']} {request.form}")
         if request.form["id"] == "new":
             add_entry()
         if checktoken():
@@ -171,7 +170,6 @@ def editentries(x=None):
             entry = [dict(author=row[0], title=row[1], text=row[2], id=row[3], tags=row[4]) for row in
                      cur.fetchall()][0]
             if (session.get('user').upper() == entry['author'].upper()) or session.get('admin'):
-                log.info(f"{session.get('user', '?')} editing id {request.form['id']} {request.form}")
                 g.db.execute('UPDATE entries SET title=?, text=?, tags=? WHERE id == ?',
                              [request.form['title'], request.form['text'], request.form['tags'], request.form['id']])
                 session["retrieve"] = None
@@ -265,7 +263,7 @@ def magicweapons(w, par=None):
         code = code[code.find("\n") + 1:]  # skip over the newline
         code = code[:code.find("\n")]  # code should be on the next line
     else:
-        raise DescriptiveError(w.upper(), "not foundin ", code)
+        raise DescriptiveError(w.upper() + "not found in " + code)
     weapon = helpers.magicalweapontable(code, par, format_json or format_txt)
     if format_txt:
         return format_weapon(weapon)
@@ -302,7 +300,6 @@ def config(x=None):
             Config.delete(session["user"], x.lower())
             flash(f"Deleted {x}!")
         else:
-            print("RFORM:", request.form["configuration"])
             Config.save(session["user"], x.lower(), request.form["configuration"])
             flash(f"Saved {x}!")
         return redirect(url_for('show_user_profile', username=session["user"]))

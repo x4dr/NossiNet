@@ -30,7 +30,6 @@ class User(object):
             self.pw_hash = generate_password_hash(password)
         self.funds = funds
         from NossiSite import log
-        log.info("making User")
         try:
             self.sheet = VampireCharacter.deserialize(sheet)
         except:

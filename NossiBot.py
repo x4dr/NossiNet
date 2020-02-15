@@ -218,7 +218,7 @@ async def specifichandle(msg, comment, send, author):
         n = n.content.decode("utf-8")
         await send(author.mention + comment + "```" + msg + "\n" + n[:1950] + "```")
         for replypart in [n[i:i + 1950] for i in range(1950, len(n), 1950)]:
-            await send(replypart)
+            await send("```" +replypart+ "```")
         return True
     else:
         print("failed request:", n.status_code, n.url)
