@@ -8,9 +8,18 @@ import numpy
 import requests
 import ast
 
-from scipy.integrate import quad
-from scipy.interpolate import interp1d
-from scipy.optimize import fsolve
+try:
+    from scipy.integrate import quad
+    from scipy.interpolate import interp1d
+    from scipy.optimize import fsolve
+except ImportError:
+    def notfound(*args, **kwargs):
+        raise Exception("Scipy is not installed!")
+
+
+    quad = notfound
+    interp1d = notfound
+    fsolve = notfound
 
 from NossiPack.krypta import DescriptiveError
 
@@ -199,7 +208,7 @@ def chances(selector, modifier=0, number_of_quantiles=None):
                 yield "did not find" + str(selector)
                 raise DescriptiveError("no data found")
         yield "data found..."
-    except DescriptiveError as e:
+    except DescriptiveError:
         yield f"generating Data for {selector}..."
         with open("unordered_data", "a") as f:
             occurren = {}
@@ -223,11 +232,10 @@ def chances(selector, modifier=0, number_of_quantiles=None):
                 res += f"{k:5d} {100 * occurrences[k] / total: >5.2f} {'#' * int(40 * occurrences[k] / max_val)}\n"
         total = sum(occurrences.values())
         avg = sum(k * v for k, v in occurrences.items()) / total
-        dev = math.sqrt(sum(((k - avg)**2)*v for k, v in occurrences.items()) / total)
+        dev = math.sqrt(sum(((k - avg) ** 2) * v for k, v in occurrences.items()) / total)
         yield (res, avg, dev)
     else:
         yield "generating graph..."
-        res = ""
         fy = [x / total for x in occurrences.values()]
         fx = sorted(list(occurrences.keys()))
         f = interp1d(fx, fy, kind=2, bounds_error=False, fill_value=0)
