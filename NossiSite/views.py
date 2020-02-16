@@ -82,6 +82,15 @@ def wiki_index():
     return render_template("wikindex.html", entries=[x.with_suffix("").as_posix() for x in r[0]], tags=r[1])
 
 
+@app.route('/update')
+def update_nossinet():
+    print("update request:")
+    print(request.args)
+    print(request.json)
+    print("///update")
+    return Response(None, 200)
+
+
 @app.route('/wiki', methods=["GET", "POST"])
 @app.route('/wiki/<path:page>', methods=["GET", "POST"])
 def wikipage(page=None):
