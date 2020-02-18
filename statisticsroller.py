@@ -10,6 +10,7 @@ from typing import Tuple, List
 
 import pydealer
 
+#from NossiPack.FenCharacter import FenCharacter
 from NossiPack.FenCharacter import FenCharacter
 from NossiPack.WoDParser import WoDParser
 from NossiPack.krypta import d10
@@ -357,4 +358,5 @@ def run_craft(total: int, effort: int, adverse: int, increase_every: int, sel: T
 
 
 if __name__ == "__main__":
+    print(vars(FenCharacter()))
     print(run_craft(1000, 40, 0, 1, (5, 5), ""))

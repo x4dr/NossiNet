@@ -1,3 +1,4 @@
+import codecs
 import json
 import random
 import time
@@ -6,7 +7,7 @@ from typing import List, Tuple
 
 import bleach
 import markdown
-from flask import Response, abort
+from flask import Response, abort, jsonify
 from markupsafe import Markup
 from werkzeug.security import gen_salt, generate_password_hash
 
@@ -79,6 +80,15 @@ def wiki_index():
     r = wikindex()
     heads = []
     return render_template("wikindex.html", entries=[x.with_suffix("").as_posix() for x in r[0]], tags=r[1])
+
+
+@app.route('/update')
+def update_nossinet():
+    print("update request:")
+    print(request.args)
+    print(request.json)
+    print("///update")
+    return Response(None, 200)
 
 
 @app.route('/wiki', methods=["GET", "POST"])
@@ -154,7 +164,6 @@ def editentries(x=None):
                 flash("entry " + str(x) + " not found.")
         return redirect(url_for('editentries', x="all"))
     if request.method == "POST":
-        log.info(f"{session.get('user', '?')} editing id  {request.form['id']} {request.form}")
         if request.form["id"] == "new":
             add_entry()
         if checktoken():
@@ -170,7 +179,6 @@ def editentries(x=None):
             entry = [dict(author=row[0], title=row[1], text=row[2], id=row[3], tags=row[4]) for row in
                      cur.fetchall()][0]
             if (session.get('user').upper() == entry['author'].upper()) or session.get('admin'):
-                log.info(f"{session.get('user', '?')} editing id {request.form['id']} {request.form}")
                 g.db.execute('UPDATE entries SET title=?, text=?, tags=? WHERE id == ?',
                              [request.form['title'], request.form['text'], request.form['tags'], request.form['id']])
                 session["retrieve"] = None
@@ -194,7 +202,7 @@ def update_filter():
 def fensheet(c):
     char = FenCharacter()
     char.load_from_md(*wikiload(c + "_character"))
-    body = render_template("fensheet.html", character=char)
+    body = render_template("fensheet.html", character=char, userconf=User(session.get("user", "")).configs())
     return fill_infolets(body)
 
 
@@ -264,7 +272,7 @@ def magicweapons(w, par=None):
         code = code[code.find("\n") + 1:]  # skip over the newline
         code = code[:code.find("\n")]  # code should be on the next line
     else:
-        raise DescriptiveError(w.upper(), "not foundin ", code)
+        raise DescriptiveError(w.upper() + "not found in " + code)
     weapon = helpers.magicalweapontable(code, par, format_json or format_txt)
     if format_txt:
         return format_weapon(weapon)
@@ -287,7 +295,6 @@ def config(x=None):
     checklogin()
     if request.method == "GET":
         c = Config.load(session["user"], x) or ""
-        print("Config:", c)
         heading = "Change " + x.title()
         if x == "discord":
             desc = "Your Discord account (name#number) that will be able to remote control your Nosferatunet Account:"
@@ -302,10 +309,34 @@ def config(x=None):
             Config.delete(session["user"], x.lower())
             flash(f"Deleted {x}!")
         else:
-            print("RFORM:", request.form["configuration"])
             Config.save(session["user"], x.lower(), request.form["configuration"])
             flash(f"Saved {x}!")
         return redirect(url_for('show_user_profile', username=session["user"]))
+
+
+@app.route('/char_access/<path:x>')
+def char_access(x):
+    parts = x.split(".")
+    discord = request.cookies.get("discord", "")
+    ul = Userlist(preload=True, sheets=False)
+    if ul.contains(parts[0]):
+        u = ul.loaduserbyname(session.get('user'))
+        if discord.strip() and u.config("discord") != discord:
+            abort(403)
+        char = u.sheet
+    else:
+        c = wikiload(parts[0] + "_character")
+        char = FenCharacter()
+        char.load_from_md(*c)
+    d = char.getdictrepr()
+    for x in parts[1:]:
+        d = d[x]
+    print(d)
+    print(codecs.unicode_escape_decode(json.dumps(d)))
+    return app.response_class(
+        json.dumps(d, indent=2, ensure_ascii=False) + "\n",
+        mimetype=app.config["JSONIFY_MIMETYPE"],
+    )
 
 
 @app.route('/charactersheet/')
@@ -313,11 +344,20 @@ def charsheet():
     checklogin()
     ul = Userlist()
     u = ul.loaduserbyname(session.get('user'))
+    configchar = u.config("character_sheet", None)
+    if configchar:
+        try:
+            c = wikiload(configchar + "_character")
+            char = FenCharacter()
+            char.load_from_md(*c)
+            body = render_template("fensheet.html", character=char, userconf=User(session.get("user", "")).configs())
+            return fill_infolets(body)
+        except DescriptiveError as e:
+            flash("Error with your configuration value character_sheet: " + e.args[0])
+
     sheet = u.sheet.getdictrepr()
     if sheet["Type"] == "OWOD":
         return render_template('vampsheet.html', character=sheet, own=True)
-    elif sheet["Type"] == "FEN":
-        return render_template('fensheet.html', character=u.sheet, own=True)
     else:
         error = "unrecognized sheet format"
         return render_template('vampsheet.html', character=sheet, error=error, own=True)
@@ -417,12 +457,6 @@ def showoldsheets(x):
     except:
         return redirect(url_for('/oldsheets/'))
     return render_template('vampsheet.html', character=u.oldsheets[sheetnum].getdictrepr(), oldsheet=x)
-
-
-@app.route('/new_fen_sheet/', methods=['GET'])
-def new_fen_sheet():
-    checklogin()
-    return render_template('fensheet_editor_new.html', character=FenCharacter())
 
 
 @app.route('/new_vamp_sheet/', methods=['GET'])
@@ -696,7 +730,7 @@ def show_user_profile(username):
         u = ul.getuserbyname(username)
     else:
         u = User(username, "")
-    site = render_template('userinfo.html', user=u, msgs=msgs, configs=Config.loadall(username))
+    site = render_template('userinfo.html', user=u, msgs=msgs, configs=u.configs())
     return site
 
 

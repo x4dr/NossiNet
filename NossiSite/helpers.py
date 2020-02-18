@@ -55,10 +55,10 @@ def wikisave(page, author, title, tags, body):
         f.write("title: " + title + "  \n")
         f.write("tags: " + " ".join(tags) + "  \n")
         f.write(body.replace("\n", ""))
-    with (wikipath/"control").open("a+") as h:
+    with (wikipath / "control").open("a+") as h:
         h.write(page + " edited by " + author + "\n")
-    with (wikipath/"control").open("r") as f:
-        print((wikipath/"control").as_posix() + "control", ":", f.read())
+    with (wikipath / "control").open("r") as f:
+        print((wikipath / "control").as_posix() + "control", ":", f.read())
     os.system(os.path.expanduser("~/") + "bin/wikiupdate & ")
 
 
@@ -235,15 +235,17 @@ def checklogin():
 @app.errorhandler(Exception)
 def internal_error(error: Exception):
     if error.args and error.args[0] == "REDIR":
-            return error.args[1]
+        return error.args[1]
     else:
         if type(error) == DescriptiveError:
             flash(error.args[0])
             logging.exception("Handled Descriptive Error")
+            if request.url.endswith("/raw"):
+                return error.args[0]
         else:
             flash("internal error. sorry", category="error")
             logging.exception("Unhandled internal error")
-    return redirect(url_for('show_entries'))
+    return render_template("show_entries.html")
 
 
 def weaponadd(weapon_damage_array, b, ind=0):
