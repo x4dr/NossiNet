@@ -154,13 +154,9 @@ class Userlist(object):
         else:
             cur = db.execute('SELECT username, passwordhash, funds,'
                              'defines, admin FROM users')
-            import time
-            print("fetching userlist")
-            t1 = time.time()
             self.userlist = [User(username=row[0], passwordhash=row[1], funds=row[2],
                                   defines=row[3], admin=row[4]) for row in
                              cur.fetchall()]
-            print("fetched in", time.time() - t1)
         db.close()
 
     def saveuserlist(self):

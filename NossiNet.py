@@ -11,4 +11,4 @@ except:
 if __name__ == "__main__":
     socketio.run(app, "0.0.0.0", debug=(port != 80), port=port)
 
-    print("Nosferatu net finished")
+    print("Nosferatu net closing")

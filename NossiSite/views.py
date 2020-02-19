@@ -97,7 +97,6 @@ def wikipage(page=None):
     raw = request.url.endswith("/raw")
     if raw:
         page = page[:4]
-    print("received message:", page, raw)
     if page is None:
         page = request.form.get('n', None)
         if page is None:
@@ -331,8 +330,6 @@ def char_access(x):
     d = char.getdictrepr()
     for x in parts[1:]:
         d = d[x]
-    print(d)
-    print(codecs.unicode_escape_decode(json.dumps(d)))
     return app.response_class(
         json.dumps(d, indent=2, ensure_ascii=False) + "\n",
         mimetype=app.config["JSONIFY_MIMETYPE"],
