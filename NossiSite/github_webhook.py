@@ -14,11 +14,13 @@ def on_push(request):
     print("update lint result ", result)
 
     def shutdown():
-        time.sleep(2)
-        sys.exit(4)
+        if request["repository"]["name"] == "NossiNet":
+            if not result.strip():
+                time.sleep(2)
+                print("new version checks out. restarting...")
+                sys.exit(4)
+            else:
+                print("new version didnt pass lint")
+                raise Exception("Didnt pass lint!")
 
-    if request["repository"]["name"] == "NossiNet":
-        if not result.strip():
-            Thread(target=shutdown).start()
-        else:
-            raise Exception("Didnt pass lint!")
+    Thread(target=shutdown).start()
