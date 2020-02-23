@@ -2,8 +2,6 @@ import sys
 import time
 from threading import Thread
 
-from github_webhook import Webhook
-
 from NossiSite import webhook
 
 
