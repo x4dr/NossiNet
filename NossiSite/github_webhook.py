@@ -1,3 +1,4 @@
+import subprocess
 import sys
 import time
 from threading import Thread
@@ -10,10 +11,18 @@ def on_push(request):
     print("update request:")
     print(request["repository"])
     print("///update")
+    print(request)
+
+    res = subprocess.run(["ls", "-l", "/dev/null"], capture_output=True, encoding="utf-8")
+    result = res.stdout
+    print(result)
 
     def shutdown():
         time.sleep(2)
         sys.exit(4)
 
     if request["repository"]["name"] == "NossiNet":
-        Thread(target=shutdown).start()
+        if not result.strip():
+            Thread(target=shutdown).start()
+        else:
+            raise Exception("Didnt pass lint!")
