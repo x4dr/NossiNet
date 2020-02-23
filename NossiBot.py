@@ -258,7 +258,6 @@ async def handle_defines(msg, send, message):
     except KeyError:
         defines = {}
     if msg.startswith("def") and "=" in msg:
-        print("definition:", msg)
         msg = msg[3:].strip()
         q = re.compile(r"^=\s*?")
         if q.match(msg):
@@ -329,7 +328,6 @@ async def tick():
             await handle_inp(inp)
         try:
             if persist["mutated"]:
-                print(persist)
                 with shelve.open(os.path.expanduser(storagefile)) as shelvingfile:
                     for k in persist:
                         if k == "mutated":
