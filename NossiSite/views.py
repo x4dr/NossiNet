@@ -1,5 +1,6 @@
 import json
 import random
+import subprocess
 import time
 from pathlib import Path
 from typing import List, Tuple
@@ -22,6 +23,16 @@ from NossiSite.helpers import g, session, checktoken, request, redirect, url_for
 bleach.ALLOWED_TAGS += ["br", "u", "p", "table", "th", "tr", "td", "tbody", "thead", "tfoot"]
 
 init_db()
+
+
+@app.route('/version')
+def getversion():
+    res = subprocess.run(["git", "log", "-n 1"], capture_output=True, encoding="utf-8")
+    result = res.stdout
+    print(result)
+    result = result[7:]
+    result = result[:result.find(" ")]
+    return result
 
 
 @app.route('/setfromsource/')
