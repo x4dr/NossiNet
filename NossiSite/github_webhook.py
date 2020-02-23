@@ -11,9 +11,7 @@ def on_push(request):
     print("update request:")
     print(request["repository"])
     print("///update")
-    print(request)
-
-    res = subprocess.run(["ls", "-l", "/dev/null"], capture_output=True, encoding="utf-8")
+    res = subprocess.run(["nossilint", request["after"]], capture_output=True, encoding="utf-8")
     result = res.stdout
     print(result)
 
