@@ -7,8 +7,8 @@ import sqlite3
 import time
 import traceback
 from contextlib import closing
-from typing import Tuple, List, Union, Dict
 from pathlib import Path
+from typing import Tuple, List, Union, Dict
 
 import bleach
 import markdown
@@ -130,7 +130,6 @@ def update_discord_bindings(user, page):
                             definitions[statname.strip()] = ".".join([catname.strip(), secname.strip(), statname.strip()])
                             definitions[statname.strip().lower()] = statname.strip()
                         definitions[".".join([catname.strip(), secname.strip(), statname.strip()])] = stat.strip()
-
 
         data = "\n".join([f"{d} undef {catname}.*" for catname in char.Categories.keys()]+
                          [f"{d} def {k} = {v}" for k, v in definitions.items()])
