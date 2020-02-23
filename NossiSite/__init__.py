@@ -21,7 +21,7 @@ try:
         key = keyfile.read()
 except:
     with open(os.path.join(os.path.expanduser('~'), 'key'), 'w') as keyfile:
-        key = ''.join(random.SystemRandom().choice(string.printable) for _ in range(48))
+        key = ''.join(random.SystemRandom().choice(string.hexdigits) for _ in range(48))
         keyfile.write(key)
 
 
