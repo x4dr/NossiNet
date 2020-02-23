@@ -1,22 +1,32 @@
 import asyncio
 import datetime
+import errno
 import os
+import random
 import re
 import shelve
 import string
 import time
+import traceback
 from asyncio import sleep
 from urllib.parse import quote
 
-import requests
-import fengraph
 import discord
-import random
-import traceback
+import requests
 from dateparser import parse as dateparse
+from discord import Message
 
+import fengraph
 from NossiPack import WoDParser
-from NossiPack.krypta import DescriptiveError
+from NossiPack.krypta import DescriptiveError, read_nonblocking
+
+FIFO = 'NossiBotBuffer'
+
+try:
+    os.mkfifo(FIFO)
+except OSError as oe:
+    if oe.errno != errno.EEXIST:
+        raise
 
 remindfile = os.path.expanduser("~/reminders.txt")
 remindnext = os.path.expanduser("~/reminers_next.txt")
@@ -218,7 +228,7 @@ async def specifichandle(msg, comment, send, author):
         n = n.content.decode("utf-8")
         await send(author.mention + comment + "```" + msg + "\n" + n[:1950] + "```")
         for replypart in [n[i:i + 1950] for i in range(1950, len(n), 1950)]:
-            await send("```" +replypart+ "```")
+            await send("```" + replypart + "```")
         return True
     else:
         print("failed request:", n.status_code, n.url)
@@ -226,11 +236,29 @@ async def specifichandle(msg, comment, send, author):
 
 
 async def handle_defines(msg, send, message):
+    msg = msg.strip("`")
+    if isinstance(message, str):  # message is name already
+        async def error(a):
+            raise Exception(a)
+
+        async def nop(a):
+            pass
+
+        class Fake:
+            def __init__(self, **kwargs):
+                self.__dict__.update(kwargs)
+
+        author = message
+        message = Fake(author=Fake(send=error), add_reaction=nop)
+        send = send or nop
+    else:
+        author = discordname(message.author)
     try:
-        defines = persist[discordname(message.author) + ":defines"]
+        defines = persist[author + ":defines"]
     except KeyError:
         defines = {}
     if msg.startswith("def") and "=" in msg:
+        print("definition:", msg)
         msg = msg[3:].strip()
         q = re.compile(r"^=\s*?")
         if q.match(msg):
@@ -244,15 +272,21 @@ async def handle_defines(msg, send, message):
                 return None
         define, value = [x.strip() for x in msg.split("=", 1)]
         defines[define] = value
-        persist[discordname(message.author) + ":defines"] = defines
+        persist[author + ":defines"] = defines
         await message.add_reaction('\N{THUMBS UP SIGN}')
         msg = None
     elif msg.startswith("undef "):
         msg = msg[6:]
-        if msg.strip() in defines.keys():
-            del defines[msg]
-            persist[discordname(message.author) + ":defines"] = defines
+        change = False
+        for k in list(defines.keys()):
+            if re.match(msg+r"$", k):
+                change = True
+                del defines[k]
+        if change:
+            persist[author + ":defines"] = defines
             await message.add_reaction('\N{THUMBS UP SIGN}')
+        else:
+            await message.add_reaction('\N{BLACK QUESTION MARK ORNAMENT}')
         msg = None
     else:
         oldmsg = ""
@@ -272,6 +306,16 @@ def discordname(user):
     return user.name + "#" + user.discriminator
 
 
+async def handle_inp(inp):
+    for line in inp:
+        if line.find("#") != -1:
+            name = line[:line.find("#") + 5]
+            line = line[len(name):].strip()
+            await handle_defines(line, None, name)
+        else:
+            print("received message without discord name:", inp)
+
+
 async def tick():
     next_call = time.time()
     while True:
@@ -280,13 +324,19 @@ async def tick():
             await reminders()
         except Exception as e:
             print("Exception reminding:", e, e.args, traceback.format_exc())
+        inp = read_nonblocking(FIFO)
+        if inp:
+            await handle_inp(inp)
         try:
             if persist["mutated"]:
+                print(persist)
                 with shelve.open(os.path.expanduser(storagefile)) as shelvingfile:
                     for k in persist:
                         if k == "mutated":
                             continue  # mutated will never be saved!
                         shelvingfile[k] = persist[k]
+                    else:
+                        persist["mutated"]=False
         except Exception as e:
             print(f"Exception in tick with {k}:", e, e.args, traceback.format_exc())
         next_call += 10

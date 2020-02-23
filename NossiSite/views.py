@@ -17,7 +17,8 @@ from NossiPack.VampireCharacter import VampireCharacter
 from NossiPack.krypta import DescriptiveError
 from NossiSite import app, helpers
 from NossiSite.helpers import g, session, checktoken, request, redirect, url_for, \
-    render_template, flash, init_db, wikiload, wikindex, wikisave, checklogin, fill_infolets, traverse_md, log
+    render_template, flash, init_db, wikiload, wikindex, wikisave, checklogin, fill_infolets, traverse_md, log, \
+    update_discord_bindings
 
 bleach.ALLOWED_TAGS += ["br", "u", "p", "table", "th", "tr", "td", "tbody", "thead", "tfoot"]
 
@@ -170,6 +171,7 @@ def editentries(x=None):
                 log.info(f"saving wiki file {request.form['wiki']}")
                 wikisave(x, session.get('user'), request.form['title'],
                          request.form['tags'].split(" "), request.form['text'])
+                update_discord_bindings(session["user"], x)
                 session["retrieve"] = None
                 return redirect(url_for("wikipage", page=request.form['wiki']))
 

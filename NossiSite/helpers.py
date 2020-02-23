@@ -1,4 +1,5 @@
 import decimal
+import errno
 import logging
 import os
 import re
@@ -16,7 +17,9 @@ from flask import request, session, g, redirect, url_for, \
     render_template, flash
 from markupsafe import Markup
 
-from NossiPack.krypta import DescriptiveError
+from NossiPack import User
+from NossiPack.FenCharacter import FenCharacter
+from NossiPack.krypta import DescriptiveError, write_nonblocking, is_int
 from NossiSite import app
 from fengraph import weapondata
 
@@ -105,16 +108,30 @@ def wikiload(page: Union[str, Path]) -> Tuple[str, List[str], str]:
         raise DescriptiveError(page + " not found in wiki.")
 
 
-def stream_file(f):
-    o = open(f, 'rb')
-    try:
-        streambytes = o.read(500)
-        while streambytes != b'':
-            yield streambytes
-            streambytes = o.read(500)
-        yield streambytes
-    finally:
-        o.close()
+def update_discord_bindings(user, page):
+    u = User(user)
+    d = u.config("discord", "not set")
+    c = u.config("character_sheet", "")
+    if c + "_character" == page and re.match(r".*#\d{4}$", d):
+        fifo_name = 'NossiBotBuffer'
+        try:
+            os.mkfifo(fifo_name)
+        except OSError as oe:
+            if oe.errno != errno.EEXIST:
+                raise
+        char = FenCharacter()
+        char.load_from_md(*wikiload(page))
+        definitions = {}
+        for catname, cat in char.Categories.items():
+            for secname, sec in cat.items():
+                for statname, stat in sec.items():
+                    if statname.strip() and is_int(stat):
+                        if definitions.get(statname, None) is None:
+                            definitions[statname.strip()] = ".".join([catname.strip(), secname.strip(), statname.strip()])
+                            definitions[statname.strip().lower()] = statname.strip()
+                        definitions[".".join([catname.strip(), secname.strip(), statname.strip()])] = stat.strip()
+        data = "\n".join([f"undef {catname}.*" for catname in char.Categories.keys()]+[f"{d} def {k} = {v}" for k, v in definitions.items()])
+        write_nonblocking(fifo_name, data)
 
 
 def generate_token():

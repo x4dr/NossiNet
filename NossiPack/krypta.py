@@ -1,8 +1,68 @@
+import errno
+import os
 import random
 
 
 class DescriptiveError(Exception):
     pass
+
+
+def write_nonblocking(path, data):
+    fd = os.open(path, os.O_CREAT | os.O_WRONLY | os.O_NONBLOCK)
+    if isinstance(data, str):
+        data = data.encode("utf-8")
+    os.write(fd, data)
+    os.close(fd)
+
+
+def read_nonblocking(path, bufferSize=100, timeout=.100):
+    import time
+    """
+    implementation of a non-blocking read
+    works with a named pipe or file
+    errno 11 occurs if pipe is still written too, wait until some data
+    is available
+    """
+    grace = True
+    result = []
+    try:
+        pipe = os.open(path, os.O_RDONLY | os.O_NONBLOCK)
+        content = "".encode()
+        while True:
+            try:
+                buf = os.read(pipe, bufferSize)
+                if not buf:
+                    break
+                else:
+                    content += buf
+            except OSError as e:
+                if e.errno == 11 and grace:
+                    # grace period, first write to pipe might take some time
+                    # further reads after opening the file are then successful
+                    time.sleep(timeout)
+                    grace = False
+                else:
+                    break
+        content = content.decode()
+        if content:
+            line = content.split("\n")
+            result.extend(line)
+
+    except OSError as e:
+        if e.errno == errno.ENOENT:
+            pipe = None
+        else:
+            raise e
+
+    return result
+
+
+def is_int(s: str) -> bool:
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
 
 
 def sumdict(inp):
