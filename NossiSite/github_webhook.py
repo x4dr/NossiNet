@@ -8,12 +8,13 @@ from NossiSite.base import webhook
 
 @webhook.hook()
 def on_push(request):
-    print("update request:")
-    res = subprocess.run(["nossilint", request["after"]], capture_output=True, encoding="utf-8")
-    result = res.stdout
-    print("update lint result ", result)
-
-    def shutdown():
+    def check():
+        res = subprocess.run(["nossilint", request["after"]], capture_output=True, encoding="utf-8")
+        result = res.stdout
+        if result:
+            print("update lint result ", result)
+        else:
+            print("update lint successfull")
         if request["repository"]["name"] == "NossiNet":
             if not result.strip():
                 time.sleep(2)
@@ -23,4 +24,5 @@ def on_push(request):
                 print("new version didnt pass lint")
                 raise Exception("Didnt pass lint!")
 
-    Thread(target=shutdown).start()
+    Thread(target=check).start()
+    print("handled github webhook")
