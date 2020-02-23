@@ -1,11 +1,11 @@
-import datetime
-from flask_socketio import emit
+import re
+import time
+
 from flask import session
+from flask_socketio import emit
 
 from NossiPack.krypta import DescriptiveError
 from NossiSite.helpers import connect_db
-import re
-import time
 
 
 def echo(message):
@@ -32,7 +32,7 @@ class Chatroom(object):
         db = connect_db("loadchatlog")
         touched = False
         # db.set_trace_callback(echo)
-        rows = db.execute("SELECT linenr, line, time  FROM chatlogs WHERE room = ? ORDER BY linenr ASC",
+        rows = db.execute("SELECT linenr, line, time  FROM chatlogs WHERE room = ? ORDER BY linenr",
                           [self.name]).fetchall()
         db.close()
 
@@ -135,12 +135,12 @@ class Chatroom(object):
             result += "mailbox"
         result += "\n" + self.name + "\n"
 
-        for l, t in [(x[1], x[2]) for x in self.chatlog]:
-            if l == user + ' joined the room!':
+        for line, t in [(x[1], x[2]) for x in self.chatlog]:
+            if line == user + ' joined the room!':
                 present = True
             if present:
-                result = result + time.strftime("%Y/%m/%d-%H:%M:%S ", time.gmtime(t)) + l + '\n'
-            if l == user + ' left the room!':
+                result = result + time.strftime("%Y/%m/%d-%H:%M:%S ", time.gmtime(t)) + line + '\n'
+            if line == user + ' left the room!':
                 present = False
         return result
 

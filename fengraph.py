@@ -15,8 +15,6 @@ try:
 except ImportError:
     def notfound(*args, **kwargs):
         raise Exception("Scipy is not installed!")
-
-
     quad = notfound
     interp1d = notfound
     fsolve = notfound

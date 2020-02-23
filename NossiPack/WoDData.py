@@ -91,7 +91,6 @@ def disciplines(char):
     if Flight > 4:
         result['Flight5'] = one
 
-
     Fortitude = int(char.get('Fortitude', 0))
     # TODO
     # grants extra dice for soaks, not a roll by itself for levels 5 and lower,
@@ -111,7 +110,6 @@ def disciplines(char):
 
     if Fortitude > 4:
         result['Fortitude5'] = one
-
 
     Melpominee = int(char.get('Melpominee', 0))
     if Melpominee > 0:  # TODO
@@ -158,7 +156,6 @@ def disciplines(char):
     if Necromancy > 4:
         result['Necromancy5'] = one
 
-
     Obeah = int(char.get('Obeah', 0))
     if Obeah > 0:  # TODO
         result['Obeah1'] = "#Perception#Empathy f7"
@@ -199,7 +196,6 @@ def disciplines(char):
     if Obtenebration > 4:
         result['Obtenebration5'] = one
 
-
     Potence = int(char.get('Potence', 0))
     # TODO
     # grants extra dice for strength rolls, not a roll by itself for levels 5 and lower,
@@ -233,7 +229,6 @@ def disciplines(char):
         result['Presence4'] = "#Charisma#Subterfuge"
     if Presence > 4:
         result['Presence5'] = one
-
 
     Protean = int(char.get('Protean', 0))
     if Protean > 0:
@@ -299,7 +294,6 @@ def disciplines(char):
 
     if Temporis > 4:
         result['Temporis5'] = one
-
 
     Thaumaturgy = int(char.get('Thaumaturgy', 0))
     if Thaumaturgy > 0:

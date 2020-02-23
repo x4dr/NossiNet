@@ -3,8 +3,6 @@ import re
 import time
 from collections import OrderedDict
 
-from NossiPack.krypta import DescriptiveError
-
 __author__ = "maric"
 
 
@@ -35,48 +33,6 @@ class FenCharacter(object):
         self.Inventory = OrderedDict()
         self.Notes = ""
         self.Timestamp = time.strftime("%Y/%m/%d-%H:%M:%S")
-
-    @staticmethod
-    def costs(cat, val):
-        if cat == "Attribute":
-            return (-20 if val < 2 else
-                    0 if val == 2 else
-                    FenCharacter.costs(cat, val - 1) + (val - 2) * 20)  # [-20, 0, 20, 60, 120],
-        elif cat == "Fähigkeiten":
-            return 0 if val == 0 else \
-                FenCharacter.costs(cat, val - 1) + 5 * val  # [5, 15, 30, 50, 75],
-        elif cat == "Quellen":
-            return 0 if val == 0 else \
-                5 if val == 1 else \
-                    FenCharacter.costs(cat, val - 1) * 2  # [5, 10, 20, 40, 80]
-        elif cat == "Konzepte":
-            return 0 if val == 0 else \
-                5 if val == 1 else \
-                    FenCharacter.costs(cat, val - 1) * 2 + 15  # [5, 15, 45, 135, 405],
-        elif cat == "Aspekte":
-            return 0 if val == 0 else \
-                FenCharacter.costs(cat, val - 1) + 5 * val  # [5, 15, 30, 50, 75],
-        elif cat == "Zauber":  # [5, 5, 5, 5, 5],
-            return 5
-        elif cat == "Vorteile":
-            return 3 * val  # [3, 6, 9, 12, 15],
-        elif cat == "Talente":  # [5, 11, 18, 26, 35]
-            return 0 if val == 0 else \
-                FenCharacter.costs(cat, val - 1) + 5 + (val - 1)
-        else:
-            return 100000  # default value for unknown categories
-
-    def allcosts(self):
-        result = 0
-        for kind in self.Categories.keys():
-            for cat in self.Categories[kind].keys():
-                for spec in self.Categories[kind][cat].keys():
-                    result += self.costs(cat, self.Categories[kind][cat][spec])
-
-        return result
-
-    def checksum(self):
-        return abs(self.allcosts()) + 1
 
     def unify(self):
         unified = OrderedDict()
@@ -117,7 +73,7 @@ class FenCharacter(object):
                         tablestate += 1
                         if tablestate > 2:  # 1: header, 2: alignment
                             while candidate[0] in result[categoryname][sectionname]:
-                                candidate[0] = "_"+candidate[0]
+                                candidate[0] = "_" + candidate[0]
                             result[categoryname][sectionname][candidate[0]] = candidate[1]
                     else:
                         tablestate = 0
@@ -174,9 +130,6 @@ class FenCharacter(object):
     def validate_char(self, ):
         comment = self.Name + "NOT IMPLEMENTED"
         return comment
-
-    def get_diff(self, old=None):
-        return old.allcosts() - self.allcosts()
 
     def setfromform(self, form):  # accesses internal dicts
         form = dict(form)

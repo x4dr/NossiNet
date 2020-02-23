@@ -1,5 +1,4 @@
 import collections
-import math
 import multiprocessing
 import time
 
@@ -29,8 +28,8 @@ for roll_id in range(10):
     dice1[tuple(r)] = dice5.get(tuple(r), 0) + 1
 
 
-def selector(sel, r):
-    return sum(r[s - 1] for s in sel)
+def selector(sel, roll):
+    return sum(roll[s - 1] for s in sel)
 
 
 def calc_mods(data, showdmgmods=False):
@@ -82,16 +81,19 @@ def generate():
     results = pool.map(comparison, tuplecombos)
     cumulativetime = sum([x[2] for x in results])
     results = [(x[0], x[1]) for x in results]
+
+    def calc(x):
+        return (x[0][0][0] * 1000) + (x[0][0][1] * 100) + (x[0][1][0] * 10) + x[0][1][1] * 1
+
     try:
         with open("5d10_ordered_data", "w") as f:
-            for r in sorted(results, key=lambda x: (x[0][0][0] * 1000) + (x[0][0][1] * 100)
-                                                   + (x[0][1][0] * 10) + x[0][1][1] * 1):
-                f.write(str(r) + "\n")
+            for result in sorted(results, key=calc):
+                f.write(str(result) + "\n")
     except:
         raise
     finally:
         print("Total time taken:", time.time() - time0, "/", cumulativetime)
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     generate()

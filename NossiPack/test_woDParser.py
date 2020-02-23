@@ -32,12 +32,12 @@ class TestWoDParser(TestCase):
 
     def test_parenthesis_roll(self):
         p = WoDParser({})
-        ##print("parenthesisroll:", p.do_roll("4(3)"))
+        print("parenthesisroll:", p.do_roll("4(3)"))
 
     def test_resolveroll(self):
-        node = Node("a d1g")
+        node = Node("a d1g", 0)
         p = WoDParser({"a": "b c d", "b": "e f", "c": "3", "d": "1", "e": "9", "f": "10"})
-        self.assertEqual("23 d1g", p.resolveroll(node))
+        self.assertEqual("23 d1g", p.resolveroll(node, 0))
 
     def test_altrolls(self):
         p = WoDParser({})
@@ -46,7 +46,6 @@ class TestWoDParser(TestCase):
             print("rollv:", r.roll_v())
 
     def test_parseadd(self):
-        p = WoDParser({})
         a = ["d", "4", "3", "9", "+", "1", "g", "1", "-1"]
         self.assertEqual(Node._calculate(a), ['d', '17', 'g', '0'])
 
@@ -54,6 +53,7 @@ class TestWoDParser(TestCase):
         p = WoDParser({})
         p.do_roll("&loop 3 2&")
         r = p.do_roll("&loop 3 2&; 3")
+        self.assertFalse(r is None)
         for x in p.rolllogs:
             if x is not None:
                 print(x.result)
@@ -67,11 +67,12 @@ class TestWoDParser(TestCase):
     def test_pretrigger(self):
         p = WoDParser({"shoot": "dex fire", "dex": "Dexterity", "fire": "Firearms", "Dexterity": "3", "Firearms": "4",
                        "gundamage": "4", "sum": "d1g"})
-        p.do_roll("&param difficulty& &if shoot difficulty then gundamage $ -1 e6 else 0 done& sum ").result
+        self.assertFalse(-1 == p.do_roll("&param difficulty& &if shoot difficulty then gundamage $ -1 e6 else 0 done& "
+                                         "sum ").result)
 
     def test_resolvedefine(self):
         p = WoDParser({"a": "b c d", "b": "e f", "c": "3", "d": "1", "e": "9", "f": "10"})
-        r = Node(p.resolvedefines("a d1g"))
+        r = Node(p.resolvedefines("a d1g"), 0)
         self.assertEqual(
             [[y.roll for y in x] for x in [list(y.values()) for y in [x.dependent for x in r.dependent.values()]]],
             [[['e', 'f'], ['3'], ['1']]])
@@ -93,4 +94,4 @@ class TestWoDParser(TestCase):
     def test_fullparenthesis(self):
         self.assertEqual(fullparenthesis("f______(-----((^^^^)~~~~~)---)___"), "-----((^^^^)~~~~~)---")
         with self.assertRaises(Exception):
-            print(p.fullparenthesis("_____(######"))
+            print(fullparenthesis("_____(######"))

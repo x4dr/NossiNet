@@ -6,7 +6,6 @@ from typing import Union, List, Dict
 
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from NossiPack import VampireCharacter
 from NossiPack.VampireCharacter import VampireCharacter
 
 __author__ = 'maric'

@@ -81,18 +81,18 @@ class WoDParser(object):
         self.rolllogs = []  # if the last roll isnt interesting
 
     diceparse = re.compile(  # the regex matching the roll (?# ) for indentation
-        r'(?# )\s*(?:(?P<selectors>(?:[0-9](?:\s*,\s*)?)*)\s*@)?' +  # selector matching
-        r'(?# )\s*(?P<amount>[0-9]{1,4})\s*' +  # amount of dice 0-999
-        r'(?# )(d *(?P<sides>[0-9]{1,5}))? *' +  # sides of dice 0-99999
+        r'(?# )\s*(?:(?P<selectors>(?:[0-9](?:\s*,\s*)?)*)\s*@)?'  # selector matching
+        r'(?# )\s*(?P<amount>[0-9]{1,4})\s*'  # amount of dice 0-999
+        r'(?# )(d *(?P<sides>[0-9]{1,5}))? *'  # sides of dice 0-99999
         r'(?# )(?:[rR]\s*(?P<rerolls>-?\d+))?'  # reroll highest/lowest dice
-        r'(?#   )(?P<sort>s)?' +  # sorting rolls
-        r'(?# )(?P<operation>' +  # what is happening with the roll
-        r'(?#   )(?P<against>' +  # rolling against a value for successes
-        r'(?#     )(?P<onebehaviour>[ef]) *' +  # e is without subtracting 1, f is with subtracting a success on a 1
-        r'(?#     )(?P<difficulty>([1-9][0-9]{0,4})|([0-9]{0,4}[1-9])))|' +  # difficulty 1-99999
-        r'(?#   )(?P<sum>g)|' +  # summing rolls up instead
-        r'(?#   )(?P<maximum>h)| *' +  # taking the maximum value of the roll
-        r'(?#   )(?P<minimum>l))? *' +  # taking the minimum value of the roll
+        r'(?#   )(?P<sort>s)?'  # sorting rolls
+        r'(?# )(?P<operation>'  # what is happening with the roll
+        r'(?#   )(?P<against>'  # rolling against a value for successes
+        r'(?#     )(?P<onebehaviour>[ef]) *'  # e is without subtracting 1, f is with subtracting a success on a 1
+        r'(?#     )(?P<difficulty>([1-9][0-9]{0,4})|([0-9]{0,4}[1-9])))|'  # difficulty 1-99999
+        r'(?#   )(?P<sum>g)|'  # summing rolls up instead
+        r'(?#   )(?P<maximum>h)| *'  # taking the maximum value of the roll
+        r'(?#   )(?P<minimum>l))? *'  # taking the minimum value of the roll
         r'(?# )(?P<explosion>!+)? *$',  # explosion effects
     )
 
@@ -194,7 +194,8 @@ class WoDParser(object):
             return message, "", ""
         else:
             if c % 2 != 0:
-                raise DescriptiveError("unmatched & in \"" + message + "\"")  # leftover & supposed to be cleared after usage
+                raise DescriptiveError("unmatched & in \"" + message + "\"")
+                # leftover & supposed to be cleared after usage
 
         m = message.split("&")
         tail = "&".join(m[1:])
@@ -284,8 +285,8 @@ class WoDParser(object):
                     raise
                 except Exception as e:
                     print(e, e.__class__, e.args, traceback.format_exc())
-                    raise DescriptiveError("Breakthrough Parameters: roll, current, goal\n" +
-                                    "Optionally &adversity x& to the left of breakthrough")
+                    raise DescriptiveError("Breakthrough Parameters: roll, current, goal\n"
+                                           "Optionally &adversity x& to the left of breakthrough")
 
             elif triggername in ["ignore", "verbose", "suppress", "order"]:
                 if "off" not in trigger:

@@ -20,7 +20,7 @@ from markupsafe import Markup
 from NossiPack import User
 from NossiPack.FenCharacter import FenCharacter
 from NossiPack.krypta import DescriptiveError, write_nonblocking, is_int
-from NossiSite import app
+from NossiSite.base import app
 from fengraph import weapondata
 
 log = logging.getLogger("frontend")
@@ -127,12 +127,14 @@ def update_discord_bindings(user, page):
                 for statname, stat in sec.items():
                     if statname.strip() and is_int(stat):
                         if definitions.get(statname, None) is None:
-                            definitions[statname.strip()] = ".".join([catname.strip(), secname.strip(), statname.strip()])
+                            definitions[statname.strip()] = ".".join([catname.strip(),
+                                                                      secname.strip(),
+                                                                      statname.strip()])
                             definitions[statname.strip().lower()] = statname.strip()
                         definitions[".".join([catname.strip(), secname.strip(), statname.strip()])] = stat.strip()
 
-        data = "\n".join([f"{d} undef {catname}.*" for catname in char.Categories.keys()]+
-                         [f"{d} def {k} = {v}" for k, v in definitions.items()])
+        data = "\n".join([f"{d} undef {catname}.*" for catname in char.Categories.keys()]
+                         + [f"{d} def {k} = {v}" for k, v in definitions.items()])
         print(data)
         write_nonblocking(fifo_name, data)
         print("written to", fifo_name)

@@ -3,12 +3,10 @@ from NossiPack.Chatrooms import Chatroom
 import time
 import json
 
-from NossiSite import app, socketio
+from NossiSite.base import app, socketio
 
 from flask import render_template, session, request, flash, url_for, redirect
 from flask_socketio import emit, join_room, leave_room, disconnect
-
-from NossiSite.cards import cards
 
 userlist = {}
 roomlist = [Chatroom('lobby')]
@@ -143,9 +141,10 @@ def defines(message="=", user=None):
         ul.saveuserlist()
     return workdef
 
+
 def shorthand():
-    with open('./NossiSite/locales/EN.json') as json_data:
-        return json.load(json_data)['shorthand']
+    with open('./NossiSite/locales/EN.json') as locale_json:
+        return json.load(locale_json)['shorthand']
 
 
 def printroll(roll, parser=None, testing=False, message=""):
@@ -168,8 +167,9 @@ def printroll(roll, parser=None, testing=False, message=""):
 
     if parser:
         if not parser.triggers.get("suppress", None):
-            for r in parser.altrolls[
-                     -parser.triggers.get("cutoff", 20):(-1 if roll is not None else len(parser.altrolls) + 1)]:
+            start = -parser.triggers.get("cutoff", 20)
+            end = (-1 if roll is not None else len(parser.altrolls) + 1)
+            for r in parser.altrolls[start:end]:
                 if r:
                     if parser.triggers.get("verbose", None):
                         printroll(r, testing=testing)
@@ -373,12 +373,13 @@ def receive(message):
 
 
 @socketio.on('KeepAlive', namespace='/chat')
-def keep_alive(message):
+def keep_alive(*args):
     session['activeroom'].presentusers[session['user']] = time.time()
     for r in roomlist:
         for u, t in r.presentusers.items():
-            if time.time()-t > 10:
+            if time.time() - t > 10:
                 r.userleave(u)
+                print(args)
     update_dots()
 
 
@@ -457,7 +458,7 @@ def check_char(message):
 def disconnect_request():
     emit('Message',
          {'data': 'Disconnected!'})
-    print("received disconnect message for user", session.get("user","unknown user"))
+    print("received disconnect message for user", session.get("user", "unknown user"))
     disconnect()
 
 
@@ -468,17 +469,7 @@ def cards_connect():
         emit('Message', {'prefix': '', 'data': namedStrings['notLoggedIn']})
         emit('Exec', {'command': 'window.location.href = "/login?r=/cards";'})
         return
-    emit("Message", {'data': "--> cards <--\ntype help for help"})
-
-
-@socketio.on('ClientServerEvent', namespace='/cards')
-def cards_receive(message):
-    if session.get('user', None) is None:
-        disconnect()
-    cards(message['data'])
-    join_room(session.get('user'))
-    join_room("lobby")
-    emit('Status', {"status": "Lobby"})
+    emit("Message", {'data': "--> cards <--\ndmg_type help for help"})
 
 
 # noinspection PyUnresolvedReferences

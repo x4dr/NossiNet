@@ -1,10 +1,9 @@
 import json
 import random
-import sys
 import time
 from pathlib import Path
-from threading import Thread
 from typing import List, Tuple
+
 import bleach
 import markdown
 from flask import Response, abort
@@ -15,10 +14,10 @@ from NossiPack.FenCharacter import FenCharacter
 from NossiPack.User import Userlist, User, Config
 from NossiPack.VampireCharacter import VampireCharacter
 from NossiPack.krypta import DescriptiveError
-from NossiSite import app, helpers
+from NossiSite.base import app
 from NossiSite.helpers import g, session, checktoken, request, redirect, url_for, \
     render_template, flash, init_db, wikiload, wikindex, wikisave, checklogin, fill_infolets, traverse_md, log, \
-    update_discord_bindings
+    update_discord_bindings, weapontable, magicalweapontable
 
 bleach.ALLOWED_TAGS += ["br", "u", "p", "table", "th", "tr", "td", "tbody", "thead", "tfoot"]
 
@@ -79,8 +78,8 @@ def show_entries():
 @app.route('/index/')
 def wiki_index():
     r = wikindex()
-    heads = []
     return render_template("wikindex.html", entries=[x.with_suffix("").as_posix() for x in r[0]], tags=r[1])
+
 
 @app.route('/wiki', methods=["GET", "POST"])
 @app.route('/wiki/<path:page>', methods=["GET", "POST"])
@@ -203,11 +202,11 @@ def fensheet(c):
 @app.route('/weapon/<w>/<mods>/json')
 @app.route('/weapon/<w>/<mods>/txt')
 @app.route('/weapon/<w>/txt')
-def weapontable(w, mods=""):
+def show_weapontable(w, mods=""):
     format_json = request.url.endswith("/json")
     format_txt = request.url.endswith("/txt")
     w = w.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
-    weapon = helpers.weapontable(w, mods, format_json or format_txt)
+    weapon = weapontable(w, mods, format_json or format_txt)
     if format_txt:
         return format_weapon(weapon)
     return weapon
@@ -264,7 +263,7 @@ def magicweapons(w, par=None):
         code = code[:code.find("\n")]  # code should be on the next line
     else:
         raise DescriptiveError(w.upper() + "not found in " + code)
-    weapon = helpers.magicalweapontable(code, par, format_json or format_txt)
+    weapon = magicalweapontable(code, par, format_json or format_txt)
     if format_txt:
         return format_weapon(weapon)
     return weapon

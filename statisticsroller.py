@@ -1,16 +1,12 @@
 import collections
-import math
-import os
 import random
 import sys
 import time
 from itertools import combinations
 from math import ceil
-from typing import Tuple, List
+from typing import Tuple
 
 import pydealer
-
-#from NossiPack.FenCharacter import FenCharacter
 from NossiPack.FenCharacter import FenCharacter
 from NossiPack.WoDParser import WoDParser
 from NossiPack.krypta import d10

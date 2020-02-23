@@ -14,7 +14,6 @@ from urllib.parse import quote
 import discord
 import requests
 from dateparser import parse as dateparse
-from discord import Message
 
 import fengraph
 from NossiPack import WoDParser
@@ -104,9 +103,8 @@ def newreminder(channelid, message):
     print(message)
     date, message, repeat, interval = [x.strip() for x in (message.split(";") + ["", ""])[:4]]
     date = datetime.datetime.timestamp(dateparse(date))
-    #    print("trying to figure out what this is:",repeat,  repeat.split(" ")[0],dateparse(repeat.split(" ")[0]))
-    repeat = str(round(abs(dateparse(repeat.split(" ")[0]) -
-                           datetime.datetime.now()).total_seconds())) + " " + repeat.split(" ")[1]
+    repeat = str(round(abs(dateparse(repeat.split(" ")[0]) - datetime.datetime.now()
+                           ).total_seconds())) + " " + repeat.split(" ")[1]
     interval = str(round(abs(dateparse(interval) - datetime.datetime.now()).total_seconds()))
     newline = ";".join([channelid, jobid, str(round(date)), message, repeat, interval]) + "\n"
     print("new line:", newline)
@@ -153,8 +151,8 @@ async def oraclehandle(msg, comment, send, author):
             if n:
                 n, avg, dev = n
                 await sentmessage.edit(
-                    content=(author.mention + comment + "```" + p + " avg:" + str(avg) + " dev: " + str(dev) +
-                             "\n" + n + "```"))
+                    content=(author.mention + comment + "```" + p + " avg:" + str(avg) + " dev: " + str(dev)
+                             + "\n" + n + "```"))
             else:
                 raise DescriptiveError("no data!")
         except Exception as e:
@@ -189,8 +187,8 @@ async def rollhandle(msg, comment, send, author):
     if p.triggers.get("verbose", None):
         if r is None:
             print(msg, "lead to noneroll!")
-        await send(author.mention + comment + " " + msg + ":\n" +
-                   r.name + ": " + r.roll_vv(p.triggers.get("verbose")))
+        await send(author.mention + comment + " " + msg + ":\n"
+                   + r.name + ": " + r.roll_vv(p.triggers.get("verbose")))
     else:
         try:
             sent = await send(author.mention + comment + " " + msg + ":\n" + reply + r.roll_v())
@@ -278,7 +276,7 @@ async def handle_defines(msg, send, message):
         msg = msg[6:]
         change = False
         for k in list(defines.keys()):
-            if re.match(msg+r"$", k):
+            if re.match(msg + r"$", k):
                 change = True
                 del defines[k]
         if change:
@@ -334,7 +332,7 @@ async def tick():
                             continue  # mutated will never be saved!
                         shelvingfile[k] = persist[k]
                     else:
-                        persist["mutated"]=False
+                        persist["mutated"] = False
         except Exception as e:
             print(f"Exception in tick with {k}:", e, e.args, traceback.format_exc())
         next_call += 10
