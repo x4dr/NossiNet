@@ -130,8 +130,13 @@ def update_discord_bindings(user, page):
                             definitions[statname.strip()] = ".".join([catname.strip(), secname.strip(), statname.strip()])
                             definitions[statname.strip().lower()] = statname.strip()
                         definitions[".".join([catname.strip(), secname.strip(), statname.strip()])] = stat.strip()
-        data = "\n".join([f"undef {catname}.*" for catname in char.Categories.keys()]+[f"{d} def {k} = {v}" for k, v in definitions.items()])
+
+
+        data = "\n".join([f"{d} undef {catname}.*" for catname in char.Categories.keys()]+
+                         [f"{d} def {k} = {v}" for k, v in definitions.items()])
+        print(data)
         write_nonblocking(fifo_name, data)
+        print("written to", fifo_name)
 
 
 def generate_token():
