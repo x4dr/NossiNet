@@ -10,8 +10,7 @@ from NossiSite import webhook
 @webhook.hook()
 def on_push(request):
     print("update request:")
-    print(request.args)
-    print(request.json)
+    print(request)
     print("///update")
 
     def shutdown():
