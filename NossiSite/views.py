@@ -31,7 +31,7 @@ def getversion():
     result = res.stdout
     print(result)
     result = result[7:]
-    result = result[:result.find(" ")]
+    result = result[:result.find(" ") - 6]
     return result
 
 
