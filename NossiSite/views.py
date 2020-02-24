@@ -27,7 +27,7 @@ init_db()
 
 @app.route('/version')
 def getversion():
-    res = subprocess.run(["git", "log", "-n 1"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding="utf-8")
+    res = subprocess.run(["git", "log", "-n 1"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8")
     result = res.stdout
     print(result)
     result = result[7:]
