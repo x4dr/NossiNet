@@ -97,17 +97,3 @@ def d10(amt, diff, ones=True):  # faster than the WoDDice
                 return 0 - anti
     else:
         return succ
-
-
-'''
-time1 = time()
-res1 = []
-times = 10000
-for i in range(times):
-    res1.append(d10(10, 10))
-time2 = time()
-#res2 = d10bulk(999, 10000)
-time3 = time()
-print("single fast:", sum(res1)/times, "successes and", time2 - time1, "seconds")
-#print("bulkslow:", sum(res2), "successes and", time3 - time1, "seconds")
-'''

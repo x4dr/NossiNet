@@ -406,6 +406,8 @@ async def on_message(message: discord.Message):
             return
         elif msg.lower().startswith("i am "):
             msg = msg[len("i am "):]
+            if persist.get(discordname(message.author), None) is None:
+                persist[discordname(message.author)] = {"defines": {}}
             persist[discordname(message.author)]["NossiAccount"] = msg.strip().upper()
             await message.add_reaction("\U0001f480")
             await send("You are " + persist[discordname(message.author)]["NossiAccount"])
