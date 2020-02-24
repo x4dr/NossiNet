@@ -25,6 +25,7 @@ def read_nonblocking(path, bufferSize=100, timeout=.100):
     """
     grace = True
     result = []
+    pipe = None
     try:
         pipe = os.open(path, os.O_RDONLY | os.O_NONBLOCK)
         content = "".encode()
@@ -53,7 +54,9 @@ def read_nonblocking(path, bufferSize=100, timeout=.100):
             pipe = None
         else:
             raise e
-
+    finally:
+        if pipe is not None:
+            os.close(pipe)
     return result
 
 
