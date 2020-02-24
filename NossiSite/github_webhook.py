@@ -1,5 +1,4 @@
 import subprocess
-import sys
 import time
 from threading import Thread
 
@@ -19,10 +18,11 @@ def on_push(request):
             if not result.strip():
                 time.sleep(2)
                 print("new version checks out. restarting...")
-                sys.exit(4)
+                subprocess.run(["nossirestart"])
             else:
                 print("new version didnt pass lint")
                 raise Exception("Didnt pass lint!")
+            print("we should have never gotten here")
 
     Thread(target=check).start()
     print("handled github webhook")
