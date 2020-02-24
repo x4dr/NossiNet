@@ -173,7 +173,7 @@ async def rollhandle(msg, comment, send, author):
 
     if msg == "+":
         msg = lastroll.get(author, "")
-    p = WoDParser(persist.get(discordname(author) + ":defines", {}))
+    p = WoDParser(persist.get(discordname(author), {"defines": {}}))
     try:
         r = p.do_roll(msg)
     except Exception as e:
@@ -252,8 +252,9 @@ async def handle_defines(msg, send, message):
     else:
         author = discordname(message.author)
     try:
-        defines = persist[author + ":defines"]
+        defines = persist[author]["defines"]
     except KeyError:
+        persist[author] = {"defines": {}}
         defines = {}
     if msg.startswith("def") and "=" in msg:
         msg = msg[3:].strip()
@@ -269,7 +270,7 @@ async def handle_defines(msg, send, message):
                 return None
         define, value = [x.strip() for x in msg.split("=", 1)]
         defines[define] = value
-        persist[author + ":defines"] = defines
+        persist[author]["defines"] = defines
         await message.add_reaction('\N{THUMBS UP SIGN}')
         msg = None
     elif msg.startswith("undef "):
@@ -280,7 +281,7 @@ async def handle_defines(msg, send, message):
                 change = True
                 del defines[k]
         if change:
-            persist[author + ":defines"] = defines
+            persist[author][defines] = defines
             await message.add_reaction('\N{THUMBS UP SIGN}')
         else:
             await message.add_reaction('\N{BLACK QUESTION MARK ORNAMENT}')
@@ -308,7 +309,12 @@ async def handle_inp(inp):
         if line.find("#") != -1:
             name = line[:line.find("#") + 5]
             line = line[len(name):].strip()
-            await handle_defines(line, None, name)
+            acc = line[:line.find("message: ")].strip()
+            line = line[len(acc):].strip()
+            acc = line[0]
+            line = "def" + "def".join(line[1:])
+            if persist[name].get("NossiAccount", None) == acc:
+                await handle_defines(line, None, name)
         else:
             print("received message without discord name:", inp)
 
@@ -398,6 +404,11 @@ async def on_message(message: discord.Message):
             await send("I shall die.")
             await client.close()
             return
+        elif msg.lower().startswith("i am "):
+            msg = msg[len("i am "):]
+            persist[discordname(message.author)]["NossiAccount"] = msg.strip().upper()
+            await message.add_reaction("\U0001f480")
+            await send("You are " + persist[discordname(message.author)]["NossiAccount"])
         if not isinstance(message.channel, discord.DMChannel):
             if "BANISH" in msg:
                 persist["allowed_rooms"].remove(message.channel.id)
