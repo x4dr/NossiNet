@@ -114,11 +114,6 @@ def update_discord_bindings(user, page):
     c = u.config("character_sheet", "")
     if c + "_character" == page and re.match(r".*#\d{4}$", d):
         fifo_name = 'NossiBotBuffer'
-        try:
-            os.mkfifo(fifo_name)
-        except OSError as oe:
-            if oe.errno != errno.EEXIST:
-                raise
         char = FenCharacter()
         char.load_from_md(*wikiload(page))
         definitions = {}
@@ -135,9 +130,14 @@ def update_discord_bindings(user, page):
 
         data = "\n".join([f"{d} undef {catname}.*" for catname in char.Categories.keys()]
                          + [f"{d} def {k} = {v}" for k, v in definitions.items()])
-        print(data)
-        write_nonblocking(fifo_name, data)
-        print("written to", fifo_name)
+        try:
+            write_nonblocking(fifo_name, data)
+            print("written to", fifo_name)
+        except OSError as oe:
+            if oe.errno == errno.ENXIO:
+                print("Found no listening NossiBot")
+            if oe.errno != errno.EEXIST:
+                raise
 
 
 def generate_token():
