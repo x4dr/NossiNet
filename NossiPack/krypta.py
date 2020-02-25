@@ -33,9 +33,10 @@ def read_nonblocking(path):
             if lines[-1] != "DONE":
                 break  # file not read yet or fragmented
             result += lines[:-1]
+        print("read:", lines[:-1] if len(lines) > 0 else "nothing")
         os.remove(str(file.absolute()))
         i += 1
-    return
+    return result
 
 
 def is_int(s: str) -> bool:
