@@ -135,8 +135,8 @@ def update_discord_bindings(user, page):
             print("written to", fifo_name)
         except OSError as oe:
             if oe.errno == errno.ENXIO:
-                print("Found no listening NossiBot")
-            if oe.errno != errno.EEXIST:
+                print("Found no listening NossiBot in " + os.curdir())
+            elif oe.errno != errno.EEXIST:
                 raise
 
 

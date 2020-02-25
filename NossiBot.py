@@ -316,7 +316,7 @@ async def handle_inp(inp):
             if persist[name].get("NossiAccount", None) == acc:
                 await handle_defines(line, None, name)
         else:
-            print("received message without discord name:", inp)
+            print("received message without discord name:", line)
 
 
 async def tick():
@@ -410,8 +410,11 @@ async def on_message(message: discord.Message):
                 if persist.get(discordname(message.author), None) is None:
                     persist[discordname(message.author)] = {"defines": {}}
                 persist[discordname(message.author)]["NossiAccount"] = msg.strip().upper()
-            await message.add_reaction("\N{THUMBS UP SIGN}")
-            await send("You are " + persist[discordname(message.author)]["NossiAccount"])
+                await message.add_reaction("\N{THUMBS UP SIGN}")
+            try:
+                await send("You are " + persist[discordname(message.author)]["NossiAccount"])
+            except KeyError:
+                await send("I have no recollection of you.")
         if not isinstance(message.channel, discord.DMChannel):
             if "BANISH" in msg:
                 persist["allowed_rooms"].remove(message.channel.id)
