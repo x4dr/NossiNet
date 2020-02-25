@@ -23,7 +23,6 @@ def read_nonblocking(path):
     path = pathlib.Path(path)
     if path.is_dir():
         path = path / "_"
-    i = 0
     result = []
     file: pathlib.Path
     for file in sorted(path.parent.glob(str(path.stem) + "*")):
@@ -35,7 +34,6 @@ def read_nonblocking(path):
             result += lines[:-1]
         print("read:", lines[:-1] if len(lines) > 0 else "nothing")
         os.remove(str(file.absolute()))
-        i += 1
     return result
 
 

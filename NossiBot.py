@@ -249,6 +249,7 @@ async def handle_defines(msg, send, message):
     except KeyError:
         persist[author] = {"defines": {}}
         defines = {}
+    print("handling", msg)
     if msg.startswith("def") and "=" in msg:
         msg = msg[3:].strip()
         q = re.compile(r"^=\s*?")
@@ -264,6 +265,7 @@ async def handle_defines(msg, send, message):
         define, value = [x.strip() for x in msg.split("=", 1)]
         defines[define] = value
         persist[author]["defines"] = defines
+        print("new define:", persist[author]["defines"][define])
         await message.add_reaction('\N{THUMBS UP SIGN}')
         msg = None
     elif msg.startswith("undef "):
@@ -299,6 +301,7 @@ def discordname(user):
 
 async def handle_inp(inp):
     for line in inp:
+        print("handle_inp:", line)
         if line.find("#") != -1:
             name = line[:line.find("#") + 5]
             line = line[len(name):].strip()
