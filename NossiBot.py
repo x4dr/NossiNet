@@ -263,6 +263,7 @@ async def handle_defines(msg, send, message):
         define, value = [x.strip() for x in msg.split("=", 1)]
         defines[define] = value
         persist[author]["defines"] = defines
+        persist["mutated"] = True
         await message.add_reaction('\N{THUMBS UP SIGN}')
         msg = None
     elif msg.startswith("undef "):
