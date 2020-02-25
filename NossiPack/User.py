@@ -149,7 +149,7 @@ class Userlist(object):
                     self.userlist.append(User(username=row[0], passwordhash=row[1], funds=row[2],
                                               sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6]))
                 except Exception as e:
-                    print("weird db exception with ", row, e, e.args)
+                    print(f"unknown db exception of type {type(e)}: {e} start of row: {str(row[:100])}\n___\n{e.args}")
         else:
             cur = db.execute('SELECT username, passwordhash, funds,'
                              'defines, admin FROM users')
