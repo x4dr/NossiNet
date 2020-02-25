@@ -1,6 +1,5 @@
 import asyncio
 import datetime
-import errno
 import os
 import random
 import re
@@ -19,13 +18,7 @@ import fengraph
 from NossiPack import WoDParser
 from NossiPack.krypta import DescriptiveError, read_nonblocking
 
-FIFO = 'NossiBotBuffer'
-
-try:
-    os.mkfifo(FIFO)
-except OSError as oe:
-    if oe.errno != errno.EEXIST:
-        raise
+bufferfile = 'NossiBotBuffer'
 
 remindfile = os.path.expanduser("~/reminders.txt")
 remindnext = os.path.expanduser("~/reminers_next.txt")
@@ -327,7 +320,7 @@ async def tick():
             await reminders()
         except Exception as e:
             print("Exception reminding:", e, e.args, traceback.format_exc())
-        inp = read_nonblocking(FIFO)
+        inp = read_nonblocking(bufferfile)
         if inp:
             await handle_inp(inp)
         try:

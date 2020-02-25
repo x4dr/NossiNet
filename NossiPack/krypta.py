@@ -1,5 +1,5 @@
-import errno
 import os
+import pathlib
 import random
 
 
@@ -8,56 +8,34 @@ class DescriptiveError(Exception):
 
 
 def write_nonblocking(path, data):
-    fd = os.open(path, os.O_CREAT | os.O_WRONLY | os.O_NONBLOCK)
-    if isinstance(data, str):
-        data = data.encode("utf-8")
-    os.write(fd, data)
-    os.close(fd)
+    path = pathlib.Path(path)
+    if path.is_dir():
+        path = path / "_"
+    i = 0
+    while (path.with_suffix(f".{i}")).exists():
+        i += 1
+    with path.with_suffix(f".{i}").open(mode="x") as x:
+        x.write(data + "\n")
+        x.write("DONE")  # mark file as ready
 
 
-def read_nonblocking(path, bufferSize=100, timeout=.100):
-    import time
-    """
-    implementation of a non-blocking read
-    works with a named pipe or file
-    errno 11 occurs if pipe is still written too, wait until some data
-    is available
-    """
-    grace = True
+def read_nonblocking(path):
+    path = pathlib.Path(path)
+    if path.is_dir():
+        path = path / "_"
+    i = 0
     result = []
-    pipe = None
-    try:
-        pipe = os.open(path, os.O_RDONLY | os.O_NONBLOCK)
-        content = "".encode()
-        while True:
-            try:
-                buf = os.read(pipe, bufferSize)
-                if not buf:
-                    break
-                else:
-                    content += buf
-            except OSError as e:
-                if e.errno == 11 and grace:
-                    # grace period, first write to pipe might take some time
-                    # further reads after opening the file are then successful
-                    time.sleep(timeout)
-                    grace = False
-                else:
-                    break
-        content = content.decode()
-        if content:
-            line = content.split("\n")
-            result.extend(line)
-
-    except OSError as e:
-        if e.errno == errno.ENOENT:
-            pipe = None
-        else:
-            raise e
-    finally:
-        if pipe is not None:
-            os.close(pipe)
-    return result
+    file: pathlib.Path
+    for file in sorted(path.parent.glob(str(path.stem) + "*")):
+        print("reading", file)
+        with file.open(mode="r") as f:
+            lines = f.readlines()
+            if lines[-1] != "DONE":
+                break  # file not read yet or fragmented
+            result += lines[:-1]
+        os.remove(str(file.absolute()))
+        i += 1
+    return
 
 
 def is_int(s: str) -> bool:
