@@ -404,12 +404,13 @@ async def on_message(message: discord.Message):
             await send("I shall die.")
             await client.close()
             return
-        elif msg.lower().startswith("i am "):
-            msg = msg[len("i am "):]
-            if persist.get(discordname(message.author), None) is None:
-                persist[discordname(message.author)] = {"defines": {}}
-            persist[discordname(message.author)]["NossiAccount"] = msg.strip().upper()
-            await message.add_reaction("\U0001f480")
+        elif msg.lower().startswith("i am ") or msg.lower().startswith("who am i"):
+            if msg.lower().startswith("i am"):
+                msg = msg[len("i am "):]
+                if persist.get(discordname(message.author), None) is None:
+                    persist[discordname(message.author)] = {"defines": {}}
+                persist[discordname(message.author)]["NossiAccount"] = msg.strip().upper()
+            await message.add_reaction("\N{THUMBS UP SIGN}")
             await send("You are " + persist[discordname(message.author)]["NossiAccount"])
         if not isinstance(message.channel, discord.DMChannel):
             if "BANISH" in msg:
