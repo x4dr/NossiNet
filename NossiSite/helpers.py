@@ -112,13 +112,11 @@ def update_discord_bindings(user, page):
     u = User(user)
     d = u.config("discord", "not set")
     c = u.config("character_sheet", "")
-    print(f"considering {user} {page} {d} ")
     if c + "_character" == page and re.match(r".*#\d{4}$", d):
         buffer_name = 'NossiBotBuffer'
         char = FenCharacter()
         char.load_from_md(*wikiload(page))
         definitions = {}
-        print(f"loading for {user} {page} {d} ")
         for catname, cat in char.Categories.items():
             for secname, sec in cat.items():
                 for statname, stat in sec.items():
@@ -133,9 +131,7 @@ def update_discord_bindings(user, page):
         data = "\n".join([f"{d} {user} message: undef {catname}.*" for catname in char.Categories.keys()]
                          + [f"{d} {user} message: def {k} = {v}" for k, v in definitions.items()])
         try:
-            print(f"writing {user} {page} {d} ")
             write_nonblocking(buffer_name, data)
-            print("written to", buffer_name)
         except OSError as oe:
             print(f"write failed {user} {page} {d} ")
             if oe.errno == errno.ENXIO:

@@ -213,7 +213,6 @@ async def weaponhandle(msg, comment, send, author):
 
 async def specifichandle(msg, comment, send, author):
     msg = msg[len("specific:"):].strip()
-    print("calling specific/" + msg + "/raw")
     n = requests.get("http://127.0.0.1/specific/" + quote(msg.strip()) + "/raw")
     if n.status_code == 200:
         n = n.content.decode("utf-8")
@@ -249,7 +248,6 @@ async def handle_defines(msg, send, message):
     except KeyError:
         persist[author] = {"defines": {}}
         defines = {}
-    print("handling", msg)
     if msg.startswith("def") and "=" in msg:
         msg = msg[3:].strip()
         q = re.compile(r"^=\s*?")
@@ -265,7 +263,6 @@ async def handle_defines(msg, send, message):
         define, value = [x.strip() for x in msg.split("=", 1)]
         defines[define] = value
         persist[author]["defines"] = defines
-        print("new define:", persist[author]["defines"][define])
         await message.add_reaction('\N{THUMBS UP SIGN}')
         msg = None
     elif msg.startswith("undef "):
@@ -301,16 +298,15 @@ def discordname(user):
 
 async def handle_inp(inp):
     for line in inp:
-        print("handle_inp:", line)
         if line.find("#") != -1:
             name = line[:line.find("#") + 5]
             line = line[len(name):].strip()
             acc = line[:line.find("message: ")].strip()
-            line = line[len(acc):].strip()
-            acc = line[0]
-            line = "def" + "def".join(line[1:])
+            line = line[line.find(":") + 1:].strip()
             if persist[name].get("NossiAccount", None) == acc:
                 await handle_defines(line, None, name)
+            else:
+                print("access error:", persist[name].get("NossiAccount", None), "!=", acc)
         else:
             print("received message without discord name:", line)
 
