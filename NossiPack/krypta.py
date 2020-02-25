@@ -26,13 +26,11 @@ def read_nonblocking(path):
     result = []
     file: pathlib.Path
     for file in sorted(path.parent.glob(str(path.stem) + "*")):
-        print("reading", file)
         with file.open(mode="r") as f:
             lines = f.readlines()
             if lines[-1] != "DONE":
                 break  # file not read yet or fragmented
             result += lines[:-1]
-        print("read:", lines[:-1] if len(lines) > 0 else "nothing")
         os.remove(str(file.absolute()))
     return result
 
