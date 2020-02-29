@@ -305,6 +305,7 @@ async def handle_inp(inp):
             acc = line[:line.find("message: ")].strip()
             line = line[line.find(":") + 1:].strip()
             if persist[name].get("NossiAccount", None) == acc:
+                print(f"saving: {line, name}")
                 await handle_defines(line, None, name)
             else:
                 print("access error:", persist[name].get("NossiAccount", None), "!=", acc)
