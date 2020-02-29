@@ -51,7 +51,7 @@ def modify_dmg(specific_modifiers, dmg, damage_type, armor):
 
 
 def supply_graphdata():
-    dmgtypes = ["Hacken", "Stechen", "Schneiden", "Schlagen", "Stab"]
+    dmgtypes = ["Hacken", "Stechen", "Schneiden", "Schlagen"]
     weapons = weapondata()
     armormax = 14
     wmd5 = md5(str(weapons).encode("utf-8")).hexdigest()
