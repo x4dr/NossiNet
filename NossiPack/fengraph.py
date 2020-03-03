@@ -1,3 +1,4 @@
+import ast
 import io
 import json
 import math
@@ -6,7 +7,6 @@ from math import ceil
 
 import numpy
 import requests
-import ast
 
 try:
     from scipy.integrate import quad
