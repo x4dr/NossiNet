@@ -14,8 +14,7 @@ import discord
 import requests
 from dateparser import parse as dateparse
 
-import fengraph
-from NossiPack import WoDParser
+from NossiPack import WoDParser, fengraph
 from NossiPack.krypta import DescriptiveError, read_nonblocking
 
 bufferfile = 'NossiBotBuffer'

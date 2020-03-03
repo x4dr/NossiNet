@@ -949,7 +949,7 @@ def lightswitch():
 
 @app.route('/fenweapongraph')
 def graphtest():
-    import fengraph
+    from NossiPack import fengraph
     fengraph.supply_graphdata()
     return render_template("graphs.html")
 

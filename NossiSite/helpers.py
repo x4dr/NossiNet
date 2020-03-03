@@ -19,9 +19,9 @@ from markupsafe import Markup
 
 from NossiPack import User
 from NossiPack.FenCharacter import FenCharacter
+from NossiPack.fengraph import weapondata
 from NossiPack.krypta import DescriptiveError, write_nonblocking, is_int
 from NossiSite.base import app
-from fengraph import weapondata
 
 log = logging.getLogger("frontend")
 fh = logging.FileHandler("nossilog.log", mode="w")

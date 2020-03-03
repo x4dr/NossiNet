@@ -35,7 +35,12 @@ class Node(object):
 
     @staticmethod
     def _calculate(message, a=0):
-        parts = message.split(" ")
+        if isinstance(message, str):
+            parts = message.split(" ")
+        elif isinstance(message, list):
+            parts = message
+        else:
+            raise TypeError("parameter was not str or list", message)
         i = len(parts)
         oldmessage = message
         while i > a:
@@ -76,7 +81,7 @@ class WoDParser(object):
         self.dbg = ""
         self.triggers = {}
         self.rights = []
-        self.defines = {"difficulty": 6, "onebehaviour": 1, "sides": 10, "return": ""}  # WoDbasic
+        self.defines = {"difficulty": 6, "onebehaviour": 1, "sides": 10, "return": "sum"}  # WoDbasic
         self.defines.update(defines or {})
         self.rolllogs = []  # if the last roll isnt interesting
 
@@ -154,6 +159,7 @@ class WoDParser(object):
                     self.rolllogs[-1].returnfun = default
                 else:
                     raise DescriptiveError("No return function! Should be one of \"@efghl\" for \"" + roll + "\"")
+            print("returnin from do_roll with rollogs:", self.rolllogs[-1])
             return self.rolllogs[-1]
 
     def make_roll(self, roll: Union[str]) -> WoDDice:
@@ -169,13 +175,17 @@ class WoDParser(object):
         if isinstance(roll, str):
             roll = self.resolvedefines(roll)
             roll = self.pretrigger(roll)
-            return self.resolveroll(Node(roll, depth + 1), depth + 1)
+            res = self.resolveroll(Node(roll, depth + 1), depth + 1)
+            print("returning resolved roll:", res)
+            return res
         for k in list(roll.dependent.keys()):
             toreplace = " " + str(self.resolveroll(roll.dependent[k], depth + 1)) + " "
             roll.message = roll.message.replace(k, toreplace)
             del roll.dependent[k]
         roll.calculate()
+        print("doing roll:", roll.message)
         res = self.do_roll(roll.message, depth=depth + 1).result
+        print("returning done roll ", roll.message, "===>", res)
         return res
 
     def assume(self, message):

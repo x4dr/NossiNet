@@ -1,4 +1,5 @@
 from unittest import TestCase
+
 from NossiPack.WoDParser import WoDParser, Node, fullparenthesis
 
 
@@ -44,6 +45,10 @@ class TestWoDParser(TestCase):
         print("parenthesisroll:", p.do_roll("1(2g)(3(4g)g)g"))
         for r in p.rolllogs[:-1]:
             print("rollv:", r.roll_v())
+
+    def test_nested(self):
+        p = WoDParser({})
+        p.do_roll("5d(5d(5d10))")
 
     def test_parseadd(self):
         a = ["d", "4", "3", "9", "+", "1", "g", "1", "-1"]
