@@ -169,7 +169,7 @@ def printroll(roll, parser=None, testing=False, message=""):
         if not parser.triggers.get("suppress", None):
             start = -parser.triggers.get("cutoff", 20)
             end = (-1 if roll is not None else len(parser.altrolls) + 1)
-            for r in parser.altrolls[start:end]:
+            for r in parser.rolllogs[start:end]:
                 if r:
                     if parser.triggers.get("verbose", None):
                         printroll(r, testing=testing)
