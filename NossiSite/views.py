@@ -692,11 +692,6 @@ def logout():
     return redirect(url_for('show_entries'))
 
 
-@app.route('/cards')
-def cards():
-    return render_template('cards.html')
-
-
 @app.route('/nn')
 def start():
     return render_template('show_entries.html',

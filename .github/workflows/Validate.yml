@@ -1,0 +1,36 @@
+name: Validation
+on:
+  - push
+  - pull_request
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: tonybajan/flake8-check-action@v1.0.0
+        with:
+          ignore: E722,W503
+          maxlinelength: 160
+          repotoken: ${{ secrets.GITHUB_TOKEN }}
+      - name: Test with pytest
+        run: |
+          pip install pytest
+          pytest
+      - name: Setup Python environment
+        uses: actions/setup-python@v1.1.1
+        with:
+          python-version: 3.x
+      - name: Setup VENV
+        run: |
+          python3 -m venv .venv
+          . .venv/bin/activate
+          pip install -r requirements.txt
+      - name: Run quick test (NossiNet)
+        run: |
+          . .venv/bin/activate
+          python3 NossiNet.py test
+      - name: Run unittests
+        run: |
+          pip install pytest
+          pytest

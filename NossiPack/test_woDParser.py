@@ -35,11 +35,6 @@ class TestWoDParser(TestCase):
         p = WoDParser({})
         print("parenthesisroll:", p.do_roll("4(3)"))
 
-    def test_resolveroll(self):
-        node = Node("a d1g", 0)
-        p = WoDParser({"a": "b c d", "b": "e f", "c": "3", "d": "1", "e": "9", "f": "10"})
-        self.assertEqual("23 d1g", p.resolveroll(node, 0))
-
     def test_altrolls(self):
         p = WoDParser({})
         print("parenthesisroll:", p.do_roll("1(2g)(3(4g)g)g"))
@@ -52,12 +47,12 @@ class TestWoDParser(TestCase):
 
     def test_parseadd(self):
         a = ["d", "4", "3", "9", "+", "1", "g", "1", "-1"]
-        self.assertEqual(Node._calculate(a), ['d', '17', 'g', '0'])
+        self.assertEqual(Node._calculate(a), 'd 17 g 0')
 
     def test_looptriggers(self):
         p = WoDParser({})
         p.do_roll("&loop 3 2&")
-        r = p.do_roll("&loop 3 2&; 3")
+        r = p.do_roll("&loop 3 2&; 0 d1g")
         self.assertFalse(r is None)
         for x in p.rolllogs:
             if x is not None:
@@ -67,20 +62,21 @@ class TestWoDParser(TestCase):
 
     def test_triggerorder(self):
         p = WoDParser({})
-        p.make_roll("&loop 7 2&;6;&loop 4 3&")
+        self.assertNotEqual(p.do_roll("&loop 7 2&").result, None)
+        self.assertNotEqual(p.do_roll("&loop 7 2&;6g;&loop 4 3&").result, None)
 
     def test_pretrigger(self):
         p = WoDParser({"shoot": "dex fire", "dex": "Dexterity", "fire": "Firearms", "Dexterity": "3", "Firearms": "4",
                        "gundamage": "4", "sum": "d1g"})
-        self.assertFalse(-1 == p.do_roll("&param difficulty& &if shoot difficulty then gundamage $ -1 e6 else 0 done& "
+        self.assertFalse(-1 == p.do_roll("&param difficulty& "
+                                         "&values hit:(shoot difficulty)&  "
+                                         "&if hit then gundamage hit -1 e6 else 0 done& "
                                          "sum ").result)
 
     def test_resolvedefine(self):
-        p = WoDParser({"a": "b c d", "b": "e f", "c": "3", "d": "1", "e": "9", "f": "10"})
-        r = Node(p.resolvedefines("a d1g"), 0)
-        self.assertEqual(
-            [[y.roll for y in x] for x in [list(y.values()) for y in [x.dependent for x in r.dependent.values()]]],
-            [[['e', 'f'], ['3'], ['1']]])
+        p = WoDParser({"a": "b c D", "b": "e f", "c": "3", "D": "1", "e": "9", "f": "10"})
+        r = p.resolveroll("a d1g", 0)
+        self.assertEqual(r.code, "23 d1g")
 
     def test_explosion(self):
         p = WoDParser()
@@ -94,7 +90,7 @@ class TestWoDParser(TestCase):
         r = p.make_roll("99,99@20s!!")
         print(r.roll_v())
         if r.result != 20:
-            self.assertFalse(True)
+            self.assertFalse(r.result)
 
     def test_fullparenthesis(self):
         self.assertEqual(fullparenthesis("f______(-----((^^^^)~~~~~)---)___"), "-----((^^^^)~~~~~)---")

@@ -10,16 +10,21 @@ from NossiPack.krypta import DescriptiveError
 
 class Node(object):
     def __init__(self, roll: str, depth):
-        self.dbg = ""
-        self.message = roll
+        self.do = False
+        self.code = str(roll)
         self.depth = depth
         self.dependent = {}
         if self.depth > 100:
             raise DescriptiveError("recursion depth exceeded")
         self.buildroll()
 
+    def rebuild(self):
+        self.dependent = {}
+        self.buildroll()
+
     def buildroll(self):
-        unparsed = self.message
+        self.code = self.code.replace("()", "")
+        unparsed = self.code
         while unparsed:
             next_pos = unparsed.find("(")
             if next_pos == -1:
@@ -27,11 +32,13 @@ class Node(object):
             unparsed = unparsed[next_pos:]
             paren = fullparenthesis(unparsed)
             if paren:
-                self.dependent["(" + paren + ")"] = Node(paren, self.depth + 1)
-                unparsed = unparsed[len(paren) + 2:]
+                self.dependent["(" + paren + ")"] = self.dependent.get("(" + paren + ")", []) + [
+                    Node(paren, self.depth + 1)]
+                self.dependent["(" + paren + ")"][-1].do = True
+            unparsed = unparsed[len(paren) + 2:]
 
     def calculate(self):
-        self.message = Node._calculate(self.message)
+        self.code = Node._calculate(self.code)
 
     @staticmethod
     def _calculate(message, a=0):
@@ -39,6 +46,7 @@ class Node(object):
             parts = message.split(" ")
         elif isinstance(message, list):
             parts = message
+            message = " ".join(message)
         else:
             raise TypeError("parameter was not str or list", message)
         i = len(parts)
@@ -48,10 +56,10 @@ class Node(object):
                 try:
                     part = "+".join(parts[a:i])
                     replace = " ".join(parts[a:i])
-                    message = message.replace(replace, str(numexpr.evaluate(part)))
+                    message = message.replace(replace, str(numexpr.evaluate(part, local_dict={})))
                 except:
                     part = " ".join(parts[a:i])
-                    message = message.replace(part, str(numexpr.evaluate(part)))
+                    message = message.replace(part, str(numexpr.evaluate(part, local_dict={})))
                 break
             except:
                 i -= 1
@@ -68,7 +76,7 @@ class Node(object):
         return len(self.dependent.keys()) == 0
 
     def __repr__(self):
-        return str(self.depth) + "|" + str(self.message)
+        return str(self.depth) + "|" + str(self.code)
 
     def __str__(self):
         return self.__repr__()
@@ -140,27 +148,27 @@ class WoDParser(object):
 
         return info
 
-    def do_roll(self, roll, default=None, depth=0) -> WoDDice:
-        if ";" in roll:
-            roll = "(" + ")(".join(roll.split(";")) + ")"
-        if depth == 0:  # otherwise assume roll is resolved
-            self.resolveroll(roll, depth)
-            return self.rolllogs[-1]
-        else:
-            roll = roll.strip()
-            if roll:
-                self.rolllogs.append(self.make_roll(roll))
-            else:
-                self.rolllogs.append(WoDDice.empty())
+    def do_roll(self, roll, default=None) -> WoDDice:
+        """Wrapper around make_roll that handles edgecases"""
+        if isinstance(roll, str):
+            if ";" in roll:
+                roll = "(" + ")(".join(roll.split(";")) + ")"
 
-            default = self.defines.get("return", None) if not default else default
-            if self.rolllogs[-1].result is None:
-                if default is not None:
-                    self.rolllogs[-1].returnfun = default
-                else:
-                    raise DescriptiveError("No return function! Should be one of \"@efghl\" for \"" + roll + "\"")
-            print("returnin from do_roll with rollogs:", self.rolllogs[-1])
-            return self.rolllogs[-1]
+            roll = roll.strip()
+        roll = self.resolveroll(roll, 0)
+        if roll.code:
+            self.rolllogs.append(self.make_roll(roll.code))
+        else:
+            self.rolllogs.append(WoDDice.empty())
+
+        default = self.defines.get("return", None) if not default else default
+        if self.rolllogs[-1].result is None:
+            if default is not None:
+                self.rolllogs[-1].returnfun = default
+            else:
+                raise DescriptiveError("No return function! Should be one of \"@efghl\" for \""
+                                       + str(roll) + "\"")
+        return self.rolllogs[-1]
 
     def make_roll(self, roll: Union[str]) -> WoDDice:
         """Uses full and valid Rolls and returns WoDDice."""
@@ -171,22 +179,29 @@ class WoDParser(object):
         fullparams.update(params)
         return WoDDice(fullparams)
 
-    def resolveroll(self, roll: Union[Node, str], depth):
+    def resolveroll(self, roll: Union[Node, str], depth) -> Node:
         if isinstance(roll, str):
-            roll = self.resolvedefines(roll)
-            roll = self.pretrigger(roll)
-            res = self.resolveroll(Node(roll, depth + 1), depth + 1)
+            roll = Node(roll, 0)
+            self.pretrigger(roll)
+            res = self.resolveroll(roll, 0)
             print("returning resolved roll:", res)
             return res
-        for k in list(roll.dependent.keys()):
-            toreplace = " " + str(self.resolveroll(roll.dependent[k], depth + 1)) + " "
-            roll.message = roll.message.replace(k, toreplace)
-            del roll.dependent[k]
+        self.resolvedefines(roll)
+        for k, vs in roll.dependent.items():
+            print(vs)
+            for v in vs:
+                if v is None:
+                    toreplace = ""
+                elif isinstance(v, Node):
+                    if not v.do:
+                        toreplace = " " + str(self.resolveroll(v, depth + 1).code) + " "
+                    else:
+                        toreplace = " " + str(self.do_roll(v).result or 0) + " "
+                else:
+                    toreplace = str(v)
+                roll.code = roll.code.replace(k, toreplace, 1)
         roll.calculate()
-        print("doing roll:", roll.message)
-        res = self.do_roll(roll.message, depth=depth + 1).result
-        print("returning done roll ", roll.message, "===>", res)
-        return res
+        return roll
 
     def assume(self, message):
         """consumes a parenthesis"""
@@ -197,202 +212,188 @@ class WoDParser(object):
             return self.do_roll(fullparenthesis(message))
         return message
 
+    def breakthrough(self, body: str) -> str:
+        roll = body
+        try:
+            roll, current, goal = body.rsplit(" ", 3)
+            i = 0
+            log = ""
+            adversity = self.triggers.get("adversity", 0)
+            while i < (self.triggers.get("max") or 100) if not self.triggers.get("limitbreak", None) else 1000:
+                x = self.do_roll(roll).result
+                log += str(x) + " : "
+                i += 1
+                while x < 0:
+                    log += str(current) + "/2 = "
+                    current //= 2
+                    log += str(current) + "\n"
+                    x += 1
+                    if x < 0:
+                        log += str(x) + " : "
+                if x > 0:
+                    log += str(current) + " + " + str(x) + (
+                        (" - " + str(adversity)) if adversity != 0 else "") + " = "
+                current += x - adversity
+                log += str(current) + "\n"
+                if current >= goal:
+                    break
+            self.triggers["breakthrough"] = (i, current, goal, log)
+            return str(i)
+        except TypeError:
+            raise DescriptiveError(roll + " does not have a result")  # probably
+        except DescriptiveError:
+            raise
+        except Exception as e:
+            print(e, e.__class__, e.args, traceback.format_exc())
+            raise DescriptiveError("Breakthrough Parameters: roll, current, goal\n"
+                                   "Optionally &adversity x& to the left of breakthrough")
+
+    def triggerswitch(self, triggername, triggerbody):
+        """
+        :param triggername: name to select method by
+        :param triggerbody: input to method
+        :return: what to replace the trigger with, once resolved
+        """
+        if triggername == "limitbreak":
+            print("RIGHTS:", self.rights)
+            if "Administrator" in self.rights:
+                self.triggers[triggername] = True
+                print("LIMITBREAK")
+            else:
+                self.triggers["rightsviolation"] = True
+            return ""
+
+        elif triggername in ["speed", "cutoff", "adversity", "max"]:
+            if triggername in ["speed"]:  # doubles
+                x = float(triggerbody)
+            elif triggername == "max":
+                x = min(int(triggerbody), 100)
+            else:
+                x = int(triggerbody)
+
+            self.triggers[triggername] = x
+            return ""
+        elif triggername == "breakthrough":
+            return self.breakthrough(triggerbody)
+        elif triggername in ["ignore", "verbose", "suppress", "order"]:
+            if "off" not in triggerbody:
+                self.triggers[triggername] = triggerbody if triggerbody else True
+            else:
+                self.triggers[triggername] = False
+            return ""
+        elif triggername in ["loop", "loopsum"]:
+            roll, times = triggerbody.rsplit(" ", 1)  # split at the last space
+            times = int(times)
+            times = min(times, int((self.triggers.get("max", 0) or 39)
+                                   if not self.triggers.get("limitbreak", None) else 500))
+            loopsum = 0
+            for i in range(times):
+                loopsum += self.do_roll(roll).result or 0
+            return str(loopsum) if triggername == "loopsum" else ""
+        elif triggername == "values":
+            try:
+                trigger = str(re.sub(r" *: *", ":", triggerbody))
+                for d in trigger.split(","):
+                    self.defines[d.split(":")[0].strip()] = d.split(":")[1].strip()
+                    return ""  # defines updated
+            except:
+                raise DescriptiveError("Values malformed. Expected: \"&values key:value, key:value, key:value&\"")
+        elif triggername == "param":
+            try:
+                self.triggers["param"] = self.triggers.get("param", []) + triggerbody.split(" ")  # space delimited
+                return ""  # no substitution to be made
+            except:
+                raise DescriptiveError(
+                    "Parameter malformed. Expected: \"&param key1 key2 key3& [...] value1 value2 value3\"")
+        elif "if" == triggername:
+            # &if a then b else c&
+            ifbranch = fullparenthesis(triggerbody, opening="", closing="then")
+            thenbranch = fullparenthesis(triggerbody, opening="then", closing="else")
+            elsebranch = fullparenthesis(triggerbody, opening="else", closing="done")
+            if (self.do_roll(ifbranch).result or 0) > 0:
+                return thenbranch
+            else:
+                return elsebranch
+        else:
+            raise DescriptiveError("unknown Trigger: " + triggername)
+
     @staticmethod
-    def gettrigger(message):  # returns (newmessage,triggername, trigger)
+    def gettriggers(message) -> List[str]:
         c = message.count("&")
         if c == 0:
-            return message, "", ""
+            return []
         else:
-            if c % 2 != 0:
+            if c % 2 != 0:  # show entire code in case unmatched & was not the last one
                 raise DescriptiveError("unmatched & in \"" + message + "\"")
-                # leftover & supposed to be cleared after usage
+        pos = 0
+        triggers = []
+        while pos < len(message):
+            trigger = fullparenthesis(message[pos:], "&", "&", True)
+            if "&" in trigger:
+                triggers.append(trigger)
+            pos += message[pos:].find(trigger) + len(trigger)  # processed part
+        return triggers
 
-        m = message.split("&")
-        tail = "&".join(m[1:])
-        if tail.startswith("if "):  # special case for nested ifs/triggers
-            end = tail.rfind("else")
-            close = tail[end:].find("&")
+    def pretrigger(self, roll: Node) -> None:
+        triggers = self.gettriggers(roll.code)
+        triggerreplace = []
+        for trigger in triggers:
+            triggername, triggerbody = trigger.strip("& ").split(" ", 1)
+            triggerreplace.append((trigger, self.triggerswitch(triggername, triggerbody)))
+            param = self.triggers.pop("param", [])  # if there is anything
+            for p in reversed(param):  # right to left
+                roll.code, val = roll.code.rsplit(" ", 1)  # take rightmost thing
+                self.defines[p] = val  # and write it into the defines
+        for kv in triggerreplace:
+            roll.code = roll.code.replace(kv[0], kv[1], 1)
+        if triggerreplace:
+            roll.rebuild()
 
-            return m[0] + " & " + tail[end + close + 1:], m[1].split(" ")[0], tail[:end + close].strip()
-
-        # message with first trigger removed (and rest of triggers appended
-        # name of first trigger
-        # command of the trigger (everything after a space until the &
-        newmessage = m[0] + " & " + "&".join(m[2:])
-        # the remaining "&" is used in replacement operations by the triggers
-        triggername = m[1].split(" ")[0]
-        triggercontent = " ".join(m[1].split(" ")[1:])
-        return newmessage, triggername, triggercontent
-
-    def pretrigger(self, message):
-        message, triggername, trigger = self.gettrigger(message)
-        while triggername:
-            print("Triggering:", triggername, "with", trigger)
-            if triggername == "limitbreak":
-                print("RIGHTS:", self.rights)
-                if "Administrator" in self.rights:
-                    self.triggers[triggername] = True
-                    print("LIMITBREAK")
-                else:
-                    self.triggers["rightsviolation"] = True
-                message = message.replace("&", "", 1)
-            elif triggername in ["speed", "cutoff", "adversity", "max"]:
-                if triggername in ["speed"]:  # doubles
-                    x = float(trigger)
-                elif triggername == "max":
-                    x = min(int(trigger), 100)
-                else:
-                    x = int(trigger)
-
-                self.triggers[triggername] = x
-                message = message.replace("&", "", 1)
-            elif triggername == "breakthrough":
-                try:
-                    nextpart = trigger.rfind(" ")
-                    if nextpart == -1:
-                        raise DescriptiveError("No parameters")
-                    goal = int(self.assume(trigger[nextpart:]))
-                    print("goal", goal)
-                    trigger = trigger[:nextpart]
-                    print("newtrigger", trigger)
-                    nextpart = trigger.rfind(" ")
-                    if nextpart == -1:
-                        raise DescriptiveError("No second parameter")
-                    current = int(self.assume(trigger[nextpart:]))
-                    print("current", current)
-                    nextpart = trigger.rfind(" ")
-                    if nextpart == -1:
-                        raise DescriptiveError("No third parameter")
-                    trigger = trigger[:nextpart]
-                    print("newtrigger", trigger)
-                    i = 0
-                    log = ""
-                    adversity = self.triggers.get("adversity", 0)
-                    print("limit:", self.triggers.get("limitbreak", False))
-                    while i < (self.triggers.get("max") or 100) if not self.triggers.get("limitbreak", None) else 1000:
-                        x = self.do_roll(trigger).result
-                        log += str(x) + " : "
-                        i += 1
-                        while x < 0:
-                            log += str(current) + "/2 = "
-                            current //= 2
-                            log += str(current) + "\n"
-                            x += 1
-                            if x < 0:
-                                log += str(x) + " : "
-                        if x > 0:
-                            log += str(current) + " + " + str(x) + (
-                                (" - " + str(adversity)) if adversity != 0 else "") + " = "
-                        current += x - adversity
-                        log += str(current) + "\n"
-                        if current >= goal:
-                            break
-                    self.triggers[triggername] = (i, current, goal, log)
-                    message = message.replace("&", str(i), 1)
-                except TypeError:
-                    raise DescriptiveError(trigger + " does not have a result")  # probably
-                except DescriptiveError:
-                    raise
-                except Exception as e:
-                    print(e, e.__class__, e.args, traceback.format_exc())
-                    raise DescriptiveError("Breakthrough Parameters: roll, current, goal\n"
-                                           "Optionally &adversity x& to the left of breakthrough")
-
-            elif triggername in ["ignore", "verbose", "suppress", "order"]:
-                if "off" not in trigger:
-                    self.triggers[triggername] = trigger if trigger else True
-                else:
-                    self.triggers[triggername] = False
-                message = message.replace("&", "", 1)
-            elif triggername in ["loop", "loopsum"]:
-                times = int(trigger[trigger.rfind(" "):])  # everything to the right of the last space
-                times = min(times, ((self.triggers.get("max") or 39)
-                                    if not self.triggers.get("limitbreak", None) else 100))
-                trigger = trigger[:trigger.rfind(" ")]  # roll in the left of the trigger
-                loopsum = 0
-                for i in range(times):
-                    # looprolls.append(roll) # never to be seen again
-                    loopsum += self.do_roll(trigger).result or 0
-                message = message.replace("&", str(loopsum) if triggername == "loopsum" else "", 1)
-            elif triggername == "values":
-                try:
-                    trigger = str(re.sub(r" *: *", ":", trigger))
-                    for d in trigger.split(","):
-                        self.defines[d.split(":")[0].strip()] = d.split(":")[1].strip()
-                        message = message.replace("&", "", 1)  # no substitution to be made
-                except:
-                    raise DescriptiveError("Values malformed. Expected: \"&values key:value, key:value, key:value&\"")
-
-            elif triggername == "param":
-                try:
-                    trigger = str(re.sub(r" +", "", trigger))
-                    for d in reversed(trigger.split(",")):
-                        m = message.rsplit(" ", 1)
-                        message = m[0]
-                        self.dbg += "using " + m[1] + " as " + d.strip() + "\n"
-                        self.defines[d.strip()] = m[1]
-
-                    message = message.replace("&", "", 1)  # no substitution to be made
-                except:
-                    raise DescriptiveError(
-                        "Parameter malformed. Expected: \"&param key1,key2,key3&[...]value1,value2,value3\"")
-
-            elif "if" == triggername:
-                # &if a then b else c&
-                ifbranch = fullparenthesis(trigger, opening="if", closing="then")
-                thenbranch = fullparenthesis(trigger, opening="then", closing="else")
-                elsebranch = fullparenthesis(trigger, opening="else", closing="done")
-                #                ifbranch = trigger.split("then")[0][2:].strip()
-                #                thenbranch = trigger.split("then")[1].strip()
-                #                elsebranch = thenbranch.split("else")[1].strip()
-                #                thenbranch = thenbranch.split("else")[0].strip()
-
-                ifroller = WoDParser(self.defines.copy())
-                ifroll = ifroller.do_roll(ifbranch).result
-                if ifroll > 0:
-                    message = message.replace("&", "(" + thenbranch.replace("$", str(ifroll), 1) + ")", 1)
-                else:
-                    message = message.replace("&", "(" + elsebranch.replace("$", str(-ifroll), 1) + ")", 1)
-            else:
-                raise DescriptiveError("unknown Trigger: " + triggername)
-            message, triggername, trigger = self.gettrigger(message)
-
-        return message
-
-    def resolvedefines(self, message: str) -> str:
-        newmessage = ""
-        counter = 0
-        while newmessage != message and counter < 1000:
-            newmessage = message
-            counter += 1
+    def resolvedefines(self, roll: Node) -> None:
+        while roll.depth < 1000:
             for k, v in self.defines.items():
-                message = message.replace(k, str(v))
-        return message
+                if k in roll.code:
+                    roll.dependent[k] = []
+                    for _ in range(roll.code.count(k)):
+                        roll.dependent[k].append(Node(v, roll.depth + 1))
+                        self.resolvedefines(roll.dependent[k][-1])
+            else:
+                break
 
 
-def fullparenthesis(message, opening="(", closing=")", include=False):
-    if opening not in message:
-        return message
+def fullparenthesis(text: str, opening: str = "(", closing: str = ")", include=False) -> str:
+    """
+    Finds the text within a parenthesis (or other bounding strings that work like parenthesis)
+    :param text: the text to be searched
+    :param opening: start token
+    :param closing: end token
+    :param include: if True, the opening and closing parts will be included
+    :return: text between first opening token and first matching closing token or complete text on failure
+    """
+    if opening not in text:
+        return text
     i = -1
     lvl = 0
     begun = None
-    while ((lvl > 0) or begun is None) and (i <= len(message) + 5):
+    while ((lvl > 0) or begun is None) and (i <= len(text) + 5):
         i += 1
-        if (message[i:i + len(closing)] == closing) \
-                and (((i == 0 or (not message[i - 1].isalnum()))
-                      and not (message + " " * len(closing) * 2)[i + len(closing)].isalnum())
-                     or len(closing) == 1):
+        if (not (opening == closing and (begun is None))
+                and (text[i:i + len(closing)] == closing)
+                and (((i == 0 or (not text[i - 1].isalnum()))
+                      and not (text + " " * len(closing) * 2)[i + len(closing)].isalnum())
+                     or len(closing) == 1)):
             if begun is None:
                 continue  # ignore closing parenthesis if not opened yet
             lvl -= 1
-        if (message[i:i + len(opening)] == opening) \
-                and (((i == 0 or (not message[i - 1].isalnum()))
-                      and not message[i + len(opening)].isalnum())
-                     or len(opening) == 1):
+        elif ((not opening and not i)  # "" matches at the start of line
+              or ((text[i:i + len(opening)] == opening)
+                  and (((i == 0 or (not text[i - 1].isalnum()))
+                        and not text[i + len(opening)].isalnum())
+                       or len(opening) == 1))):
             lvl += 1
             if begun is None:
                 begun = i
-    if i > len(message) + 5:
-        raise DescriptiveError("unmatched " + opening + " " + closing + ": " + message)
-    result = message[begun + (len(opening) if not include else 0): i + (len(closing) if include else 0)]
+    if i > len(text) + len(closing):
+        raise DescriptiveError("unmatched '" + opening + "': '" + text + "'")
+    result = text[begun + (len(opening) if not include else 0): i + (len(closing) if include else 0)]
     return result

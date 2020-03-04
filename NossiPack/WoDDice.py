@@ -46,7 +46,6 @@ class WoDDice(object):
             self.rolled = False
             self.succ = 0
             self.antisucc = 0
-            self.maxamount = 100
             if self.explodeon <= self.min:
                 self.explodeon = self.max + 1
             if self.amount is not None:
@@ -99,7 +98,6 @@ class WoDDice(object):
             })
 
     def roll_next(self, amount):
-        self.maxamount += amount
         i = 0
         self.rolled = True
         self.log = ""
@@ -134,8 +132,6 @@ class WoDDice(object):
                 self.log += ", "
             if self.r[-1] >= self.explodeon:
                 amount += 1
-            if i >= self.maxamount:
-                break
             i += 1
         if self.log.endswith(", "):
             self.log = self.log[:-2]
@@ -228,8 +224,8 @@ class WoDDice(object):
     def roll_sel(self):
         if "," in self.selectors:
             self.selectors = [max(min(int(x), self.amount or 0), 0) for x in self.selectors.split(",")]
-        self.selectors = [max(min(int(x), len(self.r)), 0) for x in self.selectors]
-        return sum(sorted(self.r)[s - 1] for s in self.selectors)
+        selectors = [max(min(int(x), len(self.r)), 0) for x in self.selectors]
+        return sum(sorted(self.r)[s - 1] for s in selectors)
 
     def roll_vmax(self):  # returns max verbose as int
         log = ""
