@@ -10,7 +10,7 @@ if __name__ == "__main__":
         test = True
 
     if test:
-        app.config['TESTING'] = True
+        app.config["TESTING"] = True
         with app.test_client() as client:
             res = client.get("/")
             if res.status_code != 200:

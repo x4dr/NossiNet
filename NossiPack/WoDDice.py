@@ -17,21 +17,21 @@ class WoDDice(object):
     def __init__(self, info):
         try:
 
-            self.min = info.get('additivebonus', 1)  # unlikely to get implemented
+            self.min = info.get("additivebonus", 1)  # unlikely to get implemented
             try:
-                self.max = int(info['sides']) + self.min - 1
+                self.max = int(info["sides"]) + self.min - 1
             except:
                 raise DescriptiveError("Dice without sides!")
-            self.difficulty = info.get('difficulty', None)
-            self.subone = info.get('onebehaviour', 0)
+            self.difficulty = info.get("difficulty", None)
+            self.subone = info.get("onebehaviour", 0)
             try:
-                self.returnfun = info['return']
+                self.returnfun = info["return"]
             except:
                 raise DescriptiveError("No evaluation function for dice!")
-            self.explodeon = self.max + 1 - info.get('explosion', 0)
-            self.sort = info.get('sort')
+            self.explodeon = self.max + 1 - info.get("explosion", 0)
+            self.sort = info.get("sort")
             try:
-                self.amount = info['amount']
+                self.amount = info["amount"]
             except:
                 raise DescriptiveError("No amount of dice!!")
             self.rerolls = int(info.get("rerolls", 0))  # only used for fenrolls
@@ -49,7 +49,7 @@ class WoDDice(object):
             if self.explodeon <= self.min:
                 self.explodeon = self.max + 1
             if self.amount is not None:
-                self.roll_next(int(info.get('amount')))
+                self.roll_next(int(info.get("amount")))
         except KeyError as e:
             raise DescriptiveError("Missing Parameter: " + str(e.args[0]))
         except Exception as e:
@@ -68,34 +68,51 @@ class WoDDice(object):
             amount = ""
         else:
             amount = str(len(self.r))
-        return ((",".join(str(x) for x in self.selectors) + "@")
-                if self.selectors else "") + amount + "d" + str(self.max) + \
-               ("R" + str(self.rerolls) if self.rerolls != 0 else "") + \
-               ((("f" if self.subone == 1 else
-                  "e" if self.subone == 0 else
-                  "-") + str(self.difficulty)
-                 ) if self.returnfun == "threshhold" else
-                "h" if self.returnfun == "max" else
-                "l" if self.returnfun == "min" else
-                "g" if self.returnfun == "sum" else "") + (
-                   (" exploding on " + str(self.explodeon)) if self.explodeon <= self.max else "")
+        return (
+            ((",".join(str(x) for x in self.selectors) + "@") if self.selectors else "")
+            + amount
+            + "d"
+            + str(self.max)
+            + ("R" + str(self.rerolls) if self.rerolls != 0 else "")
+            + (
+                (
+                    ("f" if self.subone == 1 else "e" if self.subone == 0 else "-")
+                    + str(self.difficulty)
+                )
+                if self.returnfun == "threshhold"
+                else "h"
+                if self.returnfun == "max"
+                else "l"
+                if self.returnfun == "min"
+                else "g"
+                if self.returnfun == "sum"
+                else ""
+            )
+            + (
+                (" exploding on " + str(self.explodeon))
+                if self.explodeon <= self.max
+                else ""
+            )
+        )
 
     def another(self):
         if not self.amount:
             raise DescriptiveError("No Amount set for reroll!")
         else:
-            return WoDDice({
-                'sides': self.max,
-                'difficulty': self.difficulty,
-                'onebehaviour': self.subone,
-                'return': self.returnfun,
-                'explode': self.max - self.explodeon - 1,
-                'amount': self.amount,
-                'selectors': self.selectors,
-                'additivebonus': self.min,
-                'sort': self.sort,
-                'rerolls': self.rerolls,
-            })
+            return WoDDice(
+                {
+                    "sides": self.max,
+                    "difficulty": self.difficulty,
+                    "onebehaviour": self.subone,
+                    "return": self.returnfun,
+                    "explode": self.max - self.explodeon - 1,
+                    "amount": self.amount,
+                    "selectors": self.selectors,
+                    "additivebonus": self.min,
+                    "sort": self.sort,
+                    "rerolls": self.rerolls,
+                }
+            )
 
     def roll_next(self, amount):
         i = 0
@@ -158,7 +175,9 @@ class WoDDice(object):
                 for i in range(len(self.r)):
                     x = self.r[i]
                     if x in tofilter and (
-                            (direction < 0 and self.r[i:].count(x) <= tofilter.count(x)) or direction > 0):
+                        (direction < 0 and self.r[i:].count(x) <= tofilter.count(x))
+                        or direction > 0
+                    ):
                         if not par:
                             par = True
                             tempstr += "("
@@ -189,7 +208,11 @@ class WoDDice(object):
             return 0 - antisucc
 
     def roll_wodsuccesses(self):  # non-verbose, returns int
-        return self.botchformat(self.succ, self.antisucc) if not len(self.selectors) else self.roll_sel()
+        return (
+            self.botchformat(self.succ, self.antisucc)
+            if not len(self.selectors)
+            else self.roll_sel()
+        )
 
     def roll_v(self):  # verbose
         log = ""
@@ -223,7 +246,9 @@ class WoDDice(object):
 
     def roll_sel(self):
         if "," in self.selectors:
-            self.selectors = [max(min(int(x), self.amount or 0), 0) for x in self.selectors.split(",")]
+            self.selectors = [
+                max(min(int(x), self.amount or 0), 0) for x in self.selectors.split(",")
+            ]
         selectors = [max(min(int(x), len(self.r)), 0) for x in self.selectors]
         return sum(sorted(self.r)[s - 1] for s in selectors)
 
@@ -245,12 +270,21 @@ class WoDDice(object):
 
     @property
     def result(self) -> int:
-        return (self.roll_sel() if self.selectors else
-                self.roll_wodsuccesses() if self.returnfun == "threshhold" else
-                max(self.r) if self.returnfun == "max" else
-                min(self.r) if self.returnfun == "min" else
-                sum(self.r) if self.returnfun == "sum" else
-                None if self.returnfun == "" else error("No return function!"))
+        return (
+            self.roll_sel()
+            if self.selectors
+            else self.roll_wodsuccesses()
+            if self.returnfun == "threshhold"
+            else max(self.r)
+            if self.returnfun == "max"
+            else min(self.r)
+            if self.returnfun == "min"
+            else sum(self.r)
+            if self.returnfun == "sum"
+            else None
+            if self.returnfun == ""
+            else error("No return function!")
+        )
 
     def roll(self, amount=None):
         if amount is None:

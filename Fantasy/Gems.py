@@ -20,7 +20,15 @@ def roll(lvl):
 
 
 class Gem:
-    def __init__(self, current, maximum, quality, artifactattribute=2, characteristics=None, counters=None):
+    def __init__(
+        self,
+        current,
+        maximum,
+        quality,
+        artifactattribute=2,
+        characteristics=None,
+        counters=None,
+    ):
         self.Energy = current
         self.Maximum = maximum
         self.Quality = quality
@@ -31,30 +39,31 @@ class Gem:
     @staticmethod
     def possible_characteristics():
         # only the ones currently implemented, the possibilities are large
-        return ['adamantine',
-                # quality loss reduced
-                'dull',
-                # max loss causes quality loss
-                'slick',
-                # "greasy", min usage per use
-                'metallic',
-                # charge and discharge faster
-                'pearly',
-                # shifted towards passive uses
-                'cloudy',
-                # max usage per day
-                'brittle',
-                # diminishes max per empty
-                'glowing',
-                # passive energy usage per day
-                'dragonglass',
-                # diminishes quality per use
-                'bristling',
-                # looses/gains energy after spell use
-                'peaceful',
-                # looses max if harm is inflicted
-                # https://en.wikipedia.org/wiki/Lustre_(mineralogy)
-                ]
+        return [
+            "adamantine",
+            # quality loss reduced
+            "dull",
+            # max loss causes quality loss
+            "slick",
+            # "greasy", min usage per use
+            "metallic",
+            # charge and discharge faster
+            "pearly",
+            # shifted towards passive uses
+            "cloudy",
+            # max usage per day
+            "brittle",
+            # diminishes max per empty
+            "glowing",
+            # passive energy usage per day
+            "dragonglass",
+            # diminishes quality per use
+            "bristling",
+            # looses/gains energy after spell use
+            "peaceful",
+            # looses max if harm is inflicted
+            # https://en.wikipedia.org/wiki/Lustre_(mineralogy)
+        ]
 
     def use(self, amount, context):
         self.process_characteristics(amount, context, "usepre")
@@ -73,9 +82,9 @@ class Gem:
     def tick(self, days):
         for i in range(days):
             for c in self.Characteristics.keys():
-                if c == 'cloudy' and self.Counters.get(c, 0) < self.Characteristics[c]:
+                if c == "cloudy" and self.Counters.get(c, 0) < self.Characteristics[c]:
                     self.Counters[c] = self.Counters.get(c, 0) + 1
-                if c == 'pearly' and self.Counters.get(c, 0) > self.Maximum:
+                if c == "pearly" and self.Counters.get(c, 0) > self.Maximum:
                     self.Counters[c] -= 1
 
     def diminish(self, amount, context):
@@ -83,7 +92,9 @@ class Gem:
             self.Maximum = max(self.Maximum - amount, 0)
             self.process_characteristics(amount, context, "diminishpost")
 
-    def restore(self, amount, context):  # context here being the result of how much quality will be lowered by
+    def restore(
+        self, amount, context
+    ):  # context here being the result of how much quality will be lowered by
         if self.process_characteristics(amount, context, "restorepre"):
             self.Maximum += amount
             self.Quality = max(0, self.Quality - int(context))
@@ -92,61 +103,80 @@ class Gem:
 
     def process_characteristics(self, amount, context, phase):
         for c in self.Characteristics.keys():
-            if c == 'cloudy':
+            if c == "cloudy":
                 # max usage replenishing 1 per day
                 if phase == "usepre":
                     if self.Counters.get(c, 0) <= amount:
                         return False
                 if phase == "usespend":
                     self.Counters[c] -= amount
-            if c == 'adamantine':
+            if c == "adamantine":
                 # quality loss reduced
                 if phase == "restorepre":
-                    self.Quality += min(amount, self.Characteristics[c])  # cancels up to adamantine-level qualityloss
-            if c == 'dull':
+                    self.Quality += min(
+                        amount, self.Characteristics[c]
+                    )  # cancels up to adamantine-level qualityloss
+            if c == "dull":
                 # max loss causes quality loss
                 pass
-            if c == 'slick':
+            if c == "slick":
                 # "greasy", min usage per use
                 if phase == "usespend":
-                    self.Energy = max(0, self.Energy - max(0, self.Characteristics[c] - amount))
-            if c == 'metallic':
+                    self.Energy = max(
+                        0, self.Energy - max(0, self.Characteristics[c] - amount)
+                    )
+            if c == "metallic":
                 # charge and discharge faster
                 if phase == "usespend":
                     self.Energy = max(0, self.Energy - self.Characteristics[c])
                 if phase == "rechargepost":
-                    self.Energy = round(min(self.Maximum, self.Energy + amount * self.Characteristics[c] / 2))
-            if c == 'pearly':
+                    self.Energy = round(
+                        min(
+                            self.Maximum,
+                            self.Energy + amount * self.Characteristics[c] / 2,
+                        )
+                    )
+            if c == "pearly":
                 # shifted towards passive uses
                 if phase == "usepre":
-                    if context == "sustain" and amount > 0 and self.Counters.get(c, 0) > 0:
+                    if (
+                        context == "sustain"
+                        and amount > 0
+                        and self.Counters.get(c, 0) > 0
+                    ):
                         self.Energy += 1
                         self.Counters[c] -= 1
                 elif phase == "usespend":
                     if context != "sustain" and self.Energy > 0:
                         self.Energy -= 1
-                        self.Counters[c] = self.Counters.get(c, 0) + self.Characteristics[c]
-            if c == 'brittle':
+                        self.Counters[c] = (
+                            self.Counters.get(c, 0) + self.Characteristics[c]
+                        )
+            if c == "brittle":
                 # diminishes max per empty
-                if phase == "usepre" and amount > 0 and self.Maximum >= amount > self.Energy > 0:
+                if (
+                    phase == "usepre"
+                    and amount > 0
+                    and self.Maximum >= amount > self.Energy > 0
+                ):
                     self.diminish(amount - self.Energy, "brittle")
                     self.Energy = amount
                 if phase == "usespend" and amount > 0 and self.Energy == 0:
                     self.diminish(self.Characteristics[c], "brittle")
-            if c == 'glowing':
+            if c == "glowing":
                 # passive energy usage per day
                 pass
-            if c == 'dragonglass':
+            if c == "dragonglass":
                 # diminishes quality per use
                 # technically cancelled out by adamantine but that would be lame
                 if phase == "usespend" and amount > 0:
                     self.Quality -= self.Characteristics[c]
-            if c == 'bristling':
+            if c == "bristling":
                 # looses/gains energy after spell use
                 if phase == "usespend" and amount > 0 and context != "sustain":
                     newcost = roll(self.Artifactattribute) - self.Characteristics[c]
                     self.Energy = max(0, self.Energy + min(amount, newcost))
-            if c == 'peaceful':
+            if c == "peaceful":
                 # looses max if harm is inflicted
                 if phase == "usespend":
                     if context == "damage":
@@ -156,19 +186,23 @@ class Gem:
 
 # # # # # # # # # EXAMPLE/CONCEPTS/TEST # # # # # # # # #
 
+
 class Character:
     def __init__(self):
         self.Gem = None
-        self.Spells = {"fir3b4llerz": {"context": "damage", "cost": 2, "sustain": 0, "len": 0},
-                       "gl0vvs7ickz": {"context": "pretty", "cost": 5, "sustain": 1, "len": 12}}
+        self.Spells = {
+            "fir3b4llerz": {"context": "damage", "cost": 2, "sustain": 0, "len": 0},
+            "gl0vvs7ickz": {"context": "pretty", "cost": 5, "sustain": 1, "len": 12},
+        }
 
     @staticmethod
     def gemlist():
-        return [Gem(100, 100, 100, -1),
-                # Gem(100, 100, 100, -1, {"brittle": 1}),
-                Gem(100, 100, 100, -1, {"bristling": 3}),
-                # Gem(100, 100, 100, -1, {"pearly": 2})
-                ]
+        return [
+            Gem(100, 100, 100, -1),
+            # Gem(100, 100, 100, -1, {"brittle": 1}),
+            Gem(100, 100, 100, -1, {"bristling": 3}),
+            # Gem(100, 100, 100, -1, {"pearly": 2})
+        ]
 
     def test_gem(self):
         artifact_attribute = 5

@@ -14,20 +14,35 @@ class FenCharacter(object):
         self.Meta = meta or OrderedDict()
 
         def sublvl():
-            return OrderedDict([("Attribute", OrderedDict()),
-                                ("Fähigkeiten", OrderedDict()),
-                                ("Vorteile", OrderedDict())])
+            return OrderedDict(
+                [
+                    ("Attribute", OrderedDict()),
+                    ("Fähigkeiten", OrderedDict()),
+                    ("Vorteile", OrderedDict()),
+                ]
+            )
 
-        self.Categories = OrderedDict([("Stärke", sublvl()),
-                                       ("Können", sublvl()),
-                                       ("Magie", OrderedDict([("Quelle", {}),
-                                                              ("Konzepte", {}),
-                                                              ("Aspekte", {}),
-                                                              ("Zauber", {}),
-                                                              ("Vorteile", {})])),
-                                       ("Weisheit", sublvl()),
-                                       ("Charisma", sublvl()),
-                                       ("Schicksal", sublvl())])
+        self.Categories = OrderedDict(
+            [
+                ("Stärke", sublvl()),
+                ("Können", sublvl()),
+                (
+                    "Magie",
+                    OrderedDict(
+                        [
+                            ("Quelle", {}),
+                            ("Konzepte", {}),
+                            ("Aspekte", {}),
+                            ("Zauber", {}),
+                            ("Vorteile", {}),
+                        ]
+                    ),
+                ),
+                ("Weisheit", sublvl()),
+                ("Charisma", sublvl()),
+                ("Schicksal", sublvl()),
+            ]
+        )
         self.Wounds = []
         self.Modifiers = OrderedDict()
         self.Inventory = OrderedDict()
@@ -48,17 +63,24 @@ class FenCharacter(object):
     @staticmethod
     def parse_part(s, parse_table):
         result = OrderedDict()
-        categories = [x for x in re.split(r"\n##(?!#)", "\n" + s,
-                                          maxsplit=1000, flags=re.MULTILINE) if x.strip()]
+        categories = [
+            x
+            for x in re.split(r"\n##(?!#)", "\n" + s, maxsplit=1000, flags=re.MULTILINE)
+            if x.strip()
+        ]
         for category in categories:
             firstline = category.find("\n")
             categoryname = category[:firstline].strip()
-            category = category[firstline + 1:].strip()
+            category = category[firstline + 1 :].strip()
             result[categoryname] = OrderedDict()
-            for section in [x for x in re.split(r"\n###(?!#)", "\n" + category, 1000, re.MULTILINE) if x.strip()]:
+            for section in [
+                x
+                for x in re.split(r"\n###(?!#)", "\n" + category, 1000, re.MULTILINE)
+                if x.strip()
+            ]:
                 firstline = section.find("\n")
                 sectionname = section[:firstline].strip()
-                section = section[firstline + 1:].strip()
+                section = section[firstline + 1 :].strip()
                 li = []
                 result[categoryname][sectionname] = OrderedDict()
                 result[categoryname][sectionname]["_lines"] = []
@@ -66,15 +88,25 @@ class FenCharacter(object):
                 for line in section.split("\n"):
                     line = line.strip()
                     candidate = line.split("|")
-                    candidate = (candidate if len(candidate) == 2
-                                 else line[1 if line.startswith("|") else 0:
-                                           -1 if line.startswith("|") else len(line)].split("|"))
+                    candidate = (
+                        candidate
+                        if len(candidate) == 2
+                        else line[
+                            1
+                            if line.startswith("|")
+                            else 0 : -1
+                            if line.startswith("|")
+                            else len(line)
+                        ].split("|")
+                    )
                     if parse_table and len(candidate) == 2:
                         tablestate += 1
                         if tablestate > 2:  # 1: header, 2: alignment
                             while candidate[0] in result[categoryname][sectionname]:
                                 candidate[0] = "_" + candidate[0]
-                            result[categoryname][sectionname][candidate[0]] = candidate[1]
+                            result[categoryname][sectionname][candidate[0]] = candidate[
+                                1
+                            ]
                     else:
                         tablestate = 0
                         result[categoryname][sectionname]["_lines"].append(line)
@@ -85,7 +117,10 @@ class FenCharacter(object):
                     for k, v in result[categoryname][sectionname].items():
                         result[categoryname][k] = v
                     del result[categoryname][sectionname]
-            if len(result[categoryname].keys()) == 1 and "_lines" in result[categoryname].keys():
+            if (
+                len(result[categoryname].keys()) == 1
+                and "_lines" in result[categoryname].keys()
+            ):
                 result[categoryname] = list(result[categoryname].values())[0]
         for cn in list(result.keys()):
             if not cn:
@@ -127,7 +162,7 @@ class FenCharacter(object):
                         del secv["_lines"]
         return self.Categories
 
-    def validate_char(self, ):
+    def validate_char(self,):
         comment = self.Name + "NOT IMPLEMENTED"
         return comment
 
@@ -135,14 +170,16 @@ class FenCharacter(object):
         form = dict(form)
         self.Notes = form.pop("Notes")[0]
         self.Name = form.pop("Name")[0]
-        self.Meta = [("Species", form.pop("Species", [""])[0]),
-                     ("XP", form.pop("XP", [""])[0]),
-                     ("Home", form.pop("Home", [""])[0]),
-                     ("Story", form.pop("Story", [""])[0]),
-                     ("Size", form.pop("Size", [""])[0]),
-                     ("Weight", form.pop("Weight", [""])[0]),
-                     ("Concept", form.pop("Concept", [""])[0]),
-                     ("Player", form.pop("Player", [""])[0])]
+        self.Meta = [
+            ("Species", form.pop("Species", [""])[0]),
+            ("XP", form.pop("XP", [""])[0]),
+            ("Home", form.pop("Home", [""])[0]),
+            ("Story", form.pop("Story", [""])[0]),
+            ("Size", form.pop("Size", [""])[0]),
+            ("Weight", form.pop("Weight", [""])[0]),
+            ("Concept", form.pop("Concept", [""])[0]),
+            ("Player", form.pop("Player", [""])[0]),
+        ]
 
         for key, val in form.items():
             s = key.split("_")
@@ -158,12 +195,16 @@ class FenCharacter(object):
                 self.Categories[k][sub_key][val[0]] = int(form.get(key + "_val")[0])
 
     def getdictrepr(self):
-        character = OrderedDict([('Categories', self.Categories),
-                                 ('Wounds', self.Wounds),
-                                 ('Modifiers', self.Modifiers),
-                                 ('Inventory', self.Inventory),
-                                 ('Notes', self.Notes),
-                                 ('Type', "FEN")])
+        character = OrderedDict(
+            [
+                ("Categories", self.Categories),
+                ("Wounds", self.Wounds),
+                ("Modifiers", self.Modifiers),
+                ("Inventory", self.Inventory),
+                ("Notes", self.Notes),
+                ("Type", "FEN"),
+            ]
+        )
         return character
 
     def serialize(self):

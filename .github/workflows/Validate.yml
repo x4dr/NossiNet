@@ -7,12 +7,15 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
       - uses: tonybajan/flake8-check-action@v1.0.0
         with:
-          ignore: E722,W503
-          maxlinelength: 160
+          ignore: E722,W503,E203
+          maxlinelength: 88
           repotoken: ${{ secrets.GITHUB_TOKEN }}
+      - uses: lgeiger/black-action@v1.0.1
+        with:
+          args: ". --check"
+
   test:
     name: Test-Suite
     runs-on: ubuntu-latest

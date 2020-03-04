@@ -8,9 +8,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from NossiPack.VampireCharacter import VampireCharacter
 
-__author__ = 'maric'
+__author__ = "maric"
 
-DATABASE = './NN.db'
+DATABASE = "./NN.db"
 
 
 def connect_db():
@@ -20,8 +20,17 @@ def connect_db():
 class User(object):
     sheet: VampireCharacter
 
-    def __init__(self, username, password="", passwordhash=None, funds=0,
-                 sheet=VampireCharacter().serialize(), oldsheets=b'', admin="", defines=''):
+    def __init__(
+        self,
+        username,
+        password="",
+        passwordhash=None,
+        funds=0,
+        sheet=VampireCharacter().serialize(),
+        oldsheets=b"",
+        admin="",
+        defines="",
+    ):
         self.username = username.strip()
         if passwordhash is not None:
             self.pw_hash = passwordhash
@@ -29,6 +38,7 @@ class User(object):
             self.pw_hash = generate_password_hash(password)
         self.funds = funds
         from NossiSite import log
+
         try:
             self.sheet = VampireCharacter.deserialize(sheet)
         except:
@@ -53,12 +63,14 @@ class User(object):
             oldsheetserialized.append(s)
         return pickle.dumps(oldsheetserialized)
 
-    def configs(self) -> Dict[str, str]:  # central place to store default values for users
+    def configs(
+        self,
+    ) -> Dict[str, str]:  # central place to store default values for users
         res = {
             "discord": "not set",
             "fensheet_dots": "1",
             "fensheet_dot_max": "5",
-            "character_sheet": ""  # anything but a valid charactersheet defaults to vampire sheet
+            "character_sheet": "",  # anything but a valid charactersheet defaults to vampire sheet
         }
 
         res.update(Config.loadall(self.username))
@@ -70,7 +82,7 @@ class User(object):
 
     @staticmethod
     def deserialize_old_sheets(inp):
-        if inp == b'':
+        if inp == b"":
             return []
         oldsheets = pickle.loads(inp)
         for o in oldsheets:
@@ -96,34 +108,43 @@ class Config(object):
     @staticmethod
     def load(user, option, db=None):
         db = db or connect_db()
-        res = db.execute('SELECT value FROM configs WHERE user LIKE :user AND option LIKE :option;',
-                         dict(user=user, option=option)).fetchone()
+        res = db.execute(
+            "SELECT value FROM configs WHERE user LIKE :user AND option LIKE :option;",
+            dict(user=user, option=option),
+        ).fetchone()
         return res[0] if res else None
 
     @staticmethod
     def loadall(user: str, db=None) -> Dict[str, str]:
         db = db or connect_db()
-        res = db.execute('SELECT option, value FROM configs WHERE user LIKE :user;',
-                         dict(user=user)).fetchall()
+        res = db.execute(
+            "SELECT option, value FROM configs WHERE user LIKE :user;", dict(user=user)
+        ).fetchall()
         return {r[0]: r[1] for r in res} if res else {}
 
     @staticmethod
     def save(user, option, value, db=None):
         db = db or connect_db()
         if Config.load(user, option, db) is not None:
-            db.execute('UPDATE configs SET value = :value WHERE user LIKE :user AND option LIKE :option;',
-                       dict(user=user, option=option, value=value))
+            db.execute(
+                "UPDATE configs SET value = :value WHERE user LIKE :user AND option LIKE :option;",
+                dict(user=user, option=option, value=value),
+            )
         else:
-            db.execute('INSERT INTO configs(user,option,value) VALUES (:user, :option, :value);',
-                       dict(user=user, option=option, value=value))
+            db.execute(
+                "INSERT INTO configs(user,option,value) VALUES (:user, :option, :value);",
+                dict(user=user, option=option, value=value),
+            )
         db.commit()
 
     @staticmethod
     def delete(user, option, db=None):
         db = db or connect_db()
         if Config.load(user, option, db) is not None:
-            db.execute('DELETE FROM configs WHERE user LIKE :user AND option LIKE :option;',
-                       dict(user=user, option=option))
+            db.execute(
+                "DELETE FROM configs WHERE user LIKE :user AND option LIKE :option;",
+                dict(user=user, option=option),
+            )
         db.commit()
         # else it does not exist
 
@@ -138,24 +159,47 @@ class Userlist(object):
         if preload:
             self.loaduserlist(sheets)
 
-    def loaduserlist(self, sheets=True):  # converts the SQL table into a list for easier access
+    def loaduserlist(
+        self, sheets=True
+    ):  # converts the SQL table into a list for easier access
         db = connect_db()
         if sheets:
-            cur = db.execute('SELECT username, passwordhash, funds, '
-                             'sheet, oldsheets, defines, admin FROM users')
+            cur = db.execute(
+                "SELECT username, passwordhash, funds, "
+                "sheet, oldsheets, defines, admin FROM users"
+            )
             f_all = cur.fetchall()
             for row in f_all:
                 try:
-                    self.userlist.append(User(username=row[0], passwordhash=row[1], funds=row[2],
-                                              sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6]))
+                    self.userlist.append(
+                        User(
+                            username=row[0],
+                            passwordhash=row[1],
+                            funds=row[2],
+                            sheet=row[3],
+                            oldsheets=row[4],
+                            defines=row[5],
+                            admin=row[6],
+                        )
+                    )
                 except Exception as e:
-                    print(f"unknown db exception of type {type(e)}: {e} start of row: {str(row[:100])}\n___\n{e.args}")
+                    print(
+                        f"unknown db exception of type {type(e)}: {e} start of row: {str(row[:100])}\n___\n{e.args}"
+                    )
         else:
-            cur = db.execute('SELECT username, passwordhash, funds,'
-                             'defines, admin FROM users')
-            self.userlist = [User(username=row[0], passwordhash=row[1], funds=row[2],
-                                  defines=row[3], admin=row[4]) for row in
-                             cur.fetchall()]
+            cur = db.execute(
+                "SELECT username, passwordhash, funds," "defines, admin FROM users"
+            )
+            self.userlist = [
+                User(
+                    username=row[0],
+                    passwordhash=row[1],
+                    funds=row[2],
+                    defines=row[3],
+                    admin=row[4],
+                )
+                for row in cur.fetchall()
+            ]
         db.close()
 
     def saveuserlist(self):
@@ -163,38 +207,63 @@ class Userlist(object):
         db = connect_db()
         for u in self.userlist:
             if u.sheet.checksum() != 0:
-                d = dict(username=u.username, pwhash=u.pw_hash, funds=u.funds,
-                         sheet=u.sheet.serialize(), oldsheets=u.serialize_old_sheets(), defines=pickle.dumps(u.defines),
-                         admin=u.admin)
-                db.execute('INSERT OR REPLACE INTO users (username, passwordhash, funds, '
-                           'sheet, oldsheets, defines, admin) '
-                           'VALUES (:username,:pwhash, :funds, :sheet, :oldsheets, :defines, :admin)', d)
+                d = dict(
+                    username=u.username,
+                    pwhash=u.pw_hash,
+                    funds=u.funds,
+                    sheet=u.sheet.serialize(),
+                    oldsheets=u.serialize_old_sheets(),
+                    defines=pickle.dumps(u.defines),
+                    admin=u.admin,
+                )
+                db.execute(
+                    "INSERT OR REPLACE INTO users (username, passwordhash, funds, "
+                    "sheet, oldsheets, defines, admin) "
+                    "VALUES (:username,:pwhash, :funds, :sheet, :oldsheets, :defines, :admin)",
+                    d,
+                )
             else:
-                d = dict(username=u.username, pwhash=u.pw_hash, funds=u.funds,
-                         defines=pickle.dumps(u.defines), admin=u.admin, emptysheet=VampireCharacter().serialize())
+                d = dict(
+                    username=u.username,
+                    pwhash=u.pw_hash,
+                    funds=u.funds,
+                    defines=pickle.dumps(u.defines),
+                    admin=u.admin,
+                    emptysheet=VampireCharacter().serialize(),
+                )
                 db.execute(
                     "INSERT OR REPLACE INTO users (username, passwordhash, funds,  "
                     "sheet, oldsheets, defines, admin) "
                     "VALUES (:username,:pwhash, :funds,"
                     "COALESCE((SELECT sheet FROM users WHERE username = :username), :emptysheet),"
                     "COALESCE((SELECT oldsheets FROM users WHERE username = :username), ''),"
-                    " :defines, :admin)", d)
+                    " :defines, :admin)",
+                    d,
+                )
 
         db.commit()
         db.close()
 
     def adduser(self, user, password):
         if self.contains(user):
-            return 'Name is taken!'
+            return "Name is taken!"
         u = User(username=user, password=password)
-        d = dict(username=u.username, pwhash=u.pw_hash, funds=u.funds,
-                 sheet=u.sheet.serialize(), oldsheets=u.serialize_old_sheets(), defines=pickle.dumps(u.defines),
-                 admin=u.admin)
+        d = dict(
+            username=u.username,
+            pwhash=u.pw_hash,
+            funds=u.funds,
+            sheet=u.sheet.serialize(),
+            oldsheets=u.serialize_old_sheets(),
+            defines=pickle.dumps(u.defines),
+            admin=u.admin,
+        )
         db = connect_db()
         db.execute(
             "INSERT OR REPLACE INTO users (username, passwordhash, funds, "
             "sheet, oldsheets, defines, admin) "
-            "VALUES (:username,:pwhash, :funds, :sheet, :oldsheets, :defines, :admin)", d)
+            "VALUES (:username,:pwhash, :funds, :sheet, :oldsheets, :defines, :admin)",
+            d,
+        )
         db.commit()
         db.close()
         return None
@@ -213,19 +282,30 @@ class Userlist(object):
 
     def loaduserbyname(self, username) -> Union[User, None]:
         db = connect_db()
-        cur = db.execute('SELECT username, passwordhash, funds, '
-                         'sheet, oldsheets, defines, admin FROM users WHERE username = (?)', (username,))
+        cur = db.execute(
+            "SELECT username, passwordhash, funds, "
+            "sheet, oldsheets, defines, admin FROM users WHERE username = (?)",
+            (username,),
+        )
         try:
             row = cur.fetchone()
             if row is None:
                 return None
-            newuser = User(username=row[0], passwordhash=row[1], funds=row[2],
-                           sheet=row[3], oldsheets=row[4], defines=row[5], admin=row[6])
+            newuser = User(
+                username=row[0],
+                passwordhash=row[1],
+                funds=row[2],
+                sheet=row[3],
+                oldsheets=row[4],
+                defines=row[5],
+                admin=row[6],
+            )
 
             if newuser.username not in self.userlist:
                 self.userlist.append(newuser)
         except Exception as e:
             from NossiSite import log
+
             log.exception("loading user by name, error :", e, e.args)
             raise
         return newuser
@@ -243,5 +323,6 @@ class Userlist(object):
             return self.loaduserbyname(user).check_password(password)
         except Exception:
             from NossiSite import log
+
             log.exception("exception while checking user credentials for ", user)
             raise

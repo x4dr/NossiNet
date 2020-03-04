@@ -13,8 +13,10 @@ try:
     from scipy.interpolate import interp1d
     from scipy.optimize import fsolve
 except ImportError:
+
     def notfound(*args, **kwargs):
         raise Exception("Scipy is not installed!")
+
     quad = notfound
     interp1d = notfound
     fsolve = notfound
@@ -33,13 +35,19 @@ def modify_dmg(specific_modifiers, dmg, damage_type, armor):
         else:
             damage_instance = damage_instance[0]
             if damage_type == "Stechen":
-                effectivedmg.append(0 if damage_instance <= armor else math.ceil(damage_instance / 2))
+                effectivedmg.append(
+                    0 if damage_instance <= armor else math.ceil(damage_instance / 2)
+                )
             elif damage_type == "Schlagen":
                 effective_dmg = damage_instance - int(armor / 2)
                 effectivedmg.append(effective_dmg if effective_dmg > 0 else 0)
             elif damage_type == "Schneiden":
                 effective_dmg = damage_instance - armor
-                effectivedmg.append(effective_dmg + ceil(effective_dmg / 5) * 3 if effective_dmg > 0 else 0)
+                effectivedmg.append(
+                    effective_dmg + ceil(effective_dmg / 5) * 3
+                    if effective_dmg > 0
+                    else 0
+                )
             else:
                 effective_dmg = damage_instance - armor
                 effectivedmg.append(effective_dmg if effective_dmg > 0 else 0)
@@ -61,12 +69,15 @@ def supply_graphdata():
             nmd5 = f.readline()
             if str(nmd5).strip() == str(wmd5).strip():
                 with open("NossiSite/static/graphdata.json") as g:
-                    if str(wmd5) in g.read(len(str(wmd5) * 2)):  # find hash at the beginning of the json
+                    if str(wmd5) in g.read(
+                        len(str(wmd5) * 2)
+                    ):  # find hash at the beginning of the json
                         return
                 damages = ast.literal_eval(f.read())
             else:
                 print(
-                    f"fengraph hashes: {str(nmd5).strip()} != {str(wmd5).strip()}, so graphdata will be regenerated")
+                    f"fengraph hashes: {str(nmd5).strip()} != {str(wmd5).strip()}, so graphdata will be regenerated"
+                )
                 damages = {}
     except SyntaxError as e:
         print("syntax error in weaponstuff_internal, regenerating:", e.msg)
@@ -106,21 +117,35 @@ def supply_graphdata():
             f.write(str(damages))
 
     cmprjsn = {"Hash": wmd5, "Names": list(weapons.keys()), "Types": list(dmgtypes)}
-    for attackerstat, defender in (sorted(damages.items())):
+    for attackerstat, defender in sorted(damages.items()):
         cmprjsn[attackerstat] = {}
         for defenderstat, damage in defender.items():
             cmprjsn[attackerstat][defenderstat] = []
             for per_armor in damage:
                 print(per_armor)
                 # noinspection PyTypeChecker
-                cmprjsn[attackerstat][defenderstat].append(list(
-                    list(per_armor[weapon][damagetype]
-                         for weapon in cmprjsn["Names"])
-                    for damagetype in dmgtypes))
-                nm = max(list(max(x for x in [
-                    list(per_armor[weapon][damagetype]
-                         for weapon in cmprjsn["Names"])
-                    for damagetype in dmgtypes])))
+                cmprjsn[attackerstat][defenderstat].append(
+                    list(
+                        list(
+                            per_armor[weapon][damagetype] for weapon in cmprjsn["Names"]
+                        )
+                        for damagetype in dmgtypes
+                    )
+                )
+                nm = max(
+                    list(
+                        max(
+                            x
+                            for x in [
+                                list(
+                                    per_armor[weapon][damagetype]
+                                    for weapon in cmprjsn["Names"]
+                                )
+                                for damagetype in dmgtypes
+                            ]
+                        )
+                    )
+                )
                 if nm > maxdmg:
                     print("updating maxdmg to", nm)
                     maxdmg = nm
@@ -132,6 +157,7 @@ def supply_graphdata():
 def weapondata():
     try:
         import os
+
         with open(os.path.expanduser("~/wiki/weapons.md")) as f:
             dmgraw = f.read()
     except Exception as e:
@@ -143,14 +169,14 @@ def weapondata():
     for dmgsect in dmgraw.split("###"):
         if not dmgsect.strip() or "[TOC]" in dmgsect:
             continue
-        weapon = dmgsect[:dmgsect.find("\n")].strip()
+        weapon = dmgsect[: dmgsect.find("\n")].strip()
         weapons[weapon] = {}
         for dmgline in dmgsect.split("\n"):
             if "Wert" in dmgline or "---" in dmgline or len(dmgline) < 50:
                 continue
             if "|" not in dmgline:
                 break
-            dmgtype = dmgline[dmgline.find("[") + 1:dmgline.find("]")].strip()
+            dmgtype = dmgline[dmgline.find("[") + 1 : dmgline.find("]")].strip()
             weapons[weapon][dmgtype] = dmgline[35:]
         if "##" in dmgsect:
             break
@@ -162,15 +188,20 @@ def weapondata():
 
     for weapon in weapons.keys():
         for dt in dmgtypes:
-            weapons[weapon][dt] = [[int(y) for y in x.split(";")] if x.strip() else [0]
-                                   for x in weapons[weapon].get(dt, "|" * 11).split("|")]
+            weapons[weapon][dt] = [
+                [int(y) for y in x.split(";")] if x.strip() else [0]
+                for x in weapons[weapon].get(dt, "|" * 11).split("|")
+            ]
     return weapons
 
 
 def dataset(modifier):
     import pandas
-    return pandas.read_csv("roll_frequencies_" + str(modifier) + ".csv",
-                           names=["D1", "D2", "D3", "D4", "D5", "frequency"])
+
+    return pandas.read_csv(
+        "roll_frequencies_" + str(modifier) + ".csv",
+        names=["D1", "D2", "D3", "D4", "D5", "frequency"],
+    )
 
 
 def select_modified(selector, series):
@@ -200,7 +231,7 @@ def chances(selector, modifier=0, number_of_quantiles=None):
         with open("unordered_data") as f:
             for line in f.readlines():
                 if line.startswith(str(selector)):
-                    occurrences = ast.literal_eval(line[len(str(selector)):])[modifier]
+                    occurrences = ast.literal_eval(line[len(str(selector)) :])[modifier]
                     break
             if not occurrences:
                 yield "did not find" + str(selector)
@@ -230,7 +261,9 @@ def chances(selector, modifier=0, number_of_quantiles=None):
                 res += f"{k:5d} {100 * occurrences[k] / total: >5.2f} {'#' * int(40 * occurrences[k] / max_val)}\n"
         total = sum(occurrences.values())
         avg = sum(k * v for k, v in occurrences.items()) / total
-        dev = math.sqrt(sum(((k - avg) ** 2) * v for k, v in occurrences.items()) / total)
+        dev = math.sqrt(
+            sum(((k - avg) ** 2) * v for k, v in occurrences.items()) / total
+        )
         yield (res, avg, dev)
     else:
         yield "generating graph..."
@@ -238,10 +271,18 @@ def chances(selector, modifier=0, number_of_quantiles=None):
         fx = sorted(list(occurrences.keys()))
         f = interp1d(fx, fy, kind=2, bounds_error=False, fill_value=0)
         import matplotlib.pyplot as plt
+
         plt.figure()
-        plt.bar(range(1, len(occurrences.values()) + 1), [1 * x / total for x in occurrences.values()],
-                facecolor='green', alpha=0.75, linewidth=1)
-        linx = numpy.linspace(1, max(occurrences.keys()) + 1, max(occurrences.keys()) * 10)
+        plt.bar(
+            range(1, len(occurrences.values()) + 1),
+            [1 * x / total for x in occurrences.values()],
+            facecolor="green",
+            alpha=0.75,
+            linewidth=1,
+        )
+        linx = numpy.linspace(
+            1, max(occurrences.keys()) + 1, max(occurrences.keys()) * 10
+        )
         integratedsum = 1
         quantiles = [0]
         if number_of_quantiles:
@@ -253,9 +294,12 @@ def chances(selector, modifier=0, number_of_quantiles=None):
                     n = max(min(int(number_of_quantiles), 100), 0) + 1
                     quantiles = [0]
                     for q in [1 / n for _ in range(n - 1)]:
-                        quantiles.append(fsolve(func=helper(f, integratedsum, q, quantiles[-1]),
-                                                x0=numpy.array([quantiles[-1]] if quantiles[-1]
-                                                               else 1)))
+                        quantiles.append(
+                            fsolve(
+                                func=helper(f, integratedsum, q, quantiles[-1]),
+                                x0=numpy.array([quantiles[-1]] if quantiles[-1] else 1),
+                            )
+                        )
                     tries += 3
                 except Exception as e:
                     print("exception in calculating:", e, n)
@@ -269,10 +313,14 @@ def chances(selector, modifier=0, number_of_quantiles=None):
             plt.xticks(list(range(1, max(occurrences.keys()) + 1)))
         plt.ylim(ymin=0.0)
         plt.xlim(xmin=0.0)
-        plt.title(", ".join([str(x) for x in selector]) + "@5" + (("R" + str(modifier)) if modifier else ""))
+        plt.title(
+            ", ".join([str(x) for x in selector])
+            + "@5"
+            + (("R" + str(modifier)) if modifier else "")
+        )
         plt.ylabel("%")
         yield "sending data..."
-        plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
+        plt.savefig(buf, format="png", bbox_inches="tight", pad_inches=0)
         plt.show()
         plt.close()
         buf.seek(0)
