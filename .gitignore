@@ -8,3 +8,5 @@
 /Data/weaponstuff_internal
 /NossiSite/static/graphdata.json
 /.idea/
+/.coverage
+/letsencryptbackup.tar.gz
