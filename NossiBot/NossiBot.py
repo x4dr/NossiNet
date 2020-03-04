@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import os
+import pathlib
 import random
 import re
 import shelve
@@ -18,7 +19,7 @@ from NossiPack import WoDParser, fengraph
 from NossiPack.krypta import DescriptiveError, read_nonblocking
 
 bufferfile = "NossiBotBuffer"
-
+shutdownflag = pathlib.Path("shutdown_nossibot")
 remindfile = os.path.expanduser("~/reminders.txt")
 remindnext = os.path.expanduser("~/reminers_next.txt")
 numemoji = ("1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟")
@@ -411,6 +412,9 @@ async def tick():
         next_call += 10
         if client.is_closed():
             break
+        if shutdownflag.exists():
+            shutdownflag.unlink()
+            await client.close()
         await asyncio.sleep(next_call - time.time())
 
 
