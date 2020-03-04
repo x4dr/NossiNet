@@ -317,7 +317,7 @@ class WoDParser(object):
             times = min(
                 times,
                 int(
-                    (self.triggers.get("max", 0) or 39)
+                    (self.triggers.get("max", 0) or 100)
                     if not self.triggers.get("limitbreak", None)
                     else 500
                 ),

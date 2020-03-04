@@ -232,6 +232,19 @@ async def rollhandle(msg, comment, send, author):
             "\n".join(x.name + ": " + x.roll_v() for x in p.rolllogs if x.roll_v())
             + "\n"
         )
+
+    if len(reply) > 1950:
+        last = ""
+        reply = ""
+        for x in p.rolllogs:
+            if not x.roll_v():
+                continue  # skip empty rolls
+            if x.name != last:
+                last = x.name
+                reply += "\n" + x.name + ": " + x.roll_v()
+            else:
+                reply += ", " + str(x.result)
+        reply = reply.strip("\n") + "\n"
     if p.triggers.get("verbose", None):
         if r is None:
             print(msg, "lead to noneroll!")
@@ -255,7 +268,7 @@ async def rollhandle(msg, comment, send, author):
                     + " "
                     + msg
                     + ":\n"
-                    + reply[:1000]
+                    + reply[: max(4000 - len(tosend), 0)]
                     + "..."
                     + r.roll_v()
                 )
