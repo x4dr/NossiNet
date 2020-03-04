@@ -13,10 +13,6 @@ jobs:
           ignore: E722,W503
           maxlinelength: 160
           repotoken: ${{ secrets.GITHUB_TOKEN }}
-      - name: Test with pytest
-        run: |
-          pip install pytest
-          pytest
       - name: Setup Python environment
         uses: actions/setup-python@v1.1.1
         with:
@@ -33,4 +29,4 @@ jobs:
       - name: Run unittests
         run: |
           pip3 install pytest
-          pytest
+          python3 -m pytest
