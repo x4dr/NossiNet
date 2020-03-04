@@ -28,5 +28,6 @@ jobs:
           python3 NossiNet.py test
       - name: Run unittests
         run: |
+          . .venv/bin/activate
           pip3 install pytest
           python3 -m pytest
