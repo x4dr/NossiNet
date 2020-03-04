@@ -209,24 +209,6 @@ def before_request():
         updatewikitags()
 
 
-#    try:
-#        print(request.remote_addr, " => ", request.path,
-#              ">", session.get('user', '?'), "<")
-#    except:
-#        print("exception while printing before request")
-
-"""
-@app.after_request
-def after_request(x):
-    return x
-    try:
-        print(request.remote_addr, " done ", request.path,
-              ">", session.get('user', '?'), "<")
-    except:
-        print("exception while printing after request")
-    return x"""
-
-
 @app.teardown_request
 def teardown_request(exception: Exception):
     db = getattr(g, "db", None)

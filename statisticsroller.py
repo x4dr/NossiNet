@@ -53,7 +53,8 @@ def plot(data, showsucc=False, showgraph=True, showdmgmods=False, grouped=1):
         )
         print(
             "The percentages are:\n+ : %f.3%%\n0 : %f.3%%\n- : %f.3%%"
-            % (success / pt, zeros / pt, botches / pt))
+            % (success / pt, zeros / pt, botches / pt)
+        )
 
         barsuc = int((success / pt) / width)
         barbot = int((botches / pt) / width)

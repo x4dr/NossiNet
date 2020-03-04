@@ -88,4 +88,3 @@ create table if not exists configs
 
 create unique index if not exists configs_user_option_uindex
 	on configs (user, option);
-

@@ -70,7 +70,8 @@ class User(object):
             "discord": "not set",
             "fensheet_dots": "1",
             "fensheet_dot_max": "5",
-            "character_sheet": "",  # anything but a valid charactersheet defaults to vampire sheet
+            "character_sheet": "",
+            # anything but a valid charactersheet defaults to vampire sheet
         }
 
         res.update(Config.loadall(self.username))
@@ -127,12 +128,14 @@ class Config(object):
         db = db or connect_db()
         if Config.load(user, option, db) is not None:
             db.execute(
-                "UPDATE configs SET value = :value WHERE user LIKE :user AND option LIKE :option;",
+                "UPDATE configs SET value = :value "
+                "WHERE user LIKE :user AND option LIKE :option;",
                 dict(user=user, option=option, value=value),
             )
         else:
             db.execute(
-                "INSERT INTO configs(user,option,value) VALUES (:user, :option, :value);",
+                "INSERT INTO configs(user,option,value) "
+                "VALUES (:user, :option, :value);",
                 dict(user=user, option=option, value=value),
             )
         db.commit()
@@ -184,7 +187,8 @@ class Userlist(object):
                     )
                 except Exception as e:
                     print(
-                        f"unknown db exception of type {type(e)}: {e} start of row: {str(row[:100])}\n___\n{e.args}"
+                        f"unknown db exception of type {type(e)}: "
+                        f"{e} start of row: {str(row[:100])}\n___\n{e.args}"
                     )
         else:
             cur = db.execute(
@@ -203,7 +207,8 @@ class Userlist(object):
         db.close()
 
     def saveuserlist(self):
-        # writes/overwrites the SQL table with the maybe changed list. this is not performant at all
+        # writes/overwrites the SQL table with the maybe changed list.
+        # this is not performant at all
         db = connect_db()
         for u in self.userlist:
             if u.sheet.checksum() != 0:
@@ -217,9 +222,10 @@ class Userlist(object):
                     admin=u.admin,
                 )
                 db.execute(
-                    "INSERT OR REPLACE INTO users (username, passwordhash, funds, "
-                    "sheet, oldsheets, defines, admin) "
-                    "VALUES (:username,:pwhash, :funds, :sheet, :oldsheets, :defines, :admin)",
+                    "INSERT OR REPLACE INTO users "
+                    "(username, passwordhash, funds, sheet, oldsheets, defines, admin) "
+                    "VALUES (:username,:pwhash, :funds, :sheet, :oldsheets, "
+                    ":defines, :admin)",
                     d,
                 )
             else:
@@ -235,8 +241,10 @@ class Userlist(object):
                     "INSERT OR REPLACE INTO users (username, passwordhash, funds,  "
                     "sheet, oldsheets, defines, admin) "
                     "VALUES (:username,:pwhash, :funds,"
-                    "COALESCE((SELECT sheet FROM users WHERE username = :username), :emptysheet),"
-                    "COALESCE((SELECT oldsheets FROM users WHERE username = :username), ''),"
+                    "COALESCE((SELECT sheet FROM users WHERE username = :username), "
+                    ":emptysheet),"
+                    "COALESCE((SELECT oldsheets FROM users WHERE username = "
+                    ":username), ''),"
                     " :defines, :admin)",
                     d,
                 )

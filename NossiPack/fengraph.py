@@ -76,7 +76,8 @@ def supply_graphdata():
                 damages = ast.literal_eval(f.read())
             else:
                 print(
-                    f"fengraph hashes: {str(nmd5).strip()} != {str(wmd5).strip()}, so graphdata will be regenerated"
+                    f"fengraph hashes: {str(nmd5).strip()} != "
+                    f"{str(wmd5).strip()}, so graphdata will be regenerated"
                 )
                 damages = {}
     except SyntaxError as e:
@@ -258,13 +259,16 @@ def chances(selector, modifier=0, number_of_quantiles=None):
         res = ""
         for k in sorted(occurrences):
             if occurrences[k]:
-                res += f"{k:5d} {100 * occurrences[k] / total: >5.2f} {'#' * int(40 * occurrences[k] / max_val)}\n"
+                res += (
+                    f"{k:5d} {100 * occurrences[k] / total: >5.2f} "
+                    f"{'#' * int(40 * occurrences[k] / max_val)}\n"
+                )
         total = sum(occurrences.values())
         avg = sum(k * v for k, v in occurrences.items()) / total
         dev = math.sqrt(
             sum(((k - avg) ** 2) * v for k, v in occurrences.items()) / total
         )
-        yield (res, avg, dev)
+        yield res, avg, dev
     else:
         yield "generating graph..."
         fy = [x / total for x in occurrences.values()]

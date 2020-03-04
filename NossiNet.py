@@ -1,9 +1,6 @@
 import sys
 from NossiSite import app, socketio
 
-# import os
-# print(os.getcwd()) #this is where the database will be, allowing for multiple servers to run on different databases
-
 if __name__ == "__main__":
     test = False
     if len(sys.argv) > 1 and sys.argv[1] == "test":

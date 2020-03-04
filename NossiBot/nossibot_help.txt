@@ -44,6 +44,3 @@ Examplerolls:
 &loop 3g 9& rolls 9 times the sum of 3 10 sided dice
 &loopsum 3g 9& also adds those together
 aaand probably some more
-
-
-

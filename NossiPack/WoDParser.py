@@ -111,8 +111,10 @@ class WoDParser(object):
         r"(?#   )(?P<sort>s)?"  # sorting rolls
         r"(?# )(?P<operation>"  # what is happening with the roll
         r"(?#   )(?P<against>"  # rolling against a value for successes
-        r"(?#     )(?P<onebehaviour>[ef]) *"  # e is without subtracting 1, f is with subtracting a success on a 1
-        r"(?#     )(?P<difficulty>([1-9][0-9]{0,4})|([0-9]{0,4}[1-9])))|"  # difficulty 1-99999
+        r"(?#     )(?P<onebehaviour>[ef]) *"  # e is without subtracting 1,
+        # f is with subtracting a success on a 1
+        r"(?#     )(?P<difficulty>([1-9][0-9]{0,4})|([0-9]{0,4}[1-9])))|"
+        # difficulty 1-99999
         r"(?#   )(?P<sum>g)|"  # summing rolls up instead
         r"(?#   )(?P<maximum>h)| *"  # taking the maximum value of the roll
         r"(?#   )(?P<minimum>l))? *"  # taking the minimum value of the roll
@@ -332,7 +334,8 @@ class WoDParser(object):
                     return ""  # defines updated
             except:
                 raise DescriptiveError(
-                    'Values malformed. Expected: "&values key:value, key:value, key:value&"'
+                    "Values malformed. Expected: "
+                    '"&values key:value, key:value, key:value&"'
                 )
         elif triggername == "param":
             try:
@@ -344,7 +347,8 @@ class WoDParser(object):
                 return ""  # no substitution to be made
             except:
                 raise DescriptiveError(
-                    'Parameter malformed. Expected: "&param key1 key2 key3& [...] value1 value2 value3"'
+                    'Parameter malformed. Expected: "&param key1 key2 key3& [...] '
+                    'value1 value2 value3"'
                 )
         elif "if" == triggername:
             # &if a then b else c&
@@ -408,12 +412,14 @@ def fullparenthesis(
     text: str, opening: str = "(", closing: str = ")", include=False
 ) -> str:
     """
-    Finds the text within a parenthesis (or other bounding strings that work like parenthesis)
+    Finds the text within a parenthesis
+    (or other bounding strings that work like parenthesis)
     :param text: the text to be searched
     :param opening: start token
     :param closing: end token
     :param include: if True, the opening and closing parts will be included
-    :return: text between first opening token and first matching closing token or complete text on failure
+    :return: text between first opening token and first matching
+    closing token or complete text on failure
     """
     if opening not in text:
         return text
