@@ -104,9 +104,7 @@ class TestWoDParser(TestCase):
         p = WoDParser()
 
         r = p.make_roll("99,99@20s!!")
-        print(r.roll_v())
-        if r.result != 20:
-            self.assertFalse(r.result)
+        self.assertIsInstance(r.result, int)
 
     def test_fullparenthesis(self):
         self.assertEqual(
