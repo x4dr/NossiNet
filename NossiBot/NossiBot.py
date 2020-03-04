@@ -20,6 +20,8 @@ from NossiPack.krypta import DescriptiveError, read_nonblocking
 
 bufferfile = "NossiBotBuffer"
 shutdownflag = pathlib.Path("shutdown_nossibot")
+if shutdownflag.exists():
+    shutdownflag.unlink()  # ignore previously set shutdown
 remindfile = os.path.expanduser("~/reminders.txt")
 remindnext = os.path.expanduser("~/reminers_next.txt")
 numemoji = ("1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟")
@@ -54,10 +56,10 @@ async def reminders(clearjob=None):
     jobs = []
     nextevent = 600
     with open(remindfile, "r") as f:
-        for l in f.readlines():
-            print(l)
+        for line in f.readlines():
+            print(line)
             channelid, jobid, date, message, repeat, interval = [
-                p.strip() for p in l.split(";")
+                p.strip() for p in line.split(";")
             ]
             date = int(date)
             if date < time.time():
@@ -245,9 +247,19 @@ async def rollhandle(msg, comment, send, author):
         )
     else:
         try:
-            sent = await send(
-                author.mention + comment + " " + msg + ":\n" + reply + r.roll_v()
-            )
+            tosend = author.mention + comment + " " + msg + ":\n" + reply + r.roll_v()
+            if len(tosend) > 2000:
+                tosend = (
+                    author.mention
+                    + comment
+                    + " "
+                    + msg
+                    + ":\n"
+                    + reply[:1000]
+                    + "..."
+                    + r.roll_v()
+                )
+            sent = await send(tosend)
             if r.selectors and r.result >= r.max * len(r.selectors):
                 await sent.add_reaction("\U0001f4a5")
             if r.max == 10 and (r.selectors or r.amount == 5):
@@ -259,9 +271,10 @@ async def rollhandle(msg, comment, send, author):
                         await sent.add_reaction(numemoji_2[amplitude - 2])
 
         except Exception as e:
+            ermsg = f"big oof during rolling {' '.join(e.args)},{str(r)[:100]}, {msg}"
             if errreport:  # query for error
-                await author.send("big oof during rolling ", r, msg, " ".join(e.args))
-            print("big oof during rolling ", r, msg, " ".join(e.args))
+                await author.send(ermsg[:2000])
+            print(ermsg)
 
 
 async def weaponhandle(msg, comment, send, author):
