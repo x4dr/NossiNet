@@ -21,10 +21,17 @@ jobs:
         run: |
           . .venv/bin/activate
           python3 NossiNet.py test
-      - name: Run unittests
+      - name: Run unittests/coverage
         run: |
           . .venv/bin/activate
-          python3 -m pytest
+          coverage run --source . --omit "venv/*" -m unittest discover --verbose tests
+          coverage report -m -i --fail-under=20 --skip-covered --skip-empty | tee report.txt
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v1
+        with:
+          name: coverage_report
+          path: report.txt
+
   Lint:
     name: Pre-Commit Hooks that should have been run by committer
     runs-on: ubuntu-latest

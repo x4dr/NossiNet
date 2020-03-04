@@ -201,11 +201,9 @@ class WoDParser(object):
             roll = Node(roll, 0)
             self.pretrigger(roll)
             res = self.resolveroll(roll, 0)
-            print("returning resolved roll:", res)
             return res
         self.resolvedefines(roll)
         for k, vs in roll.dependent.items():
-            print(vs)
             for v in vs:
                 if v is None:
                     toreplace = ""

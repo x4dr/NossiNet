@@ -259,19 +259,30 @@ async def rollhandle(msg, comment, send, author):
             + r.roll_vv(p.triggers.get("verbose"))
         )
     else:
+        tosend = "uninitialized"
         try:
-            tosend = author.mention + comment + " " + msg + ":\n" + reply + r.roll_v()
+            tosend = (
+                author.mention
+                + comment
+                + " "
+                + msg
+                + ":\n"
+                + reply
+                + (r.roll_v() if not reply.endswith(r.roll_v() + "\n") else "")
+            )
             if len(tosend) > 2000:
                 tosend = (
-                    author.mention
-                    + comment
-                    + " "
-                    + msg
-                    + ":\n"
-                    + reply[: max(4000 - len(tosend), 0)]
-                    + "..."
-                    + r.roll_v()
+                    f"{author.mention}"
+                    f"{comment} "
+                    f"{msg}:\n"
+                    f"{reply[: max(4000 - len(tosend), 0)]} [...]"
+                    f"{r.roll_v()}"
                 )
+            if len(tosend) > 2000:
+                tosend = (
+                    author.mention + comment + " " + msg + ":\n" + r.name + ": [...]"
+                )
+                tosend += r.roll_v()[-(2000 - len(tosend)) :]
             sent = await send(tosend)
             if r.selectors and r.result >= r.max * len(r.selectors):
                 await sent.add_reaction("\U0001f4a5")
@@ -284,7 +295,12 @@ async def rollhandle(msg, comment, send, author):
                         await sent.add_reaction(numemoji_2[amplitude - 2])
 
         except Exception as e:
-            ermsg = f"big oof during rolling {' '.join(e.args)},{str(r)[:100]}, {msg}"
+            problem = str(e)
+            ermsg = (
+                f"big oof during rolling {problem}\n"
+                f"length:{len(tosend)} \n "
+                f"first 100 {tosend[:100]}"
+            )
             if errreport:  # query for error
                 await author.send(ermsg[:2000])
             print(ermsg)

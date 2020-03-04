@@ -1,11 +1,11 @@
 import collections
-import json
 import pickle
 import re
 import time
 from random import randint, shuffle
 from urllib import request
 
+from Data import locale_data
 from NossiPack.Character import Character, intdef
 
 __author__ = "maric"
@@ -786,8 +786,7 @@ class VampireCharacter(Character):
 
     @staticmethod
     def zero_abilities():
-        with open("./NossiSite/locales/EN.json") as json_data:
-            return json.load(json_data)["abilities"]
+        return locale_data["abilities"]
 
     @staticmethod
     def zero_specials():

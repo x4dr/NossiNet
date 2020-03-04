@@ -282,7 +282,9 @@ class WoDDice(object):
             else sum(self.r)
             if self.returnfun == "sum"
             else None
-            if self.returnfun == ""
+            if self.returnfun in ["", "None", "none"]
+            else self.amount
+            if self.returnfun in ["id"]
             else error("No return function!")
         )
 

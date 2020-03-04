@@ -1,18 +1,18 @@
-from NossiPack import WoDData, WoDParser, Userlist, VampireCharacter
-from NossiPack.Chatrooms import Chatroom
 import time
-import json
-
-from NossiSite.base import app, socketio
 
 from flask import render_template, session, request, flash, url_for, redirect
 from flask_socketio import emit, join_room, leave_room, disconnect
 
+from Data import locale_data
+from NossiPack import WoDData, WoDParser, Userlist, VampireCharacter
+from NossiPack.Chatrooms import Chatroom
+from NossiSite.base import app, socketio
+
 userlist = {}
 roomlist = [Chatroom("lobby")]
 
-with open("./NossiSite/locales/EN.json") as json_data:
-    namedStrings = json.load(json_data)["namedStrings"]
+
+namedStrings = locale_data["namedStrings"]
 
 
 def statusupdate():
@@ -150,8 +150,7 @@ def defines(message="=", user=None):
 
 
 def shorthand():
-    with open("./NossiSite/locales/EN.json") as locale_json:
-        return json.load(locale_json)["shorthand"]
+    return locale_data["shorthand"]
 
 
 def printroll(roll, parser=None, testing=False, message=""):

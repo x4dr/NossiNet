@@ -903,19 +903,6 @@ def impressum():
     return render_template("Impressum.html")
 
 
-@app.route("/tickerdata/<referrer>")
-def tickerdata(referrer):
-    result = {"data": "- - - - -"}
-    with open("NossiSite/locales/newsEN.json") as f:
-        news = json.loads(f.read())
-    if referrer == "show_entries.html":
-        result["data"] = news["mainpage"]
-    else:
-        result["data"] = ""
-
-    return json.dumps(result)
-
-
 @app.route("/boardgame<int:size>_<seed>.json")
 @app.route("/boardgame<int:size>_.json")
 def boardgamemap(size, seed=""):
