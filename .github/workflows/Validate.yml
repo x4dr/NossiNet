@@ -13,6 +13,11 @@ jobs:
           ignore: E722,W503
           maxlinelength: 160
           repotoken: ${{ secrets.GITHUB_TOKEN }}
+  test:
+    name: Test-Suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
       - name: Setup Python environment
         uses: actions/setup-python@v1.1.1
         with:
@@ -22,12 +27,11 @@ jobs:
           python3 -m venv .venv
           . .venv/bin/activate
           pip install -r requirements.txt
-      - name: Run quick test (NossiNet)
+      - name: Run Smoketest (NossiNet able to access "/")
         run: |
           . .venv/bin/activate
           python3 NossiNet.py test
       - name: Run unittests
         run: |
           . .venv/bin/activate
-          pip3 install pytest
           python3 -m pytest
