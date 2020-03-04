@@ -3,7 +3,7 @@ python:
   - "3.8"
 install:
   - pip install -r requirements.txt
-script:
+script: >
   pip install coveralls
   coverage run --source . --omit "venv/*" -m unittest discover --verbose tests
   coveralls
