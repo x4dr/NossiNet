@@ -7,6 +7,7 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - uses: tonybajan/flake8-check-action@v1.0.0
         with:
           ignore: E722,W503,E203
