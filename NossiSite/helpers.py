@@ -13,21 +13,20 @@ from typing import Tuple, List, Union, Dict
 import bleach
 import markdown
 import numexpr
-from flask import request, session, g, redirect, url_for, \
-    render_template, flash
+from flask import request, session, g, redirect, url_for, render_template, flash
 from markupsafe import Markup
 
 from NossiPack import User
 from NossiPack.FenCharacter import FenCharacter
+from NossiPack.fengraph import weapondata
 from NossiPack.krypta import DescriptiveError, write_nonblocking, is_int
 from NossiSite.base import app
-from fengraph import weapondata
 
 log = logging.getLogger("frontend")
 fh = logging.FileHandler("nossilog.log", mode="w")
 fh.setLevel(logging.DEBUG)
 log.addHandler(fh)
-logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s')
+logging.basicConfig(format="%(asctime)s %(levelname)s:%(message)s")
 log.setLevel(logging.DEBUG)
 wikipath = Path.home() / "wiki"
 
@@ -54,7 +53,7 @@ def wikindex() -> Tuple[List[Path], Dict]:
 
 def wikisave(page, author, title, tags, body):
     print("saving ...")
-    with (wikipath / (page + ".md")).open('w+') as f:
+    with (wikipath / (page + ".md")).open("w+") as f:
         f.write("title: " + title + "  \n")
         f.write("tags: " + " ".join(tags) + "  \n")
         f.write(body.replace("\n", ""))
@@ -113,7 +112,7 @@ def update_discord_bindings(user, page):
     d = u.config("discord", "not set")
     c = u.config("character_sheet", "")
     if c + "_character" == page and re.match(r".*#\d{4}$", d):
-        buffer_name = 'NossiBotBuffer'
+        buffer_name = "NossiBotBuffer"
         char = FenCharacter()
         char.load_from_md(*wikiload(page))
         definitions = {}
@@ -122,14 +121,23 @@ def update_discord_bindings(user, page):
                 for statname, stat in sec.items():
                     if statname.strip() and is_int(stat):
                         if definitions.get(statname, None) is None:
-                            definitions[statname.strip()] = ".".join([catname.strip(),
-                                                                      secname.strip(),
-                                                                      statname.strip()])
+                            definitions[statname.strip()] = ".".join(
+                                [catname.strip(), secname.strip(), statname.strip()]
+                            )
                             definitions[statname.strip().lower()] = statname.strip()
-                        definitions[".".join([catname.strip(), secname.strip(), statname.strip()])] = stat.strip()
+                        definitions[
+                            ".".join(
+                                [catname.strip(), secname.strip(), statname.strip()]
+                            )
+                        ] = stat.strip()
 
-        data = "\n".join([f"{d} {user} message: undef {catname}.*" for catname in char.Categories.keys()]
-                         + [f"{d} {user} message: def {k} = {v}" for k, v in definitions.items()])
+        data = "\n".join(
+            [
+                f"{d} {user} message: undef {catname}.*"
+                for catname in char.Categories.keys()
+            ]
+            + [f"{d} {user} message: def {k} = {v}" for k, v in definitions.items()]
+        )
         try:
             write_nonblocking(buffer_name, data)
         except OSError as oe:
@@ -141,35 +149,35 @@ def update_discord_bindings(user, page):
 
 
 def generate_token():
-    if not session['logged_in']:
+    if not session["logged_in"]:
         raise DescriptiveError("Not Logged in.")
-    return session['print']  # only one token per session for now.
+    return session["print"]  # only one token per session for now.
 
 
 def init_db():
     print("initializing DB")
     with closing(connect_db("initialization")) as db:
-        with app.open_resource('../schema.sql', mode='r') as f:
+        with app.open_resource("../schema.sql", mode="r") as f:
             db.cursor().executescript(f.read())
         db.commit()
 
 
-@app.template_filter('quoted')
+@app.template_filter("quoted")
 def quoted(s):
-    quotedstring = re.findall('\'([^\']*)\'', str(s))
+    quotedstring = re.findall("'([^']*)'", str(s))
     if quotedstring:
         return quotedstring[0]
     return None
 
 
-@app.template_filter('remove_leading_underscore')
+@app.template_filter("remove_leading_underscore")
 def underscore_remove(s):
     while s and s[0] == "_":
         s = s[1:]
     return s
 
 
-@app.template_filter('markdown')
+@app.template_filter("markdown")
 def markdownfilter(s):
     if s is None:
         return ""
@@ -185,13 +193,13 @@ def markdownfilter(s):
 
 def connect_db(source):
     try:
-        db = getattr(g, 'db', None)
+        db = getattr(g, "db", None)
         if db:
             return db
     except:
         pass  # just connect normally
-    print("connecting to", app.config['DATABASE'], "from", source)
-    return sqlite3.connect(app.config['DATABASE'])
+    print("connecting to", app.config["DATABASE"], "from", source)
+    return sqlite3.connect(app.config["DATABASE"])
 
 
 @app.before_request
@@ -201,27 +209,9 @@ def before_request():
         updatewikitags()
 
 
-#    try:
-#        print(request.remote_addr, " => ", request.path,
-#              ">", session.get('user', '?'), "<")
-#    except:
-#        print("exception while printing before request")
-
-"""
-@app.after_request
-def after_request(x):
-    return x
-    try:
-        print(request.remote_addr, " done ", request.path,
-              ">", session.get('user', '?'), "<")
-    except:
-        print("exception while printing after request")
-    return x"""
-
-
 @app.teardown_request
 def teardown_request(exception: Exception):
-    db = getattr(g, 'db', None)
+    db = getattr(g, "db", None)
     if db is not None:
         db.close()
     if exception:
@@ -232,7 +222,11 @@ def teardown_request(exception: Exception):
 
 
 def updatewikitags():
-    print("it has been " + str(time.time() - wikistamp[0]) + " seconds since the last wiki indexing")
+    print(
+        "it has been "
+        + str(time.time() - wikistamp[0])
+        + " seconds since the last wiki indexing"
+    )
     wikistamp[0] = time.time()
     for m in wikindex()[0]:
         wikitags[m] = wikiload(m)[1]
@@ -246,13 +240,13 @@ def gettoken():
 
 
 def gentoken():
-    return session.get('print', None)
+    return session.get("print", None)
 
 
 def checklogin():
-    if not session.get('logged_in'):
-        flash('You are not logged in!')
-        raise Exception("REDIR", redirect(url_for('login', r=request.path[1:])))
+    if not session.get("logged_in"):
+        flash("You are not logged in!")
+        raise Exception("REDIR", redirect(url_for("login", r=request.path[1:])))
 
 
 @app.errorhandler(Exception)
@@ -302,7 +296,10 @@ def calculate(calc, par):
     else:
         print(par)
         loose_par += [x for x in par.split(",") if ":" not in x]
-        par = {x.upper(): y for x, y in [pair.split(":") for pair in par.split(",") if ":" in pair]}
+        par = {
+            x.upper(): y
+            for x, y in [pair.split(":") for pair in par.split(",") if ":" in pair]
+        }
     for k, v in par.items():
         calc = calc.replace(k, v)
     missing = None
@@ -329,15 +326,21 @@ def weapontable(w, mods="", json=False):
         data = {k.lower(): v for k, v in data.items()}
         weapon = data.get(w.lower(), None)
         if weapon is None:
-            raise DescriptiveError(w.lower() + " does not exist in " + " ".join(data.keys()))
+            raise DescriptiveError(
+                w.lower() + " does not exist in " + " ".join(data.keys())
+            )
         for mod in mods.split(","):
             mod = mod.strip()
             if not mod:
                 continue
-            modregex = re.compile(r"^(?P<direction>[LR])(?P<sharp>X?)(?P<amount>-?\d+)(?P<apply>[HSCB]+)$")
+            modregex = re.compile(
+                r"^(?P<direction>[LR])(?P<sharp>X?)(?P<amount>-?\d+)(?P<apply>[HSCB]+)$"
+            )
             match = modregex.match(mod)
             if not match:
-                raise DescriptiveError("Modifier Code " + mod + " does not match the format!")
+                raise DescriptiveError(
+                    "Modifier Code " + mod + " does not match the format!"
+                )
             match = match.groupdict()
             if match["direction"] == "L":
                 direction = -1
@@ -364,7 +367,9 @@ def weapontable(w, mods="", json=False):
                 if a == "S":
                     weapon["Stechen"] = weaponadd(weapon["Stechen"], addition, sharp)
                 if a == "C":
-                    weapon["Schneiden"] = weaponadd(weapon["Schneiden"], addition, sharp)
+                    weapon["Schneiden"] = weaponadd(
+                        weapon["Schneiden"], addition, sharp
+                    )
                 if a == "B":
                     weapon["Schlagen"] = weaponadd(weapon["Schlagen"], addition, sharp)
 
@@ -374,16 +379,37 @@ def weapontable(w, mods="", json=False):
         if json:
             return weapon
         else:
-            return markdown.markdown(render_template("weapontable.html",
-                                                     data=weapon), extensions=["tables"])
+            return markdown.markdown(
+                render_template("weapontable.html", data=weapon), extensions=["tables"]
+            )
     except Exception as e:
-        return '<div style="color: red"> WeaponCode Invalid: ' + " ".join(e.args) + ' </div>'
+        return (
+            '<div style="color: red"> WeaponCode Invalid: '
+            + " ".join(e.args)
+            + " </div>"
+        )
 
 
 def fill_infolets(body):
-    bleach_ok_list = ["br", "u", "p", "table", "th", "tr", "td",
-                      "tbody", "thead", "tfoot", "h2", "h3", "h4", "h5", "h6",
-                      "div", "hr"]
+    bleach_ok_list = [
+        "br",
+        "u",
+        "p",
+        "table",
+        "th",
+        "tr",
+        "td",
+        "tbody",
+        "thead",
+        "tfoot",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "div",
+        "hr",
+    ]
 
     def gettable(match):
         return weapontable(match.group("ref"), match.group("mod"))
@@ -405,19 +431,29 @@ def fill_infolets(body):
         if not article:
             article = "[[not found]]"
         elif hide_headline:
-            article = article[article.find("\n") * hide_headline:]
-        return markdown.markdown(bleach.clean(article, tags=bleach_ok_list), extensions=["tables", "toc", "nl2br"])
+            article = article[article.find("\n") * hide_headline :]
+        return markdown.markdown(
+            bleach.clean(article, tags=bleach_ok_list),
+            extensions=["tables", "toc", "nl2br"],
+        )
 
     def hide(func):
         def hidden(text):
             header = text.group("name") or text.group(0).strip("[]")
-            return "<div class=hideable><b> " + header + "</b></div>""<div>" + func(text) + "</div>"
+            return (
+                "<div class=hideable><b> " + header + "</b></div>"
+                "<div>" + func(text) + "</div>"
+            )
 
         return hidden
 
-    hiddenweapons = re.compile(r"\[(?P<name>.*?)\[\[weapon:(?P<ref>.+?):(?P<mod>.*?)\]\]\]", re.IGNORECASE)
+    hiddenweapons = re.compile(
+        r"\[(?P<name>.*?)\[\[weapon:(?P<ref>.+?):(?P<mod>.*?)\]\]\]", re.IGNORECASE
+    )
     weapons = re.compile(r"\[\[weapon:(?P<ref>.+?):(?P<mod>.*?)\]\]", re.IGNORECASE)
-    hiddeninfos = re.compile(r"\[(?P<name>.*?)\[\[specific:(?P<ref>.+?)\]\]\]", re.IGNORECASE)
+    hiddeninfos = re.compile(
+        r"\[(?P<name>.*?)\[\[specific:(?P<ref>.+?)\]\]\]", re.IGNORECASE
+    )
     infos = re.compile(r"\[\[specific:(?P<ref>.+?)\]\]", re.IGNORECASE)
     links = re.compile(r"\[(.+?)\]\((?P<ref>.+?)\)")
 
@@ -428,9 +464,9 @@ def fill_infolets(body):
 
 
 def checktoken():
-    if request.form.get('token', "None") != session.get("print", None):
+    if request.form.get("token", "None") != session.get("print", None):
         flash("invalid token!")
-        session['retrieve'] = request.form
+        session["retrieve"] = request.form
         return False
     else:
         return True
@@ -440,7 +476,7 @@ def checktoken():
 def page_not_found(e):
     if e:
         print(e)
-    return render_template('404.html'), 404
+    return render_template("404.html"), 404
 
 
 def openupdb():

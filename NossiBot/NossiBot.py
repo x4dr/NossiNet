@@ -14,11 +14,10 @@ import discord
 import requests
 from dateparser import parse as dateparse
 
-import fengraph
-from NossiPack import WoDParser
+from NossiPack import WoDParser, fengraph
 from NossiPack.krypta import DescriptiveError, read_nonblocking
 
-bufferfile = 'NossiBotBuffer'
+bufferfile = "NossiBotBuffer"
 
 remindfile = os.path.expanduser("~/reminders.txt")
 remindnext = os.path.expanduser("~/reminers_next.txt")
@@ -42,7 +41,7 @@ now = datetime.datetime.now
 
 TOKEN = open(os.path.expanduser("~/token.discord"), "r").read().strip()
 
-description = '''NossiBot in Python'''
+description = """NossiBot in Python"""
 client = discord.Client()
 repeats = {}
 lastroll = {}
@@ -56,7 +55,9 @@ async def reminders(clearjob=None):
     with open(remindfile, "r") as f:
         for l in f.readlines():
             print(l)
-            channelid, jobid, date, message, repeat, interval = [p.strip() for p in l.split(";")]
+            channelid, jobid, date, message, repeat, interval = [
+                p.strip() for p in l.split(";")
+            ]
             date = int(date)
             if date < time.time():
                 print(jobid, "relevant now")
@@ -68,10 +69,15 @@ async def reminders(clearjob=None):
                     reminddate = date + repeats[jobid] * delay
                     if time.time() > date + repeats[jobid] * delay:
                         repeats[jobid] += 1
-                        status = "" if int(repeat.split(" ")[1]) < 2 else str(repeats[jobid]) + "/" + repeat.split(" ")[
-                            1]
-                        await client.get_channel(int(channelid)).send(message + " " + status + jobid)
-                        nextevent = (reminddate + delay - time.time())
+                        status = (
+                            ""
+                            if int(repeat.split(" ")[1]) < 2
+                            else str(repeats[jobid]) + "/" + repeat.split(" ")[1]
+                        )
+                        await client.get_channel(int(channelid)).send(
+                            message + " " + status + jobid
+                        )
+                        nextevent = reminddate + delay - time.time()
                 else:
                     print("resetting")
                     repeats[jobid] = 0
@@ -83,7 +89,18 @@ async def reminders(clearjob=None):
                 nextevent = min(nextevent, date - time.time())
                 print(nextevent, "until next event")
             if repeat and (jobid != clearjob):
-                jobs.append(";".join([channelid, jobid, str(round(date)), message, repeat, str(interval)]))
+                jobs.append(
+                    ";".join(
+                        [
+                            channelid,
+                            jobid,
+                            str(round(date)),
+                            message,
+                            repeat,
+                            str(interval),
+                        ]
+                    )
+                )
             else:
                 print("job", jobid, "deleted")
     with open(remindnext, "w") as f:
@@ -92,14 +109,29 @@ async def reminders(clearjob=None):
 
 
 def newreminder(channelid, message):
-    jobid = ''.join([random.choice(string.ascii_letters).lower() for _ in range(4)])
+    jobid = "".join([random.choice(string.ascii_letters).lower() for _ in range(4)])
     print(message)
-    date, message, repeat, interval = [x.strip() for x in (message.split(";") + ["", ""])[:4]]
+    date, message, repeat, interval = [
+        x.strip() for x in (message.split(";") + ["", ""])[:4]
+    ]
     date = datetime.datetime.timestamp(dateparse(date))
-    repeat = str(round(abs(dateparse(repeat.split(" ")[0]) - datetime.datetime.now()
-                           ).total_seconds())) + " " + repeat.split(" ")[1]
-    interval = str(round(abs(dateparse(interval) - datetime.datetime.now()).total_seconds()))
-    newline = ";".join([channelid, jobid, str(round(date)), message, repeat, interval]) + "\n"
+    repeat = (
+        str(
+            round(
+                abs(
+                    dateparse(repeat.split(" ")[0]) - datetime.datetime.now()
+                ).total_seconds()
+            )
+        )
+        + " "
+        + repeat.split(" ")[1]
+    )
+    interval = str(
+        round(abs(dateparse(interval) - datetime.datetime.now()).total_seconds())
+    )
+    newline = (
+        ";".join([channelid, jobid, str(round(date)), message, repeat, interval]) + "\n"
+    )
     print("new line:", newline)
     with open(remindfile, "a") as f:
         f.write(newline)
@@ -121,7 +153,9 @@ async def oraclehandle(msg, comment, send, author):
                     await sentmessage.edit(content=author.mention + comment + " " + n)
                 else:
                     await sentmessage.delete(delay=0.1)
-                    await send(author.mention + comment, file=discord.File(n, 'graph.png'))
+                    await send(
+                        author.mention + comment, file=discord.File(n, "graph.png")
+                    )
         except Exception as e:
             print("exception during oracle show", e)
             if errreport:
@@ -136,16 +170,31 @@ async def oraclehandle(msg, comment, send, author):
             it = fengraph.chances(parameters[:-1], parameters[-1])
             sentmessage = await send(author.mention + comment + " " + next(it))
             n = ""
-            p = ", ".join([str(x) for x in parameters[:-1]]) + "@5" + (
-                ("R" + str(parameters[-1])) if parameters[-1] else "")
+            p = (
+                ", ".join([str(x) for x in parameters[:-1]])
+                + "@5"
+                + (("R" + str(parameters[-1])) if parameters[-1] else "")
+            )
             for n in it:
                 if isinstance(n, str):
                     await sentmessage.edit(content=author.mention + comment + " " + n)
             if n:
                 n, avg, dev = n
                 await sentmessage.edit(
-                    content=(author.mention + comment + "```" + p + " avg:" + str(avg) + " dev: " + str(dev)
-                             + "\n" + n + "```"))
+                    content=(
+                        author.mention
+                        + comment
+                        + "```"
+                        + p
+                        + " avg:"
+                        + str(avg)
+                        + " dev: "
+                        + str(dev)
+                        + "\n"
+                        + n
+                        + "```"
+                    )
+                )
             else:
                 raise DescriptiveError("no data!")
         except Exception as e:
@@ -176,15 +225,28 @@ async def rollhandle(msg, comment, send, author):
     lastroll[author] = msg
     reply = ""
     if isinstance(p.rolllogs, list) and len(p.rolllogs) > 1:
-        reply += "\n".join(x.name + ": " + x.roll_v() for x in p.rolllogs if x.roll_v()) + "\n"
+        reply += (
+            "\n".join(x.name + ": " + x.roll_v() for x in p.rolllogs if x.roll_v())
+            + "\n"
+        )
     if p.triggers.get("verbose", None):
         if r is None:
             print(msg, "lead to noneroll!")
-        await send(author.mention + comment + " " + msg + ":\n"
-                   + r.name + ": " + r.roll_vv(p.triggers.get("verbose")))
+        await send(
+            author.mention
+            + comment
+            + " "
+            + msg
+            + ":\n"
+            + r.name
+            + ": "
+            + r.roll_vv(p.triggers.get("verbose"))
+        )
     else:
         try:
-            sent = await send(author.mention + comment + " " + msg + ":\n" + reply + r.roll_v())
+            sent = await send(
+                author.mention + comment + " " + msg + ":\n" + reply + r.roll_v()
+            )
             if r.selectors and r.result >= r.max * len(r.selectors):
                 await sent.add_reaction("\U0001f4a5")
             if r.max == 10 and (r.selectors or r.amount == 5):
@@ -202,7 +264,11 @@ async def rollhandle(msg, comment, send, author):
 
 
 async def weaponhandle(msg, comment, send, author):
-    n = requests.get("http://127.0.0.1/" + "/".join(quote(x.strip()) for x in msg.split(":", 2)) + "/txt")
+    n = requests.get(
+        "http://127.0.0.1/"
+        + "/".join(quote(x.strip()) for x in msg.split(":", 2))
+        + "/txt"
+    )
     if n.status_code == 200:
         n = n.content.decode("utf-8")
         await send(author.mention + comment + "```" + msg + "\n" + n + "```")
@@ -212,12 +278,12 @@ async def weaponhandle(msg, comment, send, author):
 
 
 async def specifichandle(msg, comment, send, author):
-    msg = msg[len("specific:"):].strip()
+    msg = msg[len("specific:") :].strip()
     n = requests.get("http://127.0.0.1/specific/" + quote(msg.strip()) + "/raw")
     if n.status_code == 200:
         n = n.content.decode("utf-8")
         await send(author.mention + comment + "```" + msg + "\n" + n[:1950] + "```")
-        for replypart in [n[i:i + 1950] for i in range(1950, len(n), 1950)]:
+        for replypart in [n[i : i + 1950] for i in range(1950, len(n), 1950)]:
             await send("```" + replypart + "```")
         return True
     else:
@@ -228,6 +294,7 @@ async def specifichandle(msg, comment, send, author):
 async def handle_defines(msg, send, message):
     msg = msg.strip("`")
     if isinstance(message, str):  # message is name already
+
         async def error(a):
             raise Exception(a)
 
@@ -257,14 +324,16 @@ async def handle_defines(msg, send, message):
                 defstring = "defines are:\n"
                 for k, v in defines.items():
                     defstring += "def " + k + " = " + v + "\n"
-                for replypart in [defstring[i:i + 1950] for i in range(0, len(defstring), 1950)]:
+                for replypart in [
+                    defstring[i : i + 1950] for i in range(0, len(defstring), 1950)
+                ]:
                     await message.author.send(replypart)
                 return None
         define, value = [x.strip() for x in msg.split("=", 1)]
         defines[define] = value
         persist[author]["defines"] = defines
         persist["mutated"] = True
-        await message.add_reaction('\N{THUMBS UP SIGN}')
+        await message.add_reaction("\N{THUMBS UP SIGN}")
         msg = None
     elif msg.startswith("undef "):
         msg = msg[6:]
@@ -275,9 +344,9 @@ async def handle_defines(msg, send, message):
                 del defines[k]
         if change:
             persist[author][defines] = defines
-            await message.add_reaction('\N{THUMBS UP SIGN}')
+            await message.add_reaction("\N{THUMBS UP SIGN}")
         else:
-            await message.add_reaction('\N{BLACK QUESTION MARK ORNAMENT}')
+            await message.add_reaction("\N{BLACK QUESTION MARK ORNAMENT}")
         msg = None
     else:
         oldmsg = ""
@@ -286,7 +355,9 @@ async def handle_defines(msg, send, message):
             oldmsg = msg
             counter += 1
             if counter > 1000:
-                await send("... i think i have some issues with the defines.\n" + msg[:1000])
+                await send(
+                    "... i think i have some issues with the defines.\n" + msg[:1000]
+                )
             for k, v in defines.items():
                 pat = r"\b" + re.escape(k) + r"\b"
                 msg = re.sub(pat, v, msg)
@@ -300,15 +371,17 @@ def discordname(user):
 async def handle_inp(inp):
     for line in inp:
         if line.find("#") != -1:
-            name = line[:line.find("#") + 5]
-            line = line[len(name):].strip()
-            acc = line[:line.find("message: ")].strip()
-            line = line[line.find(":") + 1:].strip()
+            name = line[: line.find("#") + 5]
+            line = line[len(name) :].strip()
+            acc = line[: line.find("message: ")].strip()
+            line = line[line.find(":") + 1 :].strip()
             if persist[name].get("NossiAccount", None) == acc:
                 print(f"saving: {line, name}")
                 await handle_defines(line, None, name)
             else:
-                print("access error:", persist[name].get("NossiAccount", None), "!=", acc)
+                print(
+                    "access error:", persist[name].get("NossiAccount", None), "!=", acc
+                )
         else:
             print("received message without discord name:", line)
 
@@ -343,10 +416,10 @@ async def tick():
 
 @client.event
 async def on_ready():
-    print('Logged in as')
+    print("Logged in as")
     print("Name:", client.user.name)
     print("ID:", client.user.id)
-    print('------')
+    print("------")
     asyncio.create_task(tick())
     p = discord.Permissions(117824)
     print(discord.utils.oauth_url(client.user.id, p))
@@ -373,7 +446,7 @@ async def on_message(message: discord.Message):
     if message.author == client.user:
         return
     if msg.startswith("NossiBot") or isinstance(message.channel, discord.DMChannel):
-        msg = msg[len("NossiBot"):] if msg.startswith("NossiBot") else msg
+        msg = msg[len("NossiBot") :] if msg.startswith("NossiBot") else msg
         if msg.strip() == "help":
             with open("nossibot_help.txt") as f:
                 helpmsg = f.read()
@@ -391,7 +464,9 @@ async def on_message(message: discord.Message):
                             replypart = ""
                         else:
                             if i < len(lines):
-                                await message.author.send("```" + lines[i][:1990] + "```")
+                                await message.author.send(
+                                    "```" + lines[i][:1990] + "```"
+                                )
             return
         elif "DIE" in msg and discordname(message.author) == persist["owner"]:
             await message.add_reaction("\U0001f480")
@@ -400,13 +475,17 @@ async def on_message(message: discord.Message):
             return
         elif msg.lower().startswith("i am ") or msg.lower().startswith("who am i"):
             if msg.lower().startswith("i am"):
-                msg = msg[len("i am "):]
+                msg = msg[len("i am ") :]
                 if persist.get(discordname(message.author), None) is None:
                     persist[discordname(message.author)] = {"defines": {}}
-                persist[discordname(message.author)]["NossiAccount"] = msg.strip().upper()
+                persist[discordname(message.author)][
+                    "NossiAccount"
+                ] = msg.strip().upper()
                 await message.add_reaction("\N{THUMBS UP SIGN}")
             try:
-                await send("You are " + persist[discordname(message.author)]["NossiAccount"])
+                await send(
+                    "You are " + persist[discordname(message.author)]["NossiAccount"]
+                )
             except KeyError:
                 await send("I have no recollection of you.")
         if not isinstance(message.channel, discord.DMChannel):
@@ -416,19 +495,27 @@ async def on_message(message: discord.Message):
                 return
             elif "INVOKE" in msg:
                 try:
-                    persist["allowed_rooms"] = persist["allowed_rooms"] | {message.channel.id}
+                    persist["allowed_rooms"] = persist["allowed_rooms"] | {
+                        message.channel.id
+                    }
                 except KeyError:
                     persist["allowed_rooms"] = {message.channel.id}
-                await send("I have been invoked and shall do my duties here until BANISHed.")
+                await send(
+                    "I have been invoked and shall do my duties here until BANISHed."
+                )
                 return
 
     if message.channel.id not in persist["allowed_rooms"]:
-        if isinstance(message.channel, discord.TextChannel):  # skip nonallowed textchannels
+        if isinstance(
+            message.channel, discord.TextChannel
+        ):  # skip nonallowed textchannels
             return  # all other channels should be ok as long as the bot can read it
     if message.channel not in active_channels:
         active_channels.append(message.channel)
         if isinstance(message.channel, discord.TextChannel):
-            print("new channel:", message.channel.name, "on", message.channel.guild.name)
+            print(
+                "new channel:", message.channel.name, "on", message.channel.guild.name
+            )
     if "\n" in msg:
         for m in msg.split("\n"):
             n = message
@@ -440,7 +527,7 @@ async def on_message(message: discord.Message):
         newreminder(str(message.channel.id), msg[7:])
         await send(str(message))
     msg, comment = msg.rsplit("//", 1) if "//" in msg else (msg, "")
-    comment = (" " + comment.strip())
+    comment = " " + comment.strip()
     msg = await handle_defines(msg, send, message)
     if not msg:
         return

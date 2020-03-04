@@ -6,21 +6,22 @@ import eventlet
 from flask import Flask
 from flask_socketio import SocketIO
 from github_webhook import Webhook
-async_mode = 'eventlet'
+
+async_mode = "eventlet"
 eventlet.monkey_patch()
 
 app = Flask(__name__)
 
-DATABASE = './NN.db'
+DATABASE = "./NN.db"
 i = 0
 
 key = ""
 try:
-    with open(os.path.join(os.path.expanduser('~'), 'key'), 'r') as keyfile:
+    with open(os.path.join(os.path.expanduser("~"), "key"), "r") as keyfile:
         key = keyfile.read()
 except:
-    with open(os.path.join(os.path.expanduser('~'), 'key'), 'w') as keyfile:
-        key = ''.join(random.SystemRandom().choice(string.hexdigits) for _ in range(48))
+    with open(os.path.join(os.path.expanduser("~"), "key"), "w") as keyfile:
+        key = "".join(random.SystemRandom().choice(string.hexdigits) for _ in range(48))
         keyfile.write(key)
 
 

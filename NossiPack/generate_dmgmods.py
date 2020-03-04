@@ -39,7 +39,9 @@ def calc_mods(data, showdmgmods=False):
     for i in range(lowest, highest + 1):
         if i not in data.keys():
             data[i] = 0
-    dmgmods = [data[i // 2 * ((-1) ** (i % 2))] / total for i in range(1, len(data) + 1)]
+    dmgmods = [
+        data[i // 2 * ((-1) ** (i % 2))] / total for i in range(1, len(data) + 1)
+    ]
     print(list(i // 2 * ((-1) ** (i % 2)) for i in range(1, len(data) + 1)))
     if showdmgmods:
         print("dmgmods(adjusted):")
@@ -83,7 +85,12 @@ def generate():
     results = [(x[0], x[1]) for x in results]
 
     def calc(x):
-        return (x[0][0][0] * 1000) + (x[0][0][1] * 100) + (x[0][1][0] * 10) + x[0][1][1] * 1
+        return (
+            (x[0][0][0] * 1000)
+            + (x[0][0][1] * 100)
+            + (x[0][1][0] * 10)
+            + x[0][1][1] * 1
+        )
 
     try:
         with open("5d10_ordered_data", "w") as f:

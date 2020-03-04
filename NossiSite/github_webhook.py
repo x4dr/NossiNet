@@ -8,7 +8,9 @@ from NossiSite.base import webhook
 @webhook.hook()
 def on_push(request):
     def check():
-        res = subprocess.run(["nossilint", request["after"]], capture_output=True, encoding="utf-8")
+        res = subprocess.run(
+            ["nossilint", request["after"]], capture_output=True, encoding="utf-8"
+        )
         result = res.stdout
         if result:
             print("update lint result ", result)

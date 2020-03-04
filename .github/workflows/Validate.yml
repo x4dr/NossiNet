@@ -1,0 +1,44 @@
+name: Validation
+on:
+  - push
+  - pull_request
+jobs:
+  test:
+    name: Test-Suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python environment
+        uses: actions/setup-python@v1.1.1
+        with:
+          python-version: 3.x
+      - name: Setup VENV
+        run: |
+          python3 -m venv .venv
+          . .venv/bin/activate
+          pip install -r requirements.txt
+      - name: Run Smoketest (NossiNet able to access "/")
+        run: |
+          . .venv/bin/activate
+          python3 NossiNet.py test
+      - name: Run unittests
+        run: |
+          . .venv/bin/activate
+          python3 -m pytest
+  Lint:
+    name: Pre-Commit Hooks that should have been run by committer
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v1.1.1
+      with:
+        python-version: 3.x
+    - name: set PY
+      run: echo "::set-env name=PY::$(python --version --version | sha256sum | cut -d' ' -f1)"
+    - uses: actions/cache@v1
+      with:
+        path: ~/.cache/pre-commit
+        key: pre-commit|${{ env.PY }}|${{ hashFiles('.pre-commit-config.yaml') }}
+    - uses: pre-commit/action@v1.0.1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
