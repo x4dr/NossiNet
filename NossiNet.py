@@ -2,6 +2,7 @@ import sys
 from NossiSite import app, socketio
 
 if __name__ == "__main__":
+    print("Nosferatu net being run directly, DO NOT USE IN PRODUCTION")
     test = False
     if len(sys.argv) > 1 and sys.argv[1] == "test":
         test = True

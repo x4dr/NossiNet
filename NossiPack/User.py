@@ -1,11 +1,11 @@
-import os
 import pickle
 import sqlite3
-import sys
 from typing import Union, List, Dict
 
+from flask import flash
 from werkzeug.security import generate_password_hash, check_password_hash
 
+from NossiPack.Character import Character
 from NossiPack.VampireCharacter import VampireCharacter
 
 __author__ = "maric"
@@ -30,7 +30,7 @@ class User:
         oldsheets=b"",
         admin="",
     ):
-        self.username = username.strip()
+        self.username = username.strip().upper()
         if passwordhash is not None:
             self.pw_hash = passwordhash
         else:
@@ -41,7 +41,7 @@ class User:
         try:
             self.sheet = VampireCharacter.deserialize(sheet)
         except:
-            log.debug(f"could not load sheet { str(sheet[:100]) }")
+            log.debug(f"could not load sheet {str(sheet[:100])}")
             self.sheet = VampireCharacter()
         self.oldsheets = self.deserialize_old_sheets(oldsheets)
         self.admin = admin
@@ -57,6 +57,45 @@ class User:
                 continue
             oldsheetserialized.append(s)
         return pickle.dumps(oldsheetserialized)
+
+    def savetodb(self):
+        db = connect_db()
+        self.transition_oldsheets()
+        if self.sheet.checksum() != 0:
+            d = dict(
+                username=self.username,
+                pwhash=self.pw_hash,
+                funds=self.funds,
+                sheet=self.sheet.serialize(),
+                oldsheets=self.serialize_old_sheets(),
+                admin=self.admin,
+            )
+            db.execute(
+                "INSERT OR REPLACE INTO users "
+                "(username, passwordhash, funds, sheet, oldsheets, admin) "
+                "VALUES (:username,:pwhash, :funds, :sheet, :oldsheets, :admin)",
+                d,
+            )
+        else:
+            d = dict(
+                username=self.username,
+                pwhash=self.pw_hash,
+                funds=self.funds,
+                admin=self.admin,
+                emptysheet=VampireCharacter().serialize(),
+            )
+            db.execute(
+                "REPLACE INTO users (username, passwordhash, funds,  "
+                "sheet, oldsheets, admin) "
+                "VALUES (:username,:pwhash, :funds,"
+                "COALESCE((SELECT sheet FROM users WHERE username = :username), "
+                ":emptysheet),"
+                "COALESCE((SELECT oldsheets FROM users WHERE username = "
+                ":username), ''),"
+                ":admin)",
+                d,
+            )
+        db.commit()
 
     def configs(
         self,
@@ -98,6 +137,42 @@ class User:
     @property
     def sheetpublic(self):
         return "public" in self.sheet.meta["Notes"][:22]
+
+    def transition_oldsheets(self):
+        db = connect_db()
+        o: Union[VampireCharacter, Character]
+        for o in self.oldsheets:
+            if isinstance(o, Character):
+                o = o.getdictrepr()
+                print("LEGACY CHARACTER!", o)
+                flash(f"LEGACY CHAR FROM o.timestamp")
+                o = VampireCharacter.legacy_convert(o)
+            db.execute(
+                "INSERT INTO sheets (owner, sheetdata)"
+                "VALUES (:username,:sheetdata);",
+                {"username": self.username, "sheetdata": pickle.dumps(o)},
+            )
+        self.oldsheets = []
+
+    @classmethod
+    def load(cls, username):
+        db = connect_db()
+        cur = db.execute(
+            "SELECT username, passwordhash, funds, "
+            "sheet, oldsheets, admin FROM users WHERE username = (?)",
+            (username,),
+        )
+        row = cur.fetchone()
+        if row is None:
+            return None
+        return User(
+            username=row[0],
+            passwordhash=row[1],
+            funds=row[2],
+            sheet=row[3],
+            oldsheets=row[4],
+            admin=row[5],
+        )
 
 
 class Config:
@@ -150,88 +225,12 @@ class Config:
 class Userlist:
     userlist: List[User]
 
-    def __init__(self, key="", preload=False, sheets=True):
-        self.key = key
+    def __init__(self):
         self.userlist = []
-        self.file = os.path.split(os.path.abspath(os.path.realpath(sys.argv[0])))[0]
-        if preload:
-            self.loaduserlist(sheets)
-
-    def loaduserlist(
-        self, sheets=True
-    ):  # converts the SQL table into a list for easier access
-        db = connect_db()
-        if sheets:
-            cur = db.execute(
-                "SELECT username, passwordhash, funds, "
-                "sheet, oldsheets, admin FROM users"
-            )
-            f_all = cur.fetchall()
-            for row in f_all:
-                try:
-                    self.userlist.append(
-                        User(
-                            username=row[0],
-                            passwordhash=row[1],
-                            funds=row[2],
-                            sheet=row[3],
-                            oldsheets=row[4],
-                            admin=row[5],
-                        )
-                    )
-                except Exception as e:
-                    print(
-                        f"unknown db exception of type {type(e)}: "
-                        f"{e} start of row: {str(row[:100])}\n___\n{e.args}"
-                    )
-        else:
-            cur = db.execute("SELECT username, passwordhash, funds, admin FROM users")
-            self.userlist = [
-                User(username=row[0], passwordhash=row[1], funds=row[2], admin=row[3],)
-                for row in cur.fetchall()
-            ]
 
     def saveuserlist(self):
-        # writes/overwrites the SQL table with the maybe changed list.
-        # this is not performant at all
-        db = connect_db()
         for u in self.userlist:
-            if u.sheet.checksum() != 0:
-                d = dict(
-                    username=u.username,
-                    pwhash=u.pw_hash,
-                    funds=u.funds,
-                    sheet=u.sheet.serialize(),
-                    oldsheets=u.serialize_old_sheets(),
-                    admin=u.admin,
-                )
-                db.execute(
-                    "INSERT OR REPLACE INTO users "
-                    "(username, passwordhash, funds, sheet, oldsheets, admin) "
-                    "VALUES (:username,:pwhash, :funds, :sheet, :oldsheets, :admin)",
-                    d,
-                )
-            else:
-                d = dict(
-                    username=u.username,
-                    pwhash=u.pw_hash,
-                    funds=u.funds,
-                    admin=u.admin,
-                    emptysheet=VampireCharacter().serialize(),
-                )
-                db.execute(
-                    "REPLACE INTO users (username, passwordhash, funds,  "
-                    "sheet, oldsheets, admin) "
-                    "VALUES (:username,:pwhash, :funds,"
-                    "COALESCE((SELECT sheet FROM users WHERE username = :username), "
-                    ":emptysheet),"
-                    "COALESCE((SELECT oldsheets FROM users WHERE username = "
-                    ":username), ''),"
-                    ":admin)",
-                    d,
-                )
-
-        db.commit()
+            u.savetodb()
 
     @classmethod
     def adduser(cls, user, password):
@@ -259,54 +258,15 @@ class Userlist:
 
         return None
 
-    def contains(self, user: str):
-        for u in self.userlist:
-            if u.username.upper() == user.upper():
-                return True
-        return False
-
-    def getuserbyname(self, username) -> Union[User, None]:
-        for u in self.userlist:
-            if u.username == username:
-                return u
-        return None
-
     def loaduserbyname(self, username) -> Union[User, None]:
-        db = connect_db()
-        cur = db.execute(
-            "SELECT username, passwordhash, funds, "
-            "sheet, oldsheets, admin FROM users WHERE username = (?)",
-            (username,),
-        )
-        try:
-            row = cur.fetchone()
-            if row is None:
-                return None
-            newuser = User(
-                username=row[0],
-                passwordhash=row[1],
-                funds=row[2],
-                sheet=row[3],
-                oldsheets=row[4],
-                admin=row[5],
-            )
-
-            if newuser.username not in self.userlist:
-                self.userlist.append(newuser)
-        except Exception as e:
-            from NossiSite import log
-
-            log.exception(f"loading user by name, error : {e}, {e.args}")
-            raise
+        username = username.upper
+        t = [x for x in self.userlist if x.username.upper() == username]
+        if t:
+            return t[0]
+        newuser = User.load(username)
+        if newuser:
+            self.userlist.append(newuser)
         return newuser
-
-    def getfunds(self, user=None, username=None):
-        if user is None:
-            if username is not None:
-                user = self.getuserbyname(username)
-        if user is not None:
-            return user.funds
-        return None
 
     def valid(self, user, password) -> bool:
         try:

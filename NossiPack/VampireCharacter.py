@@ -652,9 +652,22 @@ class VampireCharacter(Character):
         }
         return character
 
-    def legacy_convert(
-        self,
-    ):  # this is the legacy section used to update old sheets into new formats
+    @classmethod
+    def from_character(cls, char: Character):
+        d = char.getdictrepr()
+        return cls(
+            d["Name"],
+            d["Attributes"],
+            d["Meta"],
+            d["Abilities"],
+            d["Virtues"],
+            d["Backgrounds"],
+            d["Disciplines"],
+            d["Special"],
+        )
+
+    def legacy_convert(self):
+        # this is the legacy section used to update old sheets into new formats
         # Fix: uppercasing attributes
         newatt = self.zero_attributes()
         for i in self.attributes.keys():

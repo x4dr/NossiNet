@@ -6,7 +6,6 @@ from random import Random
 from urllib import request
 
 from Data import locale_data
-from NossiPack import VampireCharacter
 from NossiPack.krypta import DescriptiveError
 
 __author__ = "maric"
@@ -685,6 +684,7 @@ class Character:
 
     def getdictrepr(self):
         character = {
+            "Name": self.name,
             "Meta": self.meta,
             "Attributes": self.attributes,
             "Abilities": self.abilities,
@@ -848,7 +848,7 @@ class Character:
         a = str(response.read())
 
         result = names.search(a)
-        char = VampireCharacter()
+        char = Character()
         att = (
             allocaterandomly(prio[0], mini, cap, 3)
             + allocaterandomly(prio[1], mini, cap, 3)
