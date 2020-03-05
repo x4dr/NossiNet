@@ -42,8 +42,8 @@ with shelve.open(os.path.expanduser(storagefile)) as shelvefile:
     persist["mutated"] = False
 now = datetime.datetime.now
 
-with open(os.path.expanduser("~/token.discord"), "r") as f:
-    TOKEN = f.read().strip()
+with open(os.path.expanduser("~/token.discord"), "r") as tokenfile:
+    TOKEN = tokenfile.read().strip()
 
 description = """NossiBot in Python"""
 client = discord.Client()
@@ -53,7 +53,6 @@ active_channels = []
 
 
 async def reminders(clearjob=None):
-    global repeats
     jobs = []
     nextevent = 600
     with open(remindfile, "r") as f:

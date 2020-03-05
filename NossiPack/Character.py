@@ -831,8 +831,9 @@ class Character:
         mini, cap, prio1a, prio1b, prio1c, prio2a, prio2b, prio2c, do_shuffle
     ):
         response = request.urlopen(
-            "http://www.behindthename.com/random/random.php?number=2&gender=both&surname=&randomsurname=yes&all=no&"
-            "usage_ger=1&usage_myth=1&usage_anci=1&usage_bibl=1&usage_hist=1&usage_lite=1&usage_theo=1&usage_goth=1&"
+            "http://www.behindthename.com/random/random.php?number=2&gender=both&"
+            "surname=&randomsurname=yes&all=no&usage_ger=1&usage_myth=1&usage_anci=1&"
+            "usage_bibl=1&usage_hist=1&usage_lite=1&usage_theo=1&usage_goth=1&"
             "usage_fntsy=1"
         )
         prio = [prio1a, prio1b, prio1c]

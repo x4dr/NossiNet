@@ -24,7 +24,8 @@ def disciplines(char):
     if auspex > 1:
         result["Auspex2"] = "#Perception empathy f8"
     if auspex > 2:
-        result["Auspex3"] = "#Perception empathy f"  # needs a difficulty at castk time
+        result["Auspex3"] = "#Perception empathy f"
+        # needs a difficulty at castk time
     if auspex > 3:
         result["Auspex4"] = "#Intelligence subterfuge f"
     if auspex > 4:
@@ -124,9 +125,8 @@ def disciplines(char):
         # resisted with willpower roll
         # (difficulty equal to the singer’s #Appearance#Performance)
     if melpominee > 4:
-        result[
-            "Melpominee5"
-        ] = "#Stamina#Performance d1e1"  # spend 1 blood for every five targets beyond the first
+        result["Melpominee5"] = "#Stamina#Performance d1e1"
+        # spend 1 blood for every five targets beyond the first
     # tODO level 6 and 7
 
     mytherceria = int(char.get("Mytherceria", 0))
@@ -164,9 +164,8 @@ def disciplines(char):
     if obeah > 0:  # tODO
         result["Obeah1"] = "#Perception#Empathy f7"
     if obeah > 1:
-        result[
-            "Obeah2"
-        ] = "#Willpower"  # for willing subject, #Willpower f8 otherwise, spend 1 blood in any case
+        result["Obeah2"] = "#Willpower"
+        # for willing subject, #Willpower f8 otherwise, spend 1 blood in any case
     if obeah > 2:
         result["Obeah3"] = one
         # no roll, spend 1 blood, more for bigger wounds
@@ -205,8 +204,8 @@ def disciplines(char):
 
     potence = int(char.get("Potence", 0))
     # tODO
-    # grants extra dice for strength rolls, not a roll by itself for levels 5 and lower,
-    # optional powers _xor_ more dice at 6 and beyond
+    # grants extra dice for strength rolls, not a roll by itself for
+    # levels 5 and lower, optional powers _xor_ more dice at 6 and beyond
     if potence > 0:
         result["str"] = "Strength potence strbonus"
         result["Potence1"] = one
@@ -316,9 +315,8 @@ def disciplines(char):
 
     vicissitude = int(char.get("Vicissitude", 0))
     if vicissitude > 0:
-        result[
-            "Vicissitude1"
-        ] = "#Intelligence#Medicine"  # spend one blood point for each body part to be changed
+        result["Vicissitude1"] = "#Intelligence#Medicine"
+        # spend one blood point for each body part to be changed
         # #Perception#Medicine f8 if trying to imitate someones face or voice
     if vicissitude > 1:
         result[

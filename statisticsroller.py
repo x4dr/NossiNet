@@ -42,7 +42,8 @@ def plot(data, showsucc=False, showgraph=True, showdmgmods=False, grouped=1):
     highest = 0
     if showsucc:
         print(
-            "Of the %d rolls, %d where successes, %d where failures and %d where botches, averaging %.2f"
+            "Of the %d rolls, %d were successes, "
+            "%d were failures and %d were botches, averaging %.2f"
             % (
                 total,
                 success,
@@ -279,7 +280,7 @@ def subsetsumany(items, target):
 def spell_run():
     repeats = 20000
     total = 0
-    casted_spells = {x: 0 for x in spells.keys()}
+    casted_spells = {x: 0 for x in spells}
 
     used_mana = {"Order": 0, "Matter": 0, "Energy": 0, "Entropy": 0, "Any": 0}
 
@@ -316,7 +317,11 @@ def spell_run():
                 else:
                     if x == "Any":
                         ssum = subsetsum(
-                            [a for magictype in hand.keys() for a in hand[magictype]],
+                            [
+                                a
+                                for magictype, contained in hand.items()
+                                for a in contained
+                            ],
                             int(code),
                         )
                         if not ssum:

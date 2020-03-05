@@ -384,13 +384,16 @@ def config(x=None):
         c = Config.load(session["user"], x) or ""
         heading = "Change " + x.title()
         if x == "discord":
-            desc = "Your Discord account (name#number) that will be able to remote control your Nosferatunet Account:"
+            desc = (
+                "Your Discord account (name#number) that will be able to "
+                "remote control your Nosferatunet Account:"
+            )
         else:
             desc = f"What would you like {x.title()} to be?"
         return render_template(
             "config.html", heading=heading, description=desc, config=x, curval=c
         )
-    elif request.method == "POST":
+    if request.method == "POST":
         if not x:
             return redirect(url_for("config", x=request.form["configuration"]))
         if request.form.get("delete", None):
@@ -467,10 +470,9 @@ def showsheet(name="None"):
             return render_template(
                 "vampsheet.html", character=u.sheet.getdictrepr(), own=False
             )
-        else:
-            return render_template(
-                "vampsheet.html", character=VampireCharacter().getdictrepr(), own=False
-            )
+        return render_template(
+            "vampsheet.html", character=VampireCharacter().getdictrepr(), own=False
+        )
     return abort(404)
 
 

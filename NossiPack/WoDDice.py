@@ -98,21 +98,21 @@ class WoDDice:
     def another(self):
         if not self.amount:
             raise DescriptiveError("No Amount set for reroll!")
-        else:
-            return WoDDice(
-                {
-                    "sides": self.max,
-                    "difficulty": self.difficulty,
-                    "onebehaviour": self.subone,
-                    "return": self.returnfun,
-                    "explode": self.max - self.explodeon - 1,
-                    "amount": self.amount,
-                    "selectors": self.selectors,
-                    "additivebonus": self.min,
-                    "sort": self.sort,
-                    "rerolls": self.rerolls,
-                }
-            )
+
+        return WoDDice(
+            {
+                "sides": self.max,
+                "difficulty": self.difficulty,
+                "onebehaviour": self.subone,
+                "return": self.returnfun,
+                "explode": self.max - self.explodeon - 1,
+                "amount": self.amount,
+                "selectors": self.selectors,
+                "additivebonus": self.min,
+                "sort": self.sort,
+                "rerolls": self.rerolls,
+            }
+        )
 
     def roll_next(self, amount):
         i = 0

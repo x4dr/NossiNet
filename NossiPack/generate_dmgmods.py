@@ -55,8 +55,8 @@ def comparison(sel):
     occurences = collections.defaultdict(lambda: 0)
     j = 0
     time1 = time.time()
-    for i, first in dice5.keys():
-        for k, second in dice5.keys():
+    for i, first in dice5.items():
+        for k, second in dice5.items():
             j += 1
             delta = selector(sel1, i) - selector(sel2, k)
             # delta = min(10, max(delta, 0))  # clamp to 0-10
