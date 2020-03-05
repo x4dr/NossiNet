@@ -789,6 +789,7 @@ def register():  # this is not clrs secure because it does not need to be
                     if error is None:
                         flash("User successfully created.")
                         return redirect(url_for("start"))
+                else:
                     error = "Password has to be not empty!"
             else:
                 error = "Passwords do not match!"
