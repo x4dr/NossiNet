@@ -22,7 +22,7 @@ def selector(sel, addon=""):
 def d10fnolossguard(amt, diff):  # faster than the normal d10
     succ = 0
     anti = 0
-    for i in range(amt):
+    for _ in range(amt):
         x = random.randint(1, 10)
         if x >= diff:
             succ += 1
@@ -33,10 +33,10 @@ def d10fnolossguard(amt, diff):  # faster than the normal d10
 
 
 def plot(data, showsucc=False, showgraph=True, showdmgmods=False, grouped=1):
-    success = sum([v for k, v in data.items() if k > 0])
-    zeros = sum([v for k, v in data.items() if k == 0])
-    botches = sum([v for k, v in data.items() if k < 0])
-    total = sum([v for k, v in data.items()])
+    success = sum(v for k, v in data.items() if k > 0)
+    zeros = sum(v for k, v in data.items() if k == 0)
+    botches = sum(v for k, v in data.items() if k < 0)
+    total = sum(v for k, v in data.items())
     pt = total / 100
     width = 1
     highest = 0
@@ -48,7 +48,7 @@ def plot(data, showsucc=False, showgraph=True, showdmgmods=False, grouped=1):
                 success,
                 zeros,
                 botches,
-                (sum([k * v for k, v in data.items()]) / total),
+                (sum(k * v for k, v in data.items()) / total),
             )
         )
         print(
@@ -151,7 +151,7 @@ def run_duel(a, b, c=None, d=None, duration=60):
 
 def run_sel(sel, addon=""):
     total = []
-    for i in range(100000):
+    for _ in range(100000):
         total.append(selector(sel, addon))
     pr = {
         x: (total.count(x) if x in total else 0)
@@ -293,16 +293,17 @@ def spell_run():
 
         if 1000 * repeat / repeats % 10 == 0:
             print(int(100 * repeat / repeats), "%")
-        # print("O {} M {} E {} N {}".format(hand["Order"], hand["Matter"], hand["Energy"], hand["Entropy"]))
-        for s in spells.keys():
+        # print("O {} M {} E {} N {}".
+        # format(hand["Order"], hand["Matter"], hand["Energy"], hand["Entropy"]))
+        for sname, sp in spells.items():
             casteable = True
-            for x in spells[s].keys():  # Order, Matter, Energy, Entropy
-                code = spells[s][x]
+            for x, xi in sp.items():  # Order, Matter, Energy, Entropy
+                code = xi
                 if code == "0":
                     continue
                 if code[-1] == "+":
                     if x == "Any":
-                        if int(code[:-1]) > sum(hand[i] for i in hand.keys()):
+                        if int(code[:-1]) > sum(hand.values()):
                             casteable = False
                             break
                     else:
@@ -333,7 +334,7 @@ def spell_run():
                             used_mana[x] += int(code)
             if casteable:
                 casted += 1
-                casted_spells[s] += 1
+                casted_spells[sname] += 1
         total += casted
         # print()
 
@@ -369,7 +370,8 @@ def crafting(
             if botch > 3:
                 print("critical BOTCH!", craftingroll.r)
                 break
-        # print("{:<3}:{:<3}+{:<3}-{:<2}= {:<3}".format(rolls, progress, result, adverse, progress + result - adverse))
+        # print("{:<3}:{:<3}+{:<3}-{:<2}= {:<3}".
+        # format(rolls, progress, result, adverse, progress + result - adverse))
         progress += result - adverse
 
         if progress >= effort:
@@ -414,8 +416,8 @@ def run_craft(
     plot(levels)
     print(
         "averages=",
-        sum([k * v for k, v in rolls.items()]) / len(rolls),
-        sum([k * v for k, v in levels.items()]) / len(rolls),
+        sum(k * v for k, v in rolls.items()) / len(rolls),
+        sum(k * v for k, v in levels.items()) / len(rolls),
     )
 
 

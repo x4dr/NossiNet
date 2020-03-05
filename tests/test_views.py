@@ -54,7 +54,7 @@ class TestViews(TestCase):
         self.assert_template_used("show_entries.html")  # not registered
 
     def test_register(self):
-        """Make sure register user works."""
+        """Make sure register user works"""
         app = self.create_app("register")
         c = app.test_client()
         # mock site interaction

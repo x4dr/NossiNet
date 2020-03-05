@@ -8,7 +8,7 @@ from NossiPack.WoDDice import WoDDice
 from NossiPack.krypta import DescriptiveError
 
 
-class Node(object):
+class Node:
     def __init__(self, roll: str, depth):
         self.do = False
         self.code = str(roll)
@@ -87,7 +87,7 @@ class Node(object):
         return self.__repr__()
 
 
-class WoDParser(object):
+class WoDParser:
     rolllogs: List[WoDDice]
 
     def __init__(self, defines=None):
@@ -291,7 +291,7 @@ class WoDParser(object):
                 self.triggers["rightsviolation"] = True
             return ""
 
-        elif triggername in ["speed", "cutoff", "adversity", "max"]:
+        if triggername in ["speed", "cutoff", "adversity", "max"]:
             if triggername in ["speed"]:  # doubles
                 x = float(triggerbody)
             elif triggername == "max":
@@ -301,15 +301,15 @@ class WoDParser(object):
 
             self.triggers[triggername] = x
             return ""
-        elif triggername == "breakthrough":
+        if triggername == "breakthrough":
             return self.breakthrough(triggerbody)
-        elif triggername in ["ignore", "verbose", "suppress", "order"]:
+        if triggername in ["ignore", "verbose", "suppress", "order"]:
             if "off" not in triggerbody:
                 self.triggers[triggername] = triggerbody if triggerbody else True
             else:
                 self.triggers[triggername] = False
             return ""
-        elif triggername in ["loop", "loopsum"]:
+        if triggername in ["loop", "loopsum"]:
             roll, times = triggerbody.rsplit(" ", 1)  # split at the last space
             times = int(times)
             times = min(
@@ -320,11 +320,9 @@ class WoDParser(object):
                     else 500
                 ),
             )
-            loopsum = 0
-            for i in range(times):
-                loopsum += self.do_roll(roll).result or 0
+            loopsum = sum(self.do_roll(roll).result or 0 for _ in range(times))
             return str(loopsum) if triggername == "loopsum" else ""
-        elif triggername == "values":
+        if triggername == "values":
             try:
                 trigger = str(re.sub(r" *: *", ":", triggerbody))
                 for d in trigger.split(","):
@@ -335,7 +333,7 @@ class WoDParser(object):
                     "Values malformed. Expected: "
                     '"&values key:value, key:value, key:value&"'
                 )
-        elif triggername == "param":
+        if triggername == "param":
             try:
                 self.triggers["param"] = self.triggers.get(
                     "param", []
@@ -348,26 +346,23 @@ class WoDParser(object):
                     'Parameter malformed. Expected: "&param key1 key2 key3& [...] '
                     'value1 value2 value3"'
                 )
-        elif "if" == triggername:
+        if triggername == "if":
             # &if a then b else c&
             ifbranch = fullparenthesis(triggerbody, opening="", closing="then")
             thenbranch = fullparenthesis(triggerbody, opening="then", closing="else")
             elsebranch = fullparenthesis(triggerbody, opening="else", closing="done")
             if (self.do_roll(ifbranch).result or 0) > 0:
                 return thenbranch
-            else:
-                return elsebranch
-        else:
-            raise DescriptiveError("unknown Trigger: " + triggername)
+            return elsebranch
+        raise DescriptiveError("unknown Trigger: " + triggername)
 
     @staticmethod
     def gettriggers(message) -> List[str]:
         c = message.count("&")
         if c == 0:
             return []
-        else:
-            if c % 2 != 0:  # show entire code in case unmatched & was not the last one
-                raise DescriptiveError('unmatched & in "' + message + '"')
+        if c % 2 != 0:  # show entire code in case unmatched & was not the last one
+            raise DescriptiveError('unmatched & in "' + message + '"')
         pos = 0
         triggers = []
         while pos < len(message):

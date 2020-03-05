@@ -87,9 +87,11 @@ class TestWoDParser(TestCase):
         self.assertEqual(r.code, "23 d1g")
 
     def test_explosion(self):
-        for i in range(1000):
+        for _ in range(1000):
             if len(self.p.make_roll("5!").r) > 5:
                 break
+        else:
+            self.assertFalse("in 1000 exploded rolls, not one exploded!")
 
     def test_selection(self):
         r = self.p.make_roll("99,99@20s!!")

@@ -6,4 +6,13 @@ import NossiSite.views as views
 import NossiSite.chat as chat
 import NossiSite.github_webhook as github_webhook
 
-__all__ = [base, app, socketio, helpers, log, views, chat, github_webhook]
+__all__ = [
+    "base",
+    "app",
+    "socketio",
+    "helpers",
+    "log",
+    "views",
+    "chat",
+    "github_webhook",
+]

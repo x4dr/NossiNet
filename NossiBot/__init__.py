@@ -1,3 +1,4 @@
 import NossiBot.NossiBot
 
-__all__ = [NossiBot.NossiBot.client]
+client = NossiBot.client
+__all__ = ["client"]

@@ -17,7 +17,7 @@ def echo(message):
         pass
 
 
-class Chatroom(object):
+class Chatroom:
     def __init__(self, name, mailbox=False):
         self.name = re.sub(r"_+", "", name)
         self.mailbox = mailbox
@@ -28,9 +28,7 @@ class Chatroom(object):
         self.presentusers = {}
 
     def chatlog(self, limit=1000) -> List[Tuple[str, Union[int, float]]]:
-        """
-        last [limit] entries in the chatlog
-        """
+        """last [limit] entries in the chatlog"""
         with connect_db("loadchatlog") as db:
             rows = db.execute(
                 "SELECT line, time FROM chatlogs WHERE room = ? ORDER BY linenr DESC LIMIT ?",
@@ -83,8 +81,7 @@ class Chatroom(object):
             self.presentusers.pop(user)
             self.addline(user + " left the room!")
             return True
-        else:
-            return False
+        return False
 
     def getlog(self, user):
         present = False

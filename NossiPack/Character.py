@@ -14,7 +14,7 @@ __author__ = "maric"
 
 # Database still uses this, legacy support
 # noinspection DuplicatedCode
-class Character(object):
+class Character:
     def __init__(
         self,
         name="",
@@ -586,11 +586,11 @@ class Character(object):
             x for x in sorted(self.backgrounds.items()) if x[0] != ""
         )
 
-    def applydamage(self, amount, damage_type="Lethal"):
+    def applydamage(self, amount, dmg_type="Lethal"):
         if amount > 0:
-            self.special[damage_type] += amount
+            self.special[dmg_type] += amount
         else:
-            if damage_type == "Aggravated":
+            if dmg_type == "Aggravated":
                 self.special["Aggravated"] += amount
                 if self.special["Aggravated"] <= 0:
                     self.special["Aggravated"] = 0
@@ -612,7 +612,7 @@ class Character(object):
             + self.special["Aggravated"]
             > 7
         ):
-            if damage_type == "Bashing":  # if damage is bashing
+            if dmg_type == "Bashing":  # if damage is bashing
                 if self.special["Bashing"] > 1:  # and there already is bashing damage
                     self.special["Bashing"] -= 2  # transform a bashing into lethal
                     self.special["Lethal"] += 1
@@ -621,12 +621,12 @@ class Character(object):
                         "Bashing"
                     ] = 0  # bashing will not overflow into aggravated
                     break
-            elif damage_type == "Lethal":
+            elif dmg_type == "Lethal":
                 if self.special["Lethal"] > 1:  # same for lethal to aggravated
                     self.special["Lethal"] -= 2
                     self.applydamage(1, "Aggravated")
-            elif damage_type != "Aggravated":
-                raise Exception(damage_type + "???")
+            elif dmg_type != "Aggravated":
+                raise Exception(dmg_type + "???")
 
             if self.special["Aggravated"] >= 7:
                 raise Exception(
@@ -658,10 +658,10 @@ class Character(object):
             try:
                 if "_bashing_" in trigger:
                     amount = int(trigger.replace("§damage_bashing_", "").strip())
-                    self.applydamage(amount, damage_type="Bashing")
+                    self.applydamage(amount, dmg_type="Bashing")
                 elif "_aggravated_" in trigger:
                     amount = int(trigger.replace("§damage_aggravated_", "").strip())
-                    self.applydamage(amount, damage_type="Aggravated")
+                    self.applydamage(amount, dmg_type="Aggravated")
                 else:
                     amount = int(
                         trigger.replace(trigger[: trigger.rfind("_") + 1], "").strip()
@@ -676,7 +676,7 @@ class Character(object):
             try:
                 if "§heal_aggravated_" in trigger:
                     amount = int(trigger.replace("§heal_aggravated_", "").strip())
-                    self.applydamage(-amount, damage_type="Aggravated")
+                    self.applydamage(-amount, dmg_type="Aggravated")
                 else:
                     amount = int(trigger.replace("§heal_", "").strip())
                     self.applydamage(-amount)
@@ -827,7 +827,9 @@ class Character(object):
         return tmp
 
     @staticmethod
-    def makerandom(mini, cap, prio1a, prio1b, prio1c, prio2a, prio2b, prio2c, shuffle):
+    def makerandom(
+        mini, cap, prio1a, prio1b, prio1c, prio2a, prio2b, prio2c, do_shuffle
+    ):
         response = request.urlopen(
             "http://www.behindthename.com/random/random.php?number=2&gender=both&surname=&randomsurname=yes&all=no&"
             "usage_ger=1&usage_myth=1&usage_anci=1&usage_bibl=1&usage_hist=1&usage_lite=1&usage_theo=1&usage_goth=1&"
@@ -835,7 +837,7 @@ class Character(object):
         )
         prio = [prio1a, prio1b, prio1c]
         abi = [prio2a, prio2b, prio2c]
-        if shuffle:
+        if do_shuffle:
             Random().shuffle(prio)
             Random().shuffle(abi)
 
@@ -901,6 +903,6 @@ def upsert(listinput, index, value, minimum=3):
         listinput[index] = value
     else:
         listinput.pop(index)
-    if not ("".join(listinput[(-1 * minimum) :]) == ""):
+    if "".join(listinput[(-1 * minimum) :]):
         listinput.append("")
     return listinput

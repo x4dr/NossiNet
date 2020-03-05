@@ -424,11 +424,10 @@ def menucmds(message):
     elif message == "connection established":
         echo(namedStrings["canTalkNow"] + " " + namedStrings["helpHelp"] + " ")
         return False
-    else:
-        emit(
-            "Message",
-            {"data": namedStrings["cmdNotFound"] + " " + namedStrings["helpHelp"]},
-        )
+    emit(
+        "Message",
+        {"data": namedStrings["cmdNotFound"] + " " + namedStrings["helpHelp"]},
+    )
     return False
 
 
@@ -466,6 +465,7 @@ def char_connect():
     emit("comments", {"data": "".join(namedStrings["checkHelp"])})
     join_room(session.get("user", "?") + "_dotupdates")
     update_dots()
+    return True
 
 
 @socketio.on("ClientServerEvent", namespace="/character")
@@ -567,7 +567,6 @@ def chat_connect():
     if not session.get("logged_in"):
         emit("Message", {"prefix": "", "data": namedStrings["notLoggedIn"]})
         return False
-    global userlist
     join_room(session.get("user", "?") + "_dotupdates")
     session["id"] = request.sid
     if session.get("user", False):
@@ -590,7 +589,7 @@ def chat_connect():
         emit("Message", {"data": namedStrings["MOTD"]})
     else:
         disconnect()
-        return False
+    return False
 
 
 @socketio.on("disconnect", namespace="/chat")

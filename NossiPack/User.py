@@ -17,7 +17,7 @@ def connect_db():
     return condb("User")
 
 
-class User(object):
+class User:
     sheet: VampireCharacter
 
     def __init__(
@@ -41,7 +41,7 @@ class User(object):
         try:
             self.sheet = VampireCharacter.deserialize(sheet)
         except:
-            log.debug("could not load sheet " + str(sheet[:100]))
+            log.debug(f"could not load sheet { str(sheet[:100]) }")
             self.sheet = VampireCharacter()
         self.oldsheets = self.deserialize_old_sheets(oldsheets)
         self.admin = admin
@@ -100,7 +100,7 @@ class User(object):
         return "public" in self.sheet.meta["Notes"][:22]
 
 
-class Config(object):
+class Config:
     @staticmethod
     def load(user, option, db=None):
         db = db or connect_db()
@@ -147,7 +147,7 @@ class Config(object):
         # else it does not exist
 
 
-class Userlist(object):
+class Userlist:
     userlist: List[User]
 
     def __init__(self, key="", preload=False, sheets=True):
@@ -296,7 +296,7 @@ class Userlist(object):
         except Exception as e:
             from NossiSite import log
 
-            log.exception("loading user by name, error :", e, e.args)
+            log.exception(f"loading user by name, error : {e}, {e.args}")
             raise
         return newuser
 
@@ -317,5 +317,5 @@ class Userlist(object):
         except Exception:
             from NossiSite import log
 
-            log.exception("exception while checking user credentials for ", user)
+            log.exception("exception while checking user credentials for {user}")
             raise

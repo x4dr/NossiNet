@@ -84,7 +84,7 @@ def sumdict(inp):
 def d10(amt, diff, ones=True):  # faster than the WoDDice
     succ = 0
     anti = 0
-    for i in range(amt):
+    for _ in range(amt):
         x = random.randint(1, 10)
         if x >= diff:
             succ += 1
@@ -93,10 +93,7 @@ def d10(amt, diff, ones=True):  # faster than the WoDDice
     if anti > 0:
         if succ > anti:
             return succ - anti
-        else:
-            if succ > 0:
-                return 0
-            else:
-                return 0 - anti
-    else:
-        return succ
+        if succ > 0:
+            return 0
+        return 0 - anti
+    return succ

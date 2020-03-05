@@ -100,18 +100,18 @@ def supply_graphdata():
 
         print("regenerating weapon damage data")
         for stats, modifier in modifiers.items():
-            statstring1 = " ".join([str(x) for x in stats[0]])
-            statstring2 = " ".join([str(x) for x in stats[1]])
+            statstring1 = " ".join(str(x) for x in stats[0])
+            statstring2 = " ".join(str(x) for x in stats[1])
             damages[statstring1] = damages.get(statstring1, {})
             damages[statstring1][statstring2] = []
             damage = damages[statstring1][statstring2]  # reduce length of calling stuff
             print(stats, modifier)
             for i in range(armormax):
                 damage.append({})
-                for w in weapons.keys():
+                for w, wi in weapons.items():
                     damage[-1][w] = {}
-                    for d in weapons[w].keys():
-                        damage[-1][w][d] = modify_dmg(modifier, weapons[w][d], d, i)
+                    for d, di in wi.items():
+                        damage[-1][w][d] = modify_dmg(modifier, di, d, i)
         print("writing weaponstuff...")
         with open("weaponstuff_internal", "w") as f:
             f.write(str(wmd5) + "\n")
@@ -126,26 +126,24 @@ def supply_graphdata():
                 print(per_armor)
                 # noinspection PyTypeChecker
                 cmprjsn[attackerstat][defenderstat].append(
-                    list(
-                        list(
-                            per_armor[weapon][damagetype] for weapon in cmprjsn["Names"]
-                        )
+                    [
+                        [per_armor[weapon][damagetype] for weapon in cmprjsn["Names"]]
                         for damagetype in dmgtypes
-                    )
+                    ]
                 )
                 nm = max(
-                    list(
+                    [
                         max(
                             x
                             for x in [
-                                list(
+                                [
                                     per_armor[weapon][damagetype]
                                     for weapon in cmprjsn["Names"]
-                                )
+                                ]
                                 for damagetype in dmgtypes
                             ]
                         )
-                    )
+                    ]
                 )
                 if nm > maxdmg:
                     print("updating maxdmg to", nm)
@@ -183,15 +181,15 @@ def weapondata():
             break
 
     dmgtypes = set()
-    for weapon in weapons.keys():
-        for dt in weapons[weapon].keys():
+    for weapon, wi in weapons.items():
+        for dt in wi.keys():
             dmgtypes.add(dt)
 
-    for weapon in weapons.keys():
+    for weapon, wi in weapons.items():
         for dt in dmgtypes:
-            weapons[weapon][dt] = [
+            wi[dt] = [
                 [int(y) for y in x.split(";")] if x.strip() else [0]
-                for x in weapons[weapon].get(dt, "|" * 11).split("|")
+                for x in wi.get(dt, "|" * 11).split("|")
             ]
     return weapons
 
@@ -318,7 +316,7 @@ def chances(selector, modifier=0, number_of_quantiles=None):
         plt.ylim(ymin=0.0)
         plt.xlim(xmin=0.0)
         plt.title(
-            ", ".join([str(x) for x in selector])
+            ", ".join(str(x) for x in selector)
             + "@5"
             + (("R" + str(modifier)) if modifier else "")
         )
@@ -331,5 +329,5 @@ def chances(selector, modifier=0, number_of_quantiles=None):
         yield buf
 
 
-if "__main__" == __name__:
+if __name__ == "__main__":
     supply_graphdata()
