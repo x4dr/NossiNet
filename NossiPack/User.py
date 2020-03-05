@@ -143,8 +143,7 @@ class User:
         o: Union[VampireCharacter, Character]
         for o in self.oldsheets:
             if isinstance(o, Character):
-                o = o.getdictrepr()
-                print("LEGACY CHARACTER!", o)
+                print("LEGACY CHARACTER!", o.getdictrepr())
                 flash(f"LEGACY CHAR FROM {self.username}@{o.timestamp}")
                 o = VampireCharacter.from_character(o)
                 o.legacy_convert()
