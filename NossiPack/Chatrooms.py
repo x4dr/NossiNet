@@ -1,8 +1,10 @@
 import re
 import time
+from typing import List, Tuple, Union
 
 from flask import session
 from flask_socketio import emit
+from datetime import datetime
 
 from NossiPack.krypta import DescriptiveError
 from NossiSite.helpers import connect_db
@@ -22,116 +24,48 @@ class Chatroom(object):
         if self.mailbox:
             self.name += "_mailbox"
         self.users = []
-        self.chatlog = []
         self.password = ""  # unimplemented
-        self.newestlineindb = -1
         self.presentusers = {}
-        self.loadchatlog()
 
-    def loadchatlog(self):  # converts the SQL table into a list for easier access
-        db = connect_db("loadchatlog")
-        touched = False
-        # db.set_trace_callback(echo)
-        rows = db.execute(
-            "SELECT linenr, line, time  FROM chatlogs WHERE room = ? ORDER BY linenr",
-            [self.name],
-        ).fetchall()
-        db.close()
+    def chatlog(self, limit=1000) -> List[Tuple[str, Union[int, float]]]:
+        """
+        last [limit] entries in the chatlog
+        """
+        with connect_db("loadchatlog") as db:
+            rows = db.execute(
+                "SELECT line, time FROM chatlogs WHERE room = ? ORDER BY linenr DESC LIMIT ?",
+                [self.name, limit],
+            ).fetchall()
+        chatlog = [(row[0], float(row[1])) for row in rows[-1000:]]
+        if not chatlog:
+            self.addline("start of " + self.name)
+            return self.chatlog(limit)  # another round to get the correct time
+        return chatlog
 
-        self.chatlog = [[int(row[0]), row[1], row[2]] for row in rows[-1000:]]
-        for row in self.chatlog:  # only the last 1000 lines will be loaded
-            if self.newestlineindb < int(row[0]):
-                self.newestlineindb = int(row[0])
-        if not self.chatlog:
-            touched = True
-            self.chatlog = [[0, "start of " + self.name, time.time()]]
-            if self.mailbox:
-                self.userjoin(session["user"])
-        if touched:
-            self.savechatlog()
+    def addlinetolog(self, line, time_):
+        db = connect_db("adding line")
+        db.execute(
+            "INSERT INTO chatlogs (line, time, room)" "VALUES (:line, :time ,:room)",
+            dict(line=line, time=time_, room=self.name),
+        )
 
-    def savechatlog(self):
-        self.cleanup()
-        db = connect_db("save chatlog")
-        try:
-            if (
-                self.chatlog
-                and self.chatlog[-1]
-                and self.chatlog[-1][0] - self.newestlineindb > 0
-            ):
-                for i in reversed(range(len(self.chatlog))):
-                    if self.chatlog[i][0] <= self.newestlineindb:
-                        break
-                    d = dict(
-                        linenr=str(self.chatlog[i][0]),
-                        line=self.chatlog[i][1],
-                        time=self.chatlog[i][2],
-                        room=self.name,
-                    )
-                    try:
-                        db.execute(
-                            "INSERT INTO chatlogs (linenr, line, time, room)"
-                            "VALUES (:linenr,:line, :time ,:room)",
-                            d,
-                        )
-                    except Exception as inst:
-                        print("writing", d, "to database failed", inst.args)
-                self.newestlineindb = self.chatlog[-1][0]
-                db.commit()
-        except Exception:
-            print("Chatlog not initialized")
-
-        db.close()
-
-    def addline(self, line, supresssave=False):
+    def addline(self, line):
         if not session["user"] in self.presentusers.keys():
-            raise DescriptiveError("You left this room or were inactive.")
-        try:
-            if len(self.chatlog) < 1:
-                self.chatlog.append([0, line, time.time()])  # initial line
-            self.chatlog.append([self.chatlog[-1][0] + 1, line, time.time()])
-        except Exception as inst:
-            print("self.chatlog:", self.chatlog, "\n\nline:", line, inst.args)
-            emit(
-                "Message",
-                {"data": "a fun little error occured, please inform maric"},
-                room=self.name,
+            raise DescriptiveError(
+                "You got disconnected, because you left this room or were inactive."
             )
         try:
             emit(
                 "Message", {"data": time.strftime("%H:%M") + " " + line}, room=self.name
             )
         except:
-            pass  # probably initializing
-        if not supresssave:
-            self.savechatlog()
-
-    def cleanup(self):
-        def join_spam_remover(seq):
-            iterable = iter(seq)
-            try:
-                prev = next(iterable)
-                yield prev
-            except Exception as e:
-                print("exception during cleanup:", e, e.args)
-                return []
-            for element in iterable:
-                if ":" not in element:
-                    if (
-                        (
-                            "joined the room!" in element[1]
-                            or "left the room!" in element[1]
-                        )
-                        and "joined the room!" in prev[1]
-                        or "connection established" in element[1]
-                    ):
-                        pass
-                    else:
-                        yield element
-                else:
-                    yield element
-                prev = element
-            self.chatlog = [x for x in join_spam_remover(self.chatlog)]
+            print(
+                "Message",
+                {"data": time.strftime("%H:%M") + " " + line},
+                self.name,
+                "could not be emitted",
+            )
+        self.addlinetolog(line, time.time())
 
     def userjoin(self, user):
         if self.mailbox and not (
@@ -164,13 +98,13 @@ class Chatroom(object):
             result += "mailbox"
         result += "\n" + self.name + "\n"
 
-        for line, t in [(x[1], x[2]) for x in self.chatlog]:
+        for line, t in self.chatlog(10 ** 10):
             if line == user + " joined the room!":
                 present = True
             if present:
                 result = (
                     result
-                    + time.strftime("%Y/%m/%d-%H:%M:%S ", time.gmtime(t))
+                    + datetime.utcfromtimestamp(t).strftime("%Y/%m/%d-%H:%M:%S ")
                     + line
                     + "\n"
                 )

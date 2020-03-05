@@ -17,7 +17,6 @@ from NossiPack.VampireCharacter import VampireCharacter
 from NossiPack.krypta import DescriptiveError
 from NossiSite.base import app
 from NossiSite.helpers import (
-    g,
     session,
     checktoken,
     request,
@@ -25,7 +24,6 @@ from NossiSite.helpers import (
     url_for,
     render_template,
     flash,
-    init_db,
     wikiload,
     wikindex,
     wikisave,
@@ -36,6 +34,7 @@ from NossiSite.helpers import (
     update_discord_bindings,
     weapontable,
     magicalweapontable,
+    connect_db,
 )
 
 bleach.ALLOWED_TAGS += [
@@ -50,8 +49,6 @@ bleach.ALLOWED_TAGS += [
     "thead",
     "tfoot",
 ]
-
-init_db()
 
 
 @app.route("/version")
@@ -101,7 +98,8 @@ def setfromsource():
 
 @app.route("/")
 def show_entries():
-    cur = g.db.execute(
+    db = connect_db("main")
+    cur = db.execute(
         "SELECT author, title, text, id, tags FROM entries ORDER BY id DESC"
     )
     entries = [
@@ -175,9 +173,10 @@ def wikipage(page=None):
 @app.route("/edit/<path:x>", methods=["GET", "POST"])
 def editentries(x=None):
     checklogin()
+    db = connect_db("editentries")
     if request.method == "GET":
         if x == "all":
-            cur = g.db.execute(
+            cur = db.execute(
                 "SELECT author, title, text, id, tags "
                 "FROM entries WHERE UPPER(author) LIKE UPPER(?)",
                 [session.get("user")],
@@ -190,7 +189,7 @@ def editentries(x=None):
             return render_template("show_entries.html", entries=entries, edit=True)
         try:
             x = int(x)
-            cur = g.db.execute(
+            cur = db.execute(
                 "SELECT author, title, text, id, tags " "FROM entries WHERE id == ?",
                 [x],
             )
@@ -242,7 +241,7 @@ def editentries(x=None):
                 session["retrieve"] = None
                 return redirect(url_for("wikipage", page=request.form["wiki"]))
 
-            cur = g.db.execute(
+            cur = db.execute(
                 "SELECT author, title, text, id, tags " "FROM entries WHERE id == ?",
                 [int(request.form["id"])],
             )
@@ -253,7 +252,7 @@ def editentries(x=None):
             if (session.get("user").upper() == entry["author"].upper()) or session.get(
                 "admin"
             ):
-                g.db.execute(
+                db.execute(
                     "UPDATE entries SET title=?, text=?, tags=? WHERE id == ?",
                     [
                         request.form["title"],
@@ -263,7 +262,7 @@ def editentries(x=None):
                     ],
                 )
                 session["retrieve"] = None
-                g.db.commit()
+                db.commit()
                 flash("entry was successfully edited")
             else:
                 flash(
@@ -518,9 +517,10 @@ def berlinmap():
 
 @app.route("/berlinmap/data.dat")
 def mapdata():
+    db = connect_db("mapdata")
     log.debug("generating mapdata")
     time0 = time.time()
-    cur = g.db.execute("SELECT name, owner,tags,data FROM property")
+    cur = db.execute("SELECT name, owner,tags,data FROM property")
     plzs = {}
     for row in cur.fetchall():
         plzs[row[0]] = {
@@ -528,7 +528,7 @@ def mapdata():
             "tags": row[2] or "",
             "data": row[3] or "",
         }
-    cur = g.db.execute("SELECT name, faction, allegiance, clan, tags FROM actors")
+    cur = db.execute("SELECT name, faction, allegiance, clan, tags FROM actors")
     for row in cur.fetchall():
         for plz in plzs.keys():
             if plzs[plz]["owner"].upper() == row[0]:
@@ -685,8 +685,9 @@ def modify_sheet(t=None):
 def delete_entry(ident):
     if checktoken():
         checklogin()
+        db = connect_db("deleteentry")
         entry = {}
-        cur = g.db.execute(
+        cur = db.execute(
             "SELECT author, title, text, id FROM entries WHERE id = ?", [ident]
         )
         for row in cur.fetchall():  # SHOULD only run once
@@ -697,19 +698,19 @@ def delete_entry(ident):
             flash("This is not your Post!")
         else:
             if entry.get("author")[0].islower():
-                g.db.execute(
+                db.execute(
                     "UPDATE entries SET author = ? WHERE id = ?",
                     [entry.get("author").upper(), entry.get("id")],
                 )
                 flash('Entry: "' + entry.get("title") + '" has been restored.')
 
             else:
-                g.db.execute(
+                db.execute(
                     "UPDATE entries SET author = ? WHERE id = ?",
                     [entry.get("author").lower(), entry.get("id")],
                 )
                 flash('Entry: "' + entry.get("title") + '" has been deleted.')
-            g.db.commit()
+            db.commit()
         return redirect(url_for("show_entries"))
     else:
         abort(404)
@@ -720,7 +721,8 @@ def add_entry():
     checklogin()
     log.info(f"{session.get('user', '?')} adding {request.form}")
     if checktoken():
-        g.db.execute(
+        db = connect_db("mapdata")
+        db.execute(
             "INSERT INTO entries (author, title, text, tags) VALUES (?, ?, ?, ?)",
             [
                 session.get("user"),
@@ -729,7 +731,7 @@ def add_entry():
                 request.form["tags"],
             ],
         )
-        g.db.commit()
+        db.commit()
         flash("New entry was successfully posted")
 
     return redirect(url_for("show_entries"))
@@ -783,16 +785,14 @@ def add_funds():
 @app.route("/register", methods=["GET", "POST"])
 def register():  # this is not clrs secure because it does not need to be
     error = None
-    u = Userlist(None)
     if request.method == "POST":
-        username = request.form["username"].strip()
+        username = request.form["username"].strip().upper()
         if len(username) > 2:
-            username = username.upper()
             if request.form["password"] == request.form["passwordcheck"]:
                 password = request.form["password"]
                 if len(password) > 0:
                     log.info(f"creating user {username}")
-                    error = u.adduser(username, password)
+                    error = Userlist.adduser(username, password)
                     if error is None:
                         flash("User successfully created.")
                         return redirect(url_for("start"))
@@ -802,7 +802,9 @@ def register():  # this is not clrs secure because it does not need to be
                 error = "Passwords do not match!"
         else:
             error = "Username is too short!"
-    return render_template("register.html", error=error)
+    if error:
+        flash(error, category="error")
+    return render_template("register.html")
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -858,10 +860,11 @@ def start():
 @app.route("/user/<username>")
 def show_user_profile(username):
     msgs = []
-    if username == session.get(
-        "user"
-    ):  # get messages for this user if looking at own page
-        cur = g.db.execute(
+
+    if username == session.get("user"):
+        db = connect_db("mapdata")
+        # get messages for this user if looking at own page
+        cur = db.execute(
             "SELECT author,recipient,title,text,value,lock, id FROM messages "
             "WHERE ? IN (recipient, author) " + " ORDER BY id DESC",
             (session.get("user"),),
@@ -936,8 +939,8 @@ def boardgamemap(size, seed=""):
              (6 if j % 2 == 1 and (i in [0, size - 1] or j in [0, size - 1]) else
               (5 if 0 < i < size - 1 else 8))))"""
 
-        for l in fpik(e(r(), difficulty)):
-            yield l
+        for li in fpik(e(r(), difficulty)):
+            yield li
 
     first = True
 
@@ -990,7 +993,8 @@ def send_msg(username):
     error = None
     if checktoken():
         checklogin()
-        g.db.execute(
+        db = connect_db("mapdata")
+        db.execute(
             "INSERT INTO messages (author,recipient,title,text,value,lock)"
             " VALUES (?, ?, ?, ?, ?, ?)",  # 6
             [
@@ -1002,7 +1006,7 @@ def send_msg(username):
                 not check0(request.form["price"]),  # 6 lock
             ],
         )
-        g.db.commit()
+        db.commit()
         flash("Message sent")
     return redirect(url_for("show_entries", error=error))
 
@@ -1016,8 +1020,9 @@ def unlock(ident):
     author = ""
     value = 0
     if checktoken():
+        db = connect_db("mapdata")
         u = ul.loaduserbyname(session.get("user"))
-        cur = g.db.execute(
+        cur = db.execute(
             "SELECT author, value, lock FROM messages WHERE id = ?", [ident]
         )
         for row in cur.fetchall():
@@ -1034,9 +1039,9 @@ def unlock(ident):
                 u.funds -= value
                 aftertax = int(value * 0.99)  # 1% Tax
                 n.funds = int((n.funds + aftertax))
-                g.db.execute("UPDATE messages SET lock = 0 WHERE id = ?", [ident])
+                db.execute("UPDATE messages SET lock = 0 WHERE id = ?", [ident])
                 flash("Transfer complete. Check the received message.")
-                g.db.commit()
+                db.commit()
                 ul.saveuserlist()
         else:
             flash("already unlocked!")
@@ -1061,7 +1066,7 @@ def resetpassword():
     if request.method == "POST":
         if checktoken():
             try:
-                username = request.form["username"]
+                username = request.form["username"].strip().upper()
                 password = request.form["password"]
                 newpassword = request.form["newpassword"]
                 if session.get("admin", False):

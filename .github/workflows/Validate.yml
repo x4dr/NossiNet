@@ -24,7 +24,7 @@ jobs:
       - name: Run unittests/coverage
         run: |
           . .venv/bin/activate
-          coverage run --source . --omit "venv/*" -m unittest discover --verbose tests
+          coverage run --source . --omit "*venv/*" -m unittest discover --verbose tests
           coverage report -m -i --fail-under=20 --skip-covered --skip-empty | tee report.txt
       - name: Upload Coverage Report
         uses: actions/upload-artifact@v1

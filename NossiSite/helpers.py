@@ -3,10 +3,8 @@ import errno
 import logging
 import os
 import re
-import sqlite3
 import time
 import traceback
-from contextlib import closing
 from pathlib import Path
 from typing import Tuple, List, Union, Dict
 
@@ -19,7 +17,7 @@ from markupsafe import Markup
 from NossiPack import User
 from NossiPack.FenCharacter import FenCharacter
 from NossiPack.fengraph import weapondata
-from NossiPack.krypta import DescriptiveError, write_nonblocking, is_int
+from NossiPack.krypta import DescriptiveError, write_nonblocking, is_int, connect_db
 from NossiSite.base import app
 
 log = logging.getLogger("frontend")
@@ -154,14 +152,6 @@ def generate_token():
     return session["print"]  # only one token per session for now.
 
 
-def init_db():
-    print("initializing DB")
-    with closing(connect_db("initialization")) as db:
-        with app.open_resource("../schema.sql", mode="r") as f:
-            db.cursor().executescript(f.read())
-        db.commit()
-
-
 @app.template_filter("quoted")
 def quoted(s):
     quotedstring = re.findall("'([^']*)'", str(s))
@@ -191,17 +181,6 @@ def markdownfilter(s):
         DescriptiveError("Templating error:" + str(s) + "does not belong")
 
 
-def connect_db(source):
-    try:
-        db = getattr(g, "db", None)
-        if db:
-            return db
-    except:
-        pass  # just connect normally
-    print("connecting to", app.config["DATABASE"], "from", source)
-    return sqlite3.connect(app.config["DATABASE"])
-
-
 @app.before_request
 def before_request():
     g.db = connect_db("before request")
@@ -213,7 +192,9 @@ def before_request():
 def teardown_request(exception: Exception):
     db = getattr(g, "db", None)
     if db is not None:
+        print("closing_db")
         db.close()
+        g.db = None
     if exception:
         if exception.args and exception.args[0] == "REDIR":
             return exception.args[1]
@@ -260,6 +241,8 @@ def internal_error(error: Exception):
             if request.url.endswith("/raw"):
                 return error.args[0]
         else:
+            if app.testing:
+                raise error
             flash("internal error. sorry", category="error")
             logging.exception("Unhandled internal error")
     return render_template("show_entries.html")
@@ -477,9 +460,3 @@ def page_not_found(e):
     if e:
         print(e)
     return render_template("404.html"), 404
-
-
-def openupdb():
-    db = connect_db("opening_DB_UP")
-    if db is not None:
-        db.close()
