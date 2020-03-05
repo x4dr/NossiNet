@@ -160,7 +160,7 @@ class User:
         cur = db.execute(
             "SELECT username, passwordhash, funds, "
             "sheet, oldsheets, admin FROM users WHERE username = (?)",
-            (username,),
+            [username],
         )
         row = cur.fetchone()
         if row is None:
@@ -259,7 +259,7 @@ class Userlist:
         return None
 
     def loaduserbyname(self, username) -> Union[User, None]:
-        username = username.upper
+        username = username.upper()
         t = [x for x in self.userlist if x.username.upper() == username]
         if t:
             return t[0]
