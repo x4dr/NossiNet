@@ -1,39 +1,22 @@
 import json
-import random
 import subprocess
 import time
-from pathlib import Path
-from typing import List, Tuple
 
 import bleach
-import markdown
-from flask import Response, abort
-from markupsafe import Markup
+from flask import abort, session, render_template, request, flash, redirect, url_for
 from werkzeug.security import gen_salt, generate_password_hash
 
 from NossiPack.FenCharacter import FenCharacter
 from NossiPack.User import Userlist, User, Config
 from NossiPack.VampireCharacter import VampireCharacter
-from NossiPack.krypta import DescriptiveError
 from NossiSite.base import app
 from NossiSite.helpers import (
-    session,
     checktoken,
-    request,
-    redirect,
-    url_for,
-    render_template,
-    flash,
     wikiload,
-    wikindex,
     wikisave,
     checklogin,
-    fill_infolets,
-    traverse_md,
     log,
     update_discord_bindings,
-    weapontable,
-    magicalweapontable,
     connect_db,
 )
 
@@ -60,37 +43,7 @@ def getversion():
         encoding="utf-8",
     )
     result = res.stdout
-    return result
-
-
-@app.route("/setfromsource/")
-def setfromsource():
-    checklogin()
-    source = request.args.get("source")
-    ul = Userlist()
-    u = ul.loaduserbyname(session.get("user"))
-    try:
-        new = VampireCharacter()
-        if new.setfromdalines(source[-7:]):
-            u.sheet = new
-            ul.saveuserlist()
-            flash("character has been overwritten with provided Dalines sheet!")
-        else:
-            new = FenCharacter()
-            char = wikiload(source + "_character")
-            if char:
-                new.load_from_md(char[0], char[1], char[2])
-                u.sheet = new
-                ul.saveuserlist()
-            else:
-                flash("Problem with provided sheet source!")
-    except Exception:
-        log.exception("setfromsource:")
-        flash(
-            "Sorry " + session.get("user").capitalize() + ", I can not let you do that."
-        )
-
-    return redirect(url_for("charsheet"))
+    return result, 200, {"Content-Type": "text/plain; charset=utf-8"}
 
 
 @app.route("/")
@@ -121,48 +74,6 @@ def show_entries():
     ]  # dont send out lowercase authors (deleted)
 
     return render_template("show_entries.html", entries=entries)
-
-
-@app.route("/index/")
-def wiki_index():
-    r = wikindex()
-    return render_template(
-        "wikindex.html", entries=[x.with_suffix("").as_posix() for x in r[0]], tags=r[1]
-    )
-
-
-@app.route("/wiki", methods=["GET", "POST"])
-@app.route("/wiki/<path:page>", methods=["GET", "POST"])
-def wikipage(page=None):
-    raw = request.url.endswith("/raw")
-    if raw:
-        page = page[:4]
-    if page is None:
-        page = request.form.get("n", None)
-        if page is None:
-            return wiki_index()
-        return redirect(url_for("wikipage", page=page))
-    try:
-        page = page.lower()
-        title, tags, body = wikiload(page)
-    except DescriptiveError as e:
-        if str(e.args[0]) != page + " not found in wiki.":
-            raise
-        if session.get("logged_in"):
-            entry = dict(id=0, text="", tags="", author=session.get("user"))
-            return render_template(
-                "edit_entry.html", mode="wiki", wiki=page, entry=entry
-            )
-        flash("That page doesn't exist. Log in to create it!")
-        return redirect(url_for("wiki_index"))
-    if not raw:
-        body = bleach.clean(body)
-        body = Markup(markdown.markdown(body, extensions=["tables", "toc", "nl2br"]))
-        body = fill_infolets(body)
-        return render_template(
-            "wikipage.html", title=title, tags=tags, body=body, wiki=page
-        )
-    return body
 
 
 @app.route("/edit/<path:x>", methods=["GET", "POST"])
@@ -277,105 +188,6 @@ def update_filter():
     return redirect(url_for("show_entries"))
 
 
-@app.route("/fensheet/<c>")
-def fensheet(c):
-    char = FenCharacter()
-    char.load_from_md(*wikiload(c + "_character"))
-    body = render_template(
-        "fensheet.html",
-        character=char,
-        userconf=User(session.get("user", "")).configs(),
-    )
-    return fill_infolets(body)
-
-
-@app.route("/weapon/<w>")
-@app.route("/weapon/<w>/<mods>")
-@app.route("/weapon/<w>/json")
-@app.route("/weapon/<w>/<mods>/json")
-@app.route("/weapon/<w>/<mods>/txt")
-@app.route("/weapon/<w>/txt")
-def show_weapontable(w, mods=""):
-    format_json = request.url.endswith("/json")
-    format_txt = request.url.endswith("/txt")
-    w = w.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
-    weapon = weapontable(w, mods, format_json or format_txt)
-    if format_txt:
-        return format_weapon(weapon)
-    return weapon
-
-
-def format_weapon(weapon_tab):
-    result = f"{'Wert': <11}" + "".join(f"{x: <4}" for x in range(1, 11)) + "\n"
-    for key, weapon in weapon_tab.items():
-        weapon = [
-            x if (len(x) > 1 and x[1] > 0) else ([x[0]] if x[0] else "") for x in weapon
-        ]
-        result += (
-            f"{key: <10} "
-            + "".join(f"{';'.join(str(y) for y in x): <4}" for x in weapon[1:-1])
-            + "\n"
-        )
-    return result
-
-
-@app.route("/specific/<a>")
-@app.route("/specific/<a>/raw")
-def specific(a: str):
-    parse_md = not request.url.endswith("/raw")
-    a = a.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
-    a = a.split(":")
-    if a[-1] == "-":
-        a = a[:-1]
-        hide_headline = 1
-    else:
-        hide_headline = 0
-
-    article: str = wikiload(a[0])[-1]
-    for seek in a[1:]:
-        article = traverse_md(article, seek)
-    if not article:
-        article = "not found"
-    else:
-        article = article[article.find("\n") * hide_headline :]
-    if parse_md:
-        return Markup(markdown.markdown(article, extensions=["tables", "toc", "nl2br"]))
-    return article
-
-
-@app.route("/magicalweapon/<w>")
-@app.route("/magicalweapon/<w>/<par>")
-@app.route("/magicalweapon/<w>/json")
-@app.route("/magicalweapon/<w>/<par>/json")
-@app.route("/magicalweapon/<w>/<par>/txt")
-@app.route("/magicalweapon/<w>/txt")
-def magicweapons(w, par=None):
-    format_json = request.url.endswith("/json")
-    format_txt = request.url.endswith("/txt")
-    w = w.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
-    code = wikiload("magicalweapons")[-1].upper()
-    if w.upper() in code:
-        code = code[code.find(w.upper()) :]  # find the right headline
-        code = code[code.find("\n") + 1 :]  # skip over the newline
-        code = code[: code.find("\n")]  # code should be on the next line
-    else:
-        raise DescriptiveError(w.upper() + "not found in " + code)
-    weapon = magicalweapontable(code, par, format_json or format_txt)
-    if format_txt:
-        return format_weapon(weapon)
-    return weapon
-
-
-@app.route("/bytag/<tag>")
-def tagsearch(tag):
-    r = wikindex()
-    heads = []
-    a = r[1]
-    tags = {t: v for t, v in a.items() if tag in v}
-    entries = [e for e in r[0] if e in tags.keys()]
-    return render_template("wikindex.html", entries=entries, tags=tags, heads=heads)
-
-
 @app.route("/config/", methods=["POST"])
 @app.route("/config/<path:x>", methods=["GET", "POST"])
 def config(x=None):
@@ -407,29 +219,6 @@ def config(x=None):
     return abort(405)
 
 
-@app.route("/char_access/<path:x>")
-def char_access(x):
-    parts = x.split(".")
-    discord = request.cookies.get("discord", "")
-    ul = Userlist(preload=True, sheets=False)
-    if ul.contains(parts[0]):
-        u = ul.loaduserbyname(session.get("user"))
-        if discord.strip() and u.config("discord") != discord:
-            abort(403)
-        char = u.sheet
-    else:
-        c = wikiload(parts[0] + "_character")
-        char = FenCharacter()
-        char.load_from_md(*c)
-    d = char.getdictrepr()
-    for x_part in parts[1:]:
-        d = d[x_part]  # TODO: investigate
-    return app.response_class(
-        json.dumps(d, indent=2, ensure_ascii=False) + "\n",
-        mimetype=app.config["JSONIFY_MIMETYPE"],
-    )
-
-
 @app.route("/charactersheet/")
 def charsheet():
     checklogin()
@@ -437,19 +226,7 @@ def charsheet():
     u = ul.loaduserbyname(session.get("user"))
     configchar = u.config("character_sheet", None)
     if configchar:
-        try:
-            c = wikiload(configchar + "_character")
-            char = FenCharacter()
-            char.load_from_md(*c)
-            body = render_template(
-                "fensheet.html",
-                character=char,
-                userconf=User(session.get("user", "")).configs(),
-            )
-            return fill_infolets(body)
-        except DescriptiveError as e:
-            flash("Error with your configuration value character_sheet: " + e.args[0])
-
+        redirect(url_for("fensheet", c=configchar))
     sheet = u.sheet.getdictrepr()
     if sheet["Type"] == "OWOD":
         return render_template("vampsheet.html", character=sheet, own=True)
@@ -470,10 +247,10 @@ def showsheet(name="None"):
             return render_template(
                 "vampsheet.html", character=u.sheet.getdictrepr(), own=False
             )
-        return render_template(
-            "vampsheet.html", character=VampireCharacter().getdictrepr(), own=False
-        )
-    return abort(404)
+    flash("you do not have permission to see this")
+    return render_template(
+        "vampsheet.html", character=VampireCharacter().getdictrepr(), own=False
+    )
 
 
 @app.route("/deletesheet/", methods=["POST"])
@@ -567,80 +344,6 @@ def showoldsheets(x):
 def new_vamp_sheet():
     checklogin()
     return render_template("vampsheet_editor.html", character=VampireCharacter())
-
-
-@app.route("/fencalc/all/<costs>/<penalty>")
-def ddos(costs, penalty):
-    p = Path(costs + "-" + penalty + ".result")
-    try:
-        if p.exists():
-            with open(p, "r") as f:
-                return f.read()
-
-        with open(p, "w") as f:
-            res = []
-            for i in range(605):
-                r = fen_calc(str(i), costs, penalty)
-                log.debug(f"Fencalc {i} {res}")
-                if i == 0 or r != res[-1][1]:
-                    res.append([(str(i) + "   ")[:4] + " : ", r])
-            r = "\n".join(x[0] + x[1] for x in res)
-            f.write(r)
-            return r
-    except:
-        with open(p, "w") as f:
-            f.write("an error has previously occured and this request is blocked")
-            return "error"
-
-
-@app.route("/fencalc/<inputstring>/<costs>/<penalty>")
-@app.route("/fencalc/<inputstring>")
-def fen_calc(
-    inputstring: str, costs=None, penalty=None
-):  # move into fen sheet static method
-    def cost(
-        att: Tuple[int, ...], internal_costs: List[int], internal_penalty: List[int]
-    ) -> int:
-        pen = 0
-        for ip, p in enumerate(internal_penalty):
-            pen += (max(sum(1 for a in att if a >= ip), 1) - 1) * p
-        return sum(internal_costs[a] for a in att) + pen
-
-    if costs is not None:
-        costs = [int(x) for x in costs.split(",")]
-    else:
-        costs = [0, 15, 35, 60, 100]
-    if penalty is not None:
-        penalty = [int(x) for x in penalty.split(",")]
-    else:
-        penalty = [0, 0, 0, 50, 100]
-    xp = [int(x) for x in inputstring.split(",")]
-    if len(xp) == 1:
-        xp = xp[0]
-        allconf = {
-            (a, b, c) for a in range(5) for b in range(a + 1) for c in range(b + 1)
-        }
-        correct = [
-            [x[0] + 1, x[1] + 1, x[2] + 1]
-            for x in allconf
-            if cost(x, costs, penalty) <= xp
-        ]
-        i = 0
-        j = len(correct)
-        maximal = correct[:]
-        while i < j:
-            for u in range(len(maximal[i])):
-                upg = list(maximal[i])
-                upg[u] = upg[u] + 1
-                # upg = tuple(upg)
-                if upg in correct:
-                    del maximal[i]
-                    i -= 1
-                    j -= 1
-                    break
-            i += 1
-        return "\t".join(str(c) for c in maximal)
-    return str(cost(tuple(x - 1 for x in xp), costs, penalty))
 
 
 @app.route("/modify_sheet/", methods=["GET", "POST"])
@@ -805,7 +508,7 @@ def login(r=None):
     error = None
     returnto = r
     if request.method == "POST":
-        ul = Userlist(preload=False, sheets=False)
+        ul = Userlist()
         user = request.form["username"]
         user = user.upper()
         if not ul.valid(user, request.form.get("password", None)):
@@ -883,96 +586,25 @@ def show_user_profile(username):
                     msg["text"] = "[locked until you pay]"
             msgs.append(msg)
 
-    ul = Userlist(preload=True)
-    if ul.contains(username):
-        u = ul.getuserbyname(username)
-    else:
+    ul = Userlist()
+    u = ul.loaduserbyname(username)
+    if u is None:
         u = User(username, "")
     site = render_template("userinfo.html", user=u, msgs=msgs, configs=u.configs())
     return site
 
 
+@app.route("/test/<x>")
+def test_migrate(x):
+    ul = Userlist
+    for c in x.split(" "):
+        ul.loaduserbyname(c)
+    ul.saveuserlist()
+
+
 @app.route("/impressum/")
 def impressum():
     return render_template("Impressum.html")
-
-
-@app.route("/boardgame<int:size>_<seed>.json")
-@app.route("/boardgame<int:size>_.json")
-def boardgamemap(size, seed=""):
-    if size > 100:
-        size = 100
-    rx = random.Random()
-    if seed:
-        rx.seed(str(size) + str(seed))
-
-    def r(a=4):
-        for _ in range(a):
-            yield rx.randint(1, 10)
-
-    def e(inp, dif):
-        for i in inp:
-            yield 2 if i == 10 else (1 if i >= dif else 0)
-
-    def fpik(inp, pref="FPIK"):
-        vals = list(inp)
-        vals = [(v if v != 2 else (2 if sum(vals) < 4 else 1)) for v in vals]
-        for i, p in enumerate(pref):
-            yield '"' + p + '": ' + str(vals[i])
-
-    def cell():  # i, j):
-        difficulty = 8
-        """6 + (
-            (9 if i == j else
-             8)
-            if i in [0, size - 1] and j in [0, size - 1] else
-            (7 if j in [0, size - 1] else
-             (6 if j % 2 == 1 and (i in [0, size - 1] or j in [0, size - 1]) else
-              (5 if 0 < i < size - 1 else 8))))"""
-
-        for li in fpik(e(r(), difficulty)):
-            yield li
-
-    first = True
-
-    def notfirst():
-        nonlocal first
-        if first:
-            first = False
-            return True
-        return False
-
-    def resetfirst():
-        nonlocal first
-        first = True
-
-    def generate():
-        yield '{"board": ['
-        for x in range(size):
-            yield ("," if not first else "") + "["
-            resetfirst()
-            for y in range(size):
-                time.sleep(0.001)
-                yield ("" if notfirst() else ",") + '{ "x":%d, "y":%d, ' % (
-                    x,
-                    y,
-                ) + ",".join(
-                    cell(
-                        # x, y
-                    )
-                ) + "}"
-            yield "]"
-        yield "]}"
-
-    return Response(generate(), mimetype="text/json")
-
-
-@app.route("/gameboard/<int:size>/")
-@app.route("/gameboard/<int:size>/<seed>")
-def gameboard(size, seed=""):
-    if size > 20:
-        size = 20
-    return render_template("gameboard.html", size=size, seed=seed)
 
 
 @app.route("/sendmsg/<username>", methods=["POST"])
@@ -1110,35 +742,6 @@ def lightswitch():
     else:
         session["light"] = "ON"
     return redirect(request.referrer)
-
-
-@app.route("/fenweapongraph")
-def graphtest():
-    from NossiPack import fengraph
-
-    fengraph.supply_graphdata()
-    return render_template("graphs.html")
-
-
-@app.route("/chargen/<a>,<b>,<c>,<abia>,<abib>,<abic>,<shuffle>")
-def chargen(a, b, c, abia, abib, abic, shuffle):
-    try:
-        return render_template(
-            "vampsheet.html",
-            character=VampireCharacter.makerandom(
-                1,
-                5,
-                int(a),
-                int(b),
-                int(c),
-                int(abia),
-                int(abib),
-                int(abic),
-                int(shuffle),
-            ).getdictrepr(),
-        )
-    except:
-        return redirect("/chargen/")
 
 
 @app.route("/favicon.ico")

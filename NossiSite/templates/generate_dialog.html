@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+{% block body %}
+    <h2>Character Generator Setup</h2>
+    <p>
+    Welcome to the NossiNet Setup Service, lets set you up with your own personal stranger ;)<br/>
+    IF YOU WANT MORE FEATURES JUST REQUEST THEM AND I WILL TELL YOU IF THEY CAN BE DONE
+        </p>
+    <h6>Just allocate how many points are to be spend and click le bouton.</h6>
+    <form action="{{ url_for('chargen_menu') }}" method=post>
+        <dl>
+            <dt>Physical Attributes:
+            <dd><input class=leet type=number name=a value="3">
+            <dt>Social Attributes:
+            <dd><input class=leet type=number name=b value="5">
+            <dt>Mental Attributes:
+            <dd><input class=leet type=number name=c value="7">
+            <dt>Talent Abilities:
+            <dd><input class=leet type=number name=abia value="5">
+            <dt>Skill Abilities:
+            <dd><input class=leet type=number name=abib value="9">
+            <dt>Knowledge Abilities:
+            <dd><input class=leet type=number name=abic value="13">
+            <dt>Shuffle the Ability and Skills:
+            <dd><input class=leet type=checkbox name=shuffle checked="checked">
+
+            <dt><input class=leet type=submit value="Le Bouton">
+        </dl>
+    </form>
+{% endblock %}
