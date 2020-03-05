@@ -70,7 +70,6 @@ create table if not exists users
 	funds INTEGER not null,
 	sheet TEXT not null,
 	oldsheets TEXT,
-	defines TEXT,
 	ip TEXT,
 	admin INTEGER
 );
