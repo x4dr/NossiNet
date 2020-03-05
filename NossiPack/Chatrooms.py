@@ -31,7 +31,8 @@ class Chatroom:
         """last [limit] entries in the chatlog"""
         with connect_db("loadchatlog") as db:
             rows = db.execute(
-                "SELECT line, time FROM chatlogs WHERE room = ? ORDER BY linenr DESC LIMIT ?",
+                "SELECT line, time FROM chatlogs WHERE room = ? "
+                "ORDER BY linenr DESC LIMIT ?",
                 [self.name, limit],
             ).fetchall()
         chatlog = [(row[0], float(row[1])) for row in rows[-1000:]]
