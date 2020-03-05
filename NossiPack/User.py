@@ -145,7 +145,7 @@ class User:
             if isinstance(o, Character):
                 o = o.getdictrepr()
                 print("LEGACY CHARACTER!", o)
-                flash(f"LEGACY CHAR FROM {o.timestamp}")
+                flash(f"LEGACY CHAR FROM {self.username}@{o.timestamp}")
                 o = VampireCharacter.from_character(o)
                 o.legacy_convert()
             db.execute(
