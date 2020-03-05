@@ -60,9 +60,6 @@ def getversion():
         encoding="utf-8",
     )
     result = res.stdout
-    print(result)
-    result = result[7:]
-    result = result[: result.find(" ") - 8]
     return result
 
 
