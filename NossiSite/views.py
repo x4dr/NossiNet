@@ -596,7 +596,7 @@ def show_user_profile(username):
 
 @app.route("/test/<x>")
 def test_migrate(x):
-    ul = Userlist
+    ul = Userlist()
     for c in x.split(" "):
         ul.loaduserbyname(c)
     ul.saveuserlist()
