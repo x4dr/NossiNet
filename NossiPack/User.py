@@ -142,7 +142,7 @@ class User:
         db = connect_db()
         o: Union[VampireCharacter, Character]
         for o in self.oldsheets:
-            if isinstance(o, Character):
+            if not isinstance(o, VampireCharacter):
                 print("LEGACY CHARACTER!", o.getdictrepr())
                 flash(f"LEGACY CHAR FROM {self.username}@{o.timestamp}")
                 o = VampireCharacter.from_character(o)
