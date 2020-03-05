@@ -42,7 +42,7 @@ def calc_mods(data, showdmgmods=False):
     dmgmods = [
         data[i // 2 * ((-1) ** (i % 2))] / total for i in range(1, len(data) + 1)
     ]
-    print(list(i // 2 * ((-1) ** (i % 2)) for i in range(1, len(data) + 1)))
+    print([i // 2 * ((-1) ** (i % 2)) for i in range(1, len(data) + 1)])
     if showdmgmods:
         print("dmgmods(adjusted):")
         print(dmgmods)
@@ -54,14 +54,13 @@ def comparison(sel):
     print(f"starting {sel1}, {sel2}")
     occurences = collections.defaultdict(lambda: 0)
     j = 0
-    global dice5
     time1 = time.time()
-    for i in dice5.keys():
-        for k in dice5.keys():
+    for i, first in dice5.keys():
+        for k, second in dice5.keys():
             j += 1
             delta = selector(sel1, i) - selector(sel2, k)
             # delta = min(10, max(delta, 0))  # clamp to 0-10
-            occurences[delta] += dice5[k] * dice5[i]
+            occurences[delta] += second * first
     print(f"rolling {sel1} against {sel2} for {time.time() - time1:.4} seconds")
     return sel, dict(occurences), time.time() - time1
 
@@ -81,7 +80,7 @@ def generate():
     pool = multiprocessing.Pool(processes=3)
     time0 = time.time()
     results = pool.map(comparison, tuplecombos)
-    cumulativetime = sum([x[2] for x in results])
+    cumulativetime = sum(x[2] for x in results)
     results = [(x[0], x[1]) for x in results]
 
     def calc(x):
@@ -96,8 +95,6 @@ def generate():
         with open("5d10_ordered_data", "w") as f:
             for result in sorted(results, key=calc):
                 f.write(str(result) + "\n")
-    except:
-        raise
     finally:
         print("Total time taken:", time.time() - time0, "/", cumulativetime)
 

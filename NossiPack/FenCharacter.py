@@ -6,7 +6,7 @@ from collections import OrderedDict
 __author__ = "maric"
 
 
-class FenCharacter(object):
+class FenCharacter:
     def __init__(self, name="", meta=None):
         self.Tags = ""
         self.Name = name
@@ -154,8 +154,8 @@ class FenCharacter(object):
                 else:
                     parsed_parts = self.parse_part(s, False)
                     self.Meta[partname] = parsed_parts
-        for cat, catv in self.Categories.items():
-            for sec, secv in list(catv.items()):
+        for catv in self.Categories.values():
+            for secv in list(catv.values()):
                 for itemn, itemv in list(secv.items()):
                     if itemn == "_lines":
                         secv[""] = "\n".join(itemv)

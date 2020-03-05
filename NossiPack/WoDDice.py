@@ -11,7 +11,7 @@ def str_to_slice(inp):
     return slice(*s)
 
 
-class WoDDice(object):
+class WoDDice:
     selectors: Union[List[int], str]
 
     def __init__(self, info):
@@ -202,15 +202,13 @@ class WoDDice(object):
         if succ > 0:
             if succ <= antisucc:
                 return 0
-            else:
-                return succ - antisucc
-        else:
-            return 0 - antisucc
+            return succ - antisucc
+        return 0 - antisucc
 
     def roll_wodsuccesses(self):  # non-verbose, returns int
         return (
             self.botchformat(self.succ, self.antisucc)
-            if not len(self.selectors)
+            if not self.selectors
             else self.roll_sel()
         )
 

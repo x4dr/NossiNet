@@ -156,9 +156,8 @@ def wikipage(page=None):
             return render_template(
                 "edit_entry.html", mode="wiki", wiki=page, entry=entry
             )
-        else:
-            flash("That page doesn't exist. Log in to create it!")
-            return redirect(url_for("wiki_index"))
+        flash("That page doesn't exist. Log in to create it!")
+        return redirect(url_for("wiki_index"))
     if not raw:
         body = bleach.clean(body)
         body = Markup(markdown.markdown(body, extensions=["tables", "toc", "nl2br"]))
@@ -166,8 +165,7 @@ def wikipage(page=None):
         return render_template(
             "wikipage.html", title=title, tags=tags, body=body, wiki=page
         )
-    else:
-        return body
+    return body
 
 
 @app.route("/edit/<path:x>", methods=["GET", "POST"])
@@ -200,10 +198,8 @@ def editentries(x=None):
             if (session.get("user").upper() == entry["author"].upper()) or session.get(
                 "admin"
             ):
-
                 return render_template("edit_entry.html", mode="blog", entry=entry)
-            else:
-                flash("not authorized to edit id" + str(x))
+            flash("not authorized to edit id" + str(x))
         except ValueError:
             try:
                 author = ""
@@ -274,6 +270,7 @@ def editentries(x=None):
         else:
             flash("go back and try again")
         return redirect(url_for("show_entries"))
+    return abort(405)
 
 
 @app.route("/update_filter/", methods=["POST"])
@@ -311,16 +308,15 @@ def show_weapontable(w, mods=""):
     return weapon
 
 
-def format_weapon(weapon):
+def format_weapon(weapon_tab):
     result = f"{'Wert': <11}" + "".join(f"{x: <4}" for x in range(1, 11)) + "\n"
-    for key in weapon.keys():
-        weapon[key] = [
-            x if (len(x) > 1 and x[1] > 0) else ([x[0]] if x[0] else "")
-            for x in weapon[key]
+    for key, weapon in weapon_tab.items():
+        weapon = [
+            x if (len(x) > 1 and x[1] > 0) else ([x[0]] if x[0] else "") for x in weapon
         ]
         result += (
             f"{key: <10} "
-            + "".join(f"{';'.join(str(y) for y in x): <4}" for x in weapon[key][1:-1])
+            + "".join(f"{';'.join(str(y) for y in x): <4}" for x in weapon[1:-1])
             + "\n"
         )
     return result
@@ -347,8 +343,7 @@ def specific(a: str):
         article = article[article.find("\n") * hide_headline :]
     if parse_md:
         return Markup(markdown.markdown(article, extensions=["tables", "toc", "nl2br"]))
-    else:
-        return article
+    return article
 
 
 @app.route("/magicalweapon/<w>")
@@ -409,6 +404,7 @@ def config(x=None):
             Config.save(session["user"], x.lower(), request.form["configuration"])
             flash(f"Saved {x}!")
         return redirect(url_for("show_user_profile", username=session["user"]))
+    return abort(405)
 
 
 @app.route("/char_access/<path:x>")
@@ -426,8 +422,8 @@ def char_access(x):
         char = FenCharacter()
         char.load_from_md(*c)
     d = char.getdictrepr()
-    for x in parts[1:]:
-        d = d[x]
+    for x_part in parts[1:]:
+        d = d[x_part]  # TODO: investigate
     return app.response_class(
         json.dumps(d, indent=2, ensure_ascii=False) + "\n",
         mimetype=app.config["JSONIFY_MIMETYPE"],
@@ -457,9 +453,8 @@ def charsheet():
     sheet = u.sheet.getdictrepr()
     if sheet["Type"] == "OWOD":
         return render_template("vampsheet.html", character=sheet, own=True)
-    else:
-        error = "unrecognized sheet format"
-        return render_template("vampsheet.html", character=sheet, error=error, own=True)
+    error = "unrecognized sheet format"
+    return render_template("vampsheet.html", character=sheet, error=error, own=True)
 
 
 @app.route("/showsheet/<name>")
@@ -479,8 +474,7 @@ def showsheet(name="None"):
             return render_template(
                 "vampsheet.html", character=VampireCharacter().getdictrepr(), own=False
             )
-    else:
-        abort(404)
+    return abort(404)
 
 
 @app.route("/deletesheet/", methods=["POST"])
@@ -512,7 +506,8 @@ def res_sheet():
 @app.route("/berlinmap")
 def berlinmap():
     return render_template("map.html")
-    # return redirect("https://www.google.com/maps/d/viewer?mid=1TH6vryHyVxv_xFjFJDXgXQegZO4")
+    # return redirect(
+    # "https://www.google.com/maps/d/viewer?mid=1TH6vryHyVxv_xFjFJDXgXQegZO4")
 
 
 @app.route("/berlinmap/data.dat")
@@ -530,11 +525,11 @@ def mapdata():
         }
     cur = db.execute("SELECT name, faction, allegiance, clan, tags FROM actors")
     for row in cur.fetchall():
-        for plz in plzs.keys():
-            if plzs[plz]["owner"].upper() == row[0]:
-                plzs[plz]["tags"] += " ".join([x for x in row[1:] if x])
+        for plzdat in plzs.values():
+            if plzdat["owner"].upper() == row[0]:
+                plzdat["tags"] += " ".join(x for x in row[1:] if x)
                 if row[1]:
-                    plzs[plz]["faction"] = row[1]
+                    plzdat["faction"] = row[1]
     log.debug(f"took: {time.time() - time0} seconds.")
     return json.dumps(plzs)
 
@@ -582,17 +577,17 @@ def ddos(costs, penalty):
         if p.exists():
             with open(p, "r") as f:
                 return f.read()
-        else:
-            with open(p, "w") as f:
-                res = []
-                for i in range(605):
-                    r = fen_calc(str(i), costs, penalty)
-                    log.debug(f"Fencalc {i} {res}")
-                    if i == 0 or r != res[-1][1]:
-                        res.append([(str(i) + "   ")[:4] + " : ", r])
-                r = "\n".join([x[0] + x[1] for x in res])
-                f.write(r)
-                return r
+
+        with open(p, "w") as f:
+            res = []
+            for i in range(605):
+                r = fen_calc(str(i), costs, penalty)
+                log.debug(f"Fencalc {i} {res}")
+                if i == 0 or r != res[-1][1]:
+                    res.append([(str(i) + "   ")[:4] + " : ", r])
+            r = "\n".join(x[0] + x[1] for x in res)
+            f.write(r)
+            return r
     except:
         with open(p, "w") as f:
             f.write("an error has previously occured and this request is blocked")
@@ -609,8 +604,8 @@ def fen_calc(
     ) -> int:
         pen = 0
         for ip, p in enumerate(internal_penalty):
-            pen += (max(sum([1 for a in att if a >= ip]), 1) - 1) * p
-        return sum([internal_costs[a] for a in att]) + pen
+            pen += (max(sum(1 for a in att if a >= ip), 1) - 1) * p
+        return sum(internal_costs[a] for a in att) + pen
 
     if costs is not None:
         costs = [int(x) for x in costs.split(",")]
@@ -623,9 +618,9 @@ def fen_calc(
     xp = [int(x) for x in inputstring.split(",")]
     if len(xp) == 1:
         xp = xp[0]
-        allconf = set(
-            [(a, b, c) for a in range(5) for b in range(a + 1) for c in range(b + 1)]
-        )
+        allconf = {
+            (a, b, c) for a in range(5) for b in range(a + 1) for c in range(b + 1)
+        }
         correct = [
             [x[0] + 1, x[1] + 1, x[2] + 1]
             for x in allconf
@@ -646,8 +641,7 @@ def fen_calc(
                     break
             i += 1
         return "\t".join(str(c) for c in maximal)
-    else:
-        return str(cost(tuple([x - 1 for x in xp]), costs, penalty))
+    return str(cost(tuple(x - 1 for x in xp), costs, penalty))
 
 
 @app.route("/modify_sheet/", methods=["GET", "POST"])
@@ -712,8 +706,7 @@ def delete_entry(ident):
                 flash('Entry: "' + entry.get("title") + '" has been deleted.')
             db.commit()
         return redirect(url_for("show_entries"))
-    else:
-        abort(404)
+    return abort(404)
 
 
 @app.route("/add", methods=["POST"])
@@ -796,7 +789,6 @@ def register():  # this is not clrs secure because it does not need to be
                     if error is None:
                         flash("User successfully created.")
                         return redirect(url_for("start"))
-                else:
                     error = "Password has to be not empty!"
             else:
                 error = "Passwords do not match!"
@@ -830,8 +822,7 @@ def login(r=None):
             returnto = request.form.get("returnto", None)
             if returnto is None:
                 return redirect(url_for("show_entries"))
-            else:
-                return redirect(returnto)
+            return redirect(returnto)
     return render_template("login.html", returnto=returnto, error=error)
 
 
@@ -916,7 +907,7 @@ def boardgamemap(size, seed=""):
         rx.seed(str(size) + str(seed))
 
     def r(a=4):
-        for i in range(a):
+        for _ in range(a):
             yield rx.randint(1, 10)
 
     def e(inp, dif):
@@ -926,8 +917,8 @@ def boardgamemap(size, seed=""):
     def fpik(inp, pref="FPIK"):
         vals = list(inp)
         vals = [(v if v != 2 else (2 if sum(vals) < 4 else 1)) for v in vals]
-        for i in range(len(pref)):
-            yield '"' + pref[i] + '": ' + str(vals[i])
+        for i, p in enumerate(pref):
+            yield '"' + p + '": ' + str(vals[i])
 
     def cell():  # i, j):
         difficulty = 8
@@ -949,8 +940,7 @@ def boardgamemap(size, seed=""):
         if first:
             first = False
             return True
-        else:
-            return False
+        return False
 
     def resetfirst():
         nonlocal first

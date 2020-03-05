@@ -37,12 +37,11 @@ def stream_template(template_name, **context):
     return rv
 
 
-wikitags = {}
 wikistamp = [0.0]
 
 
 def wikindex() -> Tuple[List[Path], Dict]:
-    global wikitags
+    wikitags = app.wikitags
     mds = []
     for p in wikipath.glob("**/*.md"):
         mds.append(p.relative_to(wikipath))
@@ -173,18 +172,17 @@ def markdownfilter(s):
         return ""
     if isinstance(s, str):
         return Markup(markdown.markdown(s, extensions=["tables", "toc", "nl2br"]))
-    elif isinstance(s, list):
+    if isinstance(s, list):
         next_try = "\n".join(s)
         n = Markup(markdown.markdown(next_try, extensions=["tables", "toc", "nl2br"]))
         return n.split("\n")
-    else:
-        DescriptiveError("Templating error:" + str(s) + "does not belong")
+    raise DescriptiveError("Templating error:" + str(s) + "does not belong")
 
 
 @app.before_request
 def before_request():
     g.db = connect_db("before request")
-    if len(wikitags.keys()) == 0:
+    if not getattr(app, "wikitags", None) or len(app.wikitags.keys()) == 0:
         updatewikitags()
 
 
@@ -200,6 +198,7 @@ def teardown_request(exception: Exception):
             return exception.args[1]
         print("exception caught by teardown:", exception, exception.args)
         traceback.print_exc()
+    return None
 
 
 def updatewikitags():
@@ -209,8 +208,9 @@ def updatewikitags():
         + " seconds since the last wiki indexing"
     )
     wikistamp[0] = time.time()
+    app.wikitags = {}
     for m in wikindex()[0]:
-        wikitags[m] = wikiload(m)[1]
+        app.wikitags[m] = wikiload(m)[1]
     print("index took: " + str(1000 * (time.time() - wikistamp[0])) + " milliseconds")
 
 
@@ -234,17 +234,15 @@ def checklogin():
 def internal_error(error: Exception):
     if error.args and error.args[0] == "REDIR":
         return error.args[1]
-    else:
-        if type(error) == DescriptiveError:
-            flash(error.args[0])
-            logging.exception("Handled Descriptive Error")
-            if request.url.endswith("/raw"):
-                return error.args[0]
-        else:
-            if app.testing:
-                raise error
-            flash("internal error. sorry", category="error")
-            logging.exception("Unhandled internal error")
+    if type(error) is DescriptiveError:
+        flash(error.args[0])
+        logging.exception("Handled Descriptive Error")
+        if request.url.endswith("/raw"):
+            return error.args[0]
+    if app.testing:
+        raise error
+    flash("internal error. sorry", category="error")
+    logging.exception("Unhandled internal error")
     return render_template("show_entries.html")
 
 
@@ -252,8 +250,8 @@ def weaponadd(weapon_damage_array, b, ind=0):
     if len(weapon_damage_array) != len(b):
         raise DescriptiveError("Length mismatch!", weapon_damage_array, b)
     c = []
-    for i in range(len(weapon_damage_array)):
-        c.append((weapon_damage_array[i] + [0, 0])[:2])
+    for i, w in enumerate(weapon_damage_array):
+        c.append((w + [0, 0])[:2])
         c[-1][ind] = max(c[-1][ind] + b[i], 0)
     return c
 
@@ -267,8 +265,7 @@ def magicalweapontable(code: str, par=None, json=False):
     step = code.split(":")
     if step[0].strip() == "WEAPON":
         return weapontable(step[1], step[2], json)
-    else:
-        raise DescriptiveError("Dont know what do do with " + code)
+    raise DescriptiveError("Dont know what do do with " + code)
 
 
 def calculate(calc, par):
@@ -361,10 +358,9 @@ def weapontable(w, mods="", json=False):
                 weapon.pop(k)
         if json:
             return weapon
-        else:
-            return markdown.markdown(
-                render_template("weapontable.html", data=weapon), extensions=["tables"]
-            )
+        return markdown.markdown(
+            render_template("weapontable.html", data=weapon), extensions=["tables"]
+        )
     except Exception as e:
         return (
             '<div style="color: red"> WeaponCode Invalid: '
@@ -451,8 +447,7 @@ def checktoken():
         flash("invalid token!")
         session["retrieve"] = request.form
         return False
-    else:
-        return True
+    return True
 
 
 @app.errorhandler(404)

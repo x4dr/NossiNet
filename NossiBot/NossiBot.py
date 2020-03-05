@@ -23,7 +23,7 @@ shutdownflag = pathlib.Path("shutdown_nossibot")
 if shutdownflag.exists():
     shutdownflag.unlink()  # ignore previously set shutdown
 remindfile = os.path.expanduser("~/reminders.txt")
-remindnext = os.path.expanduser("~/reminers_next.txt")
+remindnext = os.path.expanduser("~/reminders_next.txt")
 numemoji = ("1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟")
 numemoji_2 = ("❗", "‼️", "\U0001F386")
 
@@ -42,7 +42,8 @@ with shelve.open(os.path.expanduser(storagefile)) as shelvefile:
     persist["mutated"] = False
 now = datetime.datetime.now
 
-TOKEN = open(os.path.expanduser("~/token.discord"), "r").read().strip()
+with open(os.path.expanduser("~/token.discord"), "r") as f:
+    TOKEN = f.read().strip()
 
 description = """NossiBot in Python"""
 client = discord.Client()
@@ -112,7 +113,7 @@ async def reminders(clearjob=None):
 
 
 def newreminder(channelid, message):
-    jobid = "".join([random.choice(string.ascii_letters).lower() for _ in range(4)])
+    jobid = "".join(random.choice(string.ascii_letters).lower() for _ in range(4))
     print(message)
     date, message, repeat, interval = [
         x.strip() for x in (message.split(";") + ["", ""])[:4]
@@ -133,7 +134,7 @@ def newreminder(channelid, message):
         round(abs(dateparse(interval) - datetime.datetime.now()).total_seconds())
     )
     newline = (
-        ";".join([channelid, jobid, str(round(date)), message, repeat, interval]) + "\n"
+        ";".join((channelid, jobid, str(round(date)), message, repeat, interval)) + "\n"
     )
     print("new line:", newline)
     with open(remindfile, "a") as f:
@@ -174,7 +175,7 @@ async def oraclehandle(msg, comment, send, author):
             sentmessage = await send(author.mention + comment + " " + next(it))
             n = ""
             p = (
-                ", ".join([str(x) for x in parameters[:-1]])
+                ", ".join(str(x) for x in parameters[:-1])
                 + "@5"
                 + (("R" + str(parameters[-1])) if parameters[-1] else "")
             )
@@ -289,9 +290,9 @@ async def rollhandle(msg, comment, send, author):
             if r.max == 10 and (r.selectors or r.amount == 5):
                 for frequency in range(1, 11):
                     amplitude = r.resonance(frequency)
-                    if 0 < amplitude:
+                    if amplitude > 0:
                         await sent.add_reaction(numemoji[frequency - 1])
-                    if 1 < amplitude and len(r.r) == 5:
+                    if amplitude > 1 and len(r.r) == 5:
                         await sent.add_reaction(numemoji_2[amplitude - 2])
 
         except Exception as e:
@@ -329,9 +330,8 @@ async def specifichandle(msg, comment, send, author):
         for replypart in [n[i : i + 1950] for i in range(1950, len(n), 1950)]:
             await send("```" + replypart + "```")
         return True
-    else:
-        print("failed request:", n.status_code, n.url)
-        return False
+    print("failed request:", n.status_code, n.url)
+    return False
 
 
 async def handle_defines(msg, send, message):
@@ -447,8 +447,7 @@ async def tick():
                         if k == "mutated":
                             continue  # mutated will never be saved!
                         shelvingfile[k] = persist[k]
-                    else:
-                        persist["mutated"] = False
+                    persist["mutated"] = False
         except Exception as e:
             print(f"Exception in tick with {k}:", e, e.args, traceback.format_exc())
         next_call += 10
@@ -514,12 +513,12 @@ async def on_message(message: discord.Message):
                                     "```" + lines[i][:1990] + "```"
                                 )
             return
-        elif "DIE" in msg and discordname(message.author) == persist["owner"]:
+        if "DIE" in msg and discordname(message.author) == persist["owner"]:
             await message.add_reaction("\U0001f480")
             await send("I shall die.")
             await client.close()
             return
-        elif msg.lower().startswith("i am ") or msg.lower().startswith("who am i"):
+        if msg.lower().startswith("i am ") or msg.lower().startswith("who am i"):
             if msg.lower().startswith("i am"):
                 msg = msg[len("i am ") :]
                 if persist.get(discordname(message.author), None) is None:
@@ -539,7 +538,7 @@ async def on_message(message: discord.Message):
                 persist["allowed_rooms"].remove(message.channel.id)
                 await send("I will no longer listen here.")
                 return
-            elif "INVOKE" in msg:
+            if "INVOKE" in msg:
                 try:
                     persist["allowed_rooms"] = persist["allowed_rooms"] | {
                         message.channel.id

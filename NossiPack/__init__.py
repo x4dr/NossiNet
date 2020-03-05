@@ -4,5 +4,12 @@ from NossiPack.WoDDice import WoDDice
 from NossiPack.WoDParser import WoDParser
 from NossiPack.FenCharacter import FenCharacter
 
-__all__ = [User, Userlist, VampireCharacter, WoDDice, WoDParser, FenCharacter]
+__all__ = [
+    "User",
+    "Userlist",
+    "VampireCharacter",
+    "WoDDice",
+    "WoDParser",
+    "FenCharacter",
+]
 __author__ = "maric"
