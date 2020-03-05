@@ -1,14 +1,42 @@
 import os
-import pathlib
+import sqlite3
+from contextlib import closing
+from pathlib import Path
 import random
+
+from flask import g
+
+from NossiSite import app
 
 
 class DescriptiveError(Exception):
     pass
 
 
+def init_db():
+    print("initializing DB")
+    with closing(connect_db("initialization")) as db:
+        with app.open_resource("../schema.sql", mode="r") as f:
+            db.cursor().executescript(f.read())
+        db.commit()
+
+
+def connect_db(source):
+    """db connection singleton"""
+    db = getattr(g, "db", None)
+    if db:
+        return db
+    if source != "before request":
+        print("connecting to", app.config["DATABASE"], "from", source)
+    if not Path(app.config["DATABASE"]).exists():
+        Path(app.config["DATABASE"]).touch()
+        init_db()
+    g.db = sqlite3.connect(app.config["DATABASE"])
+    return g.db
+
+
 def write_nonblocking(path, data):
-    path = pathlib.Path(path)
+    path = Path(path)
     if path.is_dir():
         path = path / "_"
     i = 0
@@ -20,11 +48,11 @@ def write_nonblocking(path, data):
 
 
 def read_nonblocking(path):
-    path = pathlib.Path(path)
+    path = Path(path)
     if path.is_dir():
         path = path / "_"
     result = []
-    file: pathlib.Path
+    file: Path
     for file in sorted(path.parent.glob(str(path.stem) + "*")):
         with file.open(mode="r") as f:
             lines = f.readlines()

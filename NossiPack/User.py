@@ -10,11 +10,11 @@ from NossiPack.VampireCharacter import VampireCharacter
 
 __author__ = "maric"
 
-DATABASE = "./NN.db"
+from NossiPack.krypta import connect_db as condb
 
 
 def connect_db():
-    return sqlite3.connect(DATABASE)
+    return condb("User")
 
 
 class User(object):
@@ -29,7 +29,6 @@ class User(object):
         sheet=VampireCharacter().serialize(),
         oldsheets=b"",
         admin="",
-        defines="",
     ):
         self.username = username.strip()
         if passwordhash is not None:
@@ -46,10 +45,6 @@ class User(object):
             self.sheet = VampireCharacter()
         self.oldsheets = self.deserialize_old_sheets(oldsheets)
         self.admin = admin
-        self.defines = {}
-        if defines:
-            self.defines = pickle.loads(defines)
-        self.defines = {**self.defines, **self.sheet.unify()}
 
     def set_password(self, newpassword):
         self.pw_hash = generate_password_hash(newpassword)
@@ -169,7 +164,7 @@ class Userlist(object):
         if sheets:
             cur = db.execute(
                 "SELECT username, passwordhash, funds, "
-                "sheet, oldsheets, defines, admin FROM users"
+                "sheet, oldsheets, admin FROM users"
             )
             f_all = cur.fetchall()
             for row in f_all:
@@ -181,8 +176,7 @@ class Userlist(object):
                             funds=row[2],
                             sheet=row[3],
                             oldsheets=row[4],
-                            defines=row[5],
-                            admin=row[6],
+                            admin=row[5],
                         )
                     )
                 except Exception as e:
@@ -191,20 +185,11 @@ class Userlist(object):
                         f"{e} start of row: {str(row[:100])}\n___\n{e.args}"
                     )
         else:
-            cur = db.execute(
-                "SELECT username, passwordhash, funds," "defines, admin FROM users"
-            )
+            cur = db.execute("SELECT username, passwordhash, funds, admin FROM users")
             self.userlist = [
-                User(
-                    username=row[0],
-                    passwordhash=row[1],
-                    funds=row[2],
-                    defines=row[3],
-                    admin=row[4],
-                )
+                User(username=row[0], passwordhash=row[1], funds=row[2], admin=row[3],)
                 for row in cur.fetchall()
             ]
-        db.close()
 
     def saveuserlist(self):
         # writes/overwrites the SQL table with the maybe changed list.
@@ -218,14 +203,12 @@ class Userlist(object):
                     funds=u.funds,
                     sheet=u.sheet.serialize(),
                     oldsheets=u.serialize_old_sheets(),
-                    defines=pickle.dumps(u.defines),
                     admin=u.admin,
                 )
                 db.execute(
                     "INSERT OR REPLACE INTO users "
-                    "(username, passwordhash, funds, sheet, oldsheets, defines, admin) "
-                    "VALUES (:username,:pwhash, :funds, :sheet, :oldsheets, "
-                    ":defines, :admin)",
+                    "(username, passwordhash, funds, sheet, oldsheets, admin) "
+                    "VALUES (:username,:pwhash, :funds, :sheet, :oldsheets, :admin)",
                     d,
                 )
             else:
@@ -233,28 +216,25 @@ class Userlist(object):
                     username=u.username,
                     pwhash=u.pw_hash,
                     funds=u.funds,
-                    defines=pickle.dumps(u.defines),
                     admin=u.admin,
                     emptysheet=VampireCharacter().serialize(),
                 )
                 db.execute(
-                    "INSERT OR REPLACE INTO users (username, passwordhash, funds,  "
-                    "sheet, oldsheets, defines, admin) "
+                    "REPLACE INTO users (username, passwordhash, funds,  "
+                    "sheet, oldsheets, admin) "
                     "VALUES (:username,:pwhash, :funds,"
                     "COALESCE((SELECT sheet FROM users WHERE username = :username), "
                     ":emptysheet),"
                     "COALESCE((SELECT oldsheets FROM users WHERE username = "
                     ":username), ''),"
-                    " :defines, :admin)",
+                    ":admin)",
                     d,
                 )
 
         db.commit()
-        db.close()
 
-    def adduser(self, user, password):
-        if self.contains(user):
-            return "Name is taken!"
+    @classmethod
+    def adduser(cls, user, password):
         u = User(username=user, password=password)
         d = dict(
             username=u.username,
@@ -262,18 +242,21 @@ class Userlist(object):
             funds=u.funds,
             sheet=u.sheet.serialize(),
             oldsheets=u.serialize_old_sheets(),
-            defines=pickle.dumps(u.defines),
             admin=u.admin,
         )
-        db = connect_db()
-        db.execute(
-            "INSERT OR REPLACE INTO users (username, passwordhash, funds, "
-            "sheet, oldsheets, defines, admin) "
-            "VALUES (:username,:pwhash, :funds, :sheet, :oldsheets, :defines, :admin)",
-            d,
-        )
-        db.commit()
-        db.close()
+        try:
+            with connect_db() as db:
+                db.execute(
+                    "INSERT INTO users (username, passwordhash, funds, "
+                    "sheet, oldsheets, admin) "
+                    "VALUES (:username,:pwhash, :funds, :sheet, :oldsheets, :admin)",
+                    d,
+                )
+                db.commit()
+        except sqlite3.IntegrityError as e:
+            if "UNIQUE constraint failed: users.username" in e.args[0]:
+                return f"Username {user} is taken!"
+
         return None
 
     def contains(self, user: str):
@@ -292,7 +275,7 @@ class Userlist(object):
         db = connect_db()
         cur = db.execute(
             "SELECT username, passwordhash, funds, "
-            "sheet, oldsheets, defines, admin FROM users WHERE username = (?)",
+            "sheet, oldsheets, admin FROM users WHERE username = (?)",
             (username,),
         )
         try:
@@ -305,8 +288,7 @@ class Userlist(object):
                 funds=row[2],
                 sheet=row[3],
                 oldsheets=row[4],
-                defines=row[5],
-                admin=row[6],
+                admin=row[5],
             )
 
             if newuser.username not in self.userlist:
@@ -328,7 +310,10 @@ class Userlist(object):
 
     def valid(self, user, password) -> bool:
         try:
-            return self.loaduserbyname(user).check_password(password)
+            u = self.loaduserbyname(user)
+            if u is None:
+                return False
+            return u.check_password(password)
         except Exception:
             from NossiSite import log
 

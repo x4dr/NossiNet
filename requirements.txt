@@ -1,8 +1,10 @@
+blinker==1.4
+-e git://github.com/jarus/flask-testing/@ef069cab65bbbbd866a83b7b3b3aa4e57d970294#egg=flask-testing
 coverage==5.0.3
 black==19.10b0
 pre-commit==2.1.1
 pydealer==1.4.0
-matplotlib==3.1.3
+matplotlib==3.2.0
 pandas==1.0.1
 dateparser==0.7.2
 discord.py==1.3.2
