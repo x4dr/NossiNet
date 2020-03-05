@@ -12,7 +12,7 @@ create table if not exists  actors
 
 create table if not exists chatlogs
 (
-	linenr INTEGER not null,
+	linenr INTEGER PRIMARY KEY not null,
 	line TEXT not null,
 	time INTEGER not null,
 	room TEXT not null,

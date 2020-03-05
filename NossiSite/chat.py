@@ -84,7 +84,6 @@ def decider(message):
             print("room: " + session["activeroom"].name)
             post(message)
     statusupdate()
-    session["activeroom"].savechatlog()
 
 
 def echodict(output_dict):
