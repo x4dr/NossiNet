@@ -1,17 +1,15 @@
-import subprocess
-import time
-import urllib
-from threading import Thread
-
 import base64
 import json
 import logging
-
-from flask import request, abort
+import subprocess
+import time
+from threading import Thread
+from urllib.parse import parse_qs
 
 import requests
-from OpenSSL.crypto import verify, load_publickey, FILETYPE_PEM, X509
 from OpenSSL.crypto import Error as SignatureError
+from OpenSSL.crypto import verify, load_publickey, FILETYPE_PEM, X509
+from flask import request, abort
 
 from NossiSite.base import webhook, app
 
@@ -84,22 +82,7 @@ def travis():
 
     signature = _get_signature()
     body = request.get_data()
-    end = None
-    start = 0
-    while True:
-        start = body.index(b"payload=", start)
-        if start > 0 and body[start - 1] == ord(b"&"):
-            break
-        elif start == 0:
-            break
-        else:
-            start += 1
-
-    end = body.find(b"&", start)
-    if end < 0:
-        end = len(body)
-
-    json_payload = urllib.parse.unquote(body[start + 8 : end].decode())
+    json_payload = parse_qs(body)["payload"][0]
     print("PAYLOAD:", json_payload)
     try:
         public_keys = _get_travis_public_keys()
