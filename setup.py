@@ -30,6 +30,7 @@ setuptools.setup(
         "eventlet",
         "Flask",
         "Flask-SocketIO",
+        "pyopenssl",
         "github-webhook",
         "greenlet",
         "idna",

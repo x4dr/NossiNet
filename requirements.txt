@@ -1,5 +1,6 @@
 blinker==1.4
 -e git://github.com/jarus/flask-testing/@ef069cab65bbbbd866a83b7b3b3aa4e57d970294#egg=flask-testing
+pyopenssl==19.1.0
 coverage==5.0.3
 black==19.10b0
 pre-commit==2.1.1
