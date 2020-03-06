@@ -46,7 +46,7 @@ def travis():
 
     # https://api.travis-ci.org/config
     # https://api.travis-ci.com/config
-    travis_config_url = "https://api.travis-ci.org/config"
+    travis_config_url = "https://api.travis-ci.com/config"
 
     def check_authorized(sig, pkey, payload):
         """
