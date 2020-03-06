@@ -87,3 +87,10 @@ create table if not exists configs
 
 create unique index if not exists configs_user_option_uindex
 	on configs (user, option);
+
+create table if not exists sheets
+(
+    sheet_id  INTEGER PRIMARY KEY,
+    owner     TEXT REFERENCES users,
+    sheetdata TEXT NOT NULL
+);
