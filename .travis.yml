@@ -7,3 +7,5 @@ script: |
   pip install coveralls;
   coverage run --source . --omit "*venv/*" -m unittest discover --verbose tests;
   coveralls
+notifications:
+  webhooks: https://nosferatu.vampir.es/travis
