@@ -14,37 +14,36 @@ from flask import request, abort
 from NossiSite.base import webhook, app
 
 
+def check_and_restart(commit):
+    res = subprocess.run(["nossilint", commit], capture_output=True, encoding="utf-8")
+    result = res.stdout
+    if result.strip():
+        print("update lint result ", result)
+        print("new version didnt pass lint")
+        raise Exception("Didnt pass lint!")
+    print("update lint successfull")
+    time.sleep(1)
+    print("new version checks out. restarting...")
+    subprocess.run(["nossirestart", commit])
+
+    print("we should have never gotten here")
+
+
 @webhook.hook()
 def on_push(req):
-    def check():
-        res = subprocess.run(
-            ["nossilint", req["after"]], capture_output=True, encoding="utf-8"
-        )
-        result = res.stdout
-        if result:
-            print("update lint result ", result)
-        else:
-            print("update lint successfull")
-        if req["repository"]["name"] == "NossiNet":
-            if not result.strip():
-                time.sleep(2)
-                print("new version checks out. restarting...")
-                subprocess.run(["nossirestart"])
-            else:
-                print("new version didnt pass lint")
-                raise Exception("Didnt pass lint!")
-            print("we should have never gotten here")
-
-    Thread(target=check).start()
-    print("handled github webhook")
+    if app.config.get("TRAVIS"):
+        return "waiting on travis"
+    if req["repository"]["name"] == "NossiNet":
+        Thread(target=check_and_restart, args=(req["after"],)).start()
+        print("handled github webhook")
+    else:
+        print("got request from:", req["repository"]["name"])
 
 
 @app.route("/travis", methods=["POST"])
 def travis():
     logger = logging.getLogger(__name__)
 
-    # https://api.travis-ci.org/config
-    # https://api.travis-ci.com/config
     travis_config_urls = [
         "https://api.travis-ci.com/config",
         "https://api.travis-ci.org/config",
@@ -120,4 +119,7 @@ def travis():
             return abort(400)
     json_data = json.loads(json_payload)
     logger.info(f"RECEIVED: {json_data}")
+    if json_data["state"] == "passed" and json_data["branch"] == "master":
+        subprocess.run(["nossirestart", json_data["commit"]])
+        print("restart triggered by travis")
     return {"status": "received"}
