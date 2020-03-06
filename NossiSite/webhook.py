@@ -46,7 +46,10 @@ def travis():
 
     # https://api.travis-ci.org/config
     # https://api.travis-ci.com/config
-    travis_config_url = "https://api.travis-ci.com/config"
+    travis_config_urls = [
+        "https://api.travis-ci.com/config",
+        "https://api.travis-ci.org/config",
+    ]
 
     def check_authorized(sig, pkey, payload):
         """
@@ -65,19 +68,40 @@ def travis():
         print("HEADERS:", request.headers)
         return base64.b64decode(request.headers["Signature"])
 
-    def _get_travis_public_key():
+    def _get_travis_public_keys():
         """
         Returns the PEM encoded public key from the Travis CI /config endpoint
         """
-        response = requests.get(travis_config_url, timeout=10.0)
-        response.raise_for_status()
-        return response.json()["config"]["notifications"]["webhook"]["public_key"]
+        sig = []
+        for travis_config_url in travis_config_urls:
+            response = requests.get(travis_config_url, timeout=10.0)
+            response.raise_for_status()
+            sig.append(
+                response.json()["config"]["notifications"]["webhook"]["public_key"]
+            )
+        return sig
 
     signature = _get_signature()
-    json_payload = request.get_data()[8:]
+    body = request.get_data()
+    end = None
+    start = 0
+    while True:
+        start = body.index(b"payload=", start)
+        if start > 0 and body[start - 1] == ord(b"&"):
+            break
+        elif start == 0:
+            break
+        else:
+            start += 1
+
+    end = body.find(b"&", start)
+    if end < 0:
+        end = len(body)
+
+    json_payload = body[start + 8 : end]
     print("PAYLOAD:", json_payload)
     try:
-        public_key = _get_travis_public_key()
+        public_keys = _get_travis_public_keys()
     except requests.Timeout:
         logger.error(
             {"message": "Timed out when attempting to retrieve Travis CI public key"}
@@ -99,12 +123,15 @@ def travis():
             400,
             {"Content-Type": "text/json; charset=utf-8"},
         )
-    print("PUBLIC_KEY:", public_key)
+    print("PUBLIC_KEYs:", "\n".join(public_keys))
     try:
-        check_authorized(signature, public_key, json_payload)
+        check_authorized(signature, public_keys[0], json_payload)
     except SignatureError:
-        logger.error(f"Unauthorized request by { request.remote_addr}")
-        return abort(400)
+        try:
+            check_authorized(signature, public_keys[0], json_payload)
+        except SignatureError:
+            logger.error(f"Unauthorized request by {request.headers['X-Real-Ip']}")
+            return abort(400)
     json_data = json.loads(json_payload)
-    logger.info(f"RECEIVED: { json_data}")
+    logger.info(f"RECEIVED: {json_data}")
     return {"status": "received"}
