@@ -40,7 +40,7 @@ def on_push(req):
     print("handled github webhook")
 
 
-@app.route("/travis")
+@app.route("/travis", methods=["POST"])
 def travis():
     logger = logging.getLogger(__name__)
 
