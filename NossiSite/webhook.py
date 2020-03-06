@@ -99,7 +99,7 @@ def travis():
     if end < 0:
         end = len(body)
 
-    json_payload = urllib.parse.unquote(body[start + 8 : end])
+    json_payload = urllib.parse.unquote(body[start + 8 : end].decode())
     print("PAYLOAD:", json_payload)
     try:
         public_keys = _get_travis_public_keys()
