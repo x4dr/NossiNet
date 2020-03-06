@@ -46,7 +46,7 @@ def travis():
 
     # https://api.travis-ci.org/config
     # https://api.travis-ci.com/config
-    travis_config_url = "https://api.travis-ci.org/config"
+    travis_config_url = "https://api.travis-ci.com/config"
 
     def check_authorized(sig, pkey, payload):
         """
@@ -73,14 +73,12 @@ def travis():
         response.raise_for_status()
         return response.json()["config"]["notifications"]["webhook"]["public_key"]
 
-    data = request.get_data()
-    print("Request DATA", data)
     signature = _get_signature()
-    print("request form", request.form)
-    print("request values", request.values)
+    print("SIGNATURE:", signature)
     json_payload = request.form["payload"][0]
     try:
         public_key = _get_travis_public_key()
+
     except requests.Timeout:
         logger.error(
             {"message": "Timed out when attempting to retrieve Travis CI public key"}
@@ -102,6 +100,7 @@ def travis():
             400,
             {"Content-Type": "text/json; charset=utf-8"},
         )
+    print("PUBLIC_KEY:", public_key)
     try:
         check_authorized(signature, public_key, json_payload)
     except SignatureError:
