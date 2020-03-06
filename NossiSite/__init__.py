@@ -6,7 +6,7 @@ import NossiSite.views as views
 import NossiSite.extra as extra
 import NossiSite.wiki as wiki
 import NossiSite.chat as chat
-import NossiSite.github_webhook as github_webhook
+import NossiSite.webhook as webhook
 
 __all__ = [
     "base",
@@ -18,5 +18,5 @@ __all__ = [
     "chat",
     "wiki",
     "extra",
-    "github_webhook",
+    "webhook",
 ]
