@@ -1,5 +1,6 @@
 import subprocess
 import time
+import urllib
 from threading import Thread
 
 import base64
@@ -98,7 +99,7 @@ def travis():
     if end < 0:
         end = len(body)
 
-    json_payload = body[start + 8 : end].decode()
+    json_payload = urllib.parse.unquote(body[start + 8 : end])
     print("PAYLOAD:", json_payload)
     try:
         public_keys = _get_travis_public_keys()
