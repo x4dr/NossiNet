@@ -82,7 +82,9 @@ def travis():
 
     signature = _get_signature()
     body = request.get_data()
-    json_payload = parse_qs(body)["payload"][0]
+    qs = parse_qs(body.decode())
+    print("QS", qs)
+    json_payload = qs["payload"][0]
     print("PAYLOAD:", json_payload)
     try:
         public_keys = _get_travis_public_keys()
