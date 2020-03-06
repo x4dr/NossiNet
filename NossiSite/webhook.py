@@ -74,8 +74,9 @@ def travis():
         return response.json()["config"]["notifications"]["webhook"]["public_key"]
 
     signature = _get_signature()
-    print("SIGNATURE:", signature)
-    json_payload = request.form["payload"][0]
+    json_payload = request.get_data()
+    print("PAYLOAD:", json_payload)
+    return
     try:
         public_key = _get_travis_public_key()
 
