@@ -74,12 +74,10 @@ def travis():
         return response.json()["config"]["notifications"]["webhook"]["public_key"]
 
     signature = _get_signature()
-    json_payload = request.get_data()
+    json_payload = request.get_data()[8:]
     print("PAYLOAD:", json_payload)
-    return
     try:
         public_key = _get_travis_public_key()
-
     except requests.Timeout:
         logger.error(
             {"message": "Timed out when attempting to retrieve Travis CI public key"}
