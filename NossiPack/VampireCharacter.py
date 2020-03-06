@@ -655,7 +655,7 @@ class VampireCharacter(Character):
     @classmethod
     def from_character(cls, char: Character):
         d = char.getdictrepr()
-        return cls(
+        return VampireCharacter(
             d["Name"],
             d["Attributes"],
             d["Meta"],

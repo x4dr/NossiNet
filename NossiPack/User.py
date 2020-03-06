@@ -147,6 +147,7 @@ class User:
                 flash(f"LEGACY CHAR FROM {self.username}@{o.timestamp}")
                 o = VampireCharacter.from_character(o)
                 o.legacy_convert()
+            print(o.getdictrepr(), pickle.dumps(o))
             db.execute(
                 "INSERT INTO sheets (owner, sheetdata)"
                 "VALUES (:username,:sheetdata);",

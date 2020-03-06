@@ -600,6 +600,7 @@ def test_migrate(x):
     for c in x.split(" "):
         ul.loaduserbyname(c)
     ul.saveuserlist()
+    return {"result": "ok"}
 
 
 @app.route("/impressum/")
