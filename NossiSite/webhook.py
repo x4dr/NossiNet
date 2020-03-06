@@ -46,7 +46,7 @@ def travis():
 
     # https://api.travis-ci.org/config
     # https://api.travis-ci.com/config
-    travis_config_url = "https://api.travis-ci.com/config"
+    travis_config_url = "https://api.travis-ci.org/config"
 
     def check_authorized(sig, pkey, payload):
         """
@@ -63,7 +63,7 @@ def travis():
         Extract the raw bytes of the request signature provided by travis
         """
         print("HEADERS:", request.headers)
-        return base64.b64decode(request.headers["SIGNATURE"])
+        return base64.b64decode(request.headers["Signature"])
 
     def _get_travis_public_key():
         """
