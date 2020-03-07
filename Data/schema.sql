@@ -64,15 +64,16 @@ create table if not exists property
 
 create table if not exists users
 (
-	username TEXT not null
+	username     TEXT    not null
 		primary key,
-	passwordhash TEXT not null,
-	funds INTEGER not null,
-	sheet TEXT not null,
-	oldsheets TEXT,
-	ip TEXT,
-	admin INTEGER
+	passwordhash TEXT    not null,
+	funds        INTEGER not null,
+	sheet        TEXT
+		references sheets,
+	admin        INTEGER
 );
+
+
 
 create table if not exists configs
 (

@@ -7,9 +7,10 @@ import markdown
 from flask import render_template, request, redirect, url_for, session, flash, abort
 from markupsafe import Markup
 
-from NossiPack import FenCharacter, User, Userlist
+from NossiPack.FenCharacter import FenCharacter
+from NossiPack.User import User, Userlist
 from NossiPack.krypta import DescriptiveError
-from NossiSite import app
+from NossiSite.base import app
 from NossiSite.helpers import (
     wikindex,
     wikiload,
@@ -238,21 +239,29 @@ def tagsearch(tag):
 
 @app.route("/char_access/<path:x>")
 def char_access(x):
-    parts = x.split(".")
+    selection_path = x.split(".")
     discord = request.cookies.get("discord", "")
-    ul = Userlist(preload=True, sheets=False)
-    if ul.contains(parts[0]):
+    ul = Userlist()
+    u = ul.loaduserbyname(selection_path[0])
+    if u:
         u = ul.loaduserbyname(session.get("user"))
         if discord.strip() and u.config("discord") != discord:
             abort(403)
-        char = u.sheet
+        char = u.getsheet()
     else:
-        c = wikiload(parts[0] + "_character")
+        c = wikiload(selection_path[0] + "_character")
         char = FenCharacter()
         char.load_from_md(*c)
     d = char.getdictrepr()
-    for x_part in parts[1:]:
-        d = d[x_part]  # TODO: investigate
+    for x_part in selection_path[1:]:
+        if x_part in d.keys():
+            d = d[x_part]  # accesses parts of character, dict of dicts
+        else:
+            d = {
+                "error": "could not find d in current selection",
+                "current selection": d,
+            }
+            break
     return app.response_class(
         json.dumps(d, indent=2, ensure_ascii=False) + "\n",
         mimetype=app.config["JSONIFY_MIMETYPE"],

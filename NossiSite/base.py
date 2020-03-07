@@ -1,3 +1,4 @@
+import logging
 import os
 import random
 import string
@@ -11,8 +12,7 @@ async_mode = "eventlet"
 eventlet.monkey_patch()
 
 app = Flask(__name__)
-
-DATABASE = "./NN.db"
+app.config["TRAVIS"] = True
 i = 0
 
 key = ""
@@ -24,8 +24,13 @@ except:
         key = "".join(random.SystemRandom().choice(string.hexdigits) for _ in range(48))
         keyfile.write(key)
 
-
 SECRET_KEY = key
 app.config.from_object(__name__)
 socketio = SocketIO(app, async_mode=async_mode)
 webhook = Webhook(app, endpoint="/postreceive", secret=SECRET_KEY)
+log = logging.getLogger("frontend")
+fh = logging.FileHandler("nossilog.log", mode="w")
+fh.setLevel(logging.DEBUG)
+log.addHandler(fh)
+logging.basicConfig(format="%(asctime)s %(levelname)s:%(message)s")
+log.setLevel(logging.DEBUG)

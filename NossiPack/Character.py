@@ -11,6 +11,13 @@ from NossiPack.krypta import DescriptiveError
 __author__ = "maric"
 
 
+def intdef(s, default=0):
+    try:
+        return int(s)
+    except Exception:
+        return default
+
+
 # Database still uses this, legacy support
 # noinspection DuplicatedCode
 class Character:
@@ -887,13 +894,6 @@ def allocaterandomly(num, mini, cap, var):
             if sum(att) >= cap * var:
                 break
     return att
-
-
-def intdef(s, default=0):
-    try:
-        return int(s)
-    except Exception:
-        return default
 
 
 def upsert(listinput, index, value, minimum=3):

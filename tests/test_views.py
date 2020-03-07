@@ -2,7 +2,7 @@ from pathlib import Path
 
 from flask_testing import TestCase
 
-from NossiSite import app as nossinet
+from NossiSite.base import app as nossinet
 
 
 def delete(file: Path):

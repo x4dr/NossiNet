@@ -1,17 +1,41 @@
 import collections
 import pickle
+import random
 import re
 import time
 from random import randint, shuffle
+from typing import Dict
 from urllib import request
 
 from Data import locale_data
-from NossiPack.Character import Character, intdef
 
 __author__ = "maric"
 
+from NossiSite.base import log
 
-class VampireCharacter(Character):
+
+def intdef(s, default=0):
+    """
+    Tries to Parse int
+    :param s: input that will be applied int()
+    :param default: return value if s is not int
+    :return: int(s) or default
+    """
+    try:
+        return int(s)
+    except ValueError:
+        return default
+
+
+# noinspection DuplicatedCode
+class VampireCharacter:
+    """
+    Class to represent WoD v20 Charactersheets
+    used to be descendant of Character but that class is disabled until a proper interface is extracted
+    """
+
+    meta: Dict[str, str]
+
     def __init__(
         self,
         name="",
@@ -23,6 +47,16 @@ class VampireCharacter(Character):
         disciplines=None,
         special=None,
     ):
+        """
+        :param name: name of the character
+        :param attributes: attribute dict
+        :param meta: meta information dict
+        :param abilities: ability dict
+        :param virtues: virtue dict
+        :param backgrounds: background dict
+        :param disciplines: disciplines dict
+        :param special: special dict
+        """
         self.name = name
         if attributes is None:
             self.attributes = self.zero_attributes()
@@ -56,37 +90,45 @@ class VampireCharacter(Character):
         self.timestamp = time.strftime("%Y/%m/%d-%H:%M:%S")
         super().__init__()
 
-    def checksum(self):
+    def checksum(self) -> int:
+        """
+        To Validate Integrity of all the int-bearing fields and add them times their
+        index together. Two Characters should have the same checksum if they are the
+        same, and should have a high likelyhood of having different checksums, if
+        they are different.
+        """
         result = 0
-        for a in self.unify().values():
+        u = self.unify()
+        for i, a in enumerate(sorted(list(u.keys()))):
             try:
-                result += int(a)
+                result += int(u[a]) * 5 ** i
             except:
                 raise Exception("could not add up", a)
+        print("checksum", a)
         return result
 
     @staticmethod
     def get_clans():
         return {
-            "Assamite": "Celerity, Obfuscate, Quietus",
-            "Brujah": "Celerity, Potence, Presence",
-            "Setite": "Obfuscate, Presence, Serpentis",
-            "Gangrel": "Animalism, Fortitude, Protean",
-            "Giovanni": "Dominate, Necromancy, Potence",
-            "Lasombra": "Dominate, Obtenebration, Potence",
-            "Malkavian": "Auspex, Dementation, Obfuscate",
-            "Nosferatu": "Animalism, Obfuscate, Potence",
-            "Ravnos": "Animalism, Chimerstry, Fortitude",
-            "Toreador": "Auspex, Celerity, Presence",
-            "Tremere": "Auspex, Dominate, Thaumaturgy",
-            "Tzimisce": "Animalism, Auspex, Vicissitude",
-            "Ventrue": "Dominate, Fortitude, Presence",
-            "Daughter of Cacophony": "Fortitude, Melpominee, Presence",
-            "Gargoyle": "Flight, Fortitude, Potence, Vicissitude",
-            "Kiasyd": "Dominate, Mytherceria, Obtenebration",
-            "Salubri": "Auspex, Fortitude, Obeah",
-            "Sage": "Potence, Presence, Temporis",
-            "Cappadocian": "Auspex, Fortitude, Necromancy",
+            "Assamite": ["Celerity", "Obfuscate", "Quietus"],
+            "Brujah": ["Celerity", "Potence", "Presence"],
+            "Setite": ["Obfuscate", "Presence", "Serpentis"],
+            "Gangrel": ["Animalism", "Fortitude", "Protean"],
+            "Giovanni": ["Dominate", "Necromancy", "Potence"],
+            "Lasombra": ["Dominate", "Obtenebration", "Potence"],
+            "Malkavian": ["Auspex", "Dementation", "Obfuscate"],
+            "Nosferatu": ["Animalism", "Obfuscate", "Potence"],
+            "Ravnos": ["Animalism", "Chimerstry", "Fortitude"],
+            "Toreador": ["Auspex", "Celerity", "Presence"],
+            "Tremere": ["Auspex", "Dominate", "Thaumaturgy"],
+            "Tzimisce": ["Animalism", "Auspex", "Vicissitude"],
+            "Ventrue": ["Dominate", "Fortitude", "Presence"],
+            "Daughter of Cacophony": ["Fortitude", "Melpominee", "Presence"],
+            "Gargoyle": ["Flight", "Fortitude", "Potence", "Vicissitude"],
+            "Kiasyd": ["Dominate", "Mytherceria", "Obtenebration"],
+            "Salubri": ["Auspex", "Fortitude", "Obeah"],
+            "Sage": ["Potence", "Presence", "Temporis"],
+            "Cappadocian": ["Auspex", "Fortitude", "Necromancy"],
         }
 
     def get_clandisciplines(self):
@@ -247,11 +289,25 @@ class VampireCharacter(Character):
                 )
         return comment
 
+    @staticmethod
+    def calc_cost(val1, val2, cost, cost0):
+        lower = min(val1, val2)
+        higher = max(val1, val2)
+        result = 0
+        while (higher - lower) > 0:
+            if lower == 0:
+                result += cost0
+                lower += 1
+                continue
+            result += cost * lower
+            lower += 1
+        return result
+
     def get_diff(self, old=None, extra=False):
         xpdiff = 0
+        result = self.validate_char(extra)
         if old is None:
-            return self.validate_char(extra)
-
+            return result
         for a in self.attributes.keys():
             xpdiff += self.calc_cost(self.attributes[a], old.attributes[a], 4, 1000)
         for b in self.abilities.keys():
@@ -274,12 +330,12 @@ class VampireCharacter(Character):
             self.special["Willmax"], old.special["Willmax"], 1, 1000
         )
         if extra:
-            result = "To upgrade the sheet from %s to this one would cost %d XP." % (
+            result += "To upgrade the sheet from %s to this one would cost %d XP." % (
                 old.timestamp,
                 xpdiff,
             )
         else:
-            result = xpdiff
+            result += str(xpdiff)
         return result
 
     def dictlist(self):
@@ -312,8 +368,6 @@ class VampireCharacter(Character):
 
     # noinspection PyUnresolvedReferences
     def setfromdalines(self, number):
-        dalines = ""
-
         def getmeta(name):
             value = re.compile(
                 name + r':.*?">(.*?)</td>',
@@ -333,7 +387,7 @@ class VampireCharacter(Character):
             try:
                 return value.search(dalines).group().count("checked")
             except:
-                print("not found in sheet:", name, "!")
+                log.info(f"VampireCharacter_fromdalines:not found in sheet:{name}!")
                 return 0
 
         def getbgdscp():
@@ -415,7 +469,7 @@ class VampireCharacter(Character):
         self.disciplines = collections.OrderedDict()
         self.backgrounds = collections.OrderedDict()
         self.special = self.zero_specials()
-        self.meta["Generation"] = 13
+        self.meta["Generation"] = "13"
         self.special["Bloodmax"] = 10
         for field in form:
             value = form[field]
@@ -424,10 +478,10 @@ class VampireCharacter(Character):
                     self.meta[field] = value
                     if field == "Merits":
                         if "Generation 14" in value:
-                            self.meta["Generation"] = 14
+                            self.meta["Generation"] = "14"
                             self.backgrounds["Generation"] = -1
                         if "Generation 15" in value:
-                            self.meta["Generation"] = 15
+                            self.meta["Generation"] = "15"
                             self.backgrounds["Generation"] = -2
                 continue
             if field in self.attributes.keys():
@@ -436,17 +490,14 @@ class VampireCharacter(Character):
                 continue
             if field in self.abilities["Skills"].keys():
                 if value is not None:
-                    print("Skill setting", field, "to", value)
                     self.abilities["Skills"][field] = intdef(value)
                 continue
             if field in self.abilities["Talents"].keys():
                 if value is not None:
-                    print("Talents setting", field, "to", value)
                     self.abilities["Talents"][field] = intdef(value)
                 continue
             if field in self.abilities["Knowledges"].keys():
                 if value is not None:
-                    print("Knowledges setting", field, "to", value)
                     self.abilities["Knowledges"][field] = intdef(value)
                 continue
             if "background_name_" in field:
@@ -532,7 +583,7 @@ class VampireCharacter(Character):
                     self.special[field] = intdef(value)
                     continue
             if "newsheet" not in field:
-                print("error inserting a key!", field + ":", value)
+                log.error(f"VampireCharacter unknown data: {field}:{value}")
 
         self.disciplines = collections.OrderedDict(
             x for x in sorted(self.disciplines.items()) if x[0] != ""
@@ -540,6 +591,7 @@ class VampireCharacter(Character):
         self.backgrounds = collections.OrderedDict(
             x for x in sorted(self.backgrounds.items()) if x[0] != ""
         )
+        return self
 
     def applydamage(self, amount, dmg_type="Lethal"):
         if amount > 0:
@@ -653,10 +705,10 @@ class VampireCharacter(Character):
         return character
 
     @classmethod
-    def from_character(cls, char: Character):
+    def from_character(cls, char: "VampireCharacter"):
         d = char.getdictrepr()
-        return VampireCharacter(
-            d["Name"],
+        c = VampireCharacter(
+            d.get("Name", d["Meta"]["Name"]),
             d["Attributes"],
             d["Meta"],
             d["Abilities"],
@@ -665,6 +717,8 @@ class VampireCharacter(Character):
             d["Disciplines"],
             d["Special"],
         )
+        c.timestamp = char.timestamp
+        return c
 
     def legacy_convert(self):
         # this is the legacy section used to update old sheets into new formats
@@ -727,6 +781,13 @@ class VampireCharacter(Character):
 
         return combined
 
+    def makevamprandom(self, dis):
+        self.meta["Clan"] = random.choice(list(self.get_clans().keys()))
+        for d in self.get_clandisciplines():
+            self.disciplines[d] = 0
+        for _ in range(int(dis)):
+            self.disciplines[random.choice(list(self.get_clandisciplines()))] += 1
+
     @staticmethod
     def makerandom(
         mini, cap, prio1a, prio1b, prio1c, prio2a, prio2b, prio2c, do_shuffle
@@ -783,6 +844,26 @@ class VampireCharacter(Character):
             char.name = "choose a name!"
         return char
 
+    def set_attributes_from_int_list(self, att):
+        self.attributes["Strength"] = att[0]
+        self.attributes["Dexterity"] = att[1]
+        self.attributes["Stamina"] = att[2]
+
+        self.attributes["Charisma"] = att[3]
+        self.attributes["Manipulation"] = att[4]
+        self.attributes["Appearance"] = att[5]
+
+        self.attributes["Perception"] = att[6]
+        self.attributes["Intelligence"] = att[7]
+        self.attributes["Wits"] = att[8]
+
+    def set_abilities_from_int_list(self, abi):
+        i = 0
+        for c in reversed(sorted(self.abilities.keys())):
+            for a in sorted(self.abilities[c].keys()):
+                self.abilities[c][a] = abi[i]
+                i += 1
+
     @staticmethod
     def zero_attributes():
         attributes = {
@@ -818,8 +899,8 @@ class VampireCharacter(Character):
         return special
 
     @staticmethod
-    def zero_meta():
-        meta = {
+    def zero_meta() -> Dict[str, str]:
+        meta: Dict[str, str] = {
             "Name": "",
             "Nature": "",
             "Generation": "",
@@ -846,7 +927,7 @@ class VampireCharacter(Character):
 
     @staticmethod
     def deserialize(serialized):
-        tmp = pickle.loads(serialized)
+        tmp = VampireCharacter.from_character(pickle.loads(serialized))
         tmp.legacy_convert()
         return tmp
 
