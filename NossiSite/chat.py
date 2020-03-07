@@ -4,13 +4,15 @@ from flask import render_template, session, request, flash, url_for, redirect
 from flask_socketio import emit, join_room, leave_room, disconnect
 
 from Data import locale_data
-from NossiPack import WoDData, WoDParser, Userlist, VampireCharacter
+from NossiPack import WoDData
 from NossiPack.Chatrooms import Chatroom
-from NossiSite.base import app, socketio
+from NossiPack.User import Userlist
+from NossiPack.VampireCharacter import VampireCharacter
+from NossiPack.WoDParser import WoDParser
+from NossiSite.base import app, socketio, log
 
 userlist = {}
 roomlist = [Chatroom("lobby")]
-
 
 namedStrings = locale_data["namedStrings"]
 
@@ -55,7 +57,7 @@ def decider(message):
                 trigger(parser.triggers)
                 update_dots()
                 if roll:
-                    print(roll.roll_v())
+                    log.info(f"chat: rolled: {roll.roll_v()}")
                 printroll(roll, parser, message=message)
 
             except Exception as inst:
@@ -81,7 +83,7 @@ def decider(message):
         if session["activeroom"] is None:
             emit("Message", {"data": "you are talking to a wall"})
         else:
-            print("room: " + session["activeroom"].name)
+            log.info(f"chat: message in room: {session['activeroom'].name} : {message}")
             post(message)
     statusupdate()
 
@@ -99,7 +101,7 @@ def trigger(triggers, user=None):
     ul = Userlist()
     u = ul.loaduserbyname(user)
     for t in triggers:
-        u.sheet.process_trigger(t)
+        u.getsheet().process_trigger(t)
     ul.saveuserlist()
 
 
@@ -126,11 +128,11 @@ def defines(message="=", user=None):
         echodict(workdef)
 
     elif message[:7] == "=import":
-        workdef = {**workdef, **u.sheet.unify()}
+        workdef = {**workdef, **u.getsheet().unify()}
         echo("Current charactersheet imported.")
     elif message == "=setup":
         if workdef == {}:
-            workdef = u.sheet.unify()
+            workdef = u.getsheet().unify()
             echo("Definitions reset.")
         workdef = {**workdef, **shorthand(), **WoDData.disciplines(workdef)}
         echo("Presets setup.")
@@ -193,8 +195,10 @@ def printroll(roll, parser=None, testing=False, message=""):
                             )
 
         if parser.triggers.get("breakthrough", None):
-            times, current, goal, log = parser.triggers.get("breakthrough", None)
-            for i in [x for x in log.split("\n") if x][
+            times, current, goal, breakthroughlog = parser.triggers.get(
+                "breakthrough", None
+            )
+            for i in [x for x in breakthroughlog.split("\n") if x][
                 -parser.triggers.get("cutoff", 20) :
             ]:
                 deliver(i, "'S BREAKTHROUGH: ")
@@ -441,7 +445,7 @@ def chatsite():
 
 @socketio.on("ClientServerEvent", namespace="/chat")
 def receive(message):
-    print(session.get("user", "NoUser"), ": ", message)
+    log.info(f"chat: received: {session.get('user', 'NoUser')}: {message}")
     decider(message["data"])
 
 
@@ -452,7 +456,7 @@ def keep_alive(*args):
         for u, t in r.presentusers.items():
             if time.time() - t > 10:
                 r.userleave(u)
-                print(args)
+                log.info(f"chat: {args}")
     update_dots()
 
 
@@ -461,7 +465,7 @@ def char_connect():
     if not session.get("user", False):
         emit("comments", {"prefix": "", "data": namedStrings["notLoggedIn"]})
         return False
-    print("charsheet connecting")
+    log.info(f"charsheet connecting")
     emit("comments", {"data": "".join(namedStrings["checkHelp"])})
     join_room(session.get("user", "?") + "_dotupdates")
     update_dots()
@@ -470,7 +474,7 @@ def char_connect():
 
 @socketio.on("ClientServerEvent", namespace="/character")
 def receive_message(message):
-    print("characterServerevent", sorted(message))
+    log.info(f"characterServerevent", sorted(message))
     update_dots()
 
 
@@ -479,28 +483,29 @@ def update_dots():
     maxima = ""
     ul = Userlist()
     u = ul.loaduserbyname(session.get("user", "?"))
-    if u.sheet.getdictrepr()["Type"] == "OWOD":
-        update += "Bloodpool_" + str(u.sheet.special["Bloodpool"])
-        maxima += "Bloodmax_" + str(u.sheet.special["Bloodmax"])
+    sheet = u.getsheet()
+    if sheet.getdictrepr()["Type"] == "OWOD":
+        update += "Bloodpool_" + str(sheet.special["Bloodpool"])
+        maxima += "Bloodmax_" + str(sheet.special["Bloodmax"])
         update += "&"
         maxima += "&"
-        update += "Willpower_" + str(u.sheet.special["Willpower"])
-        maxima += "Willmax_" + str(u.sheet.special["Willmax"])
+        update += "Willpower_" + str(sheet.special["Willpower"])
+        maxima += "Willmax_" + str(sheet.special["Willmax"])
         health = (
-            str(u.sheet.special["Bashing"])
+            str(sheet.special["Bashing"])
             + "&"
-            + str(u.sheet.special["Lethal"])
+            + str(sheet.special["Lethal"])
             + "&"
-            + str(u.sheet.special["Aggravated"])
+            + str(sheet.special["Aggravated"])
             + "&"
-            + str(u.sheet.special["Partialheal"])
+            + str(sheet.special["Partialheal"])
         )
         emit(
             "DotUpdate",
             {"data": update + "§" + maxima + "§" + health},
             room=session.get("user", "?") + "_dotupdates",
         )
-    elif u.sheet.getdictrepr()["Type"] == "OWOD":
+    elif sheet.getdictrepr()["Type"] == "OWOD":
         emit(
             "DotUpdate", {"data": "none"}, room=session.get("user", "?") + "_dotupdates"
         )
@@ -508,31 +513,36 @@ def update_dots():
 
 @socketio.on("NoteDots", namespace="/character")
 def note_dots(message):
-    print("noting dots:", message["data"])
+    log.info(f"character: noting dots: {message['data']}")
     data = message["data"].split("&")
     ul = Userlist()
     u = ul.loaduserbyname(session.get("user", "?"))
-    u.sheet.special[
+    sheet = u.getsheet()
+    sheet.special[
         "Willpower"
     ] = 0  # initialize with 0 because if 0 on sheet no value will be given
-    u.sheet.special["Bloodpool"] = 0
+    sheet.special["Bloodpool"] = 0
     for d in data:
         if d.split("=")[0] == "Willpower":  # some semblance of santizing
-            u.sheet.special["Willpower"] = int(d.split("=")[1])
+            sheet.special["Willpower"] = int(d.split("=")[1])
         if d.split("=")[0] == "Bloodpool":  # some semblance of santizing
-            u.sheet.special["Bloodpool"] = int(d.split("=")[1])
+            sheet.special["Bloodpool"] = int(d.split("=")[1])
     ul.saveuserlist()
     update_dots()
 
 
 @socketio.on("CheckChar", namespace="/character")
 def check_char(message):
-    print("CHARACTERSHEET", session.get("user", "NoUser"), ":  ", message)
+    log.info(f"CHARACTERSHEET {session.get('user', 'NoUser')}: {message}")
     if len(message["data"]) > 20:  # short messages are malformed
         ul = Userlist()
         u = ul.loaduserbyname(session.get("user", None))
         try:
-            old = u.oldsheets[-1]
+            flash("Comparing...")
+            old = max(
+                (x for i, x in u.loadoldsheets().items() if i != u.sheetid),
+                key=lambda x: x.timestamp,
+            )
         except:
             old = None
         formdata = {}
@@ -546,13 +556,15 @@ def check_char(message):
 @socketio.on("Disconnect", namespace="/chat")
 def disconnect_request():
     emit("Message", {"data": "Disconnected!"})
-    print("received disconnect message for user", session.get("user", "unknown user"))
+    log.info(
+        f"received disconnect message for user {session.get('user', 'unknown user')}"
+    )
     disconnect()
 
 
 @socketio.on("connect", namespace="/cards")
 def cards_connect():
-    print("cards has been accessed by " + session.get("user", "mysteryman"))
+    log.info(f"cards has been accessed by " + session.get("user", "mysteryman"))
     if not session.get("logged_in"):
         emit("Message", {"prefix": "", "data": namedStrings["notLoggedIn"]})
         emit("Exec", {"command": 'window.location.href = "/login?r=/cards";'})
@@ -563,7 +575,7 @@ def cards_connect():
 # noinspection PyUnresolvedReferences
 @socketio.on("connect", namespace="/chat")
 def chat_connect():
-    print("connecting to chat:", session.get("user", "unknown user"))
+    log.info(f"connecting to chat:", session.get("user", "unknown user"))
     if not session.get("logged_in"):
         emit("Message", {"prefix": "", "data": namedStrings["notLoggedIn"]})
         return False
@@ -580,7 +592,7 @@ def chat_connect():
             prevmode = "talk"
         session["chatmode"] = prevmode
         session["activeroom"] = roomlist[0]
-        print("user", session["user"], "conncting")
+        log.info(f"user", session["user"], "conncting")
         if roomlist[0].userjoin(session["user"]):
 
             join_room(roomlist[0].name)
@@ -600,4 +612,4 @@ def test_disconnect():
             r.userleave(session["user"])
             leave_room(r.name)
     except Exception as inst:
-        print(namedStrings["roomlistErr"], inst.args)
+        log.info(f"chat: {namedStrings['roomlistErr']} {inst.args}")

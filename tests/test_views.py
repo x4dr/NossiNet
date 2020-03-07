@@ -2,38 +2,36 @@ from pathlib import Path
 
 from flask_testing import TestCase
 
-from NossiSite import app as nossinet
-
-
-def delete(file: Path):
-    if file.exists():
-        file.unlink()
+from NossiSite.base import app as nossinet
 
 
 class TestViews(TestCase):
     render_templates = False
 
     # if the create_app is not implemented NotImplementedError will be raised
-    def create_app(self, db=None):
-        db_path = Path.cwd().absolute() / f"{db}.db"
-        if db is None:
-            db = "test"  # will not be created by flask on default call by TestCase
-            (Path.cwd().absolute() / f"{db}.db").touch()  # thus, create now
+    def create_app(self):
         app = nossinet
         app.config["TESTING"] = True
         # Set to 0 to have the OS pick the port.
         app.config["LIVESERVER_PORT"] = 0
         app.config["USERNAME"] = "unittest"
         app.config["PASSWORD"] = "unittest"
-        app.config.from_mapping(
-            SECRET_KEY="dev", DATABASE=db_path,
-        )
-        self.addCleanup(delete, db_path)
+        app.config.from_mapping(SECRET_KEY="dev",)
+        self.app = app
         return app
 
+    def setUp(self) -> None:
+        pass  # DB created during normal usage
+
+    def tearDown(self) -> None:
+        self.app = None
+        file = Path("./NN.db")
+        if file.exists():
+            file.unlink()
+
     def test_login(self):
-        # test response of register page
-        app = self.create_app("login")
+        # test response of login
+        app = self.create_app()
         c = app.test_client()
         c.get("/login")
         self.assert_template_used("login.html")
@@ -53,9 +51,14 @@ class TestViews(TestCase):
         c.post("/login", data=form, follow_redirects=True)
         self.assert_template_used("show_entries.html")  # not registered
 
+    def test_version(self):
+        app = self.create_app()
+        c = app.test_client()
+        print(c.get("/version"))
+
     def test_register(self):
         """Make sure register user works"""
-        app = self.create_app("register")
+        app = self.create_app()
         c = app.test_client()
         # mock site interaction
         form = {

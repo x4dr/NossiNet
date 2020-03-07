@@ -9,13 +9,15 @@ import string
 import time
 import traceback
 from asyncio import sleep
+from typing import Callable
 from urllib.parse import quote
 
 import discord
 import requests
 from dateparser import parse as dateparse
 
-from NossiPack import WoDParser, fengraph
+from NossiPack.WoDParser import WoDParser
+from NossiPack.fengraph import chances
 from NossiPack.krypta import DescriptiveError, read_nonblocking
 
 bufferfile = "NossiBotBuffer"
@@ -46,7 +48,19 @@ with open(os.path.expanduser("~/token.discord"), "r") as tokenfile:
     TOKEN = tokenfile.read().strip()
 
 description = """NossiBot in Python"""
-client = discord.Client()
+try:
+    client = discord.Client()
+except RuntimeError:
+    client = discord.Client
+
+    def event(coro: Callable):
+        """mocking the event decorator for the case that we do static checking"""
+        print(
+            f"currently not in async mode, just for static checking "
+            + getattr(coro, "__name__", "Unknown")
+        )
+
+    client.event = event
 repeats = {}
 lastroll = {}
 active_channels = []
@@ -149,7 +163,7 @@ async def oraclehandle(msg, comment, send, author):
     if msg.startswith("show"):
         try:
             parameters = msg[5:].split(" ")
-            it = fengraph.chances(parameters[:-2], parameters[-2], parameters[-1])
+            it = chances(parameters[:-2], parameters[-2], parameters[-1])
             sentmessage = await send(author.mention + comment + " " + next(it))
             for n in it:
                 if isinstance(n, str):
@@ -170,7 +184,7 @@ async def oraclehandle(msg, comment, send, author):
     else:
         try:
             parameters = msg.split(" ")
-            it = fengraph.chances(parameters[:-1], parameters[-1])
+            it = chances(parameters[:-1], parameters[-1])
             sentmessage = await send(author.mention + comment + " " + next(it))
             n = ""
             p = (
@@ -385,7 +399,7 @@ async def handle_defines(msg, send, message):
                 change = True
                 del defines[k]
         if change:
-            persist[author][defines] = defines
+            persist[author]["defines"] = defines
             await message.add_reaction("\N{THUMBS UP SIGN}")
         else:
             await message.add_reaction("\N{BLACK QUESTION MARK ORNAMENT}")
@@ -585,5 +599,6 @@ async def on_message(message: discord.Message):
         await rollhandle(msg, comment, send, message.author)
 
 
-client.run(TOKEN)
-print("Done.")
+if __name__ == "__main__":
+    client.run(TOKEN)
+    print("Done.")

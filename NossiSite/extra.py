@@ -2,10 +2,10 @@ from random import random
 
 from flask import request, session, flash, redirect, url_for, Response, render_template
 
-from NossiPack import Userlist, VampireCharacter, FenCharacter
-from NossiPack.krypta import connect_db
-from NossiSite import app
-from NossiSite.helpers import checklogin, wikiload, log
+from NossiPack.User import Userlist
+from NossiPack.VampireCharacter import VampireCharacter
+from NossiSite.base import app, log
+from NossiSite.helpers import checklogin
 
 
 @app.route("/setfromsource/")
@@ -17,24 +17,16 @@ def setfromsource():
     try:
         new = VampireCharacter()
         if new.setfromdalines(source[-7:]):
-            u.sheet = new
+            u.sheetid = u.savesheet(new)
             ul.saveuserlist()
             flash("character has been overwritten with provided Dalines sheet!")
         else:
-            new = FenCharacter()
-            char = wikiload(source + "_character")
-            if char:
-                new.load_from_md(char[0], char[1], char[2])
-                u.sheet = new
-                ul.saveuserlist()
-            else:
-                flash("Problem with provided sheet source!")
+            flash("problem with " + source)
     except Exception:
         log.exception("setfromsource:")
         flash(
             "Sorry " + session.get("user").capitalize() + ", I can not let you do that."
         )
-
     return redirect(url_for("charsheet"))
 
 
@@ -126,6 +118,19 @@ def standardchar():
 def chargen_menu():
     if request.method == "POST":
         f = dict(request.form)
+        if not f.get("vampire", None):
+            return redirect(
+                url_for(
+                    "chargen",
+                    a=f["a"],
+                    b=f["b"],
+                    c=f["c"],
+                    abia=f["abia"],
+                    abib=f["abib"],
+                    abic=f["abic"],
+                    shuffle=1 if f["shuffle"] else 0,
+                )
+            )
         return redirect(
             url_for(
                 "chargen",
@@ -136,31 +141,44 @@ def chargen_menu():
                 abib=f["abib"],
                 abic=f["abic"],
                 shuffle=1 if f["shuffle"] else 0,
+                vamp=f["discipline"],
             )
         )
     return render_template("generate_dialog.html")
 
 
-def new_sheet_id():
-    db = connect_db()
-    db.execute()
-
-
 @app.route("/chargen/<a>,<b>,<c>,<abia>,<abib>,<abic>,<shuffle>")
-def chargen(a, b, c, abia, abib, abic, shuffle):
+@app.route("/chargen/<a>,<b>,<c>,<abia>,<abib>,<abic>,<shuffle>,<vamp>")
+def chargen(a, b, c, abia, abib, abic, shuffle, vamp=None):
+    """
+    Redirects to the charactersheet/ editor(if logged in) of a randomly
+    generated character
+    :param a: points to be allocated in the first attribute group
+    :param b: points to be allocated in the second attribute group
+    :param c: points to be allocated in the third attribute group
+    :param abia: points to be allocated in the first ability group
+    :param abib: points to be allocated in the second ability group
+    :param abic: points to be allocated in the third ability group
+    :param shuffle: if the first/second/third groups should be shuffled (each)
+    :param vamp: if not None, character will be a vampire, int(vamp)
+    is the amount of discipline points
+    """
     try:
         char = VampireCharacter.makerandom(
             1, 5, int(a), int(b), int(c), int(abia), int(abib), int(abic), int(shuffle),
-        ).getdictrepr()
+        )
+        print(vamp)
+        if vamp is not None:
+            char.makevamprandom(vamp)
+        print(char.getdictrepr())
         if session.get("logged_in", False):
             return render_template(
                 "vampsheet_editor.html",
-                character=char,
-                Clans=char.get_clans(),
-                Backgrounds=char.get_backgrounds(),
-                sheet_id=new_sheet_id(),
+                character=char.getdictrepr(),
+                Clans=VampireCharacter.get_clans(),
+                Backgrounds=VampireCharacter.get_backgrounds(),
             )
-        return render_template("vampsheet.html", character=char)
+        return render_template("vampsheet.html", character=char.getdictrepr())
     except Exception as e:
         flash("ERROR" + "\n".join(e.args))
-        return redirect("/chargen")
+        return redirect(url_for("chargen_menu"))

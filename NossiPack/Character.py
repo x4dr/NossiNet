@@ -6,6 +6,7 @@ from random import Random
 from urllib import request
 
 from Data import locale_data
+from NossiPack.VampireCharacter import intdef
 from NossiPack.krypta import DescriptiveError
 
 __author__ = "maric"
@@ -887,13 +888,6 @@ def allocaterandomly(num, mini, cap, var):
             if sum(att) >= cap * var:
                 break
     return att
-
-
-def intdef(s, default=0):
-    try:
-        return int(s)
-    except Exception:
-        return default
 
 
 def upsert(listinput, index, value, minimum=3):
