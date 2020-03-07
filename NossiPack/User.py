@@ -10,6 +10,7 @@ from NossiPack.VampireCharacter import VampireCharacter
 __author__ = "maric"
 
 from NossiPack.krypta import connect_db as condb
+from NossiSite.base import log
 
 
 def connect_db() -> sqlite3.Connection:
@@ -325,7 +326,5 @@ class Userlist:
                 return False
             return u.check_password(password)
         except Exception:
-            from NossiSite import log
-
             log.exception("exception while checking user credentials for {user}")
             raise

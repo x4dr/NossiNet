@@ -16,8 +16,7 @@ class DescriptiveError(Exception):
 def init_db():
     print("initializing DB")
     with closing(connect_db("initialization")) as db:
-        with schema as f:
-            db.cursor().executescript(f.read())
+        db.cursor().executescript(schema)
         db.commit()
 
 

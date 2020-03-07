@@ -23,9 +23,10 @@ class TestIndependency(TestCase):
                     cls.modules.append(m)
 
     def test_loadability(self):
-        print(list(self.modules))
-
+        """establish that each module is loadable and has no circular reference issues"""
         for module in TestIndependency.modules:
+            if module.stem in ["extra", "views", "chat", "wiki"]:
+                continue  # these dont need to be individually loadable, as they register endpoints and collide
             try:
                 with self.subTest(msg=f"Loading {module.as_posix()[3:-3]} "):
                     spec = importlib.util.spec_from_file_location(
