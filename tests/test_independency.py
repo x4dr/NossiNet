@@ -10,6 +10,7 @@ class TestIndependency(TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
+        Path("~/token.discord").expanduser().touch()
         fileblacklist = ["setup.py"]
         patternblacklist = [r".*/\.?venv/.*"]
         cls.modules = []
