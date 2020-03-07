@@ -44,13 +44,13 @@ class User:
             return self._loadedsheet
         db = connect_db()
         res = db.execute(
-            "SELECT sheet_id, sheetdata FROM sheets WHERE owner LIKE :user AND sheet_id = :id;",
+            "SELECT sheet_id, sheetdata FROM sheets WHERE owner LIKE :user "
+            "AND sheet_id = :id;",
             dict(user=self.username, id=self.sheetid if num is None else num),
         ).fetchone()
         if not res:
             return None
-        else:
-            return VampireCharacter.deserialize(res[1])
+        return VampireCharacter.deserialize(res[1])
 
     def getsheet(self, num=None) -> VampireCharacter:
         sheet = self.loadsheet(num) or VampireCharacter()
@@ -156,15 +156,13 @@ class User:
             if dbc.rowcount:
                 db.commit()
                 return num
-            else:
-                raise Exception("NO UPDATE HAPPENED!", self.username, num)
-        else:
-            db.execute(
-                "INSERT INTO sheets (owner, sheetdata) VALUES (:username,:sheetdata);",
-                {"username": self.username, "sheetdata": pickle.dumps(sheet)},
-            )
-            res = db.execute("SELECT last_insert_rowid();").fetchone()
-            return res[0]
+            raise Exception("NO UPDATE HAPPENED!", self.username, num)
+        db.execute(
+            "INSERT INTO sheets (owner, sheetdata) VALUES (:username,:sheetdata);",
+            {"username": self.username, "sheetdata": pickle.dumps(sheet)},
+        )
+        res = db.execute("SELECT last_insert_rowid();").fetchone()
+        return res[0]
 
     @property
     def sheetpublic(self):
@@ -300,8 +298,7 @@ class Userlist:
             u = User(username=user, password=password)
             u.savetodb()
             return None
-        else:
-            return f"Username {user} is taken!"
+        return f"Username {user} is taken!"
 
     def loaduserbyname(self, username) -> Union[User, None]:
         username = username.upper()

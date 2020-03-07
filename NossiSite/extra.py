@@ -168,5 +168,4 @@ def chargen(a, b, c, abia, abib, abic, shuffle, vamp=None):
         return render_template("vampsheet.html", character=char.getdictrepr())
     except Exception as e:
         flash("ERROR" + "\n".join(e.args))
-        raise
-        redirect("/chargen")
+        redirect(url_for("chargen_menu"))

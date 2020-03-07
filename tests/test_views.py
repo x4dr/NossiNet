@@ -17,18 +17,20 @@ class TestViews(TestCase):
         app.config["USERNAME"] = "unittest"
         app.config["PASSWORD"] = "unittest"
         app.config.from_mapping(SECRET_KEY="dev",)
+        self.last_app = app
         return app
 
     def setUp(self) -> None:
         pass  # DB created during normal usage
 
     def tearDown(self) -> None:
+        self.last_app = None
         file = Path("./NN.db")
         if file.exists():
             file.unlink()
 
     def test_login(self):
-        # test response of register page
+        # test response of login
         app = self.create_app()
         c = app.test_client()
         c.get("/login")
@@ -48,6 +50,11 @@ class TestViews(TestCase):
         c.post("/register", data=form)  # register
         c.post("/login", data=form, follow_redirects=True)
         self.assert_template_used("show_entries.html")  # not registered
+
+    def test_version(self):
+        app = self.create_app()
+        c = app.test_client()
+        print(c.get("/version"))
 
     def test_register(self):
         """Make sure register user works"""

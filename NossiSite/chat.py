@@ -540,7 +540,7 @@ def check_char(message):
         try:
             flash("Comparing...")
             old = max(
-                [x for i, x in u.loadoldsheets().items() if i != u.sheetid],
+                (x for i, x in u.loadoldsheets().items() if i != u.sheetid),
                 key=lambda x: x.timestamp,
             )
         except:

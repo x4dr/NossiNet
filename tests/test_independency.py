@@ -37,5 +37,3 @@ class TestIndependency(TestCase):
                     spec.loader.exec_module(foo)
             except ImportError as e:
                 raise e
-            except:
-                raise

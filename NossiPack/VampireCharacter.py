@@ -31,7 +31,8 @@ def intdef(s, default=0):
 class VampireCharacter:
     """
     Class to represent WoD v20 Charactersheets
-    used to be descendant of Character but that class is disabled until a proper interface is extracted
+    used to be descendant of Character but that class is disabled until a proper
+    interface is extracted
     """
 
     meta: Dict[str, str]
@@ -104,7 +105,7 @@ class VampireCharacter:
                 result += int(u[a]) * 5 ** i
             except:
                 raise Exception("could not add up", a)
-        print("checksum", a)
+        print("checksum", result)
         return result
 
     @staticmethod

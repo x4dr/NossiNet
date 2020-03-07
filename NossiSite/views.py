@@ -343,11 +343,11 @@ def showoldsheets(x):
         return render_template(
             "vampsheet.html", character=u.getsheet(sheetnum).getdictrepr(), oldsheet=x,
         )
-    else:
-        flash(
-            "I am not allowed to tell you if that character even exists. Maybe you can summon them?"
-        )
-        return render_template("oldsheets.html", summon=x)
+    flash(
+        "I am not allowed to tell you if that character even exists. "
+        "Maybe you can summon them?"
+    )
+    return render_template("oldsheets.html", summon=x)
 
 
 @app.route("/new_vamp_sheet/", methods=["GET"])
@@ -377,8 +377,7 @@ def modify_sheet():
             Clans=u.getsheet().get_clans(),
             Backgrounds=u.getsheet().get_backgrounds(),
         )
-    else:
-        raise DescriptiveError(f"unsupported sheettpe:{sheet['Type']}")
+    raise DescriptiveError(f"unsupported sheettpe:{sheet['Type']}")
 
 
 @app.route("/delete_entry/<ident>", methods=["POST"])

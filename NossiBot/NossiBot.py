@@ -54,6 +54,7 @@ except RuntimeError:
     client = discord.Client
 
     def event(coro: Callable):
+        """mocking the event decorator for the case that we do static checking"""
         print(
             f"currently not in async mode, just for static checking "
             + getattr(coro, "__name__", "Unknown")
