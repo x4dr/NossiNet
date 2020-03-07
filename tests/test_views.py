@@ -17,14 +17,14 @@ class TestViews(TestCase):
         app.config["USERNAME"] = "unittest"
         app.config["PASSWORD"] = "unittest"
         app.config.from_mapping(SECRET_KEY="dev",)
-        self.last_app = app
+        self.app = app
         return app
 
     def setUp(self) -> None:
         pass  # DB created during normal usage
 
     def tearDown(self) -> None:
-        self.last_app = None
+        self.app = None
         file = Path("./NN.db")
         if file.exists():
             file.unlink()

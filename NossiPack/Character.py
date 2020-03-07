@@ -6,16 +6,10 @@ from random import Random
 from urllib import request
 
 from Data import locale_data
+from NossiPack.VampireCharacter import intdef
 from NossiPack.krypta import DescriptiveError
 
 __author__ = "maric"
-
-
-def intdef(s, default=0):
-    try:
-        return int(s)
-    except Exception:
-        return default
 
 
 # Database still uses this, legacy support

@@ -262,6 +262,7 @@ def del_sheet():
 
 @app.route("/claimsheet/", methods=["POST"])
 def claim_sheet():
+    """assign unassigned/'deleted' charactersheet to user"""
     checklogin()
     x = int(request.form["sheetnum"])
     Userlist().loaduserbyname(session["user"]).claimsheet(x)

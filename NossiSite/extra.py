@@ -150,6 +150,19 @@ def chargen_menu():
 @app.route("/chargen/<a>,<b>,<c>,<abia>,<abib>,<abic>,<shuffle>")
 @app.route("/chargen/<a>,<b>,<c>,<abia>,<abib>,<abic>,<shuffle>,<vamp>")
 def chargen(a, b, c, abia, abib, abic, shuffle, vamp=None):
+    """
+    Redirects to the charactersheet/ editor(if logged in) of a randomly
+    generated character
+    :param a: points to be allocated in the first attribute group
+    :param b: points to be allocated in the second attribute group
+    :param c: points to be allocated in the third attribute group
+    :param abia: points to be allocated in the first ability group
+    :param abib: points to be allocated in the second ability group
+    :param abic: points to be allocated in the third ability group
+    :param shuffle: if the first/second/third groups should be shuffled (each)
+    :param vamp: if not None, character will be a vampire, int(vamp)
+    is the amount of discipline points
+    """
     try:
         char = VampireCharacter.makerandom(
             1, 5, int(a), int(b), int(c), int(abia), int(abib), int(abic), int(shuffle),
@@ -168,4 +181,4 @@ def chargen(a, b, c, abia, abib, abic, shuffle, vamp=None):
         return render_template("vampsheet.html", character=char.getdictrepr())
     except Exception as e:
         flash("ERROR" + "\n".join(e.args))
-        redirect(url_for("chargen_menu"))
+        return redirect(url_for("chargen_menu"))
