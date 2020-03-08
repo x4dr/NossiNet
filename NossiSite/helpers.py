@@ -186,7 +186,7 @@ def before_request():
 
 @app.teardown_request
 def teardown_request(exception: Exception):
-    #    close_db() # currently disabled(letting the connection live as long as the worker)
+    # close_db() currently disabled(letting the connection live as long as the worker)
     if exception:
         if exception.args and exception.args[0] == "REDIR":
             return exception.args[1]

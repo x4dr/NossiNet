@@ -15,6 +15,7 @@ from NossiSite.base import webhook, app
 
 
 def check_and_restart(commit):
+    # skipcq: BAN-B607, BAN-B603
     res = subprocess.run(["nossilint", commit], capture_output=True, encoding="utf-8")
     result = res.stdout
     if result.strip():
@@ -24,6 +25,7 @@ def check_and_restart(commit):
     print("update lint successfull")
     time.sleep(1)
     print("new version checks out. restarting...")
+    # skipcq: BAN-B607, BAN-B603
     subprocess.run(["nossirestart", commit])
 
     print("we should have never gotten here")
@@ -32,7 +34,7 @@ def check_and_restart(commit):
 @webhook.hook()
 def on_push(req):
     if app.config.get("TRAVIS"):
-        return "waiting on travis"
+        return
     if req["repository"]["name"] == "NossiNet":
         Thread(target=check_and_restart, args=(req["after"],)).start()
         print("handled github webhook")
@@ -68,7 +70,8 @@ def travis():
 
     def _get_travis_public_keys():
         """
-        Returns the PEM encoded public key from the Travis CI /config endpoint
+        Returns the PEM encoded public
+        key from the Travis CI /config endpoint
         """
         sig = []
         for travis_config_url in travis_config_urls:
@@ -120,6 +123,7 @@ def travis():
     json_data = json.loads(json_payload)
     logger.info(f"RECEIVED: {json_data}")
     if json_data["state"] == "passed" and json_data["branch"] == "master":
+        # skipcq: BAN-B607, BAN-B603
         subprocess.run(["nossirestart", json_data["commit"]])
         print("restart triggered by travis")
     return {"status": "received"}

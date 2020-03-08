@@ -13,7 +13,7 @@ class TestViews(TestCase):
         # Set to 0 to have the OS pick the port.
         app.config["LIVESERVER_PORT"] = 0
         app.config.from_mapping(SECRET_KEY="dev",)
-        self.app = app
+        print(self.countTestCases())
         return app
 
     def setUp(self) -> None:

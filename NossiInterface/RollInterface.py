@@ -120,7 +120,8 @@ async def process_roll(r: WoDDice, p: WoDParser, msg: str, comment, send, author
     except Exception as e:
 
         raise Exception(
-            f"Exception during sending: {str(e)}\nlength:{len(tosend)} \nfirst 100 {tosend[:100]}"
+            f"Exception during sending: {str(e)}\n"
+            f"length:{len(tosend)} \nfirst 100 {tosend[:100]}"
         )
 
 
@@ -131,7 +132,9 @@ async def timeout(func, arg, time_out=1):
         return await asyncio.wait_for(loop.run_in_executor(ex, func, arg), time_out)
     except asyncio.exceptions.TimeoutError:
         # noinspection PyUnresolvedReferences,PyProtectedMember
-        for t in ex._threads:
+        # skipcq: PYL-W0212
+        for t in ex._threads:  # Quite impolite form of killing that thread,
+            # but otherwise it keeps running
             terminate_thread(t)
             print(f"terminated: {arg}")
         raise

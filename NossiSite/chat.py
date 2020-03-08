@@ -307,9 +307,8 @@ def register(app=None, socketio=None):
             emit(
                 "Exec",
                 {
-                    "command": 'document.getElementById("page_complete").style.width = "'
-                    + width
-                    + '";'
+                    "command": 'document.getElementById("page_complete")'
+                    '.style.width = "' + width + '";'
                 },
             )
         elif message.split(" ")[0] == "height":
@@ -575,7 +574,8 @@ def register(app=None, socketio=None):
     def disconnect_request():
         emit("Message", {"data": "Disconnected!"})
         log.info(
-            f"received disconnect message for user {session.get('user', 'unknown user')}"
+            "received disconnect message for user "
+            f"{session.get('user', 'unknown user')}"
         )
         disconnect()
 

@@ -486,7 +486,7 @@ def register(app=None):
         )
 
     @app.route("/register", methods=["GET", "POST"])
-    def register():  # this is not clrs secure because it does not need to be
+    def register_user():  # this is not clrs secure because it does not need to be
         error = None
         if request.method == "POST":
             username = request.form["username"].strip().upper()
