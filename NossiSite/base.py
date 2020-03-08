@@ -6,7 +6,6 @@ import string
 import eventlet
 from flask import Flask
 from flask_socketio import SocketIO
-from github_webhook import Webhook
 
 async_mode = "eventlet"
 eventlet.monkey_patch()
@@ -27,7 +26,6 @@ except:
 SECRET_KEY = key
 app.config.from_object(__name__)
 socketio = SocketIO(app, async_mode=async_mode)
-webhook = Webhook(app, endpoint="/postreceive", secret=SECRET_KEY)
 log = logging.getLogger("frontend")
 fh = logging.FileHandler("nossilog.log", mode="w")
 fh.setLevel(logging.DEBUG)

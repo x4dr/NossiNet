@@ -447,5 +447,5 @@ def checktoken():
 @app.errorhandler(404)
 def page_not_found(e):
     if e:
-        print(e)
+        print("404:", request.url)
     return render_template("404.html"), 404

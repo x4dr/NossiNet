@@ -1,12 +1,15 @@
 import sys
 
-from NossiSite import app, socketio, views, chat, extra, wiki
+from NossiSite import app, socketio, views, chat, extra, wiki, webhook
 
 # register the endpoints
+
+
 views.register(app)
 chat.register(app, socketio)
 wiki.register(app)
 extra.register(app)
+webhook.register(app)
 
 if __name__ == "__main__":
     print("Nosferatu net being run directly, DO NOT USE IN PRODUCTION")

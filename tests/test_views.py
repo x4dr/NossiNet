@@ -62,6 +62,13 @@ class TestViews(TestCase):
         c = app.test_client()
         self.assert200(c.get("/version"))
 
+    @mock.patch.object(Data, "DATABASE", "version.db")
+    def test_404(self):
+        self.addCleanup(delete, Data.DATABASE)
+        app = self.create_app()
+        c = app.test_client()
+        self.assert404(c.get("/gndlbrnft"))
+
     @mock.patch.object(Data, "DATABASE", "register.db")
     def test_register(self):
         self.addCleanup(lambda x: Path(x).unlink(), Data.DATABASE)
