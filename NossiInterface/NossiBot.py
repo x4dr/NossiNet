@@ -8,7 +8,6 @@ import shelve
 import string
 import time
 import traceback
-from asyncio import sleep
 from typing import Callable
 from urllib.parse import quote
 
@@ -18,7 +17,7 @@ from dateparser import parse as dateparse
 
 from Data import getnossihelp
 from NossiInterface.RollInterface import rollhandle
-from NossiInterface.Tools import discordname
+from NossiInterface.Tools import discordname, split_send
 from NossiPack.fengraph import chances
 from NossiPack.krypta import DescriptiveError, read_nonblocking
 
@@ -411,25 +410,7 @@ async def on_message(message: discord.Message):
     if msg.startswith("NossiBot") or isinstance(message.channel, discord.DMChannel):
         msg = msg[len("NossiBot") :] if msg.startswith("NossiBot") else msg
         if msg.strip() == "help":
-            with getnossihelp() as f:
-                helpmsg = f.read()
-                replypart = ""
-                lines = helpmsg.split("\n")
-                i = 0
-                while len(replypart) < 1950 and i <= len(lines):
-                    if i < len(lines) and len(replypart) + len(lines[i]) < 1950:
-                        replypart += lines[i] + "\n"
-                        i += 1
-                    else:
-                        if replypart:
-                            await message.author.send("```" + replypart + "```")
-                            await sleep(1)
-                            replypart = ""
-                        else:
-                            if i < len(lines):
-                                await message.author.send(
-                                    "```" + lines[i][:1990] + "```"
-                                )
+            await split_send(message.author.send, getnossihelp().split("\n"))
             return
         if "DIE" in msg and discordname(message.author) == persist["owner"]:
             await message.add_reaction("\U0001f480")
