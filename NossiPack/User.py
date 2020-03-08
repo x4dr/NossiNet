@@ -13,12 +13,9 @@ from NossiPack.krypta import connect_db as condb
 from NossiSite.base import log
 
 
-def connect_db() -> sqlite3.Connection:
-    return condb("User")
-
-
 class User:
     oldsheets: Dict[int, VampireCharacter]
+    db = None
 
     def __init__(
         self, username, password="", passwordhash=None, funds=0, sheet=None, admin="",
@@ -35,6 +32,11 @@ class User:
         self.oldsheets = {}
         self.admin = admin
 
+    @classmethod
+    def connect_db(cls) -> sqlite3.Connection:
+        cls.db = condb("User")
+        return cls.db
+
     def set_password(self, newpassword):
         self.pw_hash = generate_password_hash(newpassword)
         return True
@@ -42,7 +44,7 @@ class User:
     def loadsheet(self, num=None):
         if self._loadedsheet and num is None:
             return self._loadedsheet
-        db = connect_db()
+        db = self.connect_db()
         res = db.execute(
             "SELECT sheet_id, sheetdata FROM sheets WHERE owner LIKE :user "
             "AND sheet_id = :id;",
@@ -63,7 +65,7 @@ class User:
         return "LEGACY"
 
     def loadoldsheets(self) -> Dict[int, VampireCharacter]:
-        db = connect_db()
+        db = self.connect_db()
         res = db.execute(
             "SELECT sheet_id, sheetdata FROM sheets WHERE owner LIKE :user;",
             dict(user=self.username),
@@ -76,7 +78,7 @@ class User:
         )
 
     def savetodb(self):
-        db = connect_db()
+        db = self.connect_db()
         self.transition_oldsheets()
         if self._loadedsheet:
             self.sheetid = self.savesheet(self._loadedsheet, self.sheetid)
@@ -141,7 +143,7 @@ class User:
             flash(f"UPDATING LEGACY CHAR FROM {self.username}@{sheet.timestamp}")
             sheet = VampireCharacter.from_character(sheet)
             sheet.legacy_convert()
-        db = connect_db()
+        db = self.connect_db()
         if num:
             dbc = db.cursor()  # need cursor to get affected rowcount
             dbc.execute(
@@ -188,7 +190,7 @@ class User:
 
     @classmethod
     def load(cls, username):
-        db = connect_db()
+        db = cls.connect_db()
         cur = db.execute(
             "SELECT username, passwordhash, funds, "
             "sheet, admin FROM users WHERE username = (?)",
@@ -206,7 +208,7 @@ class User:
         )
 
     def claimsheet(self, x):
-        db = connect_db()
+        db = self.connect_db()
         c = db.cursor()
         res = c.execute(
             "UPDATE sheets SET owner = :user WHERE owner IS NULL AND sheet_id = :id;",
@@ -224,7 +226,7 @@ class User:
         flash(
             "If you ever want to restore this sheet: write this number down:" + str(x)
         )
-        db = connect_db()
+        db = cls.connect_db()
         db.execute("UPDATE sheets SET owner=NULL WHERE sheet_id=?", [x])
         db.commit()
 
@@ -232,7 +234,7 @@ class User:
 class Config:
     @staticmethod
     def load(user, option, db=None):
-        db = db or connect_db()
+        db = db or User.connect_db()
         res = db.execute(
             "SELECT value FROM configs WHERE user LIKE :user AND option LIKE :option;",
             dict(user=user, option=option),
@@ -241,7 +243,7 @@ class Config:
 
     @staticmethod
     def loadall(user: str, db=None) -> Dict[str, str]:
-        db = db or connect_db()
+        db = db or User.connect_db()
         res = db.execute(
             "SELECT option, value FROM configs WHERE user LIKE :user;", dict(user=user)
         ).fetchall()
@@ -249,7 +251,7 @@ class Config:
 
     @staticmethod
     def save(user, option, value, db=None):
-        db = db or connect_db()
+        db = db or User.connect_db()
         if Config.load(user, option, db) is not None:
             db.execute(
                 "UPDATE configs SET value = :value "
@@ -266,7 +268,7 @@ class Config:
 
     @staticmethod
     def delete(user, option, db=None):
-        db = db or connect_db()
+        db = db or User.connect_db()
         if Config.load(user, option, db) is not None:
             db.execute(
                 "DELETE FROM configs WHERE user LIKE :user AND option LIKE :option;",

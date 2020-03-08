@@ -1,5 +1,12 @@
 import sys
-from NossiSite import app, socketio
+
+from NossiSite import app, socketio, views, chat, extra, wiki
+
+# register the endpoints
+views.register(app)
+chat.register(app, socketio)
+wiki.register(app)
+extra.register(app)
 
 if __name__ == "__main__":
     print("Nosferatu net being run directly, DO NOT USE IN PRODUCTION")
@@ -23,6 +30,6 @@ if __name__ == "__main__":
             port = int(sys.argv[1])
         except:
             port = 5000
-        socketio.run(app, "0.0.0.0", debug=(port != 80), port=port)
+        socketio.run(app, "0.0.0.0", debug=False, port=port)
 
         print("Nosferatu net closing")

@@ -4,9 +4,7 @@ import sqlite3
 from contextlib import closing
 from pathlib import Path
 
-from flask import g
-
-from Data import schema, DATABASE
+import Data
 
 
 class DescriptiveError(Exception):
@@ -16,22 +14,33 @@ class DescriptiveError(Exception):
 def init_db():
     print("initializing DB")
     with closing(connect_db("initialization")) as db:
-        db.cursor().executescript(schema)
+        db.cursor().executescript(Data.schema)
         db.commit()
+
+
+g = {}  # module level caching
+
+
+def close_db():
+    db = g.get("db", None)
+    if db:
+        db.close()
+        g["db"] = None
 
 
 def connect_db(source) -> sqlite3.Connection:
     """db connection singleton"""
-    db = getattr(g, "db", None)
+    db = g.get("db", None)
     if db:
         return db
+    dbpath = Data.DATABASE
     if source != "before request":
-        print("connecting to", DATABASE, "from", source)
-    if not Path(DATABASE).exists():
-        Path(DATABASE).touch()
+        print("connecting to", dbpath, "from", source)
+    if not Path(dbpath).exists():
+        Path(dbpath).touch()
         init_db()
-    g.db = sqlite3.connect(DATABASE)
-    return g.db
+    g["db"] = sqlite3.connect(dbpath)
+    return g["db"]
 
 
 def write_nonblocking(path, data):

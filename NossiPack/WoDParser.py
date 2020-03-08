@@ -8,6 +8,10 @@ from NossiPack.WoDDice import WoDDice
 from NossiPack.krypta import DescriptiveError
 
 
+class DiceCodeError(Exception):
+    pass
+
+
 class Node:
     def __init__(self, roll: str, depth):
         self.do = False
@@ -105,7 +109,7 @@ class WoDParser:
 
     diceparse = re.compile(  # the regex matching the roll (?# ) for indentation
         r"(?# )\s*(?:(?P<selectors>(?:-?[0-9](?:\s*,\s*)?)*)\s*@)?"  # selector matching
-        r"(?# )\s*(?P<amount>-?[0-9]{1,4})\s*"  # amount of dice -9999--9999
+        r"(?# )\s*(?P<amount>-?[0-9]{1,5})\s*"  # amount of dice -99999--99999
         r"(?# )(d *(?P<sides>[0-9]{1,5}))? *"  # sides of dice 0-99999
         r"(?# )(?:[rR]\s*(?P<rerolls>-?\d+))?"  # reroll highest/lowest dice
         r"(?#   )(?P<sort>s)?"  # sorting rolls
@@ -121,9 +125,15 @@ class WoDParser:
         r"(?# )(?P<explosion>!+)? *$",  # explosion effects
     )
 
-    usage = "[<Selectors>@]<dice>d<sides>[R<rerolls>][s][ef<difficulty>][ghl][!!!]"
+    usage = "[<Selectors>@]<dice>[d<sides>[R<rerolls>][s][ef<difficulty>ghl][!!!]]"
 
     def extract_diceparams(self, message):
+        def setreturn(d, n):
+            ret = d.get("return", None)
+            if ret:
+                raise DescriptiveError(f"Interpretation Conflict: {ret} vs {n}")
+            d["return"] = n
+
         info = WoDParser.diceparse.match(message)
         info = {k: v for (k, v) in info.groupdict().items() if v} if info else {}
         if info.get("amount", None) is not None:
@@ -134,30 +144,34 @@ class WoDParser:
                 return {}
             if not message.strip():
                 return None
-            raise DescriptiveError(
+            raise DiceCodeError(
                 "invalid dicecode:'" + message + "'\n usage: " + WoDParser.usage
             )
-        if "@" in message and info.get("selectors") is None:
-            raise DescriptiveError("Missing Selectors!")
         if info.get("sides", None) is not None:
             info["sides"] = int(info["sides"])
+
+        if info.get("selectors", None):
+            setreturn(info, info["selectors"] + "@")
+        else:
+            if "@" in message:
+                raise DescriptiveError("Missing Selectors!")
         if info.get("onebehaviour") == "f":
             info["onebehaviour"] = 1
-            info["return"] = "threshhold"
+            setreturn(info, "threshhold")
         elif info.get("onebehaviour") == "e":
             info["onebehaviour"] = 0
-            info["return"] = "threshhold"
+            setreturn(info, "threshhold")
         # would need rewrite if more than 1 desired
         if info.get("difficulty", None) is not None:
             info["difficulty"] = int(info["difficulty"])
         else:
             info.pop("difficulty", None)
         if info.pop("minimum", 0):
-            info["return"] = "min"
+            setreturn(info, "min")
         if info.pop("maximum", 0):
-            info["return"] = "max"
+            setreturn(info, "max")
         if info.pop("sum", 0):
-            info["return"] = "sum"
+            setreturn(info, "sum")
         info["explosion"] = len(info.get("explosion", ""))
 
         return info
@@ -376,7 +390,10 @@ class WoDParser:
         triggers = self.gettriggers(roll.code)
         triggerreplace = []
         for trigger in triggers:
-            triggername, triggerbody = trigger.strip("& ").split(" ", 1)
+            try:
+                triggername, triggerbody = trigger.strip("& ").split(" ", 1)
+            except ValueError:
+                triggername, triggerbody = trigger.strip("& "), ""
             triggerreplace.append(
                 (trigger, self.triggerswitch(triggername, triggerbody))
             )

@@ -16,7 +16,8 @@ import discord
 import requests
 from dateparser import parse as dateparse
 
-from NossiPack.WoDParser import WoDParser
+from NossiInterface.RollInterface import rollhandle
+from NossiInterface.Tools import discordname
 from NossiPack.fengraph import chances
 from NossiPack.krypta import DescriptiveError, read_nonblocking
 
@@ -26,8 +27,6 @@ if shutdownflag.exists():
     shutdownflag.unlink()  # ignore previously set shutdown
 remindfile = os.path.expanduser("~/reminders.txt")
 remindnext = os.path.expanduser("~/reminders_next.txt")
-numemoji = ("1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟")
-numemoji_2 = ("❗", "‼️", "\U0001F386")
 
 
 class MutationLoggingDict(dict):
@@ -62,7 +61,6 @@ except RuntimeError:
 
     client.event = event
 repeats = {}
-lastroll = {}
 active_channels = []
 
 
@@ -224,102 +222,6 @@ async def oraclehandle(msg, comment, send, author):
             await send(author.mention + " <selectors> <modifier>")
 
 
-async def rollhandle(msg, comment, send, author):
-    errreport = msg.startswith("?")
-    if errreport:
-        msg = msg[1:]
-    msg = msg.strip()
-
-    if msg == "+":
-        msg = lastroll.get(author, "")
-    p = WoDParser(persist.get(discordname(author), {"defines": {}}))
-    try:
-        r = p.do_roll(msg)
-    except Exception as e:
-        if errreport:  # query for error
-            await author.send(" ".join(e.args))
-        return
-    lastroll[author] = msg
-    reply = ""
-    if isinstance(p.rolllogs, list) and len(p.rolllogs) > 1:
-        reply += (
-            "\n".join(x.name + ": " + x.roll_v() for x in p.rolllogs if x.roll_v())
-            + "\n"
-        )
-
-    if len(reply) > 1950:
-        last = ""
-        reply = ""
-        for x in p.rolllogs:
-            if not x.roll_v():
-                continue  # skip empty rolls
-            if x.name != last:
-                last = x.name
-                reply += "\n" + x.name + ": " + x.roll_v()
-            else:
-                reply += ", " + str(x.result)
-        reply = reply.strip("\n") + "\n"
-    if p.triggers.get("verbose", None):
-        if r is None:
-            print(msg, "lead to noneroll!")
-        await send(
-            author.mention
-            + comment
-            + " "
-            + msg
-            + ":\n"
-            + r.name
-            + ": "
-            + r.roll_vv(p.triggers.get("verbose"))
-        )
-    else:
-        tosend = "uninitialized"
-        try:
-            tosend = (
-                author.mention
-                + comment
-                + " "
-                + msg
-                + ":\n"
-                + reply
-                + (r.roll_v() if not reply.endswith(r.roll_v() + "\n") else "")
-            )
-            if len(tosend) > 2000:
-                tosend = (
-                    f"{author.mention}"
-                    f"{comment} "
-                    f"{msg}:\n"
-                    f"{reply[: max(4000 - len(tosend), 0)]} [...]"
-                    f"{r.roll_v()}"
-                )
-            if len(tosend) > 2000:
-                tosend = (
-                    author.mention + comment + " " + msg + ":\n" + r.name + ": [...]"
-                )
-                tosend += r.roll_v()[-(2000 - len(tosend)) :]
-            sent = await send(tosend)
-            if r.selectors and r.result >= r.max * len(r.selectors):
-                await sent.add_reaction("\U0001f4a5")
-            if r.max == 10 and (r.selectors or r.amount == 5):
-                for frequency in range(1, 11):
-                    amplitude = r.resonance(frequency)
-                    if amplitude > 0:
-                        await sent.add_reaction(numemoji[frequency - 1])
-                    if amplitude > 1 and len(r.r) == 5:
-                        await sent.add_reaction(numemoji_2[amplitude - 2])
-
-        except Exception as e:
-            problem = str(e)
-            ermsg = (
-                f"big oof during rolling {problem}\n"
-                f"length:{len(tosend)} \n "
-                f"first 100 {tosend[:100]}"
-            )
-            if errreport:  # query for error
-                await author.send(ermsg[:2000])
-            print(ermsg)
-
-
 async def weaponhandle(msg, comment, send, author):
     n = requests.get(
         "http://127.0.0.1/"
@@ -355,7 +257,7 @@ async def handle_defines(msg, send, message):
             raise Exception(a)
 
         async def nop(a):
-            pass
+            print(a)
 
         class Fake:
             def __init__(self, **kwargs):
@@ -371,26 +273,30 @@ async def handle_defines(msg, send, message):
     except KeyError:
         persist[author] = {"defines": {}}
         defines = {}
-    if msg.startswith("def") and "=" in msg:
+    if msg.startswith("def"):
         msg = msg[3:].strip()
-        q = re.compile(r"^=\s*?")
-        if q.match(msg):
-            msg = q.sub(msg, "").strip()
-            if not msg:
-                defstring = "defines are:\n"
-                for k, v in defines.items():
-                    defstring += "def " + k + " = " + v + "\n"
-                for replypart in [
-                    defstring[i : i + 1950] for i in range(0, len(defstring), 1950)
-                ]:
-                    await message.author.send(replypart)
-                return None
-        define, value = [x.strip() for x in msg.split("=", 1)]
-        defines[define] = value
-        persist[author]["defines"] = defines
-        persist["mutated"] = True
-        await message.add_reaction("\N{THUMBS UP SIGN}")
-        msg = None
+        if "=" in msg:
+            question = re.compile(r"^=\s*?")
+            if question.match(msg):
+                msg = question.sub(msg, "").strip()
+                if not msg:
+                    defstring = "defines are:\n"
+                    for k, v in defines.items():
+                        defstring += "def " + k + " = " + v + "\n"
+                    for replypart in [
+                        defstring[i : i + 1950] for i in range(0, len(defstring), 1950)
+                    ]:
+                        await message.author.send(replypart)
+                    return None
+            define, value = [x.strip() for x in msg.split("=", 1)]
+            defines[define] = value
+            persist[author]["defines"] = defines
+            persist["mutated"] = True
+            await message.add_reaction("\N{THUMBS UP SIGN}")
+            msg = None
+        else:
+            await message.author.send(defines[msg])
+            msg = None
     elif msg.startswith("undef "):
         msg = msg[6:]
         change = False
@@ -418,10 +324,6 @@ async def handle_defines(msg, send, message):
                 pat = r"\b" + re.escape(k) + r"\b"
                 msg = re.sub(pat, v, msg)
     return msg
-
-
-def discordname(user):
-    return user.name + "#" + user.discriminator
 
 
 async def handle_inp(inp):
@@ -468,7 +370,8 @@ async def tick():
             break
         if shutdownflag.exists():
             shutdownflag.unlink()
-            await client.close()
+            info = await client.application_info()
+            await info.owner.send("I got Killed")
         await asyncio.sleep(next_call - time.time())
 
 
@@ -482,6 +385,7 @@ async def on_ready():
     p = discord.Permissions(117824)
     print(discord.utils.oauth_url(client.user.id, p))
     info = await client.application_info()
+    await info.owner.send("I Live")
     persist["owner"] = discordname(info.owner)
 
 
@@ -596,7 +500,12 @@ async def on_message(message: discord.Message):
     elif msg.startswith("oracle"):
         await oraclehandle(msg, comment, send, message.author)
     else:
-        await rollhandle(msg, comment, send, message.author)
+        await rollhandle(
+            msg,
+            comment,
+            message,
+            persist.get(discordname(message.author), {"defines": {}})["defines"],
+        )
 
 
 if __name__ == "__main__":

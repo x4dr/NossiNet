@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from NossiPack.WoDParser import WoDParser, Node, fullparenthesis
+from NossiPack.krypta import DescriptiveError
 
 
 class TestWoDParser(TestCase):
@@ -95,21 +96,30 @@ class TestWoDParser(TestCase):
 
     def test_selection_sum(self):
         for _ in range(100):
-            result = self.p.do_roll("10@12d10g").result
+            result = self.p.do_roll("10@12d10").result
             self.assertTrue(
                 result <= 10,
                 "singular selector should not produce "
                 f"a higher value than dice sidedness {self.p.rolllogs[-1].r}",
             )
 
+    def test_selection_exclusivity(self):
+
+        try:
+            self.p.do_roll("10@12d10g")
+        except DescriptiveError as e:
+            self.assertEqual(e.args[0], "Interpretation Conflict: 10@ vs sum")
+        else:
+            self.assertFalse("There should have been an exception")
+
     def test_selection_0(self):
         for _ in range(10):
             self.assertTrue(
-                self.p.do_roll("0@12d6g").result == 0,
+                self.p.do_roll("0@12d6").result == 0,
                 f"0 selector should result in 0 {self.p.rolllogs[-1].r}",
             )
             self.assertTrue(
-                self.p.do_roll("-2@12d6g").result == 0,
+                self.p.do_roll("-2@12d6").result == 0,
                 f"-2 selector should result in 0 {self.p.rolllogs[-1].r}",
             )
 

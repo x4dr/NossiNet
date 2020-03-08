@@ -4,7 +4,12 @@ General behaviour:
     // : starts a comment, the rest of the line is repeated in the output but otherwise ignored
     def : will define a replacement that is from then on applied to all your messages before (and during) processing
         example: def a = 10
-        result: every word "a" will be replaced by 10
+        result: every occurence "a" will be replaced by 10
+        SPECIAL DEF VALUES:
+            difficulty: standard difficulty for threshholds/ for e and f
+            onebehaviour: 0 if standard is "e", 1 if standard is "f"
+            sides: how many sides dice have if nothing is said
+            return: standard returnfunctions threshhold, sum, min, max, id, None
     undef : will remove a defined replacement
         example: undef a
         result: a will no longer be replaced by anything

@@ -47,7 +47,7 @@ class Chatroom:
             dict(line=line, time=time_, room=self.name),
         )
 
-    def addline(self, line):
+    def addline(self, line, supresssave=False):
         if not session["user"] in self.presentusers.keys():
             raise DescriptiveError(
                 "You got disconnected, because you left this room or were inactive."
@@ -63,7 +63,8 @@ class Chatroom:
                 self.name,
                 "could not be emitted",
             )
-        self.addlinetolog(line, time.time())
+        if not supresssave:
+            self.addlinetolog(line, time.time())
 
     def userjoin(self, user):
         if self.mailbox and not (
@@ -83,7 +84,7 @@ class Chatroom:
             return True
         return False
 
-    def getlog(self, user):
+    def getlog(self, user, length=100):
         present = False
         result = ""
         if self.mailbox and not (
@@ -95,7 +96,7 @@ class Chatroom:
             result += "mailbox"
         result += "\n" + self.name + "\n"
 
-        for line, t in self.chatlog(10 ** 10):
+        for line, t in reversed(self.chatlog(length)):
             if line == user + " joined the room!":
                 present = True
             if present:

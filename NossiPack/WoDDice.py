@@ -1,5 +1,4 @@
 import random
-from typing import List
 
 from NossiPack.krypta import DescriptiveError
 
@@ -12,7 +11,7 @@ def str_to_slice(inp):
 
 
 class WoDDice:
-    selectors: List[int]
+    returnfun: str
 
     def __init__(self, info):
         try:
@@ -24,10 +23,7 @@ class WoDDice:
                 raise DescriptiveError("Dice without sides!")
             self.difficulty = info.get("difficulty", None)
             self.subone = info.get("onebehaviour", 0)
-            try:
-                self.returnfun = info["return"]
-            except:
-                raise DescriptiveError("No evaluation function for dice!")
+            self.returnfun = info.get("return", None)
             self.explodeon = self.max + 1 - info.get("explosion", 0)
             self.sort = info.get("sort")
             try:
@@ -35,15 +31,6 @@ class WoDDice:
             except:
                 raise DescriptiveError("No amount of dice!!")
             self.rerolls = int(info.get("rerolls", 0))  # only used for fenrolls
-            selectors = info.get("selectors", None)
-            if selectors:
-                try:
-                    self.selectors = [int(x) for x in selectors.split(",")]
-                except ValueError:
-
-                    raise DescriptiveError(f"{selectors} is not valid")
-            else:
-                self.selectors = []
             self.r = []
             self.log = ""
             self.dbg = ""
@@ -74,8 +61,12 @@ class WoDDice:
             amount = ""
         else:
             amount = str(len(self.r))
-        return (
-            ((",".join(str(x) for x in self.selectors) + "@") if self.selectors else "")
+        name = (
+            (
+                (",".join(str(x) for x in self.returnfun) + "@")
+                if isinstance(self.returnfun, list)
+                else ""
+            )
             + amount
             + "d"
             + str(self.max)
@@ -100,6 +91,11 @@ class WoDDice:
                 else ""
             )
         )
+        if self.returnfun == "id":
+            name = (amount or "0") + "len"
+        if name.endswith("d1g"):
+            name = name[:-3] + "sum"
+        return name
 
     def another(self):
         if not self.amount:
@@ -113,7 +109,6 @@ class WoDDice:
                 "return": self.returnfun,
                 "explode": self.max - self.explodeon - 1,
                 "amount": self.amount,
-                "selectors": self.selectors,
                 "additivebonus": self.min,
                 "sort": self.sort,
                 "rerolls": self.rerolls,
@@ -221,18 +216,19 @@ class WoDDice:
     def roll_wodsuccesses(self) -> int:
         return (
             self.botchformat(self.succ, self.antisucc)
-            if not self.selectors
+            if not self.returnfun.endswith("@")
             else self.roll_sel()
         ) * self.sign
 
     def roll_v(self) -> str:  # verbose
         log = ""
-        if self.log:
-            if not self.name.endswith("d1g"):
-                log = [x for x in self.log.split("\n") if x][-1].strip()
-        if not log or self.returnfun == "threshhold":
-            if not self.name.endswith("d1g"):  # just sum one sided dice
+        if self.max == 0:
+            return log
+        if not (self.name.endswith("sum") or self.name.endswith("len")):
+            if not log or self.returnfun == "threshhold":
                 log = ", ".join(str(x) for x in self.r)
+            elif log:
+                log = [x for x in self.log.split("\n") if x][-1].strip()
         res = self.result
         if res is not None:
             if len(self.r) < 1:
@@ -256,7 +252,9 @@ class WoDDice:
         return max(self.r)
 
     def roll_sel(self):
-        selectors = [max(min(int(x), len(self.r)), 0) for x in self.selectors]
+        selectors = [
+            max(min(int(x), len(self.r)), 0) for x in self.returnfun[:-1].split(",")
+        ]
         selectors = [x - 1 if x > 0 else None for x in selectors]
         return sum(sorted(self.r)[s] for s in selectors if s is not None) * self.sign
 
@@ -280,7 +278,7 @@ class WoDDice:
     def result(self) -> int:
         return (
             self.roll_sel()
-            if self.selectors
+            if self.returnfun.endswith("@")
             else self.roll_wodsuccesses()
             if self.returnfun == "threshhold"
             else max(self.r) * self.sign
@@ -290,7 +288,7 @@ class WoDDice:
             else sum(self.r) * self.sign
             if self.returnfun == "sum"
             else None
-            if self.returnfun in ["", "None", "none"]
+            if self.returnfun in ["", "None", "none", None]
             else self.amount  # not flipped if negative
             if self.returnfun in ["id"]
             else error("No return function!")

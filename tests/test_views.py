@@ -1,8 +1,16 @@
 from pathlib import Path
+from unittest import mock
 
+from flask import Flask
 from flask_testing import TestCase
 
-from NossiSite.base import app as nossinet
+from NossiPack.krypta import Data, close_db
+from NossiSite import views
+
+
+def delete(x):
+    if Path(x).exists():
+        Path(x).unlink()
 
 
 class TestViews(TestCase):
@@ -10,26 +18,22 @@ class TestViews(TestCase):
 
     # if the create_app is not implemented NotImplementedError will be raised
     def create_app(self):
-        app = nossinet
+        close_db()  # might be open
+        app = Flask(__name__)
+        views.register(app)
+        app.template_folder = "../NossiSite/templates"
         app.config["TESTING"] = True
         # Set to 0 to have the OS pick the port.
         app.config["LIVESERVER_PORT"] = 0
         app.config["USERNAME"] = "unittest"
         app.config["PASSWORD"] = "unittest"
         app.config.from_mapping(SECRET_KEY="dev",)
-        self.app = app
+        print(self.countTestCases())
         return app
 
-    def setUp(self) -> None:
-        pass  # DB created during normal usage
-
-    def tearDown(self) -> None:
-        self.app = None
-        file = Path("./NN.db")
-        if file.exists():
-            file.unlink()
-
+    @mock.patch.object(Data, "DATABASE", "login.db")
     def test_login(self):
+        self.addCleanup(lambda x: Path(x).unlink(), Data.DATABASE)
         # test response of login
         app = self.create_app()
         c = app.test_client()
@@ -51,12 +55,16 @@ class TestViews(TestCase):
         c.post("/login", data=form, follow_redirects=True)
         self.assert_template_used("show_entries.html")  # not registered
 
+    @mock.patch.object(Data, "DATABASE", "version.db")
     def test_version(self):
+        self.addCleanup(delete, Data.DATABASE)
         app = self.create_app()
         c = app.test_client()
-        print(c.get("/version"))
+        self.assert200(c.get("/version"))
 
+    @mock.patch.object(Data, "DATABASE", "register.db")
     def test_register(self):
+        self.addCleanup(lambda x: Path(x).unlink(), Data.DATABASE)
         """Make sure register user works"""
         app = self.create_app()
         c = app.test_client()

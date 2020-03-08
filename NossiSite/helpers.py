@@ -10,13 +10,18 @@ from typing import Tuple, List, Union, Dict
 import bleach
 import markdown
 import numexpr
-from flask import request, session, g, redirect, url_for, render_template, flash
+from flask import request, session, redirect, url_for, render_template, flash
 from markupsafe import Markup
 
 from NossiPack.FenCharacter import FenCharacter
 from NossiPack.User import User
 from NossiPack.fengraph import weapondata
-from NossiPack.krypta import DescriptiveError, write_nonblocking, is_int
+from NossiPack.krypta import (
+    DescriptiveError,
+    write_nonblocking,
+    is_int,
+    connect_db,
+)
 from NossiSite.base import app, log
 
 wikipath = Path.home() / "wiki"
@@ -174,17 +179,14 @@ def markdownfilter(s):
 
 @app.before_request
 def before_request():
+    connect_db("before request")
     if not getattr(app, "wikitags", None) or len(app.wikitags.keys()) == 0:
         updatewikitags()
 
 
 @app.teardown_request
 def teardown_request(exception: Exception):
-    db = getattr(g, "db", None)
-    if db is not None:
-        print("closing_db")
-        db.close()
-        g.db = None
+    #    close_db() # currently disabled(letting the connection live as long as the worker)
     if exception:
         if exception.args and exception.args[0] == "REDIR":
             return exception.args[1]

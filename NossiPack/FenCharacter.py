@@ -5,6 +5,8 @@ from collections import OrderedDict
 
 __author__ = "maric"
 
+from typing import List, Tuple
+
 
 class FenCharacter:
     def __init__(self, name="", meta=None):
@@ -59,6 +61,15 @@ class FenCharacter:
 
     def process_trigger(self, trigger):
         pass  # for when triggers are being built in
+
+    @staticmethod
+    def cost(
+        att: Tuple[int, ...], internal_costs: List[int], internal_penalty: List[int]
+    ) -> int:
+        pen = 0
+        for ip, p in enumerate(internal_penalty):
+            pen += (max(sum(1 for a in att if a >= ip), 1) - 1) * p
+        return sum(internal_costs[a] for a in att) + pen
 
     @staticmethod
     def parse_part(s, parse_table):
