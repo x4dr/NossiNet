@@ -93,6 +93,32 @@ class TestWoDParser(TestCase):
         else:
             self.assertFalse("in 1000 exploded rolls, not one exploded!")
 
+    def test_selection_sum(self):
+        for _ in range(100):
+            result = self.p.do_roll("10@12d10g").result
+            self.assertTrue(
+                result <= 10,
+                "singular selector should not produce "
+                f"a higher value than dice sidedness {self.p.rolllogs[-1].r}",
+            )
+
+    def test_selection_0(self):
+        for _ in range(10):
+            self.assertTrue(
+                self.p.do_roll("0@12d6g").result == 0,
+                f"0 selector should result in 0 {self.p.rolllogs[-1].r}",
+            )
+            self.assertTrue(
+                self.p.do_roll("-2@12d6g").result == 0,
+                f"-2 selector should result in 0 {self.p.rolllogs[-1].r}",
+            )
+
+    def test_negative_dice(self):
+        self.assertTrue(
+            self.p.do_roll("-6d6g").result < 0,
+            f"negative dice, negative result {self.p.rolllogs[-1].r}, {self.p.rolllogs[-1].result}",
+        )
+
     def test_selection(self):
         r = self.p.make_roll("99,99@20s!!")
         self.assertIn(r.result, range(2, 21))

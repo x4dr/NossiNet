@@ -104,8 +104,8 @@ class WoDParser:
         self.rolllogs = []  # if the last roll isnt interesting
 
     diceparse = re.compile(  # the regex matching the roll (?# ) for indentation
-        r"(?# )\s*(?:(?P<selectors>(?:[0-9](?:\s*,\s*)?)*)\s*@)?"  # selector matching
-        r"(?# )\s*(?P<amount>[0-9]{1,4})\s*"  # amount of dice 0-999
+        r"(?# )\s*(?:(?P<selectors>(?:-?[0-9](?:\s*,\s*)?)*)\s*@)?"  # selector matching
+        r"(?# )\s*(?P<amount>-?[0-9]{1,4})\s*"  # amount of dice -9999--9999
         r"(?# )(d *(?P<sides>[0-9]{1,5}))? *"  # sides of dice 0-99999
         r"(?# )(?:[rR]\s*(?P<rerolls>-?\d+))?"  # reroll highest/lowest dice
         r"(?#   )(?P<sort>s)?"  # sorting rolls

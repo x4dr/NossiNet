@@ -1,5 +1,5 @@
 import random
-from typing import List, Union
+from typing import List
 
 from NossiPack.krypta import DescriptiveError
 
@@ -12,11 +12,11 @@ def str_to_slice(inp):
 
 
 class WoDDice:
-    selectors: Union[List[int], str]
+    selectors: List[int]
 
     def __init__(self, info):
         try:
-
+            self.sign = 1
             self.min = info.get("additivebonus", 1)  # unlikely to get implemented
             try:
                 self.max = int(info["sides"]) + self.min - 1
@@ -35,9 +35,15 @@ class WoDDice:
             except:
                 raise DescriptiveError("No amount of dice!!")
             self.rerolls = int(info.get("rerolls", 0))  # only used for fenrolls
-            self.selectors = info.get("selectors", [])
-            if "," in self.selectors:
-                self.selectors = [int(x) for x in self.selectors.split(",")]
+            selectors = info.get("selectors", None)
+            if selectors:
+                try:
+                    self.selectors = [int(x) for x in selectors.split(",")]
+                except ValueError:
+
+                    raise DescriptiveError(f"{selectors} is not valid")
+            else:
+                self.selectors = []
             self.r = []
             self.log = ""
             self.dbg = ""
@@ -49,7 +55,7 @@ class WoDDice:
             if self.explodeon <= self.min:
                 self.explodeon = self.max + 1
             if self.amount is not None:
-                self.roll_next(int(info.get("amount")))
+                self.roll_next(int(self.amount))
         except KeyError as e:
             raise DescriptiveError("Missing Parameter: " + str(e.args[0]))
         except Exception as e:
@@ -114,13 +120,20 @@ class WoDDice:
             }
         )
 
-    def roll_next(self, amount):
+    def roll_next(self, amount=None):
         i = 0
+        if amount is None:
+            amount = self.amount
         self.rolled = True
         self.log = ""
         self.r = []
         self.succ = 0
         self.antisucc = 0
+        if amount < 0:
+            amount = abs(amount)
+            self.sign = -1
+        else:
+            self.sign = 1
         while i < amount + abs(self.rerolls):
             if self.max < self.min:
                 self.r.append(0)
@@ -205,14 +218,14 @@ class WoDDice:
             return succ - antisucc
         return 0 - antisucc
 
-    def roll_wodsuccesses(self):  # non-verbose, returns int
+    def roll_wodsuccesses(self) -> int:
         return (
             self.botchformat(self.succ, self.antisucc)
             if not self.selectors
             else self.roll_sel()
-        )
+        ) * self.sign
 
-    def roll_v(self):  # verbose
+    def roll_v(self) -> str:  # verbose
         log = ""
         if self.log:
             if not self.name.endswith("d1g"):
@@ -243,12 +256,9 @@ class WoDDice:
         return max(self.r)
 
     def roll_sel(self):
-        if "," in self.selectors:
-            self.selectors = [
-                max(min(int(x), self.amount or 0), 0) for x in self.selectors.split(",")
-            ]
         selectors = [max(min(int(x), len(self.r)), 0) for x in self.selectors]
-        return sum(sorted(self.r)[s - 1] for s in selectors)
+        selectors = [x - 1 if x > 0 else None for x in selectors]
+        return sum(sorted(self.r)[s] for s in selectors if s is not None) * self.sign
 
     def roll_vmax(self):  # returns max verbose as int
         log = ""
@@ -273,15 +283,15 @@ class WoDDice:
             if self.selectors
             else self.roll_wodsuccesses()
             if self.returnfun == "threshhold"
-            else max(self.r)
+            else max(self.r) * self.sign
             if self.returnfun == "max"
-            else min(self.r)
+            else min(self.r) * self.sign
             if self.returnfun == "min"
-            else sum(self.r)
+            else sum(self.r) * self.sign
             if self.returnfun == "sum"
             else None
             if self.returnfun in ["", "None", "none"]
-            else self.amount
+            else self.amount  # not flipped if negative
             if self.returnfun in ["id"]
             else error("No return function!")
         )
