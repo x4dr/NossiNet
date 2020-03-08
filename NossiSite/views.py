@@ -39,7 +39,7 @@ def register(app=None):
 
     @app.route("/version")
     def getversion():
-        # skipcq: BAN-B607
+        # skipcq: BAN-B607, BAN-B603
         res = subprocess.run(
             ["git", "log", "-n 1"],
             stdout=subprocess.PIPE,

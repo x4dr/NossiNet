@@ -1,9 +1,11 @@
 import asyncio
+from concurrent.futures.thread import ThreadPoolExecutor
 
 import discord
 
 from NossiPack.WoDDice import WoDDice
 from NossiPack.WoDParser import WoDParser, DiceCodeError
+from NossiPack.krypta import terminate_thread
 
 numemoji = ("1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟")
 numemoji_2 = ("❗", "‼️", "\U0001F386")
@@ -122,9 +124,17 @@ async def process_roll(r: WoDDice, p: WoDParser, msg: str, comment, send, author
         )
 
 
-async def timeout(func, par, time_out=1):
+async def timeout(func, arg, time_out=1):
     loop = asyncio.get_event_loop()
-    return await asyncio.wait_for(loop.run_in_executor(None, func, par), time_out)
+    ex = ThreadPoolExecutor(max_workers=1)
+    try:
+        return await asyncio.wait_for(loop.run_in_executor(ex, func, arg), time_out)
+    except asyncio.exceptions.TimeoutError:
+        # noinspection PyUnresolvedReferences,PyProtectedMember
+        for t in ex._threads:
+            terminate_thread(t)
+            print(f"terminated: {arg}")
+        raise
 
 
 async def rollhandle(msg, comment, message: discord.Message, defines):
