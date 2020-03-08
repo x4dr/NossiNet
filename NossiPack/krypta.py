@@ -1,12 +1,12 @@
 import os
+import random
 import sqlite3
 from contextlib import closing
 from pathlib import Path
-import random
 
 from flask import g
 
-from NossiSite import app
+from Data import schema, DATABASE
 
 
 class DescriptiveError(Exception):
@@ -16,22 +16,21 @@ class DescriptiveError(Exception):
 def init_db():
     print("initializing DB")
     with closing(connect_db("initialization")) as db:
-        with app.open_resource("../schema.sql", mode="r") as f:
-            db.cursor().executescript(f.read())
+        db.cursor().executescript(schema)
         db.commit()
 
 
-def connect_db(source):
+def connect_db(source) -> sqlite3.Connection:
     """db connection singleton"""
     db = getattr(g, "db", None)
     if db:
         return db
     if source != "before request":
-        print("connecting to", app.config["DATABASE"], "from", source)
-    if not Path(app.config["DATABASE"]).exists():
-        Path(app.config["DATABASE"]).touch()
+        print("connecting to", DATABASE, "from", source)
+    if not Path(DATABASE).exists():
+        Path(DATABASE).touch()
         init_db()
-    g.db = sqlite3.connect(app.config["DATABASE"])
+    g.db = sqlite3.connect(DATABASE)
     return g.db
 
 

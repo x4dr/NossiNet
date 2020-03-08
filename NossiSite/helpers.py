@@ -1,6 +1,5 @@
 import decimal
 import errno
-import logging
 import os
 import re
 import time
@@ -14,18 +13,12 @@ import numexpr
 from flask import request, session, g, redirect, url_for, render_template, flash
 from markupsafe import Markup
 
-from NossiPack import User
 from NossiPack.FenCharacter import FenCharacter
+from NossiPack.User import User
 from NossiPack.fengraph import weapondata
-from NossiPack.krypta import DescriptiveError, write_nonblocking, is_int, connect_db
-from NossiSite.base import app
+from NossiPack.krypta import DescriptiveError, write_nonblocking, is_int
+from NossiSite.base import app, log
 
-log = logging.getLogger("frontend")
-fh = logging.FileHandler("nossilog.log", mode="w")
-fh.setLevel(logging.DEBUG)
-log.addHandler(fh)
-logging.basicConfig(format="%(asctime)s %(levelname)s:%(message)s")
-log.setLevel(logging.DEBUG)
 wikipath = Path.home() / "wiki"
 
 
@@ -181,7 +174,6 @@ def markdownfilter(s):
 
 @app.before_request
 def before_request():
-    g.db = connect_db("before request")
     if not getattr(app, "wikitags", None) or len(app.wikitags.keys()) == 0:
         updatewikitags()
 
@@ -236,13 +228,13 @@ def internal_error(error: Exception):
         return error.args[1]
     if type(error) is DescriptiveError:
         flash(error.args[0])
-        logging.exception("Handled Descriptive Error")
+        log.exception("Handled Descriptive Error")
         if request.url.endswith("/raw"):
             return error.args[0]
     if app.testing:
         raise error
     flash("internal error. sorry", category="error")
-    logging.exception("Unhandled internal error")
+    log.exception("Unhandled internal error")
     return render_template("show_entries.html")
 
 

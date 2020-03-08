@@ -8,22 +8,34 @@
     <h6>Just allocate how many points are to be spend and click le bouton.</h6>
     <form action="{{ url_for('chargen_menu') }}" method=post>
         <dl>
-            <dt>Physical Attributes:
-            <dd><input class=leet type=number name=a value="3">
-            <dt>Social Attributes:
-            <dd><input class=leet type=number name=b value="5">
-            <dt>Mental Attributes:
-            <dd><input class=leet type=number name=c value="7">
-            <dt>Talent Abilities:
-            <dd><input class=leet type=number name=abia value="5">
-            <dt>Skill Abilities:
-            <dd><input class=leet type=number name=abib value="9">
-            <dt>Knowledge Abilities:
-            <dd><input class=leet type=number name=abic value="13">
-            <dt>Shuffle the Ability and Skills:
-            <dd><input class=leet type=checkbox name=shuffle checked="checked">
+            <dt><label for=s>Physical Attributes:</label>
+            <dd><input class=leet type="number" name=a id=a value="3">
 
-            <dt><input class=leet type=submit value="Le Bouton">
+            <dt><label for=b>Social Attributes:</label>
+            <dd><input class=leet type="number" name=b id=b value="5">
+
+            <dt><label for=c>Mental Attributes:</label>
+            <dd><input class=leet type="number" name=c id=c value="7">
+
+            <dt><label for=abia>Talent Abilities:</label>
+            <dd><input class=leet type="number" name=abia id=abia value="5">
+
+            <dt><label for=abib>Skill Abilities:</label>
+            <dd><input class=leet type="number" name=abib id=abib value="9">
+
+            <dt><label for=abic>Knowledge Abilities:</label>
+            <dd><input class=leet type="number" name=abic id=abic value="13">
+
+            <dt><label for="shuffle">Shuffle the Ability and Skills:</label>
+            <dd><input class=leet type="checkbox" name="shuffle" id="shuffle" checked="checked">
+
+            <dt><label for="vampire">Character is Vampire:</label>
+            <dd><input class=leet type="checkbox" name="vampire" id="vampire" checked="checked">
+
+            <dt><label for="vamp">Discipline points(only relevant if vampire)</label>
+            <dd><input class=leet type="number" name="discipline" id="discipline" value="3">
+
+                <br/><input class=leet type=submit value="Le Bouton">
         </dl>
     </form>
 {% endblock %}

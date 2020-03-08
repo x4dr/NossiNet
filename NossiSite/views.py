@@ -6,9 +6,9 @@ import bleach
 from flask import abort, session, render_template, request, flash, redirect, url_for
 from werkzeug.security import gen_salt, generate_password_hash
 
-from NossiPack.FenCharacter import FenCharacter
 from NossiPack.User import Userlist, User, Config
 from NossiPack.VampireCharacter import VampireCharacter
+from NossiPack.krypta import DescriptiveError, connect_db
 from NossiSite.base import app
 from NossiSite.helpers import (
     checktoken,
@@ -17,7 +17,6 @@ from NossiSite.helpers import (
     checklogin,
     log,
     update_discord_bindings,
-    connect_db,
 )
 
 bleach.ALLOWED_TAGS += [
@@ -228,7 +227,7 @@ def charsheet():
     configchar = u.config("character_sheet", None)
     if configchar:
         redirect(url_for("fensheet", c=configchar))
-    sheet = u.sheet.getdictrepr()
+    sheet = u.getsheet().getdictrepr()
     if sheet["Type"] == "OWOD":
         return render_template("vampsheet.html", character=sheet, own=True)
     error = "unrecognized sheet format"
@@ -246,7 +245,7 @@ def showsheet(name="None"):
     if u:
         if u.sheetpublic or session.get("admin", False):
             return render_template(
-                "vampsheet.html", character=u.sheet.getdictrepr(), own=False
+                "vampsheet.html", character=u.getsheet().getdictrepr(), own=False
             )
     flash("you do not have permission to see this")
     return render_template(
@@ -258,11 +257,16 @@ def showsheet(name="None"):
 def del_sheet():
     checklogin()
     x = int(request.form["sheetnum"])
-    ul = Userlist()
-    u = ul.loaduserbyname(session.get("user"))
-    u.oldsheets.pop(x)
-    ul.saveuserlist()
-    flash("Sheet deleted from history!")
+    User.freesheet(x)
+    return redirect(url_for("menu_oldsheets"))
+
+
+@app.route("/claimsheet/", methods=["POST"])
+def claim_sheet():
+    """assign unassigned/'deleted' charactersheet to user"""
+    checklogin()
+    x = int(request.form["sheetnum"])
+    Userlist().loaduserbyname(session["user"]).claimsheet(x)
     return redirect(url_for("menu_oldsheets"))
 
 
@@ -272,11 +276,10 @@ def res_sheet():
     x = int(request.form["sheetnum"])
     ul = Userlist()
     u = ul.loaduserbyname(session.get("user"))
-    newactive = u.oldsheets.pop(x)
-    u.oldsheets.append(u.sheet)
-    u.sheet = newactive
-    ul.saveuserlist()
-    flash("Sheet deleted from history!")
+    if u.loadoldsheets().get(x, None):
+        u.sheetid = x
+        ul.saveuserlist()
+        flash("Sheet selected from history!")
     return redirect(url_for("menu_oldsheets"))
 
 
@@ -318,12 +321,12 @@ def menu_oldsheets():
     u = ul.loaduserbyname(session.get("user"))
     oldsheets = []
     xpdiffs = []
-    for i in range(len(u.oldsheets)):
-        oldsheets.append(u.oldsheets[i].timestamp)
-        if i > 0:
-            xpdiffs.append(u.oldsheets[i].get_diff(u.oldsheets[i - 1]))
+    for i, sheet in u.loadoldsheets().items():
+        oldsheets.append([i, sheet.timestamp, sheet.meta])
+        if len(oldsheets) > 1:
+            xpdiffs.append(sheet.get_diff(u.getsheet(oldsheets[-2][0])))
         else:
-            xpdiffs.append(u.oldsheets[i].get_diff(None))
+            xpdiffs.append(sheet.get_diff(None))
     return render_template("oldsheets.html", oldsheets=oldsheets, xpdiffs=xpdiffs)
 
 
@@ -335,10 +338,18 @@ def showoldsheets(x):
     try:
         sheetnum = int(x)
     except:
-        return redirect(url_for("/oldsheets/"))
-    return render_template(
-        "vampsheet.html", character=u.oldsheets[sheetnum].getdictrepr(), oldsheet=x
+        flash(f"LOL NOPE {x} is not a sheet number")
+        return redirect(url_for("menu_oldsheets"))
+    sheet = u.loadsheet(sheetnum)
+    if sheet:
+        return render_template(
+            "vampsheet.html", character=u.getsheet(sheetnum).getdictrepr(), oldsheet=x,
+        )
+    flash(
+        "I am not allowed to tell you if that character even exists. "
+        "Maybe you can summon them?"
     )
+    return render_template("oldsheets.html", summon=x)
 
 
 @app.route("/new_vamp_sheet/", methods=["GET"])
@@ -348,34 +359,27 @@ def new_vamp_sheet():
 
 
 @app.route("/modify_sheet/", methods=["GET", "POST"])
-@app.route("/modify_sheet/<t>", methods=["GET", "POST"])
-def modify_sheet(t=None):
+def modify_sheet():
     checklogin()
     ul = Userlist()
     u = ul.loaduserbyname(session.get("user"))
-    if t is not None:
-        if t == "FEN":
-            u.sheet = FenCharacter()
-        if t == "OWOD":
-            u.sheet = VampireCharacter()
     if request.method == "POST":
         log.info(f"incoming modify: {request.form}")
         u.update_sheet(request.form)
         ul.saveuserlist()
-
         return redirect("/charactersheet/")
-    a = "NOPE"
-    sheet = u.sheet.getdictrepr()
+
+    sheet = u.getsheet().getdictrepr()
+    print("sheet", sheet)
     if sheet["Type"] == "OWOD":
-        a = render_template(
+        print(sheet)
+        return render_template(
             "vampsheet_editor.html",
             character=sheet,
-            Clans=u.sheet.get_clans(),
-            Backgrounds=u.sheet.get_backgrounds(),
+            Clans=u.getsheet().get_clans(),
+            Backgrounds=u.getsheet().get_backgrounds(),
         )
-    elif sheet["Type"] == "FEN":
-        a = render_template("fensheet_editor.html", character=u.sheet)
-    return a
+    raise DescriptiveError(f"unsupported sheettpe:{sheet['Type']}")
 
 
 @app.route("/delete_entry/<ident>", methods=["POST"])

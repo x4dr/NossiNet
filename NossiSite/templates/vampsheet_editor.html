@@ -1,5 +1,5 @@
 <!--suppress JSUnresolvedVariable, JSUnresolvedFunction -->
-{% extends "layout.html" %}
+{%- extends "layout.html" -%}
 {% macro chooser(name, value, max=5) -%}
     {% for count in range(1,max + 1) -%}{%- if loop.index0 > 1 and loop.index0 % 10 == 0 -%}
         <br>{%- endif -%}<input
@@ -12,19 +12,19 @@
 {%- endmacro %}
 {% block head %}
     <script>
-        $(document).ready(function() {
-            $('form input').on('keypress', function(e) {
+        $(document).ready(function () {
+            $('form input').on('keypress', function (e) {
                 return e.which !== 13;
             });
 
-            var namespace = '/character';
+            const namespace = '/character';
 
-            var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+            const socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
 
             socket.on('comments', function (msg) {
-                var box = $('pre#comments');
+                const box = $('pre#comments');
                 box.html(msg.data);
-                window.scrollTo(0,0);
+                window.scrollTo(0, 0);
             });
 
             socket.on('connect', function () {
@@ -33,13 +33,13 @@
 
 
             $('form#checkchar').submit(function () {
-                var message_data = $('form#sheet').serializeArray();
+                const message_data = $('form#sheet').serializeArray();
                 socket.emit('CheckChar', {data: message_data});
                 return false;
             });
         });
 
-        function resetDot(el){
+        function resetDot(el) {
             el.checked = '';
             if (window.getSelection) {
                 if (window.getSelection().empty) {  // Chrome
@@ -51,62 +51,63 @@
                 document.selection.empty();
             }
         }
+
         function textAreaAdjust(el) {
             if (el.scrollHeight > el.clientHeight) {
-                el.style.height = el.scrollHeight  + "px"
+                el.style.height = el.scrollHeight + "px"
             }
         }
 
-        function setdisciplines(){
-            var disci_inputs = document.getElementsByClassName("chr_discipline");
-            var disc = document.getElementById('Clan').value;
-            for(var i = 0; i < disci_inputs.length; i++)
-            {
+        function setdisciplines() {
+            const disci_inputs = document.getElementsByClassName("chr_discipline");
+            const disc = document.getElementById('Clan').value;
+            for (let i = 0; i < disci_inputs.length; i++) {
                 disci_inputs[i].setAttribute('list', disc);
             }
         }
 
 
-        window.onload = function() {
+        window.onload = function () {
             setdisciplines();
         }
 
     </script>
 
-{% endblock %}
-{% block body %}
-
+{%- endblock -%}
+{%- block body -%}
     <datalist id="Clans">
-        {%- for c in Clans %}
+        {%- for c in Clans -%}
             <option value="{{ c }}">{{ c }}</option>
-        {%- endfor %}
+        {%- endfor -%}
     </datalist>
-    {% for c in Clans %}
+    {%- for c in Clans -%}
         <datalist id="{{ c }}">
-            {%- set discilist = Clans[c].split(", ") %}
-            {%- for d in discilist %}
+            {%- set discilist = Clans[c] -%}
+            {%- for d in discilist -%}
                 <option value="{{ d }}">{{ d }}</option>
-            {%- endfor %}
+            {%- endfor -%}
         </datalist>
-    {% endfor %}
+    {%- endfor -%}
     <datalist id="Backgrounds">
-        {%- for b in Backgrounds %}
+        {%- for b in Backgrounds -%}
             <option value="{{ b }}">{{ b }}</option>
-        {%- endfor %}
+        {%- endfor -%}
     </datalist>
     <pre id="comments"></pre>
 
-    <form id="sheet" action="{{ url_for('modify_sheet') }}" method="post" >
-        <table width="100%">
+    <form id="sheet" action="{{ url_for('modify_sheet') }}" method="post">
+        <table style="width: 100%">
             <tr>
                 <td colspan="6" style="text-align: center; font-size: 1.5em" class="leeet">
                     Charactersheet&nbspfor&nbsp{{ session.user }}</td>
             </tr>
             <tr>
                 <td style="text-align: right; ">Name:</td>
-                <td style="text-align: left; "><input title="Name" style="width: 80%;" class="leet"  name="Name" type="text" value="{{ character.Meta.Name }}"></td>
+                <td style="text-align: left; "><input title="Name" style="width: 80%;" class="leet" name="Name"
+                                                      type="text" value="{{ character.Meta.Name }}"></td>
                 <td style="text-align: right; ">Nature:</td>
-                <td style="text-align: left; "><input title="Nature" style="width: 80%;" class="leet"  name="Nature" type="text" value="{{ character.Meta.Nature }}"></td>
+                <td style="text-align: left; "><input title="Nature" style="width: 80%;" class="leet" name="Nature"
+                                                      type="text" value="{{ character.Meta.Nature }}"></td>
                 <td style="text-align: right; ">Generation:</td>
                 <td style="text-align: left; "><input title="Generation" disabled style="width: 80%; border: 2px solid #003700;" name="Gen_dud" type="text" value="{{ character.Meta.Generation }}"></td>
             </tr>
@@ -114,20 +115,28 @@
                 <td style="text-align: right; ">Player:</td>
                 <td style="text-align: left; "><input title="Player" style="width: 80%;" class="leet" id="Player" name="Player" type="text" value="{{ character.Meta.Player }}"></td>
                 <td style="text-align: right; ">Demeanor:</td>
-                <td style="text-align: left; "><input title="Demeanor" style="width: 80%;" class="leet"  name="Demeanor" type="text" value="{{ character.Meta.Demeanor }}"></td>
+                <td style="text-align: left; "><input title="Demeanor" style="width: 80%;" class="leet" name="Demeanor"
+                                                      type="text" value="{{ character.Meta.Demeanor }}"></td>
                 <td style="text-align: right; ">Haven:</td>
-                <td style="text-align: left; "><input title="Haven" style="width: 80%;" class="leet"  name="Haven" type="text" value="{{ character.Meta.Haven }}"></td>
+                <td style="text-align: left; "><input title="Haven" style="width: 80%;" class="leet" name="Haven"
+                                                      type="text" value="{{ character.Meta.Haven }}"></td>
             <tr>
                 <td style="text-align: right; ">Chronicle:</td>
-                <td style="text-align: left; "><input title="Chronicle" style="width: 80%;" class="leet"  name="Chronicle" type="text" value="{{ character.Meta.Chronicle }}"></td>
+                <td style="text-align: left; "><input title="Chronicle" style="width: 80%;" class="leet"
+                                                      name="Chronicle" type="text"
+                                                      value="{{ character.Meta.Chronicle }}"></td>
                 <td style="text-align: right; ">Clan:</td>
-                <td style="text-align: left; "><input title="Clan" id="Clan"  oninput="setdisciplines()" style="width: 80%;" class="leet"  name="Clan" type="text" value="{{ character.Meta.Clan }}" list="Clans"></td>
+                <td style="text-align: left; "><input title="Clan" id="Clan" oninput="setdisciplines()"
+                                                      style="width: 80%;" class="leet" name="Clan" type="text"
+                                                      value="{{ character.Meta.Clan }}" list="Clans"></td>
                 <td style="text-align: right; ">Concept:</td>
-                <td style="text-align: left; "><input title="Concept" style="width: 80%;" class="leet"  name="Concept" type="text" value="{{ character.Meta.Concept }}"></td>
+                <td style="text-align: left; "><input title="Concept" style="width: 80%;" class="leet" name="Concept"
+                                                      type="text" value="{{ character.Meta.Concept }}">
+                </td>
             </tr>
         </table>
         <br>
-        <table width="100%">
+        <table style="width: 100%">
             <tr>
                 <td colspan="6" style="text-align: center;" class="leeet">Attributes</td>
             </tr>
@@ -137,7 +146,7 @@
                 <td colspan="2" style="text-align: center; width: 33%;" class="leet">Mental</td>
             </tr>
         </table>
-        <table width="100%">
+        <table style="width: 100%">
             <tr>
                 <td style="text-align: right; ">Strength:</td>
                 <td style="text-align: Left; ">{{ chooser("Strength",character.Attributes.Strength) }}</td>
@@ -164,7 +173,7 @@
             </tr>
         </table>
         <br>
-        <table width="100%">
+        <table style="width: 100%">
             <tr>
                 <td colspan="6" style="text-align: center;" class="leeet">Abilities</td>
             </tr>
@@ -174,7 +183,7 @@
                 <td colspan="2" style="text-align: center; width: 33%;" class="leet">Knowledges</td>
             </tr>
         </table>
-        <table width="100%">
+        <table style="width: 100%">
             <tr>
                 <td style="text-align: right; ">Alertness:</td>
                 <td style="text-align: Left; ">{{ chooser("Alertness", character.Abilities.Talents.Alertness) }}</td>
@@ -273,61 +282,70 @@
             </tr>
             <tr>
                 <td colspan="2" style="text-align: center; width: 32%;" class="leet">Backgrounds</td>
-                <td style="width: 2%;"> </td>
+                <td style="width: 2%;"></td>
                 <td colspan="2" style="text-align: center; width: 32%;" class="leet">Disciplines</td>
-                <td style="width: 2%;"> </td>
+                <td style="width: 2%;"></td>
                 <td colspan="2" style="text-align: center; width: 32%" class="leet">Virtues</td>
             </tr>
-            {% set bgnew = 0 %}
-            {% set dscpnew = 0 %}
-            {% if character.BGVDSCP_combined.append('') %}{% endif %}
-            {% if character.BGVDSCP_combined.append('') %}{% endif %}
-            {% if character.BGVDSCP_combined.append('') %}{% endif %}
-            {% if character.BGVDSCP_combined.append('') %}{% endif %}
-            {% if character.BGVDSCP_combined.append('') %}{% endif %}
-            {% if character.BGVDSCP_combined.append('') %}{% endif %}
-            {% if character.BGVDSCP_combined.append('') %}{% endif %}
-            {% if character.BGVDSCP_combined.append('') %}{% endif %}
-            {% for bgvdscp in character.BGVDSCP_combined %}
+            {%- set bgnew = [0] -%}
+            {%- set dscpnew = [0] -%}
+            {%- if character.BGVDSCP_combined.append('') -%}{%- endif -%}
+            {%- if character.BGVDSCP_combined.append('') -%}{%- endif -%}
+            {%- if character.BGVDSCP_combined.append('') -%}{%- endif -%}
+            {%- if character.BGVDSCP_combined.append('') -%}{%- endif -%}
+            {%- if character.BGVDSCP_combined.append('') -%}{%- endif -%}
+            {%- if character.BGVDSCP_combined.append('') -%}{%- endif -%}
+            {%- if character.BGVDSCP_combined.append('') -%}{%- endif -%}
+            {%- if character.BGVDSCP_combined.append('') -%}{%- endif -%}
+            {%- for bgvdscp in character.BGVDSCP_combined -%}
                 <tr>
-                    {% if bgvdscp.Background %}
-                        <td><input title="bg" list="Backgrounds"  style="width: 90%" class="leet" name="background_name_{{ bgvdscp.Background }}" value="{{ bgvdscp.Background }}"></td>
+                    {%- if bgvdscp.Background -%}
+                        <td><input title="bg" list="Backgrounds" style="width: 90%" class="leet"
+                                   name="background_name_{{ bgvdscp.Background }}" value="{{ bgvdscp.Background }}">
+                        </td>
                         <td>{{ chooser("background_value_"+bgvdscp.Background, bgvdscp.Background_Value, ([5,bgvdscp.Background_Value] | sort)[1] ) }}</td>
-                    {% else %}
-                        {% if bgnew < 8 %}
-                            <td><input title="additional bg" list="Backgrounds" class="leet" style="width: 90%" name="background_name_New{{ bgnew }}" value=""></td>
-                            <td>{{ chooser("background_value_New"+bgnew|string, 0) }}</td>
-                            {% set bgnew = bgnew + 1 %}
-                        {% else %}
+                    {%- else -%}
+                        {%- if bgnew[0] < 8 -%}
+                            <td><input title="additional bg" list="Backgrounds" class="leet" style="width: 90%"
+                                       name="background_name_New{{ bgnew[0] }}" value=""></td>
+                            <td>{{ chooser("background_value_New"+bgnew[0]|string, 0) }}</td>
+                            <!-- YEET{{ bgnew }} -->
+                            {% if bgnew.append(bgnew.pop() + 1) %}{% endif %}
+                        {%- else -%}
                             <td colspan="2">&nbsp</td>
-                        {% endif %}
-                    {% endif %}
-                    <td style="width: 2%;"> </td>
-                    {% if bgvdscp.Discipline %}
-                        <td><input title="dscp" style="width: 90%" class="leet chr_discipline" name="discipline_name_{{ bgvdscp.Discipline }}" value="{{ bgvdscp.Discipline }}"> </td>
+                        {%- endif -%}
+                    {%- endif -%}
+                    <td style="width: 2%;"></td>
+                    {%- if bgvdscp.Discipline -%}
+                        <td><input title="dscp" style="width: 90%" class="leet chr_discipline"
+                                   name="discipline_name_{{ bgvdscp.Discipline }}" value="{{ bgvdscp.Discipline }}">
+                        </td>
                         <td>{{ chooser("discipline_value_"+bgvdscp.Discipline, bgvdscp.Discipline_Value) }}</td>
-                    {% else %}
-                        {% if dscpnew < 8 %}
-                            <td><input title="additional dscp" style="width: 90%" class="leet chr_discipline" name="discipline_name_New{{ dscpnew }}" value=""></td>
-                            <td>{{ chooser("discipline_value_New"+dscpnew|string, 0) }}
-                                {% set dscpnew = dscpnew + 1 %}
-                                {% else %}
+                    {%- else -%}
+                        {%- if dscpnew[0] < 8 -%}
+                            <td><input title="additional dscp" style="width: 90%" class="leet chr_discipline"
+                                       name="discipline_name_New{{ dscpnew[0] }}" value=""></td>
+                            <td>{{ chooser("discipline_value_New"+dscpnew[0]|string, 0) }}
+                                {% if dscpnew.append(dscpnew.pop() + 1) %}{% endif %}
+                                {%- else -%}
                             <td colspan="2">&nbsp</td>
-                        {% endif %}
-                    {% endif %}
-                    <td style="width: 2%;"> </td>
-                    {% if bgvdscp %}
-                        {% if bgvdscp.Virtue %}
-                            <td>{{ bgvdscp.Virtue }} <input title="hidden virtue name" hidden value="{{ bgvdscp.Virtue }}" name="virtue_name_{{ bgvdscp.Virtue }}"></td>
+                        {%- endif -%}
+                    {%- endif -%}
+                    <td style="width: 2%;"></td>
+                    {%- if bgvdscp -%}
+                        {%- if bgvdscp.Virtue -%}
+                            <td>{{ bgvdscp.Virtue }} <input title="hidden virtue name" hidden
+                                                            value="{{ bgvdscp.Virtue }}"
+                                                            name="virtue_name_{{ bgvdscp.Virtue }}"></td>
                             <td>{{ chooser("virtue_value_"+bgvdscp.Virtue,bgvdscp.Virtue_Value) }}
-                                {% else %}
+                                {%- else -%}
                             <td colspan="2">&nbsp</td>
-                        {% endif %}
-                    {% endif %}
+                        {%- endif -%}
+                    {%- endif -%}
                 </tr>
-            {% endfor %}
+            {%- endfor -%}
         </table>
-        <table width="100%">
+        <table style="width: 100%">
             <tr>
 
                 <td colspan="2" style="text-align: center; width: 33%;" class="leeet">Merits/Flaws</td>
@@ -336,7 +354,8 @@
             </tr>
 
             <tr>
-                <td rowspan="999" colspan="2"><textarea title="Merits and Flaws" style="width: 90%; height:90%"  class="leeet"
+                <td rowspan="999" colspan="2"><textarea title="Merits and Flaws" style="width: 90%; height:90%"
+                                                        class="leeet"
                                                         name="Merits">{{ character.Meta.Merits }}</textarea></td>
 
                 <td>&nbsp</td>
@@ -346,7 +365,7 @@
             </tr>
             <tr>
 
-                <td align="center" style="font-weight: bolder;
+                <td style="font-weight: bolder; text-align: center;
                  letter-spacing: 3px">{{ chooser("Humanity",character.Special.Humanity,10) }}</td>
             </tr>
             <tr>
@@ -360,7 +379,7 @@
                 <td>&nbsp</td>
             </tr>
             <tr>
-                <td align="center" style="font-weight: bolder;
+                <td style="font-weight: bolder; text-align: center;
                  letter-spacing: 3px">{{ chooser("Willmax",character.Special.Willmax,10) }}</td>
 
             </tr>
@@ -374,7 +393,7 @@
                 <td>&nbsp</td>
             </tr>
             <tr>
-                <td align="center" style="font-weight: bolder;
+                <td style="font-weight: bolder; text-align: center;
                  letter-spacing: 3px">{{ chooser("Bloodmax",character.Special.Bloodmax,20) }}</td>
             </tr>
             <tr>
@@ -384,31 +403,36 @@
 
         <br><br>
         <label>
-            <input type="checkbox" name="newsheet" value="newsheet" checked="checked" class="leet"> Save this Version into History.
+            <input type="checkbox" name="newsheet" value="newsheet" checked="checked" class="leet"> Save this Version
+            into History.
         </label>
 
-        <input type="submit"  class="leet bigbtn" value="SAVE"><br><br><br>
-        <div >
-                <textarea title="Notes" style="width: 99%; overflow-y: auto; word-wrap:break-word " onload="textAreaAdjust(this)"
-                          onkeyup="textAreaAdjust(this)" class="leeet" name="Notes">{{ character.Meta.Notes }}</textarea>
+        <input type="submit" class="leet bigbtn" value="SAVE"><br><br><br>
+        <div>
+                <textarea title="Notes" style="width: 99%; overflow-y: auto; word-wrap:break-word "
+                          onload="textAreaAdjust(this)"
+                          onkeyup="textAreaAdjust(this)" class="leeet"
+                          name="Notes">{{ character.Meta.Notes }}</textarea>
         </div>
     </form>
     <br>
     <table>
         <tr>
             <td>
-            <form action="{{ url_for('setfromsource') }}"> <input type="text" name="source" class="leet">
-                <input type="submit" class="leet" value="Load Character from Dalines or wiki"><br>(saves the active character into history)
-            </form>
+                <form action="{{ url_for('setfromsource') }}">
+                    <label for="source_input">Dalines Link</label>
+                    <input type="text" name="source" id="source_input" class="leet">
+                    <input type="submit" class="leet" value="Load Character from Dalines"><br>(saves the active
+                    character into history)
+                </form>
             </td>
             <td>
-                <form id="checkchar"  name="checkchar">
-                    <input id="check" type="submit"  class="leet bigbtn" value="CHECK">
+                <form id="checkchar" name="checkchar">
+                    <input id="check" type="submit" class="leet bigbtn" value="CHECK">
                 </form>
 
                 <div>Checks the Character cost (uses the newest sheet in your history)</div>
             </td>
         </tr>
     </table>
-
-{% endblock %}
+{%- endblock -%}
