@@ -16,6 +16,7 @@ import discord
 import requests
 from dateparser import parse as dateparse
 
+from Data import getnossihelp
 from NossiInterface.RollInterface import rollhandle
 from NossiInterface.Tools import discordname
 from NossiPack.fengraph import chances
@@ -410,7 +411,7 @@ async def on_message(message: discord.Message):
     if msg.startswith("NossiBot") or isinstance(message.channel, discord.DMChannel):
         msg = msg[len("NossiBot") :] if msg.startswith("NossiBot") else msg
         if msg.strip() == "help":
-            with open("nossibot_help.txt") as f:
+            with getnossihelp() as f:
                 helpmsg = f.read()
                 replypart = ""
                 lines = helpmsg.split("\n")

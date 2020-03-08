@@ -5,7 +5,7 @@ import time
 from random import Random
 from urllib import request
 
-from Data import locale_data
+from Data import getlocale_data
 from NossiPack.VampireCharacter import intdef
 from NossiPack.krypta import DescriptiveError
 
@@ -777,7 +777,7 @@ class Character:
 
     @staticmethod
     def zero_abilities():
-        return locale_data["abilities"]
+        return getlocale_data()["abilities"]
 
     @staticmethod
     def zero_specials():

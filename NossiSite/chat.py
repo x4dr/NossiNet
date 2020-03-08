@@ -3,7 +3,7 @@ import time
 from flask import render_template, session, request, flash, url_for, redirect
 from flask_socketio import emit, join_room, leave_room, disconnect
 
-from Data import locale_data
+from Data import getlocale_data
 from NossiPack import WoDData
 from NossiPack.Chatrooms import Chatroom
 from NossiPack.User import Userlist
@@ -22,7 +22,7 @@ def register(app=None, socketio=None):
     userlist = {}
     roomlist = [Chatroom("lobby")]
 
-    named_strings = locale_data["namedStrings"]
+    named_strings = getlocale_data()["namedStrings"]
 
     def statusupdate():
         if session["chatmode"] == "menu":
@@ -162,7 +162,7 @@ def register(app=None, socketio=None):
         return workdef
 
     def shorthand():
-        return locale_data["shorthand"]
+        return getlocale_data()["shorthand"]
 
     def printroll(roll, parser=None, testing=False, message=""):
         if testing:

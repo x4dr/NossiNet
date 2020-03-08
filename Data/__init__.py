@@ -2,10 +2,21 @@ import importlib.resources
 import json
 import pathlib
 
-with importlib.resources.open_text("Data", pathlib.Path("EN.json")) as json_data:
-    locale_data = json.load(json_data)
-
-with importlib.resources.open_text("Data", pathlib.Path("schema.sql")) as schema_data:
-    schema = schema_data.read()
-
 DATABASE = "./NN.db"
+
+
+def get(res):
+    with importlib.resources.open_text("Data", pathlib.Path(res)) as data:
+        return data.read()
+
+
+def getlocale_data():
+    return json.loads(get("EN.json"))
+
+
+def getschema():
+    return get("schema.sql")
+
+
+def getnossihelp():
+    return get("nossibot_help.txt")

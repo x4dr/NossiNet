@@ -34,7 +34,7 @@ def terminate_thread(thread):
 def init_db():
     print("initializing DB")
     with closing(connect_db("initialization")) as db:
-        db.cursor().executescript(Data.schema)
+        db.cursor().executescript(Data.getschema())
         db.commit()
 
 

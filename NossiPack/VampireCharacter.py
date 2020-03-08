@@ -7,7 +7,7 @@ from random import randint, shuffle
 from typing import Dict
 from urllib import request
 
-from Data import locale_data
+from Data import getlocale_data
 
 __author__ = "maric"
 
@@ -882,7 +882,7 @@ class VampireCharacter:
 
     @staticmethod
     def zero_abilities():
-        return locale_data["abilities"]
+        return getlocale_data()["abilities"]
 
     @staticmethod
     def zero_specials():
