@@ -72,20 +72,20 @@ def construct_shortened_multiroll_reply(p: WoDParser, verbose):
 async def get_reply(author, comment, msg, send, reply, r):
     tosend = (
         author.mention
-        + f"{comment} {msg}:\n{reply} "
+        + f"{comment} `{msg}`:\n{reply} "
         + (r.roll_v() if not reply.endswith(r.roll_v() + "\n") else "")
     )
     # if message is too long we need a second pass
     if len(tosend) > 2000:
         tosend = (
-            f"{author.mention} {comment} {msg}:\n"
+            f"{author.mention} {comment} `{msg}`:\n"
             f"{reply[: max(4000 - len(tosend), 0)]} [...]"
             f"{r.roll_v()}"
         )
     # if message is still too long
     if len(tosend) > 2000:
         tosend = (
-            f"{author.mention} {comment} {msg}:\n"
+            f"{author.mention} {comment} `{msg}`:\n"
             + r.name
             + ": ... try generating less output"
         )

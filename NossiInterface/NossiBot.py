@@ -326,7 +326,7 @@ async def on_raw_message_edit(payload: discord.RawMessageUpdateEvent):
 
 @client.event
 async def on_message(message: discord.Message):
-    msg: str = message.content
+    msg: str = message.content.strip("` ")
     send = message.channel.send
     if message.author == client.user:
         return
@@ -394,7 +394,7 @@ async def on_message(message: discord.Message):
         newreminder(str(message.channel.id), msg[7:])
         await send(str(message))
     msg, comment = msg.rsplit("//", 1) if "//" in msg else (msg, "")
-    comment = " " + comment.strip()
+    comment = " " + comment.strip("` ")
     msg = await handle_defines(msg, message, persist)
     if not msg:
         return
