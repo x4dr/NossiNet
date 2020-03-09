@@ -119,7 +119,7 @@ class WoDParser:
         r"(?# )(d *(?P<sides>[0-9]{1,5}))? *"  # sides of dice 0-99999
         r"(?# )(?:[rR]\s*(?P<rerolls>-?\d+))?"  # reroll highest/lowest dice
         r"(?#   )(?P<sort>s)?"  # sorting rolls
-        r"(?# )(?P<operation>"  # what is happening with the roll
+        r"(?# )\s*(?P<operation>"  # what is happening with the roll
         r"(?#   )(?P<against>"  # rolling against a value for successes
         r"(?#     )(?P<onebehaviour>[ef]) *"  # e is without subtracting 1,
         # f is with subtracting a success on a 1
