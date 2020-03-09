@@ -47,6 +47,12 @@ class Node:
 
     @staticmethod
     def _calculate(message, a=0):
+        def b(m, bs):
+            for buff in bs:
+                m = re.sub(r"(?<! )" + re.escape(buff) + r"(?! )", " " + buff + " ", m)
+            return m
+
+        message = b(message, ["+", "**", "*", "-", "//", "~", "=", "h", "l", "g"])
         if isinstance(message, str):
             parts = message.split(" ")
         elif isinstance(message, list):

@@ -62,6 +62,12 @@ class TestWoDParser(TestCase):
             self.p.do_roll("(100d1g)-3").result, 97, "100d1g -3 should be 97",
         )
 
+    def test_premath(self):
+        self.p.defines["return"] = "id"
+        self.assertEqual(
+            self.p.do_roll("(5+3**2//2-3)*10+4=").result, 64, "5+3**2 should be 64",
+        )
+
     def test_default(self):
         p = WoDParser({"sides": 17, "return": "max"})
         r = p.do_roll("9")
