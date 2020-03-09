@@ -129,14 +129,15 @@ class WoDParser:
 
     usage = "[<Selectors>@]<dice>[d<sides>[R<rerolls>][s][ef<difficulty>ghl][!!!]]"
 
-    def extract_diceparams(self, message):
+    @classmethod
+    def extract_diceparams(cls, message):
         def setreturn(d, n):
             ret = d.get("return", None)
             if ret:
                 raise DescriptiveError(f"Interpretation Conflict: {ret} vs {n}")
             d["return"] = n
 
-        dice = WoDParser.diceparse.match(message)
+        dice = cls.diceparse.match(message)
         dice = {k: v for (k, v) in dice.groupdict().items() if v} if dice else {}
         info = {}
         if dice.get("amount", None) is not None:
@@ -178,7 +179,7 @@ class WoDParser:
 
         return info
 
-    def do_roll(self, roll, default=None, depth=0) -> WoDDice:
+    def do_roll(self, roll, depth=0) -> WoDDice:
         """Wrapper around make_roll that handles edgecases"""
         if isinstance(roll, str):
             if ";" in roll:
@@ -190,17 +191,6 @@ class WoDParser:
             self.rolllogs.append(self.make_roll(roll.code))
         else:
             self.rolllogs.append(WoDDice.empty())
-
-        default = self.defines.get("return", None) if not default else default
-        if self.rolllogs[-1].result is None:
-            if default is not None:
-                self.rolllogs[-1].returnfun = default
-            else:
-                raise DescriptiveError(
-                    'No return function! Should be one of "@efghl" for "'
-                    + str(roll)
-                    + '"'
-                )
         return self.rolllogs[-1]
 
     def make_roll(self, roll: Union[str]) -> WoDDice:

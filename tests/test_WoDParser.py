@@ -42,10 +42,10 @@ class TestWoDParser(TestCase):
             ("1,2@6", 5, "1,2@"),
             ("6,2@6", 10, "6,2@"),
         ]:
-            d = WoDParser().make_roll(roll)
+            d = WoDParser({"return": "sum"}).do_roll(roll)
             d.r = [2, 3, 4, 5, 6, 7]
-            self.assertEqual(d.returnfun, ret)
-            self.assertEqual(1 if "=" in roll else 10, d.max, "sides")
+            self.assertEqual(ret, d.returnfun, roll)
+            self.assertEqual(1 if "=" in roll else 10, d.max, roll + " sides")
             self.assertEqual(exp, d.result, roll)
 
     def test_parenthesis_roll(self):
@@ -75,14 +75,13 @@ class TestWoDParser(TestCase):
         self.assertEqual(Node._calculate(a), "d 17 g 0")
 
     def test_looptriggers(self):
-        self.p.do_roll("&loop 3 2&")
         r = self.p.do_roll("&loop 3 2&; 0 d1g")
         self.assertFalse(r is None)
         for x in self.p.rolllogs:
             self.assertIsNotNone(x.result)
 
     def test_triggerorder(self):
-        self.assertNotEqual(self.p.do_roll("&loop 7 2&").result, None)
+        self.assertEqual(self.p.do_roll("&loop 7 2&").result, None)
         self.assertNotEqual(self.p.do_roll("&loop 7 2&;6g;&loop 4 3&").result, None)
 
     def test_pretrigger(self):
