@@ -10,6 +10,9 @@ General behaviour:
             onebehaviour: 0 if standard is "e", 1 if standard is "f"
             sides: how many sides dice have if nothing is said
             return: standard returnfunctions threshhold, sum, min, max, id, None
+        if no = is specified, the value of the rest of the line will be looked up for you
+             example: def a
+             result: 10
     undef : will remove a defined replacement
         example: undef a
         result: a will no longer be replaced by anything

@@ -3,7 +3,6 @@ import datetime
 import os
 import pathlib
 import random
-import re
 import shelve
 import string
 import time
@@ -17,7 +16,7 @@ from dateparser import parse as dateparse
 
 from Data import getnossihelp
 from NossiInterface.RollInterface import rollhandle
-from NossiInterface.Tools import discordname, split_send
+from NossiInterface.Tools import discordname, split_send, handle_defines, fakemessage
 from NossiPack.fengraph import chances
 from NossiPack.krypta import DescriptiveError, read_nonblocking
 
@@ -249,83 +248,6 @@ async def specifichandle(msg, comment, send, author):
     return False
 
 
-async def handle_defines(msg, send, message):
-    msg = msg.strip("`")
-    if isinstance(message, str):  # message is name already
-
-        async def error(a):
-            raise Exception(a)
-
-        async def nop(a):
-            print(a)
-
-        class Fake:
-            def __init__(self, **kwargs):
-                self.__dict__.update(kwargs)
-
-        author = message
-        message = Fake(author=Fake(send=error), add_reaction=nop)
-        send = send or nop
-    else:
-        author = discordname(message.author)
-    try:
-        defines = persist[author]["defines"]
-    except KeyError:
-        persist[author] = {"defines": {}}
-        defines = {}
-    if msg.startswith("def"):
-        msg = msg[3:].strip()
-        if "=" in msg:
-            question = re.compile(r"^=\s*?")
-            if question.match(msg):
-                msg = question.sub(msg, "").strip()
-                if not msg:
-                    defstring = "defines are:\n"
-                    for k, v in defines.items():
-                        defstring += "def " + k + " = " + v + "\n"
-                    for replypart in [
-                        defstring[i : i + 1950] for i in range(0, len(defstring), 1950)
-                    ]:
-                        await message.author.send(replypart)
-                    return None
-            define, value = [x.strip() for x in msg.split("=", 1)]
-            defines[define] = value
-            persist[author]["defines"] = defines
-            persist["mutated"] = True
-            await message.add_reaction("\N{THUMBS UP SIGN}")
-            msg = None
-        else:
-            await message.author.send(defines[msg])
-            msg = None
-    elif msg.startswith("undef "):
-        msg = msg[6:]
-        change = False
-        for k in list(defines.keys()):
-            if re.match(msg + r"$", k):
-                change = True
-                del defines[k]
-        if change:
-            persist[author]["defines"] = defines
-            await message.add_reaction("\N{THUMBS UP SIGN}")
-        else:
-            await message.add_reaction("\N{BLACK QUESTION MARK ORNAMENT}")
-        msg = None
-    else:
-        oldmsg = ""
-        counter = 0
-        while oldmsg != msg:
-            oldmsg = msg
-            counter += 1
-            if counter > 1000:
-                await send(
-                    "... i think i have some issues with the defines.\n" + msg[:1000]
-                )
-            for k, v in defines.items():
-                pat = r"\b" + re.escape(k) + r"\b"
-                msg = re.sub(pat, v, msg)
-    return msg
-
-
 async def handle_inp(inp):
     for line in inp:
         if line.find("#") != -1:
@@ -335,7 +257,8 @@ async def handle_inp(inp):
             line = line[line.find(":") + 1 :].strip()
             if persist[name].get("NossiAccount", None) == acc:
                 print(f"saving: {line, name}")
-                await handle_defines(line, None, name)
+
+                await handle_defines(line, fakemessage(name), persist)
             else:
                 print(
                     "access error:", persist[name].get("NossiAccount", None), "!=", acc
@@ -472,7 +395,7 @@ async def on_message(message: discord.Message):
         await send(str(message))
     msg, comment = msg.rsplit("//", 1) if "//" in msg else (msg, "")
     comment = " " + comment.strip()
-    msg = await handle_defines(msg, send, message)
+    msg = await handle_defines(msg, message, persist)
     if not msg:
         return
     if msg.startswith("weapon:") or msg.startswith("magicalweapon:"):
