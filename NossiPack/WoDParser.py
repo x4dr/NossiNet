@@ -47,13 +47,26 @@ class Node:
 
     @staticmethod
     def _calculate(message, a=0):
-        def b(m, bs):
-            for buff in bs:
-                m = re.sub(r"(?<! )" + re.escape(buff) + r"(?! )", " " + buff + " ", m)
+        operations = ["+", "**", "*", "-", "//", "~", "=", "h", "l", "g"]
+
+        def b(m):
+            o = "NOTEVEN"
+
+            try:
+                for o in operations:
+                    m = re.sub(r"(?<! )" + re.escape(o) + r"(?! )", " " + o + " ", m)
+            except:
+                print(o + "ERROR" + m)
+                raise
             return m
 
-        message = b(message, ["+", "**", "*", "-", "//", "~", "=", "h", "l", "g"])
+        def ub(m):
+            for o in operations:
+                m = re.sub(r" " + re.escape(o) + r" ", o, m)
+            return m
+
         if isinstance(message, str):
+            message = re.sub(r" +", " ", b(message))
             parts = message.split(" ")
         elif isinstance(message, list):
             parts = message
@@ -84,7 +97,7 @@ class Node:
         else:
             if a < len(parts):  # stop recursion
                 message = Node._calculate(message, a + 1)
-        return message
+        return ub(message)
 
     @property
     def is_leaf(self):
