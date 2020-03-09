@@ -119,10 +119,12 @@ class WoDParser:
         # f is with subtracting a success on a 1
         r"(?#     )(?P<difficulty>([1-9][0-9]{0,4})|([0-9]{0,4}[1-9])))|"
         # difficulty 1-99999
-        r"(?#   )(?P<sum>g)|"  # summing rolls up instead
-        r"(?#   )(?P<maximum>h)| *"  # taking the maximum value of the roll
-        r"(?#   )(?P<minimum>l))? *"  # taking the minimum value of the roll
-        r"(?# )(?P<explosion>!+)? *$",  # explosion effects
+        r"(?#   )(?P<sum>g)|"  # summing rolls up
+        r"(?#   )(?P<id>=)|"  # counting the amount instead of doing anything with the dice
+        r"(?#   )(?P<none>~)|"  # returning nothing
+        r"(?#   )(?P<maximum>h)| *"  # taking the maximum die
+        r"(?#   )(?P<minimum>l))? *"  # taking the minimum die
+        r"(?# )(?P<explosion>!+)? *$",  # explosion barrier lowered by 1 per !
     )
 
     usage = "[<Selectors>@]<dice>[d<sides>[R<rerolls>][s][ef<difficulty>ghl][!!!]]"
@@ -134,56 +136,56 @@ class WoDParser:
                 raise DescriptiveError(f"Interpretation Conflict: {ret} vs {n}")
             d["return"] = n
 
-        info = WoDParser.diceparse.match(message)
-        info = {k: v for (k, v) in info.groupdict().items() if v} if info else {}
-        if info.get("amount", None) is not None:
-            info["amount"] = int(info["amount"])
+        dice = WoDParser.diceparse.match(message)
+        dice = {k: v for (k, v) in dice.groupdict().items() if v} if dice else {}
+        info = {}
+        if dice.get("amount", None) is not None:
+            info["amount"] = int(dice["amount"])
         else:
-            if self.triggers.get("ignore", None):
-                print("invalid dicecode:'" + message + "'")
-                return {}
             if not message.strip():
                 return None
             raise DiceCodeError(
                 "invalid dicecode:'" + message + "'\n usage: " + WoDParser.usage
             )
-        if info.get("sides", None) is not None:
-            info["sides"] = int(info["sides"])
+        if dice.get("sides", None) is not None:
+            info["sides"] = int(dice["sides"])
 
-        if info.get("selectors", None):
-            setreturn(info, info["selectors"] + "@")
+        if dice.get("selectors", None):
+            setreturn(info, dice["selectors"] + "@")
         else:
             if "@" in message:
                 raise DescriptiveError("Missing Selectors!")
-        if info.get("onebehaviour") == "f":
+        if dice.get("onebehaviour") == "f":
             info["onebehaviour"] = 1
             setreturn(info, "threshhold")
-        elif info.get("onebehaviour") == "e":
+        elif dice.get("onebehaviour") == "e":
             info["onebehaviour"] = 0
             setreturn(info, "threshhold")
         # would need rewrite if more than 1 desired
-        if info.get("difficulty", None) is not None:
-            info["difficulty"] = int(info["difficulty"])
-        else:
-            info.pop("difficulty", None)
-        if info.pop("minimum", 0):
+        if dice.get("difficulty", None) is not None:
+            info["difficulty"] = int(dice["difficulty"])
+        if dice.get("minimum", 0):
             setreturn(info, "min")
-        if info.pop("maximum", 0):
+        if dice.get("maximum", 0):
             setreturn(info, "max")
-        if info.pop("sum", 0):
+        if dice.get("sum", 0):
             setreturn(info, "sum")
-        info["explosion"] = len(info.get("explosion", ""))
+        if dice.get("id", 0):
+            setreturn(info, "id")
+        if dice.get("none", 0):
+            setreturn(info, "none")
+        info["explosion"] = len(dice.get("explosion", ""))
 
         return info
 
-    def do_roll(self, roll, default=None) -> WoDDice:
+    def do_roll(self, roll, default=None, depth=0) -> WoDDice:
         """Wrapper around make_roll that handles edgecases"""
         if isinstance(roll, str):
             if ";" in roll:
                 roll = "(" + ")(".join(roll.split(";")) + ")"
 
             roll = roll.strip()
-        roll = self.resolveroll(roll, 0)
+        roll = self.resolveroll(roll, depth + 1)
         if roll.code:
             self.rolllogs.append(self.make_roll(roll.code))
         else:
@@ -205,16 +207,16 @@ class WoDParser:
         """Uses full and valid Rolls and returns WoDDice."""
         params = self.extract_diceparams(roll)
         if not params:  # no dice
-            raise DescriptiveError('No Valid Dice in "' + roll + '"')
+            return WoDDice.empty()
         fullparams = self.defines.copy()
         fullparams.update(params)
         return WoDDice(fullparams)
 
     def resolveroll(self, roll: Union[Node, str], depth) -> Node:
         if isinstance(roll, str):
-            roll = Node(roll, 0)
+            roll = Node(roll, depth)
             self.pretrigger(roll)
-            res = self.resolveroll(roll, 0)
+            res = self.resolveroll(roll, depth + 1)
             return res
         self.resolvedefines(roll)
         for k, vs in roll.dependent.items():
@@ -244,16 +246,17 @@ class WoDParser:
         return message
 
     def breakthrough(self, body: str) -> str:
-        roll = body
+        roll, current, goal, adversity = body, None, None, None
         try:
-            roll, current, goal = body.rsplit(" ", 3)
+            if body.count(" ") == 3:
+                body += " "
+            roll, current, goal, adversity = body.rsplit(" ", 4)
             i = 0
             log = ""
-            adversity = self.triggers.get("adversity", 0)
-            while (
-                i < (self.triggers.get("max") or 100)
-                if not self.triggers.get("limitbreak", None)
-                else 1000
+            adversity = 0 if not adversity else int(adversity)
+            while i < min(
+                (self.triggers.get("max") or 50),
+                (500 if not self.triggers.get("limitbreak", None) else 1000),
             ):
                 x = self.do_roll(roll).result
                 log += str(x) + " : "
@@ -286,8 +289,8 @@ class WoDParser:
         except Exception as e:
             print(e, e.__class__, e.args, traceback.format_exc())
             raise DescriptiveError(
-                "Breakthrough Parameters: roll, current, goal\n"
-                "Optionally &adversity x& to the left of breakthrough"
+                "Breakthrough Parameters: roll, current, goal [, adversity]\n"
+                f"not fullfilled by {roll}, {current}, {goal}, {adversity}"
             )
 
     def triggerswitch(self, triggername, triggerbody):
@@ -305,10 +308,8 @@ class WoDParser:
                 self.triggers["rightsviolation"] = True
             return ""
 
-        if triggername in ["speed", "cutoff", "adversity", "max"]:
-            if triggername in ["speed"]:  # doubles
-                x = float(triggerbody)
-            elif triggername == "max":
+        if triggername in ["adversity", "max"]:
+            if triggername == "max":
                 x = min(int(triggerbody), 100)
             else:
                 x = int(triggerbody)
@@ -317,7 +318,7 @@ class WoDParser:
             return ""
         if triggername == "breakthrough":
             return self.breakthrough(triggerbody)
-        if triggername in ["ignore", "verbose", "suppress", "order"]:
+        if triggername in ["ignore", "verbose"]:
             if "off" not in triggerbody:
                 self.triggers[triggername] = triggerbody if triggerbody else True
             else:
@@ -329,9 +330,10 @@ class WoDParser:
             times = min(
                 times,
                 int(
-                    (self.triggers.get("max", 0) or 100)
-                    if not self.triggers.get("limitbreak", None)
-                    else 500
+                    min(
+                        (self.triggers.get("max", 0) or 50),
+                        (500 if not self.triggers.get("limitbreak", None) else 1000),
+                    )
                 ),
             )
             loopsum = sum(self.do_roll(roll).result or 0 for _ in range(times))
@@ -339,13 +341,13 @@ class WoDParser:
         if triggername == "values":
             try:
                 trigger = str(re.sub(r" *: *", ":", triggerbody))
-                for d in trigger.split(","):
+                for d in trigger.split(";"):
                     self.defines[d.split(":")[0].strip()] = d.split(":")[1].strip()
                     return ""  # defines updated
             except:
                 raise DescriptiveError(
                     "Values malformed. Expected: "
-                    '"&values key:value, key:value, key:value&"'
+                    '"&values key:value; key:value; key:value&"'
                 )
         if triggername == "param":
             try:

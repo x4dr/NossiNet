@@ -24,7 +24,7 @@ class TestInterface(TestCase):
     def test_splitpara(self):
         teststr = "daslkdj & dadjlkj & asdjlaksjd & alskjdlask & lkja"
         spl = splitpara(teststr)
-        self.assertEqual(len(spl), 5)
+        self.assertEqual(len(spl), 6)
         self.assertEqual("".join(spl), teststr)
 
     def test_replacedef_simple(self):

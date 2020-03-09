@@ -19,4 +19,4 @@ def getschema():
 
 
 def getnossihelp():
-    return get("nossibot_help.txt")
+    return get("nossibot_help.help")

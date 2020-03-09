@@ -1,4 +1,5 @@
 import random
+from warnings import warn
 
 from NossiPack.krypta import DescriptiveError
 
@@ -17,19 +18,22 @@ class WoDDice:
         try:
             self.sign = 1
             self.min = info.get("additivebonus", 1)  # unlikely to get implemented
+            self.returnfun = info.get("return", None)
+            try:
+                self.amount = int(info["amount"])
+            except KeyError:
+                raise DescriptiveError("No amount of dice!!")
             try:
                 self.max = int(info["sides"]) + self.min - 1
-            except:
-                raise DescriptiveError("Dice without sides!")
+            except KeyError:
+                if self.returnfun != "id":
+                    raise DescriptiveError("Dice without sides!")
             self.difficulty = info.get("difficulty", None)
             self.subone = info.get("onebehaviour", 0)
-            self.returnfun = info.get("return", None)
+
             self.explodeon = self.max + 1 - info.get("explosion", 0)
             self.sort = info.get("sort")
-            try:
-                self.amount = info["amount"]
-            except:
-                raise DescriptiveError("No amount of dice!!")
+
             self.rerolls = int(info.get("rerolls", 0))  # only used for fenrolls
             self.r = []
             self.log = ""
@@ -37,12 +41,13 @@ class WoDDice:
             self.comment = ""
             self.show = False
             self.rolled = False
-            self.succ = 0
-            self.antisucc = 0
             if self.explodeon <= self.min:
                 self.explodeon = self.max + 1
+            if self.returnfun == "id":
+                self.max = 1
             if self.amount is not None:
                 self.roll_next(int(self.amount))
+
         except KeyError as e:
             raise DescriptiveError("Missing Parameter: " + str(e.args[0]))
         except Exception as e:
@@ -115,95 +120,85 @@ class WoDDice:
             }
         )
 
+    def rolldie(self):
+        return random.randint(self.min, self.max)
+
+    def modified_amount(self, amount):
+        return (
+            amount
+            + abs(self.rerolls)
+            + sum(1 if x >= self.explodeon else 0 for x in self.r)
+        )
+
+    def process_rerolls(self):
+        self.log = ""
+        direction = int(self.rerolls / abs(self.rerolls))
+        filtered = []
+        reroll = self.rerolls
+        tempr = self.r.copy()
+        while reroll != 0:
+            reroll -= direction
+            sel = min(tempr) if direction > 0 else max(tempr)
+            filtered.append(sel)
+            tempr.remove(sel)
+
+        if self.sort:
+            self.r = sorted(self.r)
+
+        if filtered:
+            tempstr = ""
+            tofilter = filtered.copy()
+            par = False
+            for i in range(len(self.r)):
+                x = self.r[i]
+                if x in tofilter and (
+                    (direction < 0 and self.r[i:].count(x) <= tofilter.count(x))
+                    or direction > 0
+                ):
+                    if not par:
+                        par = True
+                        tempstr += "("
+                    tofilter.remove(x)
+                else:
+                    if par:
+                        par = False
+                        tempstr = tempstr[:-2] + "), "
+                tempstr += str(x) + ", "
+            tempstr = tempstr[:-2] + (")" if par else "")
+            self.log += tempstr
+        for sel in filtered:
+            self.r.remove(sel)
+
     def roll_next(self, amount=None):
-        i = 0
         if amount is None:
             amount = self.amount
         self.rolled = True
         self.log = ""
         self.r = []
-        self.succ = 0
-        self.antisucc = 0
         if amount < 0:
             amount = abs(amount)
             self.sign = -1
         else:
             self.sign = 1
-        while i < amount + abs(self.rerolls):
-            if self.max < self.min:
-                self.r.append(0)
-                self.log += "no dice "
-                self.dbg += str(self.max) + " sided dice...?"
-                break
-            else:
-                self.r.append(random.randint(self.min, self.max))
-                self.log += str(self.r[-1])
-            if self.returnfun == "threshhold":
-                self.log += ": "
-                try:
-                    diff = int(self.difficulty)
-                except:
-                    raise DescriptiveError("No Difficulty set!")
-                if self.r[-1] >= diff:  # last die face >= than the difficulty
-                    self.succ += 1
-                    self.log += "success "
-                elif self.r[-1] <= self.subone:
-                    self.antisucc += 1
-                    self.log += "subtract "
-                if self.r[-1] >= self.explodeon:
-                    self.log += "exploding!"
-                self.log += "\n"
-            else:
-                self.log += ", "
-            if self.r[-1] >= self.explodeon:
-                amount += 1
-            i += 1
-        if self.log.endswith(", "):
-            self.log = self.log[:-2]
+        if self.max == 1:
+            self.r = [1] * amount
+            return self
+        while len(self.r) < self.modified_amount(amount):
+            self.r += [
+                self.rolldie()
+                for _ in range(self.modified_amount(amount) - len(self.r))
+            ]
+
+        self.log = ", ".join(str(x) for x in self.r)
 
         if self.rerolls:
-            self.log = ""
-            direction = int(self.rerolls / abs(self.rerolls))
-            filtered = []
-            reroll = self.rerolls
-            tempr = self.r.copy()
-            while reroll != 0:
-                reroll -= direction
-                sel = min(tempr) if direction > 0 else max(tempr)
-                filtered.append(sel)
-                tempr.remove(sel)
-
-            if self.sort:
-                self.r = sorted(self.r)
-
-            if filtered:
-                tempstr = ""
-                tofilter = filtered.copy()
-                par = False
-                for i in range(len(self.r)):
-                    x = self.r[i]
-                    if x in tofilter and (
-                        (direction < 0 and self.r[i:].count(x) <= tofilter.count(x))
-                        or direction > 0
-                    ):
-                        if not par:
-                            par = True
-                            tempstr += "("
-                        tofilter.remove(x)
-                    else:
-                        if par:
-                            par = False
-                            tempstr = tempstr[:-2] + "), "
-                    tempstr += str(x) + ", "
-                tempstr = tempstr[:-2] + (")" if par else "")
-                self.log += tempstr
-            for sel in filtered:
-                self.r.remove(sel)
+            self.process_rerolls()
         else:
             if self.sort:
                 self.log = ""
                 self.r = sorted(self.r)
                 self.log += ", ".join(str(x) for x in self.r)
+        return self
 
     @staticmethod
     def botchformat(succ, antisucc):
@@ -214,11 +209,23 @@ class WoDDice:
         return 0 - antisucc
 
     def roll_wodsuccesses(self) -> int:
-        return (
-            self.botchformat(self.succ, self.antisucc)
-            if not self.returnfun.endswith("@")
-            else self.roll_sel()
-        ) * self.sign
+        succ, antisucc = 0, 0
+        for x in self.r:
+            self.log += str(x) + ": "
+            try:
+                diff = int(self.difficulty)
+            except:
+                raise DescriptiveError("No Difficulty set!")
+            if self.r[-1] >= diff:  # last die face >= than the difficulty
+                succ += 1
+                self.log += "success "
+            elif self.r[-1] <= self.subone:
+                antisucc += 1
+                self.log += "subtract "
+            if self.r[-1] >= self.explodeon:
+                self.log += "exploding!"
+            self.log += "\n"
+        return (self.botchformat(succ, antisucc)) * self.sign
 
     def roll_v(self) -> str:  # verbose
         log = ""
@@ -273,6 +280,13 @@ class WoDDice:
         for n in self.r:
             log += str(n) + " + "
         self.log = log[:-2] + "= " + str(self.result_sum())
+
+    def __int__(self):
+        res = self.result
+        if self.result is None:
+            warn("None roll converted to 0")
+            return 0
+        return res
 
     @property
     def result(self) -> int:

@@ -18,7 +18,7 @@ General behaviour:
         result: a will no longer be replaced by anything
     def=? : will show all defined values
     ? will try to give you a more detailed error message. after oracle for oracle help or first thing for rolls
-    #remind prefix is currently not even working and WILL spam you do death with no way to stop it except muting if you use it
+    #remind prefix is currently not even working and WILL spam you to death with no way to stop it except muting if you use it
 Available commands:
 NossiBot : prefix for the most meta of things, assumed in DMs
     Subcommands:
@@ -41,6 +41,39 @@ oracle : prefix for selector system standard 5 dice (+modifiers) roll graphs
         show : will make the graph as a picture with quantiles. number of quantiles is new last parameter, rest as normal
 
 Unprefixed messages are passed to the diceroller:
+Triggers:
+Triggers are pieces of the dicecode that have effects which are not strictly dicerolling. They are ignored by replacements. As of writing, the established triggers are:
+values [k:v;[k:v;...]]: sets the ; separated key value pairs as non-saved defines for this roll
+param [a [b ...]]: space separated parameters grab the space separated values from the right edge of the roll (param a b c [...] 1 2 would be a=1, b=2)
+if a then b else c done: evaluates a as a roll, which if it is > 0, replaces itself with a, else it replaces itself with b.
+verbose [x]: if x is empty or anything not containing "off" verbose is set, increasing verbosity 
+max [x]: the default value of 50 can be raised up to 500, it limits how often loops are run 
+limitbreak : if you are an admin this ups the loop limit. if not, it sets the rightsviolation trigger ;)
+breakthrough roll current goal [adversity]: keeps adding up the result of roll until goal is hit, subtracting adversity (or 0) at every step. starts at current
+loop roll times: loops roll times times
+loopsum roll times: like loop, but adds result
+
+the rolls are "best" explained by the regex used to parse it
+
+ r"(?# )\s*(?:(?P<selectors>(?:-?[0-9](?:\s*,\s*)?)*)\s*@)?"  # selector matching
+        r"(?# )\s*(?P<amount>-?[0-9]{1,5})\s*"  # amount of dice -99999--99999
+        r"(?# )(d *(?P<sides>[0-9]{1,5}))? *"  # sides of dice 0-99999
+        r"(?# )(?:[rR]\s*(?P<rerolls>-?\d+))?"  # reroll highest/lowest dice
+        r"(?#   )(?P<sort>s)?"  # sorting rolls
+        r"(?# )(?P<operation>"  # what is happening with the roll
+        r"(?#   )(?P<against>"  # rolling against a value for successes
+        r"(?#     )(?P<onebehaviour>[ef]) *"  # e is without subtracting 1,
+        # f is with subtracting a success on a 1
+        r"(?#     )(?P<difficulty>([1-9][0-9]{0,4})|([0-9]{0,4}[1-9])))|"
+        # difficulty 1-99999
+        r"(?#   )(?P<sum>g)|"  # summing rolls up
+        r"(?#   )(?P<id>=)|"  # counting the amount instead of doing anything with the dice
+        r"(?#   )(?P<none>~)|"  # returning nothing
+        r"(?#   )(?P<maximum>h)| *"  # taking the maximum die
+        r"(?#   )(?P<minimum>l))? *"  # taking the minimum die
+        r"(?# )(?P<explosion>!+)? *$",  # explosion barrier lowered by 1 per !
+
+
 Examplerolls:
 3,2@5 rolls 5 dice (standard is 10 sides) and selects the 3rd and 2nd smallest
 3d6 rolls 3 six sided dice

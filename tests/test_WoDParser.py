@@ -32,6 +32,22 @@ class TestWoDParser(TestCase):
         self.assertGreaterEqual(self.p.do_roll("3d10h").result, 1)
         self.assertLessEqual(self.p.do_roll("3d10h").result, 10)
 
+    def test_return_funs(self):
+        for roll, exp, ret in [
+            ("6g", 27, "sum"),
+            ("6h", 7, "max"),
+            ("6=", 6, "id"),
+            ("6l", 2, "min"),
+            ("6~", None, "none"),
+            ("1,2@6", 5, "1,2@"),
+            ("6,2@6", 10, "6,2@"),
+        ]:
+            d = WoDParser().make_roll(roll)
+            d.r = [2, 3, 4, 5, 6, 7]
+            self.assertEqual(d.returnfun, ret)
+            self.assertEqual(1 if "=" in roll else 10, d.max, "sides")
+            self.assertEqual(exp, d.result, roll)
+
     def test_parenthesis_roll(self):
         self.assertIn(self.p.do_roll("4(3) d1g").result, range(1, 70))
 
@@ -39,6 +55,17 @@ class TestWoDParser(TestCase):
         self.p.do_roll("1(2g)(3(4g)g)g")
         for r in self.p.rolllogs:
             self.assertIn("==>", r.roll_v())
+
+    def test_postmath(self):
+        self.p.defines["return"] = "id"
+        self.assertEqual(
+            self.p.do_roll("(100d1g)-3").result, 97, "100d1g -3 should be 97",
+        )
+
+    def test_default(self):
+        p = WoDParser({"sides": 17, "return": "max"})
+        r = p.do_roll("9")
+        self.assertIn(int(r), range(10, 9 * 17 + 1))
 
     def test_nested(self):
         self.p.do_roll("5d(5d(5d10))")
@@ -136,7 +163,7 @@ class TestWoDParser(TestCase):
     def test_identityreturn(self):
         p = WoDParser({"return": "id"})
         r = p.do_roll("&loopsum 1 8&")
-        self.assertEqual(r.result, 8)
+        self.assertEqual(8, r.result)
 
     def test_fullparenthesis(self):
         self.assertEqual(
