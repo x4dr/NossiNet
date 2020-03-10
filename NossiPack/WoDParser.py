@@ -43,11 +43,11 @@ class Node:
             unparsed = unparsed[len(paren) + 2 :]
 
     def calculate(self):
-        self.code = Node._calculate(self.code)
+        self.code = Node.calc(self.code)
 
     @staticmethod
-    def _calculate(message, a=0):
-        operations = ["+", "**", "*", "-", "//", "~", "=", "h", "l", "g"]
+    def calc(message, a=0):
+        operations = ["+", "**", "*", "-", "//", "/", "~", "=", "h", "l", "g"]
 
         def b(m):
             o = "NOTEVEN"
@@ -93,10 +93,10 @@ class Node:
                 i -= 1
 
         if oldmessage != message:
-            message = Node._calculate(message)  # recursive
+            message = Node.calc(message)  # recursive
         else:
             if a < len(parts):  # stop recursion
-                message = Node._calculate(message, a + 1)
+                message = Node.calc(message, a + 1)
         return ub(message)
 
     @property
@@ -128,7 +128,8 @@ class WoDParser:
 
     diceparse = re.compile(  # the regex matching the roll (?# ) for indentation
         r"(?# )\s*(?:(?P<selectors>(?:-?[0-9](?:\s*,\s*)?)*)\s*@)?"  # selector matching
-        r"(?# )\s*(?P<amount>-?[0-9]{1,5})\s*"  # amount of dice -99999--99999
+        r"(?# )\s*(?P<amount>-?[0-9]{1,5})(\.[0-9]+)?\s*"  # amount of dice -99999--99999,
+        # any number after the decimal point will be ignored
         r"(?# )(d *(?P<sides>[0-9]{1,5}))? *"  # sides of dice 0-99999
         r"(?# )(?:[rR]\s*(?P<rerolls>-?\d+))?"  # reroll highest/lowest dice
         r"(?#   )(?P<sort>s)?"  # sorting rolls
@@ -160,7 +161,7 @@ class WoDParser:
         dice = {k: v for (k, v) in dice.groupdict().items() if v} if dice else {}
         info = {}
         if dice.get("amount", None) is not None:
-            info["amount"] = int(dice["amount"])
+            info["amount"] = int(float(dice["amount"]))
         else:
             if not message.strip():
                 return None
@@ -212,8 +213,9 @@ class WoDParser:
             self.rolllogs.append(WoDDice.empty())
         return self.rolllogs[-1]
 
-    def make_roll(self, roll: Union[str]) -> WoDDice:
+    def make_roll(self, roll: str) -> WoDDice:
         """Uses full and valid Rolls and returns WoDDice."""
+        roll = roll.strip()
         params = self.extract_diceparams(roll)
         if not params:  # no dice
             return WoDDice.empty()

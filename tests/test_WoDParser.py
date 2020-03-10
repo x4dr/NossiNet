@@ -78,7 +78,7 @@ class TestWoDParser(TestCase):
 
     def test_parseadd(self):
         a = ["d", "4", "3", "9", "+", "1", "g", "1", "-1"]
-        self.assertEqual(Node._calculate(a), "d 17g0")
+        self.assertEqual(Node.calc(a), "d 17g0")
 
     def test_looptriggers(self):
         r = self.p.do_roll("&loop 3 2&; 0 d1g")
