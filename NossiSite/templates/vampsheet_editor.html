@@ -403,8 +403,8 @@
 
         <br><br>
         <label>
-            <input type="checkbox" name="newsheet" value="newsheet" checked="checked" class="leet"> Save this Version
-            into History.
+            <input type="checkbox" name="newsheet" value="newsheet" {% if New %} checked="checked" {% endif -%}
+                   class="leet"> Save this Character Separately instead of editing the current one.
         </label>
 
         <input type="submit" class="leet bigbtn" value="SAVE"><br><br><br>

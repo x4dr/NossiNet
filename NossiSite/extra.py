@@ -186,6 +186,7 @@ def register(app=None):
                     character=char.getdictrepr(),
                     Clans=VampireCharacter.get_clans(),
                     Backgrounds=VampireCharacter.get_backgrounds(),
+                    New=True,
                 )
             return render_template("vampsheet.html", character=char.getdictrepr())
         except Exception as e:

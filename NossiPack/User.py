@@ -224,7 +224,7 @@ class User:
     def freesheet(cls, x):
         x = int(x)
         flash(
-            "If you ever want to restore this sheet: write this number down:" + str(x)
+            "If you ever want to restore this sheet, write this number down:" + str(x)
         )
         db = cls.connect_db()
         db.execute("UPDATE sheets SET owner=NULL WHERE sheet_id=?", [x])
