@@ -67,11 +67,7 @@ class WoDDice:
         else:
             amount = str(len(self.r))
         name = (
-            (
-                (",".join(str(x) for x in self.returnfun) + "@")
-                if isinstance(self.returnfun, list)
-                else ""
-            )
+            (self.returnfun if "@" in self.returnfun else "")
             + amount
             + "d"
             + str(self.max)
@@ -97,7 +93,7 @@ class WoDDice:
             )
         )
         if self.returnfun == "id":
-            name = (amount or "0") + "len"
+            name = (amount or "0") + "="
         if name.endswith("d1g"):
             name = name[:-3] + "sum"
         return name
@@ -210,19 +206,21 @@ class WoDDice:
 
     def roll_wodsuccesses(self) -> int:
         succ, antisucc = 0, 0
+        self.log = ""
+        try:
+            diff = int(self.difficulty)
+        except:
+            raise DescriptiveError("No Difficulty set!")
         for x in self.r:
             self.log += str(x) + ": "
-            try:
-                diff = int(self.difficulty)
-            except:
-                raise DescriptiveError("No Difficulty set!")
-            if self.r[-1] >= diff:  # last die face >= than the difficulty
+
+            if x >= diff:  # last die face >= than the difficulty
                 succ += 1
                 self.log += "success "
-            elif self.r[-1] <= self.subone:
+            if x <= self.subone:
                 antisucc += 1
                 self.log += "subtract "
-            if self.r[-1] >= self.explodeon:
+            if x >= self.explodeon:
                 self.log += "exploding!"
             self.log += "\n"
         return (self.botchformat(succ, antisucc)) * self.sign
@@ -231,7 +229,7 @@ class WoDDice:
         log = ""
         if self.max == 0:
             return log
-        if not (self.name.endswith("sum") or self.name.endswith("len")):
+        if not (self.name.endswith("sum") or self.name.endswith("=")):
             if not log or self.returnfun == "threshhold":
                 log = ", ".join(str(x) for x in self.r)
             elif log:
@@ -283,7 +281,7 @@ class WoDDice:
 
     def __int__(self):
         res = self.result
-        if self.result is None:
+        if res is None:
             warn("None roll converted to 0")
             return 0
         return res

@@ -39,8 +39,8 @@ class TestWoDParser(TestCase):
             ("6=", 6, "id"),
             ("6l", 2, "min"),
             ("6~", None, "none"),
-            ("1,2@6", 5, "1,2@"),
-            ("6,2@6", 10, "6,2@"),
+            ("1,2@6", 5, "1 , 2@"),
+            ("6,2@6", 10, "6 , 2@"),
         ]:
             d = WoDParser({"return": "sum"}).do_roll(roll)
             d.r = [2, 3, 4, 5, 6, 7]
@@ -72,13 +72,19 @@ class TestWoDParser(TestCase):
         p = WoDParser({"sides": 17, "return": "max"})
         r = p.do_roll("9")
         self.assertIn(int(r), range(10, 9 * 17 + 1))
+        r = p.do_roll("9f7")
+        r.r = list(range(1, 10))
+        self.assertEqual(int(r), 2)
+        r = p.do_roll("9e7")
+        r.r = list(range(1, 10))
+        self.assertEqual(int(r), 3)
 
     def test_nested(self):
         self.p.do_roll("5d(5d(5d10))")
 
     def test_parseadd(self):
         a = ["d", "4", "3", "9", "+", "1", "g", "1", "-1"]
-        self.assertEqual(Node.calc(a), "d 17g0")
+        self.assertEqual(Node.calc(a), "d 17 g 0")
 
     def test_looptriggers(self):
         r = self.p.do_roll("&loop 3 2&; 0 d1g")
@@ -117,7 +123,7 @@ class TestWoDParser(TestCase):
             {"a": "b c D", "b": "e f", "c": "3", "D": "1", "e": "9", "f": "10"}
         )
         r = p.resolveroll("a d1g", 0)
-        self.assertEqual(r.code, "23 d1g")
+        self.assertEqual(r.code, "23 d 1 g")
 
     def test_explosion(self):
         for _ in range(1000):

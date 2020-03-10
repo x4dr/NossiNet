@@ -1,5 +1,6 @@
 import re
 import traceback
+import warnings
 from typing import List, Union
 
 import numexpr
@@ -27,7 +28,7 @@ class Node:
         self.buildroll()
 
     def buildroll(self):
-        self.code = self.code.replace("()", "")
+        self.code = self.calc(self.code.replace("()", ""))
         unparsed = self.code
         while unparsed:
             next_pos = unparsed.find("(")
@@ -47,22 +48,38 @@ class Node:
 
     @staticmethod
     def calc(message, a=0):
-        operations = ["+", "**", "*", "-", "//", "/", "~", "=", "h", "l", "g"]
+        special = (
+            ["+", "*", "* *", ",", "-", "/", "/ /"],
+            ["~", "="],
+            ["h", "l", "g", "d", "e", "f"],
+        )
+        # ** and // are with space since they will be escaped with spaces first
 
         def b(m):
-            o = "NOTEVEN"
+            o = ""
 
             try:
+                operations, always, functions = special
                 for o in operations:
-                    m = re.sub(r"(?<! )" + re.escape(o) + r"(?! )", " " + o + " ", m)
+                    m = re.sub(
+                        r"\b" + re.escape(o) + r"\b", " " + o.replace(" ", "") + " ", m
+                    )
+                for al in always:
+                    m = re.sub(al, " " + al + " ", m)
+                for f in functions:
+                    m = re.sub(
+                        r"((?<=\d)|\b)" + re.escape(f) + r"((?=\d)|\b)",
+                        " " + f + " ",
+                        m,
+                    )
             except:
                 print(o + "ERROR" + m)
                 raise
             return m
 
         def ub(m):
-            for o in operations:
-                m = re.sub(r" " + re.escape(o) + r" ", o, m)
+            while "  " in m:
+                m = m.replace("  ", " ")
             return m
 
         if isinstance(message, str):
@@ -76,28 +93,31 @@ class Node:
         i = len(parts)
         oldmessage = message
         while i > a:
-            try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
                 try:
-                    part = "+".join(parts[a:i])
-                    replace = " ".join(parts[a:i])
-                    message = message.replace(
-                        replace, str(numexpr.evaluate(part, local_dict={}))
-                    )
-                except:
-                    part = " ".join(parts[a:i])
-                    message = message.replace(
-                        part, str(numexpr.evaluate(part, local_dict={}))
-                    )
-                break
-            except:
-                i -= 1
+                    try:
+                        part = "+".join(parts[a:i])
+                        replace = " ".join(parts[a:i])
+                        message = message.replace(
+                            replace, str(numexpr.evaluate(part, local_dict={}))
+                        )
+                    except:
+                        part = " ".join(parts[a:i])
+                        message = message.replace(
+                            part, str(numexpr.evaluate(part, local_dict={}))
+                        )
+                    break
+                except (SyntaxError, KeyError, TypeError):
+                    i -= 1
 
+        message = re.sub(r" +", " ", b(message))
         if oldmessage != message:
             message = Node.calc(message)  # recursive
         else:
             if a < len(parts):  # stop recursion
                 message = Node.calc(message, a + 1)
-        return ub(message)
+        return ub(message).strip()
 
     @property
     def is_leaf(self):
