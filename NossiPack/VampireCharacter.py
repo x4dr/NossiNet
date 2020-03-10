@@ -593,6 +593,7 @@ class VampireCharacter:
         self.backgrounds = collections.OrderedDict(
             x for x in sorted(self.backgrounds.items()) if x[0] != ""
         )
+        self.timestamp = time.strftime("%Y/%m/%d-%H:%M:%S")
         return self
 
     def applydamage(self, amount, dmg_type="Lethal"):
