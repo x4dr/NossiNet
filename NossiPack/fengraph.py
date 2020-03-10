@@ -160,7 +160,7 @@ def weapondata():
         with open(os.path.expanduser("~/wiki/weapons.md")) as f:
             dmgraw = f.read()
     except Exception as e:
-        r = requests.get("http://nosferatu.vampir.es/wiki/weapons/raw")
+        r = requests.get("https://nosferatu.vampir.es/wiki/weapons/raw")
         dmgraw = r.content.decode()
         print("loaded weapons.md via web, because", e, e.args)
 

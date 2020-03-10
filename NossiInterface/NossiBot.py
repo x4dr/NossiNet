@@ -223,7 +223,7 @@ async def oraclehandle(msg, comment, send, author):
 
 async def weaponhandle(msg, comment, send, author):
     n = requests.get(
-        "http://127.0.0.1/"
+        "https://127.0.0.1/"
         + "/".join(quote(x.strip()) for x in msg.split(":", 2))
         + "/txt"
     )
@@ -237,7 +237,7 @@ async def weaponhandle(msg, comment, send, author):
 
 async def specifichandle(msg, comment, send, author):
     msg = msg[len("specific:") :].strip()
-    n = requests.get("http://127.0.0.1/specific/" + quote(msg.strip()) + "/raw")
+    n = requests.get("https://127.0.0.1/specific/" + quote(msg.strip()) + "/raw")
     if n.status_code == 200:
         n = n.content.decode("utf-8")
         await send(author.mention + comment + "```" + msg + "\n" + n[:1950] + "```")

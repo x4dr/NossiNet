@@ -7,7 +7,7 @@
         var ring = false;
         var ringoverwrite = false;
         window.onload=function() {
-            socket = io.connect('http://' + document.domain + ':' + location.port + '/cards');
+            socket = io.connect('https://' + document.domain + ':' + location.port + '/cards');
             socket.on('Message', function(msg) {
                 var box = $('#chatbox');
                 box.append('<br>' + $('<div/>').text(msg.data).html());

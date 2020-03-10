@@ -19,7 +19,7 @@
 
             const namespace = '/character';
 
-            const socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+            const socket = io.connect('https://' + document.domain + ':' + location.port + namespace);
 
             socket.on('comments', function (msg) {
                 const box = $('pre#comments');

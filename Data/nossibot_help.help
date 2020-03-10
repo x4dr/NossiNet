@@ -27,9 +27,9 @@ NossiBot : prefix for the most meta of things, assumed in DMs
         BANISH : makes NossiBot stop listening, does not work in DMs.
 weapon: : prefix for the fen weapon parser
     usage:
-        weapon:X will get the table for the weapon X from http://nosferatu.vampir.es/wiki/weapons
-        weapon:X:M will also apply the modifier M, see http://nosferatu.vampir.es/wiki/modifiers
-        magicalweapon:X:P will try to fill in the codes from http://nosferatu.vampir.es/wiki/magicalweapons
+        weapon:X will get the table for the weapon X from https://nosferatu.vampir.es/wiki/weapons
+        weapon:X:M will also apply the modifier M, see https://nosferatu.vampir.es/wiki/modifiers
+        magicalweapon:X:P will try to fill in the codes from https://nosferatu.vampir.es/wiki/magicalweapons
                 P is the Parameter to be filled in to <formulas>.
                 they can be given in the format key:value or just as values. Order SHOULD be from left to right but
                 testing is advised. Delimiter is ","
