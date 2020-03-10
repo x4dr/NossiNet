@@ -130,7 +130,7 @@ def register(app=None):
                         abia=f["abia"],
                         abib=f["abib"],
                         abic=f["abic"],
-                        shuffle=1 if f["shuffle"] else 0,
+                        shuffle=1 if f.get("shuffle", 0) else 0,
                     )
                 )
             return redirect(
