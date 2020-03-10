@@ -824,7 +824,7 @@ class VampireCharacter:
         )
         a = str(response.read())
 
-        result = html.unescape(names.search(a))
+        result = names.search(a)
         char = VampireCharacter()
         att = (
             allocaterandomly(prio[0], mini, cap, 3)
@@ -840,7 +840,7 @@ class VampireCharacter:
         char.set_abilities_from_int_list(abi)
         char.set_virtues_from_int_list(allocaterandomly(7, 1, 5, 3))
         try:
-            char.meta["Name"] = (
+            char.meta["Name"] = html.unescape(
                 result.group(1) + " " + result.group(2) + " " + result.group(3)
             )
         except:
