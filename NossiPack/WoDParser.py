@@ -108,7 +108,7 @@ class Node:
                             part, str(numexpr.evaluate(part, local_dict={}))
                         )
                     break
-                except (SyntaxError, KeyError, TypeError):
+                except (SyntaxError, KeyError, TypeError, AttributeError):
                     i -= 1
 
         message = re.sub(r" +", " ", b(message))
