@@ -784,12 +784,32 @@ class VampireCharacter:
 
         return combined
 
-    def makevamprandom(self, dis):
+    def makevamprandom(self, dis, back):
+        alldis = list({y for x in self.get_clans().values() for y in x})
         self.meta["Clan"] = random.choice(list(self.get_clans().keys()))
         for d in self.get_clandisciplines():
             self.disciplines[d] = 0
         for _ in range(int(dis)):
-            self.disciplines[random.choice(list(self.get_clandisciplines()))] += 1
+            d = random.choice(list(self.disciplines.keys()))
+            if self.disciplines[d] < 5:
+                self.disciplines[d] += 1
+            else:
+                d = random.choice(alldis)
+                if self.disciplines.get(d, 0) < 5:
+                    self.disciplines[d] = self.disciplines.get(d, 0) + 1
+                else:
+                    self.disciplines["DUDE LIKE SO MANY"] = 5
+                    self.meta["Gear"] += "\n[overflowed Discipline point]"
+
+        for b in self.get_backgrounds():
+            self.backgrounds[b] = 0
+        for _ in range(int(back)):
+            b = random.choice(list(self.backgrounds.keys()))
+            if self.backgrounds[b] < 5:
+                self.backgrounds[b] += 1
+            else:
+                self.meta["Gear"] += "[overflowed Background point]"
+                self.disciplines["DUDE LIKE SO MANY"] = 5
 
     @staticmethod
     def makerandom(

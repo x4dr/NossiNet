@@ -144,13 +144,14 @@ def register(app=None):
                     abic=f["abic"],
                     shuffle=1 if f["shuffle"] else 0,
                     vamp=f["discipline"],
+                    back=f["back"],
                 )
             )
         return render_template("generate_dialog.html")
 
     @app.route("/chargen/<a>,<b>,<c>,<abia>,<abib>,<abic>,<shuffle>")
-    @app.route("/chargen/<a>,<b>,<c>,<abia>,<abib>,<abic>,<shuffle>,<vamp>")
-    def chargen(a, b, c, abia, abib, abic, shuffle, vamp=None):
+    @app.route("/chargen/<a>,<b>,<c>,<abia>,<abib>,<abic>,<shuffle>,<vamp>,<back>")
+    def chargen(a, b, c, abia, abib, abic, shuffle, vamp=None, back=None):
         """
         Redirects to the charactersheet/ editor(if logged in) of a randomly
         generated character
@@ -163,6 +164,7 @@ def register(app=None):
         :param shuffle: if the first/second/third groups should be shuffled (each)
         :param vamp: if not None, character will be a vampire, int(vamp)
         is the amount of discipline points
+        :param back:  background points
         """
         try:
             char = VampireCharacter.makerandom(
@@ -178,7 +180,7 @@ def register(app=None):
             )
             print(vamp)
             if vamp is not None:
-                char.makevamprandom(vamp)
+                char.makevamprandom(vamp, back)
             print(char.getdictrepr())
             if session.get("logged_in", False):
                 return render_template(
@@ -191,4 +193,4 @@ def register(app=None):
             return render_template("vampsheet.html", character=char.getdictrepr())
         except Exception as e:
             flash("ERROR" + "\n".join(e.args))
-            return redirect(url_for("chargen_menu"))
+            raise

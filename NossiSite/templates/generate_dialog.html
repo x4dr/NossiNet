@@ -2,9 +2,9 @@
 {% block body %}
     <h2>Character Generator Setup</h2>
     <p>
-    Welcome to the NossiNet Setup Service, lets set you up with your own personal stranger ;)<br/>
-    IF YOU WANT MORE FEATURES JUST REQUEST THEM AND I WILL TELL YOU IF THEY CAN BE DONE
-        </p>
+        Welcome to the NossiNet Setup Service, lets set you up with your own personal stranger ;)<br/>
+        IF YOU WANT MORE FEATURES JUST REQUEST THEM AND I WILL TELL YOU IF THEY CAN BE DONE
+    </p>
     <h6>Just allocate how many points are to be spend and click le bouton.</h6>
     <form action="{{ url_for('chargen_menu') }}" method=post>
         <dl>
@@ -34,6 +34,9 @@
 
             <dt><label for="vamp">Discipline points(only relevant if vampire)</label>
             <dd><input class=leet type="number" name="discipline" id="discipline" value="3">
+
+            <dt><label for="back">Background points(only relevant if vampire)</label>
+            <dd><input class=leet type="number" name="back" id="back" value="5">
 
                 <br/><input class=leet type=submit value="Le Bouton">
         </dl>
