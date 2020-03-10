@@ -1,4 +1,5 @@
 import collections
+import html
 import pickle
 import random
 import re
@@ -822,7 +823,7 @@ class VampireCharacter:
         )
         a = str(response.read())
 
-        result = names.search(a)
+        result = html.unescape(names.search(a))
         char = VampireCharacter()
         att = (
             allocaterandomly(prio[0], mini, cap, 3)
