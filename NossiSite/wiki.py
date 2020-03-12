@@ -34,12 +34,61 @@ def register(app=None):
             tags=r[1],
         )
 
+    @app.route("/test")
+    def testsheet():
+
+        charadescription = {"direct": "mock chara"}
+        physheader = {"lines": [["Body", "Agility", "Dexterity"]]}
+        mentheader = {"lines": [["Perception", "Mind", "Knowledge"]]}
+        socheader = {"lines": [["Resolve", "Impression", "Sympathy"]]}
+        abiheader = {"lines": [["Competence", "Insight", "Theory"]]}
+        spiheader = {"lines": [["Focus", "Intuition", "Discipline"]]}
+        skilz = [["Skill" + str(x), "Wert" + str(x)] for x in range(16)]
+        mock_columns = [
+            {"body": {"lines": [[*skilz[x]] for x in range(0, len(skilz), 2)]}},
+            {"body": {"lines": [[*skilz[x]] for x in range(1, len(skilz) + 1, 2)]}},
+        ]
+        physicalblock = {
+            "header": {"header": physheader},
+            "body": {"body": {"lines": [mock_columns]}},
+        }
+        mentalblock = {
+            "header": {"header": mentheader},
+            "body": {"body": {"lines": [mock_columns]}},
+        }
+        socblock = {
+            "header": {"header": socheader},
+            "body": {"body": {"lines": [mock_columns]}},
+        }
+        abiblock = {
+            "header": {"header": abiheader},
+            "body": {"body": {"lines": [mock_columns]}},
+        }
+        spiblock = {
+            "header": {"header": spiheader},
+            "body": {"body": {"lines": [mock_columns]}},
+        }
+        a = {
+            "header": charadescription,
+            "body": {
+                "body": {  # so that the header is over all
+                    "lines": [
+                        [physicalblock, mentalblock],
+                        [socblock, abiblock],
+                        [spiblock, "Inventory"],
+                    ]
+                }
+            },
+        }
+
+        return render_template("mechasheet.html", struct=a, lstrip_blocks=True)
+
     @app.route("/wiki", methods=["GET", "POST"])
     @app.route("/wiki/<path:page>", methods=["GET", "POST"])
     def wikipage(page=None):
         raw = request.url.endswith("/raw")
         if raw:
-            page = page[:4]
+            page = page[:-4]
         if page is None:
             page = request.form.get("n", None)
             if page is None:
@@ -67,7 +116,7 @@ def register(app=None):
             return render_template(
                 "wikipage.html", title=title, tags=tags, body=body, wiki=page
             )
-        return body
+        return body, 200, {"Content-Type": "text/plain; charset=utf-8"}
 
     @app.route("/fenweapongraph")
     def graphtest():
@@ -84,6 +133,23 @@ def register(app=None):
             body = render_template(
                 "fensheet.html",
                 character=char,
+                userconf=User(session.get("user", "")).configs(),
+            )
+            return fill_infolets(body)
+        except DescriptiveError as e:
+            flash("Error with your configuration value character_sheet: " + e.args[0])
+            return redirect(url_for("showsheet", name=c))
+
+    @app.route("/ewsheet/<c>")
+    def ewsheet(c):
+        try:
+            from NossiPack.EWCharacter import EWCharacter
+
+            char = EWCharacter()
+            char.load_from_md(*wikiload(c + "_character"))
+            body = render_template(
+                "endworldsheet.html",
+                character=char.Data,
                 userconf=User(session.get("user", "")).configs(),
             )
             return fill_infolets(body)

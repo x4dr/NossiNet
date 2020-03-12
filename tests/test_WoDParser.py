@@ -86,6 +86,10 @@ class TestWoDParser(TestCase):
         a = ["d", "4", "3", "9", "+", "1", "g", "1", "-1"]
         self.assertEqual(Node.calc(a), "d 17 g 0")
 
+    def test_param(self):
+        a = "&param hit& (5d hit g) - 4 =  1"
+        self.assertEqual(self.p.do_roll(a).result, 1)
+
     def test_looptriggers(self):
         r = self.p.do_roll("&loop 3 2&; 0 d1g")
         self.assertFalse(r is None)

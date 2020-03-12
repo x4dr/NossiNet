@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="none">
 <head>
     {% block title -%}
         <title> {%- if session.light -%}
@@ -62,7 +62,7 @@
 <body>
 <div id="page_complete" class=page>
     {% block pagetitle %}
-        <h1><a href={{ url_for('show_entries') }}>NOSFERATU NETWORK</a></h1>
+        <h1><a href={{ url_for('show_entries') }} >NOSFERATU NETWORK</a></h1>
     {% endblock %}
     {% block metanavcomplete %}
         <div class=metanav>
@@ -73,7 +73,7 @@
             {% else %}
                 {%- block metanav -%}
                 {%- endblock -%}
-                <a class=metanav href="{{ url_for('wiki_index') }}">WIKI</a>
+                <a class=metanav href="{{ url_for('wiki_index') }}">WIKI</a>  &nbsp
                 <a class=metanav href="https://www.google.com/maps/d/viewer?mid=1TH6vryHyVxv_xFjFJDXgXQegZO4"
                    secret="{{ url_for('berlinmap') }}">MAP</a>  &nbsp
                 <a class=metanav href="{{ url_for('charsheet') }}">SHEET</a>  &nbsp

@@ -22,24 +22,88 @@ from NossiPack.krypta import (
     is_int,
     connect_db,
 )
-from NossiSite.base import app, log
+from NossiSite.base import app as defaultapp, log
 
 wikipath = Path.home() / "wiki"
-
-
-def stream_template(template_name, **context):
-    app.update_template_context(context)
-    t = app.jinja_env.get_template(template_name)
-    rv = t.stream(context)
-    rv.enable_buffering(5)
-    return rv
-
-
 wikistamp = [0.0]
+wikitags = {}
+
+
+def register(app=None):
+    if app is None:
+        app = defaultapp
+
+    @app.template_filter("quoted")
+    def quoted(s):
+        quotedstring = re.findall("'([^']*)'", str(s))
+        if quotedstring:
+            return quotedstring[0]
+        return None
+
+    @app.template_filter("remove_leading_underscore")
+    def underscore_remove(s):
+        while s and s[0] == "_":
+            s = s[1:]
+        return s
+
+    @app.template_filter("markdown")
+    def markdownfilter(s):
+        if s is None:
+            return ""
+        if isinstance(s, str):
+            return Markup(markdown.markdown(s, extensions=["tables", "toc", "nl2br"]))
+        if isinstance(s, list):
+            next_try = "\n".join(s)
+            n = Markup(
+                markdown.markdown(next_try, extensions=["tables", "toc", "nl2br"])
+            )
+            return n.split("\n")
+        raise DescriptiveError("Templating error:" + str(s) + "does not belong")
+
+    @app.before_request
+    def before_request():
+        connect_db("before request")
+        if not getattr(app, "wikitags", None) or len(app.wikitags.keys()) == 0:
+            updatewikitags()
+
+    @app.teardown_request
+    def teardown_request(exception: Exception):
+        # close_db() currently disabled(letting the connection live as long as the worker)
+        if exception:
+            if exception.args and exception.args[0] == "REDIR":
+                return exception.args[1]
+            print("exception caught by teardown:", exception, exception.args)
+            traceback.print_exc()
+        return None
+
+    @app.context_processor
+    def gettoken():
+        gentoken()
+        return dict(token=session.get("print", None))
+
+    @app.errorhandler(Exception)
+    def internal_error(error: Exception):
+        if error.args and error.args[0] == "REDIR":
+            return error.args[1]
+        if type(error) is DescriptiveError:
+            flash(error.args[0])
+            log.exception("Handled Descriptive Error")
+            if request.url.endswith("/raw"):
+                return error.args[0]
+        if app.testing:
+            raise error
+        flash("internal error. sorry", category="error")
+        log.exception("Unhandled internal error")
+        return render_template("show_entries.html")
+
+    @app.errorhandler(404)
+    def page_not_found(e):
+        if e:
+            print("404:", request.url)
+        return render_template("404.html"), 404
 
 
 def wikindex() -> Tuple[List[Path], Dict]:
-    wikitags = app.wikitags
     mds = []
     for p in wikipath.glob("**/*.md"):
         mds.append(p.relative_to(wikipath))
@@ -51,7 +115,7 @@ def wikisave(page, author, title, tags, body):
     with (wikipath / (page + ".md")).open("w+") as f:
         f.write("title: " + title + "  \n")
         f.write("tags: " + " ".join(tags) + "  \n")
-        f.write(body.replace("\n", ""))
+        f.write(body.replace("\r", ""))
     with (wikipath / "control").open("a+") as h:
         h.write(page + " edited by " + author + "\n")
     with (wikipath / "control").open("r") as f:
@@ -149,52 +213,6 @@ def generate_token():
     return session["print"]  # only one token per session for now.
 
 
-@app.template_filter("quoted")
-def quoted(s):
-    quotedstring = re.findall("'([^']*)'", str(s))
-    if quotedstring:
-        return quotedstring[0]
-    return None
-
-
-@app.template_filter("remove_leading_underscore")
-def underscore_remove(s):
-    while s and s[0] == "_":
-        s = s[1:]
-    return s
-
-
-@app.template_filter("markdown")
-def markdownfilter(s):
-    if s is None:
-        return ""
-    if isinstance(s, str):
-        return Markup(markdown.markdown(s, extensions=["tables", "toc", "nl2br"]))
-    if isinstance(s, list):
-        next_try = "\n".join(s)
-        n = Markup(markdown.markdown(next_try, extensions=["tables", "toc", "nl2br"]))
-        return n.split("\n")
-    raise DescriptiveError("Templating error:" + str(s) + "does not belong")
-
-
-@app.before_request
-def before_request():
-    connect_db("before request")
-    if not getattr(app, "wikitags", None) or len(app.wikitags.keys()) == 0:
-        updatewikitags()
-
-
-@app.teardown_request
-def teardown_request(exception: Exception):
-    # close_db() currently disabled(letting the connection live as long as the worker)
-    if exception:
-        if exception.args and exception.args[0] == "REDIR":
-            return exception.args[1]
-        print("exception caught by teardown:", exception, exception.args)
-        traceback.print_exc()
-    return None
-
-
 def updatewikitags():
     print(
         "it has been "
@@ -202,16 +220,11 @@ def updatewikitags():
         + " seconds since the last wiki indexing"
     )
     wikistamp[0] = time.time()
-    app.wikitags = {}
+    for k in wikitags.keys():
+        wikitags[k] = ""
     for m in wikindex()[0]:
-        app.wikitags[m] = wikiload(m)[1]
+        wikitags[m] = wikiload(m)[1]
     print("index took: " + str(1000 * (time.time() - wikistamp[0])) + " milliseconds")
-
-
-@app.context_processor
-def gettoken():
-    gentoken()
-    return dict(token=session.get("print", None))
 
 
 def gentoken():
@@ -222,22 +235,6 @@ def checklogin():
     if not session.get("logged_in"):
         flash("You are not logged in!")
         raise Exception("REDIR", redirect(url_for("login", r=request.path[1:])))
-
-
-@app.errorhandler(Exception)
-def internal_error(error: Exception):
-    if error.args and error.args[0] == "REDIR":
-        return error.args[1]
-    if type(error) is DescriptiveError:
-        flash(error.args[0])
-        log.exception("Handled Descriptive Error")
-        if request.url.endswith("/raw"):
-            return error.args[0]
-    if app.testing:
-        raise error
-    flash("internal error. sorry", category="error")
-    log.exception("Unhandled internal error")
-    return render_template("show_entries.html")
 
 
 def weaponadd(weapon_damage_array, b, ind=0):
@@ -442,10 +439,3 @@ def checktoken():
         session["retrieve"] = request.form
         return False
     return True
-
-
-@app.errorhandler(404)
-def page_not_found(e):
-    if e:
-        print("404:", request.url)
-    return render_template("404.html"), 404

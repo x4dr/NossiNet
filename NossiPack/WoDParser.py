@@ -245,8 +245,8 @@ class WoDParser:
 
     def resolveroll(self, roll: Union[Node, str], depth) -> Node:
         if isinstance(roll, str):
+            roll = self.pretrigger(roll)
             roll = Node(roll, depth)
-            self.pretrigger(roll)
             res = self.resolveroll(roll, depth + 1)
             return res
         self.resolvedefines(roll)
@@ -419,8 +419,8 @@ class WoDParser:
             pos += message[pos:].find(trigger) + len(trigger)  # processed part
         return triggers
 
-    def pretrigger(self, roll: Node) -> None:
-        triggers = self.gettriggers(roll.code)
+    def pretrigger(self, roll: str) -> str:
+        triggers = self.gettriggers(roll)
         triggerreplace = []
         for trigger in triggers:
             try:
@@ -432,12 +432,11 @@ class WoDParser:
             )
             param = self.triggers.pop("param", [])  # if there is anything
             for p in reversed(param):  # right to left
-                roll.code, val = roll.code.rsplit(" ", 1)  # take rightmost thing
+                roll, val = roll.rsplit(" ", 1)  # take rightmost thing
                 self.defines[p] = val  # and write it into the defines
         for kv in triggerreplace:
-            roll.code = roll.code.replace(kv[0], kv[1], 1)
-        if triggerreplace:
-            roll.rebuild()
+            roll = roll.replace(kv[0], kv[1], 1)
+        return roll
 
     def resolvedefines(self, roll: Node) -> None:
         while roll.depth < 1000:
@@ -445,8 +444,11 @@ class WoDParser:
                 if k in roll.code:
                     roll.dependent[k] = []
                     for _ in range(roll.code.count(k)):
-                        roll.dependent[k].append(Node(v, roll.depth + 1))
-                        self.resolvedefines(roll.dependent[k][-1])
+                        new = Node(v, roll.depth + 1)
+                        self.resolvedefines(new)
+                        new.do = False
+                        roll.dependent[k].append(new)
+
             else:
                 break
 

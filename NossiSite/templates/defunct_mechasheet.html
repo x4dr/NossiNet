@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+{% macro lay(dat, depth) %}
+
+    <table class="comicGreen{{ depth }} nestable" style="border-collapse: collapse">
+        {% if dat.header %}
+            <thead>
+            {{ heads(dat.header, depth) }}
+            </thead>
+        {% endif %}
+
+        <tbody>
+        {% if dat.body %}
+            {{ lines(dat.body, depth) }}
+        {% endif %}
+        </tbody>
+    </table>
+{% endmacro %}
+{% macro heads(content, depth) %}
+    {% if content.direct  %}
+        <td>{{ content.direct }}</td>
+    {% elif content.body or content.header %}
+        <td>{{ lay(content, depth+1)}}</td>
+    {% else %}
+        {% for line in content.lines %}
+            <tr>
+                {% for element in line %}
+                    <th>{{ element }}</th>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    {% endif %}
+
+{% endmacro %}
+{% macro lines(content, depth) %}
+    {% if content.direct  %}
+        <td>{{ content.direct }}</td>
+    {% elif content.body %}
+        <td>{{ lay(content, depth+1)}}</td>
+    {% else %}
+        {% for line in content.lines %}
+            <tr>
+                {% for element in line %}
+                    {% if element is mapping %}
+                        {{ lines(element, depth) }}
+                    {% else %}
+                        <td class="tg-0lax">{{ element }}</td>
+                    {% endif %}
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    {% endif %}
+{% endmacro %}
+
+<style type="text/css">
+    @page {
+        size: 21cm 29.7cm;
+        margin: 6mm 8mm 6mm 8mm;
+    }
+
+    table.comicGreen3 {
+        font-family: cursive, sans-serif;
+        border: 0;
+        background-color: #90909E;
+        width: 100%;
+        text-align: center;
+        border-collapse: collapse;
+
+    }
+     table.comicGreen3 th td {
+
+        padding: 5px 2px 2px;
+    }
+    table.comicGreen3 tbody td {
+        font-size: 19px;
+        font-weight: bold;
+        color: #4F3849;
+    }
+    table.comicGreen3 tr:nth-child(even) {
+        background: #40F0BC;
+    }
+    table.comicGreen2 td
+    {
+        margin: 0;
+        padding: 0;
+    }
+
+    table.comicGreen3 table.comicGreen3 td,
+    table.comicGreen3 table.comicGreen3 th {
+        border-top: 1em solid black;
+        border-right: 1ex solid black;
+        border-bottom: 0;
+        border-left: 0;
+    }
+
+</style>
+<body style="background-color: black">
+<div style="width: 210mm">
+    {{ lay(struct,0) }}
+    </div>
+</body>

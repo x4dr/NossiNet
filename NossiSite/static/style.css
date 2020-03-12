@@ -38,18 +38,27 @@ hr {
 
 .leet {
     background-color: black;
-    color: #00f700;
-    border: 1px solid #00f700;
+    color: #00d700;
+    border: 1px solid #00d700;
     margin: 10px;
 }
 
 .leeet {
-    background-color: #101a10;
+    background-color: #0a120a;
+    font-weight: bold;
+    color: #00e700;
+    border: 1px solid #00e700;
+    margin: 1px;
+}
+
+.leeeet {
+    background-color: #0a1012;
     font-weight: bold;
     color: #00f700;
     border: 1px solid #00f700;
     margin: 1px;
 }
+
 
 .dividedtable {
     border-collapse: collapse;

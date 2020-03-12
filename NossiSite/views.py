@@ -597,14 +597,6 @@ def register(app=None):
         site = render_template("userinfo.html", user=u, msgs=msgs, configs=u.configs())
         return site
 
-    @app.route("/test/<x>")
-    def test_migrate(x):
-        ul = Userlist()
-        for c in x.split(" "):
-            ul.loaduserbyname(c)
-        ul.saveuserlist()
-        return {"result": "ok"}
-
     @app.route("/impressum/")
     def impressum():
         return render_template("Impressum.html")

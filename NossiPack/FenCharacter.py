@@ -106,7 +106,7 @@ class FenCharacter:
                             1
                             if line.startswith("|")
                             else 0 : -1
-                            if line.startswith("|")
+                            if line.endswith("|")
                             else len(line)
                         ].split("|")
                     )
@@ -150,7 +150,7 @@ class FenCharacter:
         self.Tags = tags
 
         sheetparts = re.split(r"\n#(?!#)", "\n" + body, re.MULTILINE)
-        if len("sheetparts") == 0:
+        if len(sheetparts) == 0:
             sheetparts = [body]
         for s in sheetparts:
             firstline = s.find("\n")
@@ -165,12 +165,24 @@ class FenCharacter:
                 else:
                     parsed_parts = self.parse_part(s, False)
                     self.Meta[partname] = parsed_parts
-        for catv in self.Categories.values():
-            for secv in list(catv.values()):
-                for itemn, itemv in list(secv.items()):
-                    if itemn == "_lines":
-                        secv[""] = "\n".join(itemv)
-                        del secv["_lines"]
+        for catname, catv in list(self.Categories.items()):
+            secv = []
+            try:
+                for secv in list(catv.values()):
+                    for itemn, itemv in list(secv.items()):
+                        if itemn == "_lines":
+                            secv[""] = "\n".join(itemv)
+                            del secv["_lines"]
+            except AttributeError:
+                d = OrderedDict()
+                for s in secv:
+                    s = s.strip()
+                    if " " in s:
+                        k, v = s.rsplit(" ", 1)
+                    else:
+                        k, v = s, {}
+                    d[k] = v
+                self.Categories[catname] = d
         return self.Categories
 
     def validate_char(self,):
