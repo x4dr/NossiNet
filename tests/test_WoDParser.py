@@ -175,6 +175,11 @@ class TestWoDParser(TestCase):
         r = self.p.make_roll("99,99@20s!!")
         self.assertIn(r.result, range(2, 21))
 
+    def test_rerolls(self):
+        r = self.p.make_roll("1,1@5R95s")
+        print(r.roll_v())
+        self.assertGreater(r.result, 3)
+
     def test_identityreturn(self):
         p = WoDParser({"return": "id"})
         r = p.do_roll("&loopsum 1 8&")

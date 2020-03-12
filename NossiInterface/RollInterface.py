@@ -23,11 +23,12 @@ def prepare(msg: str, author, defines, comment):
         which = msg.count("+")
         msgs = lastroll.get(author, [])
         msg = msgs[-min(which, len(msgs))]
+        print("repl", msg, msgs, which)
     else:
-        print(msg, comment)
-        lastroll[author] = lastroll.get(author, []) + [
-            msg + (("//" + comment) if comment else "")
-        ]
+        print(msg, comment, lastroll)
+        lastroll[author] = (
+            lastroll.get(author, []) + [msg + (("//" + comment) if comment else "")]
+        )[-10:]
     p = WoDParser(defines)
     return msg, p, errreport
 
@@ -142,6 +143,7 @@ async def timeout(func, arg, time_out=1):
 
 async def rollhandle(msg, comment, message: discord.Message, defines):
     author = message.author
+    comment = comment.strip()
     msg, p, errreport = prepare(msg, author, defines, comment)
     try:
         r = await timeout(p.do_roll, msg, 2)

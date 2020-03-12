@@ -230,9 +230,9 @@ class WoDDice:
         if self.max == 0:
             return log
         if not (self.name.endswith("sum") or self.name.endswith("=")):
-            if not log or self.returnfun == "threshhold":
+            if not self.log or self.returnfun == "threshhold":
                 log = ", ".join(str(x) for x in self.r)
-            elif log:
+            elif self.log:
                 log = [x for x in self.log.split("\n") if x][-1].strip()
         res = self.result
         if res is not None:

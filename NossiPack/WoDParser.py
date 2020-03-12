@@ -190,6 +190,10 @@ class WoDParser:
             )
         if dice.get("sides", None) is not None:
             info["sides"] = int(dice["sides"])
+        if dice.get("rerolls", None) is not None:
+            info["rerolls"] = int(dice["rerolls"])
+        if dice.get("sort", None) is not None:
+            info["sort"] = dice["sort"]
 
         if dice.get("selectors", None):
             setreturn(info, dice["selectors"] + "@")
