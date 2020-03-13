@@ -107,7 +107,7 @@ async def replacedefines(msg, message, persist):
     while oldmsg != msg:
         oldmsg = msg
         counter += 1
-        if counter > 1000:
+        if counter > 100:
             await send(
                 "... i think i have some issues with the defines.\n" + msg[:1000]
             )
@@ -115,7 +115,7 @@ async def replacedefines(msg, message, persist):
         for i in range(len(sections)):
             if "&" not in sections[i]:
                 for k, v in persist[author]["defines"].items():
-                    pat = r"\b" + re.escape(k) + r"\b"
+                    pat = r"\s" + re.escape(k) + r"\s"
                     sections[i] = re.sub(pat, v, sections[i])
         msg = "".join(sections)
     return msg
