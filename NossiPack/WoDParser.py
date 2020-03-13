@@ -445,7 +445,7 @@ class WoDParser:
     def resolvedefines(self, roll: Node) -> None:
         while roll.depth < 1000:
             for k, v in self.defines.items():
-                if k in roll.code:
+                if re.match(r"(^|\s)" + re.escape(k) + r"(\s|$)", roll.code):
                     roll.dependent[k] = []
                     for _ in range(roll.code.count(k)):
                         new = Node(v, roll.depth + 1)

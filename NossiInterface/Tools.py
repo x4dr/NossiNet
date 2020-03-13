@@ -115,7 +115,7 @@ async def replacedefines(msg, message, persist):
         for i in range(len(sections)):
             if "&" not in sections[i]:
                 for k, v in persist[author]["defines"].items():
-                    pat = r"\s" + re.escape(k) + r"\s"
+                    pat = r"(^|\s)" + re.escape(k) + r"(\s|$)"
                     sections[i] = re.sub(pat, v, sections[i])
         msg = "".join(sections)
     return msg
