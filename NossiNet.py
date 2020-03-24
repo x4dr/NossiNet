@@ -14,7 +14,6 @@ helpers.register(app)
 if __name__ == "__main__":
     print("Nosferatu net being run directly, DO NOT USE IN PRODUCTION")
     test = False
-
     try:
         port = int(sys.argv[1])
     except:
