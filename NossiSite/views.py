@@ -9,13 +9,12 @@ from werkzeug.security import gen_salt, generate_password_hash
 from NossiPack.User import Userlist, User, Config
 from NossiPack.VampireCharacter import VampireCharacter
 from NossiPack.krypta import DescriptiveError, connect_db
-from NossiSite.base import app as defaultapp
+from NossiSite.base import app as defaultapp, log
 from NossiSite.helpers import (
     checktoken,
     wikiload,
     wikisave,
     checklogin,
-    log,
     update_discord_bindings,
 )
 

@@ -53,6 +53,7 @@ class Node:
             ["~", "="],
             ["h", "l", "g", "d", "e", "f"],
         )
+
         # ** and // are with space since they will be escaped with spaces first
 
         def b(m):
@@ -151,8 +152,8 @@ class WoDParser:
         r"(?# )\s*(?P<amount>-?[0-9]{1,5})(\.[0-9]+)?\s*"  # amount of dice -99999--99999,
         # any number after the decimal point will be ignored
         r"(?# )(d *(?P<sides>[0-9]{1,5}))? *"  # sides of dice 0-99999
-        r"(?# )(?:[rR]\s*(?P<rerolls>-?\d+))?"  # reroll highest/lowest dice
-        r"(?#   )(?P<sort>s)?"  # sorting rolls
+        r"(?# )(?:[rR]\s*(?P<rerolls>-?\s*\d+))?"  # reroll highest/lowest dice
+        r"(?#   )\s*(?P<sort>s)?"  # sorting rolls
         r"(?# )\s*(?P<operation>"  # what is happening with the roll
         r"(?#   )(?P<against>"  # rolling against a value for successes
         r"(?#     )(?P<onebehaviour>[ef]) *"  # e is without subtracting 1,
@@ -191,7 +192,7 @@ class WoDParser:
         if dice.get("sides", None) is not None:
             info["sides"] = int(dice["sides"])
         if dice.get("rerolls", None) is not None:
-            info["rerolls"] = int(dice["rerolls"])
+            info["rerolls"] = int(dice["rerolls"].replace(" ", ""))
         if dice.get("sort", None) is not None:
             info["sort"] = dice["sort"]
 
@@ -230,7 +231,7 @@ class WoDParser:
                 roll = "(" + ")(".join(roll.split(";")) + ")"
 
             roll = roll.strip()
-        roll = self.resolveroll(roll, depth + 1)
+        roll = self.resolveroll(roll, depth)
         if roll.code:
             self.rolllogs.append(self.make_roll(roll.code))
         else:
@@ -251,9 +252,10 @@ class WoDParser:
         if isinstance(roll, str):
             roll = self.pretrigger(roll)
             roll = Node(roll, depth)
-            res = self.resolveroll(roll, depth + 1)
+            res = self.resolveroll(roll, depth)
             return res
-        self.resolvedefines(roll)
+        if depth == 0:  # everything else should be resolved during creation
+            self.resolvedefines(roll)
         for k, vs in roll.dependent.items():
             for v in vs:
                 if v is None:
@@ -442,14 +444,17 @@ class WoDParser:
             roll = roll.replace(kv[0], kv[1], 1)
         return roll
 
-    def resolvedefines(self, roll: Node) -> None:
+    def resolvedefines(self, roll: Node, used=None) -> None:
+        used = used or []
         while roll.depth < 1000:
             for k, v in self.defines.items():
-                if re.match(r"(^|\s)" + re.escape(k) + r"(\s|$)", roll.code):
+                if k in used:
+                    continue
+                if re.match(r".*\b" + re.escape(k) + r"\b", roll.code):
                     roll.dependent[k] = []
                     for _ in range(roll.code.count(k)):
                         new = Node(v, roll.depth + 1)
-                        self.resolvedefines(new)
+                        self.resolvedefines(new, used + [k])
                         new.do = False
                         roll.dependent[k].append(new)
 

@@ -3,12 +3,10 @@ import os
 import random
 import string
 
-import eventlet
 from flask import Flask
 from flask_socketio import SocketIO
 
 async_mode = "eventlet"
-eventlet.monkey_patch()
 
 app = Flask(__name__)
 app.config["TRAVIS"] = True

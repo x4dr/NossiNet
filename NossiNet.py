@@ -1,6 +1,7 @@
 import sys
 
-from NossiSite import app, socketio, views, chat, extra, wiki, webhook, helpers
+from NossiSite import views, chat, wiki, extra, webhook, helpers
+from NossiSite.base import app, socketio
 
 # register the endpoints
 views.register(app)

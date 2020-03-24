@@ -9,7 +9,7 @@ from markupsafe import Markup
 from NossiPack.FenCharacter import FenCharacter
 from NossiPack.User import User, Userlist
 from NossiPack.krypta import DescriptiveError
-from NossiSite.base import app as defaultapp
+from NossiSite.base import app as defaultapp, log
 from NossiSite.helpers import (
     wikindex,
     wikiload,
@@ -17,7 +17,6 @@ from NossiSite.helpers import (
     magicalweapontable,
     weapontable,
     traverse_md,
-    log,
 )
 
 

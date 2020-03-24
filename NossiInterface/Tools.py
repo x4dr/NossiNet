@@ -1,6 +1,10 @@
 import re
 
+from NossiPack.FenCharacter import FenCharacter
+from NossiPack.User import User
 from NossiPack.WoDParser import fullparenthesis
+from NossiPack.krypta import is_int
+from NossiSite.helpers import wikiload
 
 
 def discordname(user):
@@ -115,7 +119,7 @@ async def replacedefines(msg, message, persist):
         for i in range(len(sections)):
             if "&" not in sections[i]:
                 for k, v in persist[author]["defines"].items():
-                    pat = r"(^|\s)" + re.escape(k) + r"(\s|$)"
+                    pat = r"(^|\b)" + re.escape(k) + r"(\b|$)"
                     sections[i] = re.sub(pat, v, sections[i])
         msg = "".join(sections)
     return msg
@@ -147,6 +151,47 @@ async def handle_defines(msg, message, persist):
         await define(msg, message, persist)
     elif msg.startswith("undef "):
         await undefine(msg, message, persist)
-    else:
-        return await replacedefines(msg, message, persist)
-    return None
+    # else:
+    # defines should now be totally handled inside wodparser again
+    # return await replacedefines(msg, message, persist)
+
+
+def dict_path(path, d):
+    res = []
+    for k, v in d.items():
+        if isinstance(v, dict):
+            res += dict_path(path + "." + k, v)
+        else:
+            res.append((path + "." + k, v))
+    return res
+
+
+def load_fen_char(user):
+    u = User(user)
+    d = u.config("discord", "not set")
+    c = u.config("character_sheet", "")
+    if re.match(r".*#\d{4}$", d):
+        char = FenCharacter()
+        char.load_from_md(*wikiload(c + "_character"))
+        definitions = {}
+        for catname, cat in char.Categories.items():
+            for secname, sec in cat.items():
+                for statname, stat in sec.items():
+                    if statname.strip() and is_int(stat):
+                        if definitions.get(statname, None) is None:
+                            definitions[statname.strip()] = ".".join(
+                                [catname.strip(), secname.strip(), statname.strip()]
+                            )
+                            if statname.strip().lower() != statname.strip():
+                                definitions[statname.strip().lower()] = statname.strip()
+                            definitions[
+                                ".".join(
+                                    [catname.strip(), secname.strip(), statname.strip()]
+                                )
+                            ] = statname.strip()
+                        definitions[
+                            ".".join(
+                                [catname.strip(), secname.strip(), statname.strip()]
+                            )
+                        ] = stat.strip()
+        return definitions

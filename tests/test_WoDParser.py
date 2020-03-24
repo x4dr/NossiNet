@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from NossiPack.WoDParser import WoDParser, Node, fullparenthesis
+from NossiPack.WoDParser import WoDParser, Node, fullparenthesis, DiceCodeError
 from NossiPack.krypta import DescriptiveError
 
 
@@ -82,6 +82,9 @@ class TestWoDParser(TestCase):
     def test_nested(self):
         self.p.do_roll("5d(5d(5d10))")
 
+    def test_negative_sorted_reroll(self):
+        self.p.do_roll("5d10r-2s")
+
     def test_parseadd(self):
         a = ["d", "4", "3", "9", "+", "1", "g", "1", "-1"]
         self.assertEqual(Node.calc(a), "d 17 g 0")
@@ -128,6 +131,16 @@ class TestWoDParser(TestCase):
         )
         r = p.resolveroll("a d1g", 0)
         self.assertEqual(r.code, "23 d 1 g")
+
+    def test_whitespacing(self):
+        p = WoDParser()
+        p.defines = {"b": "3", "a": "2"}  # no defaults
+        r = p.do_roll("a,b@5d10", 0)
+        self.assertIn(r.result, range(2, 20))
+
+    def test_recursion(self):
+        p = WoDParser({"a": "b.a", "b": "3"})
+        self.assertRaises(DiceCodeError, p.do_roll, "a,b@5d10", 0)
 
     def test_explosion(self):
         for _ in range(1000):

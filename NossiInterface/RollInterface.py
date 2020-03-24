@@ -3,6 +3,7 @@ from concurrent.futures.thread import ThreadPoolExecutor
 
 import discord
 
+from NossiInterface.Tools import discordname, load_fen_char
 from NossiPack.WoDDice import WoDDice
 from NossiPack.WoDParser import WoDParser, DiceCodeError
 from NossiPack.krypta import terminate_thread
@@ -13,12 +14,11 @@ numemoji_2 = ("❗", "‼️", "\U0001F386")
 lastroll = {}
 
 
-def prepare(msg: str, author, defines, comment):
+def prepare(msg: str, author, persist, comment):
     errreport = msg.startswith("?")
     if errreport:
         msg = msg[1:]
     msg = msg.strip()
-
     if all(x == "+" for x in msg):
         which = msg.count("+")
         msgs = lastroll.get(author, [])
@@ -29,6 +29,15 @@ def prepare(msg: str, author, defines, comment):
         lastroll[author] = (
             lastroll.get(author, []) + [msg + (("//" + comment) if comment else "")]
         )[-10:]
+
+    pers = persist.get(discordname(author), {"defines": {}})
+    defines = {}
+    whoami = pers.get("NossiAccount", None)
+    if whoami:
+        defines = load_fen_char(
+            whoami
+        )  # potentially high performance impact in need of caching
+    defines.update(defines=pers["defines"])
     p = WoDParser(defines)
     return msg, p, errreport
 
@@ -141,10 +150,10 @@ async def timeout(func, arg, time_out=1):
         raise
 
 
-async def rollhandle(msg, comment, message: discord.Message, defines):
+async def rollhandle(msg, comment, message: discord.Message, persist):
     author = message.author
     comment = comment.strip()
-    msg, p, errreport = prepare(msg, author, defines, comment)
+    msg, p, errreport = prepare(msg, author, persist, comment)
     try:
         r = await timeout(p.do_roll, msg, 2)
         await process_roll(r, p, msg, comment, message.channel.send, author)

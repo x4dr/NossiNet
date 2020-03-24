@@ -7,7 +7,6 @@ import shelve
 import string
 import time
 import traceback
-from typing import Callable
 from urllib.parse import quote
 
 import discord
@@ -18,8 +17,9 @@ from Data import getnossihelp
 from NossiInterface.RollInterface import rollhandle
 from NossiInterface.Tools import discordname, split_send, handle_defines, fakemessage
 from NossiPack.fengraph import chances
-from NossiPack.krypta import DescriptiveError, read_nonblocking
+from NossiPack.krypta import DescriptiveError
 
+client = discord.Client()
 bufferfile = "NossiBotBuffer"
 shutdownflag = pathlib.Path("shutdown_nossibot")
 if shutdownflag.exists():
@@ -45,20 +45,7 @@ now = datetime.datetime.now
 with open(os.path.expanduser("~/token.discord"), "r") as tokenfile:
     TOKEN = tokenfile.read().strip()
 
-description = """NossiBot in Python"""
-try:
-    client = discord.Client()
-except RuntimeError:
-    client = discord.Client
 
-    def event(coro: Callable):
-        """mocking the event decorator for the case that we do static checking"""
-        print(
-            f"currently not in async mode, just for static checking "
-            + getattr(coro, "__name__", "Unknown")
-        )
-
-    client.event = event
 repeats = {}
 active_channels = []
 
@@ -275,8 +262,8 @@ async def tick():
             await reminders()
         except Exception as e:
             print("Exception reminding:", e, e.args, traceback.format_exc())
-        inp = read_nonblocking(bufferfile)
-        if inp:
+        inp = ""  # read_nonblocking(bufferfile)
+        if inp:  # disabled for now
             await handle_inp(inp)
         try:
             if persist["mutated"]:
@@ -406,10 +393,7 @@ async def on_message(message: discord.Message):
         await oraclehandle(msg, comment, send, message.author)
     else:
         await rollhandle(
-            msg,
-            comment,
-            message,
-            persist.get(discordname(message.author), {"defines": {}})["defines"],
+            msg, comment, message, persist,
         )
 
 

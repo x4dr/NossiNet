@@ -17,6 +17,7 @@ General behaviour:
         example: undef a
         result: a will no longer be replaced by anything
     def=? : will show all defined values
+    i am X: sets NosferatuNetwork account to X. Needs to be confirmed to discord account at https://nosferatu.vampir.es/user/X
     ? will try to give you a more detailed error message. after oracle for oracle help or first thing for rolls
     #remind prefix is currently not even working and WILL spam you to death with no way to stop it except muting if you use it
 Available commands:

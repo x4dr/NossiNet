@@ -50,6 +50,11 @@ def register(app=None):
     @app.route("/travis", methods=["POST"])
     def travis():
         logger = logging.getLogger(__name__)
+        fh = logging.FileHandler("nossilog.log", mode="a")
+        fh.setLevel(logging.DEBUG)
+        logger.addHandler(fh)
+        logging.basicConfig(format="%(asctime)s %(levelname)s:%(message)s")
+        logger.setLevel(logging.DEBUG)
 
         travis_config_urls = [
             "https://api.travis-ci.com/config",

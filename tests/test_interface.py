@@ -1,8 +1,12 @@
 import asyncio
-from unittest import TestCase
+from pathlib import Path
+from unittest import TestCase, mock
 from unittest.mock import Mock
 
-from NossiInterface.Tools import splitpara, replacedefines
+import Data
+from NossiInterface import Tools
+from NossiInterface.Tools import splitpara, replacedefines, load_fen_char
+from NossiPack.krypta import connect_db
 
 
 class TestInterface(TestCase):
@@ -38,3 +42,19 @@ class TestInterface(TestCase):
         test = asyncio.run(replacedefines(msg, self.message, self.persist))
         print(test)
         self.assertEqual(test, "c 4 & a & c 4")
+
+    @mock.patch.object(Data, "DATABASE", "loadchara.db")
+    @mock.patch.object(
+        Tools,
+        "wikiload",
+        lambda x: ("", [], "#Werte\n##TestWert\n###Attribut\nkey|valb\n---|---\na|3"),
+    )
+    def test_loadchara(self):
+        self.addCleanup(lambda x: Path(x).unlink(), Data.DATABASE)
+        c = connect_db("Testing...")
+        c.execute('INSERT INTO users VALUES ("test","__",0,"",0)')
+        c.execute('INSERT INTO configs VALUES ("test","discord", "test#1234")')
+        c.execute('INSERT INTO configs VALUES ("test","character_sheet", "test")')
+        test = load_fen_char("test")
+
+        self.assertEqual(test[test["a"]], "3")
