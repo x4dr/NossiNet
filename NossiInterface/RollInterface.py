@@ -63,12 +63,7 @@ def get_verbosity(verbose):
 
 def construct_multiroll_reply(p: WoDParser, verbose):
     v = get_verbosity(verbose)
-    return (
-        "\n".join(
-            ((x.name + ": ") if verbose else "") + v(x) for x in p.rolllogs if v(x)
-        )
-        + "\n"
-    )
+    return "\n".join(x.name + ": " + v(x) for x in p.rolllogs if v(x)) + "\n"
 
 
 def construct_shortened_multiroll_reply(p: WoDParser, verbose):
