@@ -18,7 +18,7 @@ General behaviour:
         result: a will no longer be replaced by anything
     def=? : will show all defined values
     i am X: sets NosferatuNetwork account to X. Needs to be confirmed to discord account at https://nosferatu.vampir.es/user/X
-    ? will try to give you a more detailed error message. after oracle for oracle help or first thing for rolls
+    ? will try to give you a more detailed error message. after oracle for oracle help or first thing for rolls (also always reloads character sheet values)
     #remind prefix is currently not even working and WILL spam you to death with no way to stop it except muting if you use it
 Available commands:
 NossiBot : prefix for the most meta of things, assumed in DMs
@@ -46,7 +46,7 @@ Triggers:
 Triggers are pieces of the dicecode that have effects which are not strictly dicerolling. They are ignored by replacements. As of writing, the established triggers are:
 values [k:v;[k:v;...]]: sets the ; separated key value pairs as non-saved defines for this roll
 param [a [b ...]]: space separated parameters grab the space separated values from the right edge of the roll (param a b c [...] 1 2 would be a=1, b=2)
-if a then b else c done: evaluates a as a roll, which if it is > 0, replaces itself with a, else it replaces itself with b.
+if a then b else c done: evaluates a as a roll, which if it is > 0, replaces itself with a, else it replaces itself with b. within a / b, $ is replaced with the result of the if roll
 verbose [x]: if x is empty or anything not containing "off" verbose is set, increasing verbosity 
 max [x]: the default value of 50 can be raised up to 500, it limits how often loops are run 
 limitbreak : if you are an admin this ups the loop limit. if not, it sets the rightsviolation trigger ;)
