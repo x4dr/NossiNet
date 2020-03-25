@@ -115,20 +115,28 @@ class TestWoDParser(TestCase):
                 "sum": "d1g",
             }
         )
-        self.assertFalse(
-            -1
-            == p.do_roll(
+
+        self.assertIn(
+            p.do_roll(
                 "&param difficulty& "
-                "&values hit:(shoot difficulty)&  "
-                "&if hit then gundamage hit -1 e6 else 0 done& "
-                "sum "
-            ).result
+                "&values hit:shoot difficulty& "
+                "&if hit then gundamage $ -1 e6 else 0 done& "
+                "f6"
+            ).result,
+            range(0, 11),
+        )
+
+    def test_ifthen(self):
+        p = WoDParser()
+        r = p.do_roll("&param difficulty& &if 3 4 f6 then 4 $ -1 e6 else 0 done& f6")
+        r.r = [10 for _ in r.r]
+        self.assertIn(
+            r.result, range(0, 11),
         )
 
     def test_resolvedefine(self):
-        p = WoDParser(
-            {"a": "b c D", "b": "e f", "c": "3", "D": "1", "e": "9", "f": "10"}
-        )
+        p = WoDParser()
+        p.defines = {"a": "b c D", "b": "e f", "c": "3", "D": "1", "e": "9", "f": "10"}
         r = p.resolveroll("a d1g", 0)
         self.assertEqual(r.code, "23 d 1 g")
 

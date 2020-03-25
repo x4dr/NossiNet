@@ -151,6 +151,7 @@ async def handle_defines(msg, message, persist):
         await define(msg, message, persist)
     elif msg.startswith("undef "):
         await undefine(msg, message, persist)
+    return msg
     # else:
     # defines should now be totally handled inside wodparser again
     # return await replacedefines(msg, message, persist)

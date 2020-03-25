@@ -250,11 +250,13 @@ class WoDParser:
 
     def resolveroll(self, roll: Union[Node, str], depth) -> Node:
         if isinstance(roll, str):
-            roll = self.pretrigger(roll)
+            roll, _ = self.pretrigger(roll)
             roll = Node(roll, depth)
             res = self.resolveroll(roll, depth)
             return res
-        if depth == 0:  # everything else should be resolved during creation
+        roll.code, change = self.pretrigger(roll.code)
+        if change or depth < 1:
+            roll.rebuild()
             self.resolvedefines(roll)
         for k, vs in roll.dependent.items():
             for v in vs:
@@ -404,9 +406,10 @@ class WoDParser:
             ifbranch = fullparenthesis(triggerbody, opening="", closing="then")
             thenbranch = fullparenthesis(triggerbody, opening="then", closing="else")
             elsebranch = fullparenthesis(triggerbody, opening="else", closing="done")
-            if (self.do_roll(ifbranch).result or 0) > 0:
-                return thenbranch
-            return elsebranch
+            ifroll = self.do_roll(ifbranch)
+            if (ifroll.result or 0) > 0:
+                return thenbranch.replace("$", str(ifroll.result))
+            return elsebranch.replace("$", str(ifroll.result))
         raise DescriptiveError("unknown Trigger: " + triggername)
 
     @staticmethod
@@ -425,9 +428,10 @@ class WoDParser:
             pos += message[pos:].find(trigger) + len(trigger)  # processed part
         return triggers
 
-    def pretrigger(self, roll: str) -> str:
+    def pretrigger(self, roll: str) -> (str, bool):
         triggers = self.gettriggers(roll)
         triggerreplace = []
+        change = False
         for trigger in triggers:
             try:
                 triggername, triggerbody = trigger.strip("& ").split(" ", 1)
@@ -438,11 +442,13 @@ class WoDParser:
             )
             param = self.triggers.pop("param", [])  # if there is anything
             for p in reversed(param):  # right to left
+                change = True
                 roll, val = roll.rsplit(" ", 1)  # take rightmost thing
                 self.defines[p] = val  # and write it into the defines
         for kv in triggerreplace:
+            change = True
             roll = roll.replace(kv[0], kv[1], 1)
-        return roll
+        return roll, change
 
     def resolvedefines(self, roll: Node, used=None) -> None:
         used = used or []

@@ -37,7 +37,7 @@ def prepare(msg: str, author, persist, comment):
         defines = load_fen_char(
             whoami
         )  # potentially high performance impact in need of caching
-    defines.update(defines=pers["defines"])
+    defines.update(pers["defines"])
     p = WoDParser(defines)
     return msg, p, errreport
 
