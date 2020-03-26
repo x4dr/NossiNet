@@ -33,56 +33,8 @@ def register(app=None):
             tags=r[1],
         )
 
-    @app.route("/test")
-    def testsheet():
-
-        charadescription = {"direct": "mock chara"}
-        physheader = {"lines": [["Body", "Agility", "Dexterity"]]}
-        mentheader = {"lines": [["Perception", "Mind", "Knowledge"]]}
-        socheader = {"lines": [["Resolve", "Impression", "Sympathy"]]}
-        abiheader = {"lines": [["Competence", "Insight", "Theory"]]}
-        spiheader = {"lines": [["Focus", "Intuition", "Discipline"]]}
-        skilz = [["Skill" + str(x), "Wert" + str(x)] for x in range(16)]
-        mock_columns = [
-            {"body": {"lines": [[*skilz[x]] for x in range(0, len(skilz), 2)]}},
-            {"body": {"lines": [[*skilz[x]] for x in range(1, len(skilz) + 1, 2)]}},
-        ]
-        physicalblock = {
-            "header": {"header": physheader},
-            "body": {"body": {"lines": [mock_columns]}},
-        }
-        mentalblock = {
-            "header": {"header": mentheader},
-            "body": {"body": {"lines": [mock_columns]}},
-        }
-        socblock = {
-            "header": {"header": socheader},
-            "body": {"body": {"lines": [mock_columns]}},
-        }
-        abiblock = {
-            "header": {"header": abiheader},
-            "body": {"body": {"lines": [mock_columns]}},
-        }
-        spiblock = {
-            "header": {"header": spiheader},
-            "body": {"body": {"lines": [mock_columns]}},
-        }
-        a = {
-            "header": charadescription,
-            "body": {
-                "body": {  # so that the header is over all
-                    "lines": [
-                        [physicalblock, mentalblock],
-                        [socblock, abiblock],
-                        [spiblock, "Inventory"],
-                    ]
-                }
-            },
-        }
-
-        return render_template("mechasheet.html", struct=a, lstrip_blocks=True)
-
     @app.route("/wiki", methods=["GET", "POST"])
+    @app.route("/wiki/", methods=["GET", "POST"])
     @app.route("/wiki/<path:page>", methods=["GET", "POST"])
     def wikipage(page=None):
         raw = request.url.endswith("/raw")

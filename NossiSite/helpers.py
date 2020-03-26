@@ -223,7 +223,7 @@ def updatewikitags():
     for k in wikitags.keys():
         wikitags[k] = ""
     for m in wikindex()[0]:
-        wikitags[m] = wikiload(m)[1]
+        wikitags[m.stem] = wikiload(m)[1]
     print("index took: " + str(1000 * (time.time() - wikistamp[0])) + " milliseconds")
 
 
