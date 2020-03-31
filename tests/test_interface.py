@@ -15,13 +15,10 @@ class TestInterface(TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        def lambdaraise(x):
-            raise Exception(x)
-
         message = Mock()
         message.author.name = "a"
         message.author.discriminator = "1"
-        message.author.send = lambdaraise
+        message.author.send = print()
         cls.message = message
         cls.persist = {"a#1": {"defines": {"a": "c b", "b": "4"}}}
 

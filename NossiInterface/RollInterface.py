@@ -130,7 +130,6 @@ async def process_roll(r: WoDDice, p: WoDParser, msg: str, comment, send, author
     try:
         await get_reply(author, comment, msg, send, reply, r)
     except Exception as e:
-
         raise Exception(
             f"Exception during sending: {str(e)}\n"
             f"length:{len(tosend)} \nfirst 100 {tosend[:100]}"
@@ -165,7 +164,6 @@ async def rollhandle(msg, comment, message: discord.Message, persist):
     except asyncio.exceptions.TimeoutError:
         await message.add_reaction("\U000023F0")
     except Exception as e:
-        print(type(e), e)
         ermsg = f"big oof during rolling {msg}" + "\n" + "\n".join(e.args)
         if errreport:  # query for error
             await author.send(ermsg[:2000])

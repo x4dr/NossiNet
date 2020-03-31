@@ -35,6 +35,11 @@ class MutationLoggingDict(dict):
 
 
 storagefile = "~/NossiBot.storage"
+
+nossiUrl = "http://127.0.0.1:5000/"
+if not (requests.get(nossiUrl).status_code == 200):
+    raise DescriptiveError("No running NosferatuNetwork found")
+
 persist = MutationLoggingDict()
 with shelve.open(os.path.expanduser(storagefile)) as shelvefile:
     for shelvekey in shelvefile.keys():
@@ -44,7 +49,6 @@ now = datetime.datetime.now
 
 with open(os.path.expanduser("~/token.discord"), "r") as tokenfile:
     TOKEN = tokenfile.read().strip()
-
 
 repeats = {}
 active_channels = []
@@ -210,13 +214,13 @@ async def oraclehandle(msg, comment, send, author):
 
 async def weaponhandle(msg, comment, send, author):
     n = requests.get(
-        "https://127.0.0.1/"
-        + "/".join(quote(x.strip()) for x in msg.split(":", 2))
-        + "/txt"
+        nossiUrl + "/".join(quote(x.strip()) for x in msg.split(":", 2)) + "/txt"
     )
     if n.status_code == 200:
         n = n.content.decode("utf-8")
-        await send(author.mention + comment + "```" + msg + "\n" + n + "```")
+        await send(
+            (author.mention + comment + "```" + msg + "\n" + n[:1950] + "```")[:1950]
+        )
     else:
         print("failed request:", n.status_code, n.url)
         return
@@ -224,7 +228,7 @@ async def weaponhandle(msg, comment, send, author):
 
 async def specifichandle(msg, comment, send, author):
     msg = msg[len("specific:") :].strip()
-    n = requests.get("https://127.0.0.1/specific/" + quote(msg.strip()) + "/raw")
+    n = requests.get(nossiUrl + "specific/" + quote(msg.strip()) + "/raw")
     if n.status_code == 200:
         n = n.content.decode("utf-8")
         await send(author.mention + comment + "```" + msg + "\n" + n[:1950] + "```")

@@ -134,7 +134,11 @@ def register(app=None):
                 return abort(400)
         json_data = json.loads(json_payload)
         logger.info(f"RECEIVED: {json_data}")
-        if json_data["state"] == "passed" and json_data["branch"] == "master":
+        if (
+            json_data["type"] == "push"
+            and json_data["state"] == "passed"
+            and json_data["branch"] == "master"
+        ):
             # skipcq: BAN-B607, BAN-B603
             subprocess.run(["nossirestart", json_data["commit"]])
             print("restart triggered by travis")

@@ -12,10 +12,7 @@ from NossiPack.krypta import DescriptiveError, connect_db
 from NossiSite.base import app as defaultapp, log
 from NossiSite.helpers import (
     checktoken,
-    wikiload,
-    wikisave,
     checklogin,
-    update_discord_bindings,
 )
 
 bleach.ALLOWED_TAGS += [
@@ -58,33 +55,31 @@ def register(app=None):
             dict(author=row[0], title=row[1], text=row[2], id=row[3], tags=row[4])
             for row in cur.fetchall()
         ]
+        entries = [
+            e
+            for e in entries
+            if any(
+                t in (e.get("tags", "") or "default").split(" ")
+                for t in session.get("tags", "default").split(" ")
+            )
+        ]
         for e in entries:
-            skip = True
-            if session.get("logged_in") and session.get("tags"):
-                for t in session.get("tags").split(" "):
-                    if t in e.get("tags", "").split(" "):
-                        skip = False
-            else:
-                if "default" in (e.get("tags") if e.get("tags") else "").split(" "):
-                    skip = False
-            if skip:
-                e["author"] = e.get("author").lower()  # "delete" nonmatching tags
             e["text"] = bleach.clean(e["text"].replace("\n", "<br>"))
             e["own"] = (session.get("logged_in")) and (
                 session.get("user") == e["author"]
             )
         entries = [
             e for e in entries if e.get("author", "none")[0].isupper()
-        ]  # dont send out lowercase authors (deleted)
-
+        ]  # dont send out lowercase authors ("deleted")
         return render_template("show_entries.html", entries=entries)
 
-    @app.route("/edit/<path:x>", methods=["GET", "POST"])
+    @app.route("/edit/post/<x>", methods=["GET", "POST"])
+    @app.route("/edit/all", methods=["GET", "POST"])
     def editentries(x=None):
         checklogin()
         db = connect_db("editentries")
         if request.method == "GET":
-            if x == "all":
+            if x is None:
                 cur = db.execute(
                     "SELECT author, title, text, id, tags "
                     "FROM entries WHERE UPPER(author) LIKE UPPER(?)",
@@ -96,7 +91,6 @@ def register(app=None):
                     )
                     for row in cur.fetchall()
                 ]
-
                 return render_template("show_entries.html", entries=entries, edit=True)
             try:
                 x = int(x)
@@ -115,48 +109,15 @@ def register(app=None):
                     session.get("user").upper() == entry["author"].upper()
                 ) or session.get("admin"):
                     return render_template("edit_entry.html", mode="blog", entry=entry)
-                flash("not authorized to edit id" + str(x))
-            except ValueError:
-                try:
-                    author = ""
-                    ident = (x,)
-                    retrieve = session.get("retrieve", None)
-                    if retrieve:
-                        title = retrieve["title"]
-                        text = retrieve["text"]
-                        tags = retrieve["tags"].split(" ")
-                    else:
-                        title, tags, text = wikiload(x)
-                    entry = dict(
-                        author=author,
-                        id=ident,
-                        title=title,
-                        tags=" ".join(tags),
-                        text=text,
-                    )
-                    return render_template(
-                        "edit_entry.html", mode="wiki", wiki=x, entry=entry
-                    )
-                except FileNotFoundError:
-                    flash("entry " + str(x) + " not found.")
-            return redirect(url_for("editentries", x="all"))
+                else:
+                    raise ValueError()
+            except (ValueError, IndexError):
+                flash("not authorized to edit post " + str(x))
+                return redirect(url_for("editentries"))
         if request.method == "POST":
             if request.form["id"] == "new":
-                add_entry()
+                return add_entry()
             if checktoken():
-                if request.form.get("wiki", None) is not None:
-                    log.info(f"saving wiki file {request.form['wiki']}")
-                    wikisave(
-                        x,
-                        session.get("user"),
-                        request.form["title"],
-                        request.form["tags"].split(" "),
-                        request.form["text"],
-                    )
-                    update_discord_bindings(session["user"], x)
-                    session["retrieve"] = None
-                    return redirect(url_for("wikipage", page=request.form["wiki"]))
-
                 cur = db.execute(
                     "SELECT author, title, text, id, tags "
                     "FROM entries WHERE id == ?",
@@ -423,7 +384,7 @@ def register(app=None):
         checklogin()
         log.info(f"{session.get('user', '?')} adding {request.form}")
         if checktoken():
-            db = connect_db("mapdata")
+            db = connect_db("addentry")
             db.execute(
                 "INSERT INTO entries (author, title, text, tags) VALUES (?, ?, ?, ?)",
                 [
@@ -435,7 +396,6 @@ def register(app=None):
             )
             db.commit()
             flash("New entry was successfully posted")
-
         return redirect(url_for("show_entries"))
 
     @app.route("/buy_funds/", methods=["GET", "POST"])

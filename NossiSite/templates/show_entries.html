@@ -4,64 +4,69 @@
         {{ headstate|safe }}
     {% else %}
     {% endfor %}
-<script>
-    $(document).ready(function() {
-        $(".header").click(function () {
-            var $header = $(this);
-            var $content = $header.next();
-            $content.slideToggle(800, function () {
-                $header.text(function () {
-                    return ($content.is(":visible") ? "-" : "+") + $header.text().slice(1);
+    <script>
+        $(document).ready(function() {
+            $(".header").click(function () {
+                let $header = $(this);
+                let $content = $header.next();
+                $content.slideToggle(800, function () {
+                    $header.text(function () {
+                        return ($content.is(":visible") ? "-" : "+") + $header.text().slice(1);
+                    });
                 });
-            });
 
-        });
-})
-</script>
+            });
+        })
+    </script>
 {% endblock %}
 {%- block metanav -%}
-<form action="{{ url_for('update_filter') }}" method=post class=add-entry style="display:inline">
-    <input type="hidden" name="token" value="{{ token }}">
-    <input class=leet type=text size=30 name=tags value="default">
-    <input class=leeet type=submit value=search>
-</form>&nbsp
+    <form action="{{ url_for('update_filter') }}" method=post class=add-entry style="display:inline">
+        <input type="hidden" name="token" value="{{ token }}">
+        <label>
+            <input class=leet type=text size=30 name=tags value="default">
+        </label>
+        <input class=leeet type=submit value=search>
+    </form>&nbsp
 {%- endblock -%}
 {% block body %}
-  {% if session.logged_in and edit is defined%}
-    <form action="{{ url_for('add_entry') }}" method=post class=add-entry>
-        <input type="hidden" name="token" value="{{ token }}">
-        <input type="hidden" name="id" value="new">
-        <dl>
-            <dt>Title:</dt>
-            <dd><input class=leet type=text size=30 name=title></dd>
-            <dt>Text:</dt>
-            <dd><textarea class=leet name=text rows=5 cols=40></textarea></dd>
-            <dt>Tags:</dt>
-            <dd><input class=leet type=text size=30 name=tags value="default"></dd>
-            <dd><input class=leeet type=submit value=Share>
-      </dl>
-    </form>
-  {% endif %}
-  <ul class=entries>
-  {% for entry in entries %}
-      <li><h2 class="header">+"{{ entry.title }}" by <a
-              href="{{ url_for('show_user_profile', username=entry.author) }}">{{ entry.author }}</a>
-          </h2><div class="entry" style="word-wrap:break-word;display:none;border:1px solid">{{ entry.text|safe }}
-          <br> {#dangerous entry.text has to be cleaned before being sent here#}
-          {%- if session.logged_in -%}
-              {% if edit is defined %}
-              <form action="{{ url_for('editentries',x=entry.id) }}" method="get" class="add-entry">
-                  <input class=leeet type=submit value="edit">
-                  <input type="hidden" name="token" value={{ token }}>
-              </form>
-              {% endif %}
+    {% if session.logged_in and edit is defined%}
+        <form action="{{ url_for('add_entry') }}" method=post class=add-entry>
+            <input type="hidden" name="token" value="{{ token }}">
+            <input type="hidden" name="id" value="new">
+            <dl>
+                <dt>Title:</dt>
+                <dd><label>
+                    <input class=leet type=text size=30 name=title>
+                </label></dd>
+                <dt>Text:</dt>
+                <dd><label>
+                    <textarea class=leet name=text rows=5 cols=40></textarea>
+                </label></dd>
+                <dt>Tags:</dt>
+                <dd><label>
+                    <input class=leet type=text size=30 name=tags value="default">
+                </label></dd>
+                <dd><input class=leeet type=submit value=Share>
+            </dl>
+        </form>
+    {% endif %}
+    <ul class=entries>
+        {% for entry in entries %}
+            <li><h2 class="header">+"{{ entry.title }}" by <a
+                    href="{{ url_for('show_user_profile', username=entry.author) }}">{{ entry.author }}</a>
+            </h2><div class="entry tooltip" style="word-wrap:break-word;display:none;border:1px solid">{{ entry.text|safe }}
+                <br> {#dangerous entry.text has to be cleaned before being sent here#}
+                {%- if session.logged_in -%}
+                    {% if edit is defined %}
+                        <form class="add-entry">
+                            <button formaction="{{ url_for('editentries',x=entry.id) }}" class="leeet">edit</button>
+                        </form>
+                    {% endif %}
+                    <span class="tooltiptext">Tags: {{ entry.tags }}</span>
+                {%- endif -%}</div> </li>
 
-
-              {%- if entry.own -%}
-              {%- endif -%}
-          {%- endif -%}</div> </li>
-  {% else %}
-      <li><em>Unbelievable.  No entries here so far</em></li>
-  {% endfor %}
-  </ul>
+        {% else %}
+            <li><em>Unbelievable.  No entries here so far</em></li>
+        {% endfor %}
+    </ul>
 {% endblock %}

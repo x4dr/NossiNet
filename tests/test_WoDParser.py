@@ -151,11 +151,11 @@ class TestWoDParser(TestCase):
         self.assertRaises(DiceCodeError, p.do_roll, "a,b@5d10", 0)
 
     def test_explosion(self):
-        for _ in range(1000):
-            if len(self.p.make_roll("5!").r) > 5:
+        i = 0
+        for i in range(1000):
+            if len(self.p.make_roll("100!").r) > 100:
                 break
-        else:
-            self.assertFalse("in 1000 exploded rolls, not one exploded!")
+        self.assertLess(i, 1000, "in 1000 exploded rolls, not one exploded!")
 
     def test_selection_sum(self):
         for _ in range(100):
@@ -167,13 +167,12 @@ class TestWoDParser(TestCase):
             )
 
     def test_selection_exclusivity(self):
-
-        try:
-            self.p.do_roll("10@12d10g")
-        except DescriptiveError as e:
-            self.assertEqual(e.args[0], "Interpretation Conflict: 10@ vs sum")
-        else:
-            self.assertFalse("There should have been an exception")
+        self.assertRaisesRegex(
+            DescriptiveError,
+            "Interpretation Conflict: 10@ vs sum",
+            self.p.do_roll,
+            "10@12d10g",
+        )
 
     def test_selection_0(self):
         for _ in range(10):
@@ -198,7 +197,6 @@ class TestWoDParser(TestCase):
 
     def test_rerolls(self):
         r = self.p.make_roll("1,1@5R95s")
-        print(r.roll_v())
         self.assertGreater(r.result, 3)
 
     def test_identityreturn(self):

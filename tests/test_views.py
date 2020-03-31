@@ -1,95 +1,95 @@
 from pathlib import Path
 from unittest import mock
 
-from flask import Flask
-from flask_testing import TestCase
+import flask
+import werkzeug
+from flask import url_for, redirect
 
-from NossiPack.krypta import Data, close_db
-from NossiSite import views
-
-
-def delete(x):
-    if Path(x).exists():
-        Path(x).unlink()
+from NossiPack.krypta import Data
+from tests.NossiTestCase import NossiTestCase
 
 
-class TestViews(TestCase):
-    render_templates = False
-
-    # if the create_app is not implemented NotImplementedError will be raised
-    def create_app(self):
-        close_db()  # might be open
-        app = Flask(__name__)
-        views.register(app)
-        app.template_folder = "../NossiSite/templates"
-        app.config["TESTING"] = True
-        # Set to 0 to have the OS pick the port.
-        app.config["LIVESERVER_PORT"] = 0
-        app.config["USERNAME"] = "unittest"
-        app.config["PASSWORD"] = "unittest"
-        app.config.from_mapping(SECRET_KEY="dev",)
-        print(self.countTestCases())
-        return app
-
+class TestViews(NossiTestCase):
     @mock.patch.object(Data, "DATABASE", "login.db")
     def test_login(self):
         self.addCleanup(lambda x: Path(x).unlink(), Data.DATABASE)
         # test response of login
-        app = self.create_app()
-        c = app.test_client()
+        c = self.app.test_client()
         c.get("/login")
         self.assert_template_used("login.html")
-        form = {
-            "username": app.config["USERNAME"],
-            "password": app.config["PASSWORD"],
-        }
         # test response of register page
-        c.post("/login", data=form, follow_redirects=True)
+        c.post("/login", data=self.logindata, follow_redirects=True)
         self.assert_template_used("login.html")  # not registered
-        form = {
-            "username": app.config["USERNAME"],
-            "password": app.config["PASSWORD"],
-            "passwordcheck": app.config["PASSWORD"],
-        }
-        c.post("/register", data=form)  # register
-        c.post("/login", data=form, follow_redirects=True)
+        self.register()
+        c.post("/login", data=self.logindata, follow_redirects=True)
         self.assert_template_used("show_entries.html")  # not registered
 
     @mock.patch.object(Data, "DATABASE", "version.db")
     def test_version(self):
-        self.addCleanup(delete, Data.DATABASE)
-        app = self.create_app()
-        c = app.test_client()
-        self.assert200(c.get("/version"))
+        self.addCleanup(self.delete, Data.DATABASE)
+        c = self.app.test_client()
+        self.assert200(c.get(url_for("getversion")))
 
-    @mock.patch.object(Data, "DATABASE", "version.db")
-    def test_404(self):
-        self.addCleanup(delete, Data.DATABASE)
-        app = self.create_app()
-        c = app.test_client()
-        self.assert404(c.get("/gndlbrnft"))
+    @mock.patch.object(Data, "DATABASE", "entries.db")
+    def test_entries(self):
+        self.addCleanup(self.delete, Data.DATABASE)
+        c = self.app.test_client()
+        try:
+            c.get(url_for("editentries"))
+        except Exception as e:
+            self.assertEqual(e.args[0], "REDIR")
+            self.assertEqual(
+                e.args[1].get_data(),
+                redirect(url_for("login", r=url_for("editentries")[1:])).get_data(),
+            )
+        with self.register_login() as c:
+            c.get(url_for("editentries"))
+            self.assertTemplateUsed("show_entries.html")
+            self.assertRaises(
+                werkzeug.exceptions.BadRequestKeyError, c.post, url_for("editentries")
+            )
+
+            token = flask.session.get("print")
+            form = {
+                "id": "new",
+                "title": "testpost",
+                "text": "nonpublic",
+                "tags": "testtag",
+                "token": token,
+            }
+            self.assert200(
+                c.post(url_for("editentries"), data=form, follow_redirects=True)
+            )
+            form = {
+                "id": "new",
+                "title": "xxyxz",
+                "text": "public",
+                "tags": "",
+                "token": token,
+            }
+            self.assert200(
+                c.post(url_for("editentries"), data=form, follow_redirects=True)
+            )
+            rv = c.get(url_for("show_entries"))
+            self.assertIn(b"xxyxz", rv.data)
+            self.assertNotIn(b"nonpublic", rv.data)
+            c.post(url_for("update_filter"), data={"tags": "testtag", "token": token})
+            self.assertEqual(flask.session.get("tags", None), "testtag")
+            rv = c.get(url_for("show_entries"))
+            self.assertIn(b"nonpublic", rv.data)
+            self.assertNotIn(b"xxyxz", rv.data)
 
     @mock.patch.object(Data, "DATABASE", "register.db")
     def test_register(self):
         self.addCleanup(lambda x: Path(x).unlink(), Data.DATABASE)
         """Make sure register user works"""
-        app = self.create_app()
-        c = app.test_client()
-        # mock site interaction
-        form = {
-            "username": app.config["USERNAME"],
-            "password": app.config["PASSWORD"],
-            "passwordcheck": app.config["PASSWORD"],
-        }
-        # register with mock
-        rv = c.post("/register", data=form, follow_redirects=True)
+        rv = self.register()
         print(rv)
         self.assert_status(rv, 200)
         self.assertTemplateUsed("show_entries.html")  # redirected to start
-
-        rv = c.post("/register", data=form)
+        rv = self.register()
         print(rv)
         self.assertTemplateUsed("register.html")
         self.assert_message_flashed(
-            f"Username {app.config['USERNAME'].upper()} is taken!", "error"
+            f"Username {self.app.config['USERNAME'].upper()} is taken!", "error"
         )

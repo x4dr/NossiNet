@@ -1,31 +1,25 @@
-from flask import Flask
-from flask_testing import TestCase
+from pathlib import Path
+from unittest import mock
 
-from NossiPack.krypta import close_db
-from NossiSite import wiki, helpers
-from NossiSite.helpers import wikisave
+from flask import url_for
+
+import Data
+from NossiSite import helpers
+from NossiSite.wiki import wikisave
+from tests.NossiTestCase import NossiTestCase
 
 
-class TestViews(TestCase):
+class TestViews(NossiTestCase):
     render_templates = False
-
-    # if the create_app is not implemented NotImplementedError will be raised
-    def create_app(self):
-        close_db()  # might be open
-        app = Flask(__name__)
-        wiki.register(app)
-        app.template_folder = "../NossiSite/templates"
-        app.config["TESTING"] = True
-        # Set to 0 to have the OS pick the port.
-        app.config["LIVESERVER_PORT"] = 0
-        app.config["USERNAME"] = "unittest"
-        app.config["PASSWORD"] = "unittest"
-        app.config.from_mapping(SECRET_KEY="dev",)
-        print(self.countTestCases())
-        return app
 
     def setUp(self) -> None:
         pass  # DB created during normal usage
+
+    @mock.patch.object(Data, "DATABASE", "index.db")
+    def test_index(self):
+        self.addCleanup(lambda x: Path(x).unlink(), Data.DATABASE)
+        with self.register_login() as c:
+            print(c.get(url_for("wiki_index")))
 
     def test_ewparsing(self):
         wikisave(

@@ -4,7 +4,7 @@ from NossiPack.FenCharacter import FenCharacter
 from NossiPack.User import User
 from NossiPack.WoDParser import fullparenthesis
 from NossiPack.krypta import is_int
-from NossiSite.helpers import wikiload
+from NossiSite.wiki import wikiload
 
 
 def discordname(user):
