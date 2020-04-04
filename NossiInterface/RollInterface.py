@@ -27,9 +27,7 @@ def prepare(msg: str, author, persist, comment):
         which = msg.count("+")
         msgs = lastroll.get(author, [])
         msg = msgs[-min(which, len(msgs))]
-        print("repl", msg, msgs, which)
     else:
-        print(msg, comment, lastroll)
         lastroll[author] = (
             lastroll.get(author, []) + [msg + (("//" + comment) if comment else "")]
         )[-10:]

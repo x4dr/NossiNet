@@ -15,7 +15,7 @@ from dateparser import parse as dateparse
 
 from Data import getnossihelp
 from NossiInterface.RollInterface import rollhandle
-from NossiInterface.Tools import discordname, split_send, handle_defines, fakemessage
+from NossiInterface.Tools import discordname, split_send, handle_defines
 from NossiPack.fengraph import chances
 from NossiPack.krypta import DescriptiveError
 
@@ -26,6 +26,7 @@ if shutdownflag.exists():
     shutdownflag.unlink()  # ignore previously set shutdown
 remindfile = os.path.expanduser("~/reminders.txt")
 remindnext = os.path.expanduser("~/reminders_next.txt")
+ticking = []
 
 
 class MutationLoggingDict(dict):
@@ -239,26 +240,11 @@ async def specifichandle(msg, comment, send, author):
     return False
 
 
-async def handle_inp(inp):
-    for line in inp:
-        if line.find("#") != -1:
-            name = line[: line.find("#") + 5]
-            line = line[len(name) :].strip()
-            acc = line[: line.find("message: ")].strip()
-            line = line[line.find(":") + 1 :].strip()
-            if persist[name].get("NossiAccount", None) == acc:
-                print(f"saving: {line, name}")
-
-                await handle_defines(line, fakemessage(name), persist)
-            else:
-                print(
-                    "access error:", persist[name].get("NossiAccount", None), "!=", acc
-                )
-        else:
-            print("received message without discord name:", line)
-
-
 async def tick():
+    if ticking:
+        print("attempted to doubletick")
+        return
+    ticking.append(True)
     next_call = time.time()
     while True:
         k = "remind"
@@ -266,9 +252,7 @@ async def tick():
             await reminders()
         except Exception as e:
             print("Exception reminding:", e, e.args, traceback.format_exc())
-        inp = ""  # read_nonblocking(bufferfile)
-        if inp:  # disabled for now
-            await handle_inp(inp)
+
         try:
             if persist["mutated"]:
                 with shelve.open(os.path.expanduser(storagefile)) as shelvingfile:
@@ -301,6 +285,21 @@ async def on_ready():
     info = await client.application_info()
     await info.owner.send("I Live")
     persist["owner"] = discordname(info.owner)
+
+
+@client.event
+async def on_disconnect():
+    print(
+        "Disconnected, accessibility of google:",
+        requests.get("www.google.com").status_code,
+    )
+
+
+@client.event
+async def on_resume():
+    print("Resumed...")
+    info = await client.application_info()
+    await info.owner.send("I have Resumed")
 
 
 @client.event
