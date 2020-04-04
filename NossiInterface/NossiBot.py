@@ -244,9 +244,11 @@ async def tick():
     if ticking:
         print("attempted to doubletick")
         return
-    ticking.append(True)
     next_call = time.time()
     while True:
+        ticking.append(requests.get("www.google.com").elapsed)
+        if len(ticking) > 10:
+            ticking.pop(0)
         k = "remind"
         try:
             await reminders()
@@ -283,7 +285,7 @@ async def on_ready():
     p = discord.Permissions(117824)
     print(discord.utils.oauth_url(client.user.id, p))
     info = await client.application_info()
-    await info.owner.send("I Live")
+    await info.owner.send("I Live... last 10 timings:" + str(ticking))
     persist["owner"] = discordname(info.owner)
 
 
