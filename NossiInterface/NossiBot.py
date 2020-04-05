@@ -247,7 +247,6 @@ async def tick():
         return
     next_call = time.time()
     while True:
-        print("tickin")
         ticking.append(requests.get("http://www.google.com").elapsed)
         if len(ticking) > 10:
             ticking.pop(0)
