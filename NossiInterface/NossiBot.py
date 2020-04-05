@@ -247,7 +247,8 @@ async def tick():
         return
     next_call = time.time()
     while True:
-        ticking.append(requests.get("www.google.com").elapsed)
+        print("tickin")
+        ticking.append(requests.get("http://www.google.com").elapsed)
         if len(ticking) > 10:
             ticking.pop(0)
         k = "remind"
@@ -294,7 +295,7 @@ async def on_ready():
 async def on_disconnect():
     print(
         "Disconnected, accessibility of google:",
-        requests.get("www.google.com").status_code,
+        requests.get("http://www.google.com").status_code,
     )
 
 
