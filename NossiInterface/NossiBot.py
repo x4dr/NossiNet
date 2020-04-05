@@ -242,7 +242,7 @@ async def specifichandle(msg, comment, send, author):
 
 
 async def tick():
-    if ticking:
+    if len(ticking) > 1:
         print("attempted to doubletick")
         return
     next_call = time.time()
