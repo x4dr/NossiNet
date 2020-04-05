@@ -26,7 +26,8 @@ if shutdownflag.exists():
     shutdownflag.unlink()  # ignore previously set shutdown
 remindfile = os.path.expanduser("~/reminders.txt")
 remindnext = os.path.expanduser("~/reminders_next.txt")
-ticking = []
+ticking = [time.time()]
+print("initializing NossiBot...")
 
 
 class MutationLoggingDict(dict):
