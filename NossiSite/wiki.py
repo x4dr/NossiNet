@@ -160,14 +160,25 @@ def register(app=None):
             if p.exists():
                 with open(p, "r") as f:
                     return f.read(), 200, {"Content-Type": "text/plain; charset=utf-8"}
-
+            start = time.time()
+            if (
+                int(costs.split(",")[-1]) * 3
+                + sum(int(x) for x in penalty.split(",")) * 3
+                > 10000
+            ):
+                raise AttributeError("just too large of a space")
             with open(p, "w") as f:
                 res = []
-                for i in range(9001):
-                    r = fen_calc(str(i), costs, penalty)
+                for i in range(
+                    int(costs.split(",")[-1]) * 3
+                    + sum(int(x) for x in penalty.split(",")) * 3
+                ):
+                    r = fen_calc(str(i), costs, penalty)[0]
                     log.debug(f"Fencalc {i} {res}")
                     if i == 0 or r != res[-1][1]:
                         res.append([(str(i) + "   ")[:4] + " : ", r])
+                    if time.time() - start > 30:
+                        raise TimeoutError()
                 r = "\n".join(x[0] + x[1] for x in res)
                 f.write(r)
                 return r, 200, {"Content-Type": "text/plain; charset=utf-8"}
@@ -175,7 +186,7 @@ def register(app=None):
             with open(p, "w") as f:
                 f.write("an error has previously occured and this request is blocked")
                 return (
-                    "error, this request is blocked",
+                    "error, this request is now blocked",
                     200,
                     {"Content-Type": "text/plain; charset=utf-8"},
                 )
