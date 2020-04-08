@@ -47,10 +47,49 @@ class FenCharacter:
         att: Tuple[int, ...], internal_costs: List[int], internal_penalty: List[int]
     ) -> int:
         pen = 0
-        print(att, internal_costs, internal_penalty)
+        print("cost called:", att, internal_costs, internal_penalty)
         for ip, p in enumerate(internal_penalty):
             pen += (max(sum(1 for a in att if a >= ip), 1) - 1) * p
         return sum(internal_costs[a] for a in att) + pen
+
+    @staticmethod
+    def cost_calc(inputstring: str, costs=None, penalty=None):
+        if costs is not None:
+            costs = [int(x) for x in costs.split(",")]
+        else:
+            costs = [0, 15, 35, 60, 100]
+        if penalty is not None:
+            penalty = [int(x) for x in penalty.split(",")]
+        else:
+            penalty = [0, 0, 0, 50, 100]
+        xp = [int(x) for x in str(inputstring).split(",")]
+        if len(xp) == 1:
+            xp = xp[0]
+            allconf = {
+                (a, b, c) for a in range(5) for b in range(a + 1) for c in range(b + 1)
+            }
+            correct = [
+                [x[0] + 1, x[1] + 1, x[2] + 1]
+                for x in allconf
+                if FenCharacter.cost(x, costs, penalty) <= xp
+            ]
+            i = 0
+            j = len(correct)
+            maximal = correct[:]
+            while i < j:
+                for u in range(len(maximal[i])):
+                    upg = list(maximal[i])
+                    upg[u] = upg[u] + 1
+                    # upg = tuple(upg)
+                    if upg in correct:
+                        del maximal[i]
+                        i -= 1
+                        j -= 1
+                        break
+                i += 1
+            print("returning from costcalc:", [str(c) for c in maximal])
+            return [str(c) for c in maximal]
+        return FenCharacter.cost(tuple(x - 1 for x in xp), costs, penalty)
 
     def points(self, name) -> int:
         res = 0

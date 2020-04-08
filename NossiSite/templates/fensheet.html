@@ -14,7 +14,10 @@
 {%- macro catformat(cat, name, cost) -%}
     <table style = "width: 100%">
         <tr>
-            <td colspan="2" style="text-align: center;" class="leeet">{{ name }} {{ cost }}</td>
+            <td colspan="2" style="text-align: center;" class="leeet tooltip">{{ name }} <a href="{{url_for('fen_calc',
+            inputstring=cost) }}">{{ cost }}</a><span class="tooltiptext">{% for l in character.cost_calc(cost)
+                    %}{{ l }}<br/> {% endfor %}</span></td>
+
         </tr>
         {%- if cat is mapping  -%}
             {%- for k,v in cat.items() -%}
