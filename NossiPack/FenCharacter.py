@@ -24,27 +24,7 @@ class FenCharacter:
                 ]
             )
 
-        self.Categories = OrderedDict(
-            [
-                ("Stärke", sublvl()),
-                ("Können", sublvl()),
-                (
-                    "Magie",
-                    OrderedDict(
-                        [
-                            ("Quelle", {}),
-                            ("Konzepte", {}),
-                            ("Aspekte", {}),
-                            ("Zauber", {}),
-                            ("Vorteile", {}),
-                        ]
-                    ),
-                ),
-                ("Weisheit", sublvl()),
-                ("Charisma", sublvl()),
-                ("Schicksal", sublvl()),
-            ]
-        )
+        self.Categories = OrderedDict()
         self.Wounds = []
         self.Modifiers = OrderedDict()
         self.Inventory = OrderedDict()
@@ -67,9 +47,38 @@ class FenCharacter:
         att: Tuple[int, ...], internal_costs: List[int], internal_penalty: List[int]
     ) -> int:
         pen = 0
+        print(att, internal_costs, internal_penalty)
         for ip, p in enumerate(internal_penalty):
             pen += (max(sum(1 for a in att if a >= ip), 1) - 1) * p
         return sum(internal_costs[a] for a in att) + pen
+
+    def points(self, name) -> int:
+        res = 0
+        c = self.Categories[name]
+        f = c.get("Fähigkeiten", {}) or c.get("Aspekte", {})
+        for v in f.values():
+            try:
+                res += int(v) * 10
+            except ValueError:
+                if v[0].lower() == "_":
+                    try:
+                        res += int(v[1:]) * 5
+                    except ValueError:
+                        pass
+        f = c.get("Quellen", {})
+        for v in f.values():
+            try:
+                res += int(v) * 20
+            except ValueError:
+                pass
+
+        f = c.get("Vorteile", {})
+        for v in f.values():
+            try:
+                res += int(v)
+            except ValueError:
+                pass
+        return res
 
     @staticmethod
     def parse_part(s, parse_table):
