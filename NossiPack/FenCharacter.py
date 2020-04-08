@@ -47,7 +47,6 @@ class FenCharacter:
         att: Tuple[int, ...], internal_costs: List[int], internal_penalty: List[int]
     ) -> int:
         pen = 0
-        print("cost called:", att, internal_costs, internal_penalty)
         for ip, p in enumerate(internal_penalty):
             pen += (max(sum(1 for a in att if a >= ip), 1) - 1) * p
         return sum(internal_costs[a] for a in att) + pen
@@ -87,7 +86,6 @@ class FenCharacter:
                         j -= 1
                         break
                 i += 1
-            print("returning from costcalc:", [str(c) for c in maximal])
             return [str(c) for c in maximal]
         return FenCharacter.cost(tuple(x - 1 for x in xp), costs, penalty)
 
