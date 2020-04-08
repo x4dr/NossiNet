@@ -194,7 +194,6 @@ def register(app=None):
     @app.route("/costcalc/<inputstring>/<costs>/<penalty>")
     @app.route("/costcalc/<inputstring>")
     def fen_calc(inputstring: str, costs=None, penalty=None):
-
         if costs is not None:
             costs = [int(x) for x in costs.split(",")]
         else:

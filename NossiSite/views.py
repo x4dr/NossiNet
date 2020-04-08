@@ -199,7 +199,7 @@ def register(app=None):
         u = ul.loaduserbyname(session.get("user"))
         configchar = u.config("character_sheet", None)
         if configchar:
-            redirect(url_for("fensheet", c=configchar))
+            return redirect(url_for("fensheet", c=configchar))
         sheet = u.getsheet().getdictrepr()
         if sheet["Type"] == "OWOD":
             return render_template("vampsheet.html", character=sheet, own=True)
