@@ -33,12 +33,11 @@ def register(app=None):
         if isinstance(s, str):
             return Markup(markdown.markdown(s, extensions=["tables", "toc", "nl2br"]))
         if isinstance(s, list):
-            next_try = "\n".join(s)
             n = Markup(
-                markdown.markdown(next_try, extensions=["tables", "toc", "nl2br"])
+                markdown.markdown("  \n".join(s), extensions=["tables", "toc", "nl2br"])
             )
-            return n.split("\n")
-        raise DescriptiveError("Templating error:" + str(s) + "does not belong")
+            return str(n).split("\n")
+        raise DescriptiveError("Templating error: \n" + str(s) + "\ndoes not belong")
 
     @app.before_request
     def before_request():

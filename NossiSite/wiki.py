@@ -133,7 +133,7 @@ def register(app=None):
             )
             return fill_infolets(body)
         except DescriptiveError as e:
-            flash("Error with your configuration value character_sheet: " + e.args[0])
+            flash("Error with character sheet:\n" + e.args[0])
             return redirect(url_for("showsheet", name=c))
 
     @app.route("/ewsheet/<c>")
@@ -154,7 +154,8 @@ def register(app=None):
             return redirect(url_for("showsheet", name=c))
 
     @app.route("/costcalc/all/<costs>/<penalty>")
-    def ddos(costs, penalty):
+    @app.route("/costcalc/all/<costs>/<penalty>/<width>")
+    def ddos(costs, penalty, width=3):
         p = Path(costs + "-" + penalty + ".result")
         try:
             if p.exists():
@@ -168,19 +169,22 @@ def register(app=None):
             ):
                 raise AttributeError("just too large of a space")
             with open(p, "w") as f:
-                res = []
-                for i in range(
-                    int(costs.split(",")[-1]) * 3
-                    + sum(int(x) for x in penalty.split(",")) * 3
+                res = [["[0]", "[0]"]]
+                i = 0
+                while not all(
+                    all(int(x) >= 5 for x in y.strip("[]").split(",") if x)
+                    for y in res[-1][1]
                 ):
-                    r = fen_calc(str(i), costs, penalty)[0]
+                    r = FenCharacter.cost_calc(str(i), costs, penalty, width)
                     log.debug(f"Fencalc {i} {res}")
                     if i == 0 or r != res[-1][1]:
                         res.append([(str(i) + "   ")[:4] + " : ", r])
                     if time.time() - start > 30:
                         raise TimeoutError()
-                r = "\n".join(x[0] + x[1] for x in res)
-                f.write(r)
+                    i += 1
+                    print(res[-1][1])
+                r = "\n".join(x[0] + "\t".join(x[1]) for x in res[1:])
+
                 return r, 200, {"Content-Type": "text/plain; charset=utf-8"}
         except:
             with open(p, "w") as f:
@@ -191,11 +195,12 @@ def register(app=None):
                     {"Content-Type": "text/plain; charset=utf-8"},
                 )
 
+    @app.route("/costcalc/<inputstring>/<costs>/<penalty>/<width>")
     @app.route("/costcalc/<inputstring>/<costs>/<penalty>")
     @app.route("/costcalc/<inputstring>")
-    def fen_calc(inputstring: str, costs=None, penalty=None):
+    def fen_calc(inputstring: str, costs=None, penalty=None, width=3):
         return (
-            "\t".join(FenCharacter.cost_calc(inputstring, costs, penalty)),
+            "\t".join(FenCharacter.cost_calc(inputstring, costs, penalty, width)),
             200,
             {"Content-Type": "text/plain; charset=utf-8"},
         )

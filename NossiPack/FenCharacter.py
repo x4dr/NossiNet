@@ -1,3 +1,4 @@
+import itertools
 import pickle
 import re
 import time
@@ -48,27 +49,29 @@ class FenCharacter:
     ) -> int:
         pen = 0
         for ip, p in enumerate(internal_penalty):
-            pen += (max(sum(1 for a in att if a >= ip), 1) - 1) * p
-        return sum(internal_costs[a] for a in att) + pen
+            pen += (max(sum(1 for a in att if a > ip), 1) - 1) * p
+        return sum(internal_costs[a - 1] if a else 0 for a in att) + pen
 
     @staticmethod
-    def cost_calc(inputstring: str, costs=None, penalty=None):
-        if costs is not None:
+    def cost_calc(inputstring: str, costs=None, penalty=None, width=3):
+        if costs:
             costs = [int(x) for x in costs.split(",")]
         else:
             costs = [0, 15, 35, 60, 100]
-        if penalty is not None:
+        if penalty:
             penalty = [int(x) for x in penalty.split(",")]
         else:
             penalty = [0, 0, 0, 50, 100]
-        xp = [int(x) for x in str(inputstring).split(",")]
+        xp = [int(x or 0) for x in str(inputstring).split(",")]
         if len(xp) == 1:
             xp = xp[0]
-            allconf = {
-                (a, b, c) for a in range(5) for b in range(a + 1) for c in range(b + 1)
-            }
+            allconf = set(
+                tuple(sorted(x, reverse=True))
+                for x in itertools.product(range(6), repeat=int(width))
+            )
+
             correct = [
-                [x[0] + 1, x[1] + 1, x[2] + 1]
+                [y for y in x]
                 for x in allconf
                 if FenCharacter.cost(x, costs, penalty) <= xp
             ]
@@ -185,8 +188,6 @@ class FenCharacter:
                     for k, v in result[cn].items():
                         result[k] = v
                     del result[cn]
-                else:
-                    print("Wikiparse unnamed lines:", result[cn], "in", result)
             else:
                 result.move_to_end(cn, True)
         return result
