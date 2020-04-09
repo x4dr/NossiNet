@@ -8,6 +8,8 @@ __author__ = "maric"
 
 from typing import List, Tuple
 
+from NossiPack.WoDParser import fullparenthesis
+
 
 class FenCharacter:
     def __init__(self, name="", meta=None):
@@ -15,22 +17,22 @@ class FenCharacter:
         self.Name = name
         self.Character = OrderedDict()
         self.Meta = meta or OrderedDict()
-
-        def sublvl():
-            return OrderedDict(
-                [
-                    ("Attribute", OrderedDict()),
-                    ("Fähigkeiten", OrderedDict()),
-                    ("Vorteile", OrderedDict()),
-                ]
-            )
-
         self.Categories = OrderedDict()
         self.Wounds = []
         self.Modifiers = OrderedDict()
         self.Inventory = OrderedDict()
         self.Notes = ""
         self.Timestamp = time.strftime("%Y/%m/%d-%H:%M:%S")
+
+    @staticmethod
+    def sublvl():
+        return OrderedDict(
+            [
+                ("Attribute", OrderedDict()),
+                ("Fähigkeiten", OrderedDict()),
+                ("Vorteile", OrderedDict()),
+            ]
+        )
 
     def unify(self):
         unified = OrderedDict()
@@ -96,7 +98,8 @@ class FenCharacter:
         res = 0
         c = self.Categories[name]
         f = c.get("Fähigkeiten", {}) or c.get("Aspekte", {})
-        for v in f.values():
+        for k, v in f.items():
+            res += self.seekxp(k)
             try:
                 res += int(v) * 10
             except ValueError:
@@ -106,7 +109,8 @@ class FenCharacter:
                     except ValueError:
                         pass
         f = c.get("Quellen", {})
-        for v in f.values():
+        for k, v in f.items():
+            res += self.seekxp(k)
             try:
                 res += int(v) * 20
             except ValueError:
@@ -118,6 +122,45 @@ class FenCharacter:
                 res += int(v)
             except ValueError:
                 pass
+
+        return res
+
+    def seekxp(self, name) -> int:
+        res = 0
+        for catname, cat in self.Categories.items():
+            for secname, sec in cat.items():
+                if secname.lower().strip() in ["erfahrung", "experience", "xp"]:
+                    if sec.get(name, None):
+                        res += self.parse_xp(sec[name])
+        for k in self.Meta.keys():
+            if k.lower().strip() in ["erfahrung", "experience", "xp"]:
+                sel = self.parse_part(
+                    "\n".join(["\n".join(x) for x in self.Meta[k].values()]), True
+                ).get(name, None)
+                if sel:
+                    res += self.parse_xp(sel)
+        return res
+
+    @staticmethod
+    def parse_xp(s):
+        print("parsing", s)
+        res = 0
+        paren = ""
+        while paren != s:
+            if paren.strip():
+                res += 1 + paren.count(",")
+            s = s.replace("[" + paren + "]", "", 1)
+            paren = fullparenthesis(s, "[", "]")
+        paren = ""
+        while paren != s:
+            print("s pre:", s)
+            if paren:
+                pos = s.find(paren)
+                s = s.replace(s[max(0, pos - 1) : pos + len(paren)], "", 1)
+            print("s post:", s)
+            paren = fullparenthesis(s, include=True)
+        res = sum([1 for x in s if x.strip()])
+        print("result", res)
         return res
 
     @staticmethod
@@ -147,7 +190,7 @@ class FenCharacter:
                 tablestate = 0
                 for line in section.split("\n"):
                     line = line.strip()
-                    candidate = line.split("|")
+                    candidate = [x.strip() for x in line.split("|")]
                     candidate = (
                         candidate
                         if len(candidate) == 2
@@ -164,9 +207,9 @@ class FenCharacter:
                         if tablestate > 2:  # 1: header, 2: alignment
                             while candidate[0] in result[categoryname][sectionname]:
                                 candidate[0] = "_" + candidate[0]
-                            result[categoryname][sectionname][candidate[0]] = candidate[
-                                1
-                            ]
+                            result[categoryname][sectionname][candidate[0].strip()] = (
+                                candidate[1]
+                            ).strip()
                     else:
                         tablestate = 0
                         result[categoryname][sectionname]["_lines"].append(line)
