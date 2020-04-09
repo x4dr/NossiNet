@@ -26,7 +26,7 @@ class User:
         else:
             self.pw_hash = generate_password_hash(password)
         self.funds = funds
-
+        self.sheet = "unused"
         self.sheetid = sheet
         self._loadedsheet = None
         self.oldsheets = {}
