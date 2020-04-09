@@ -143,24 +143,21 @@ class FenCharacter:
 
     @staticmethod
     def parse_xp(s):
-        print("parsing", s)
         res = 0
+        paren = ""
+        while paren != s:
+            if paren:
+                pos = s.find(paren)
+                s = s.replace(s[max(0, pos - 1) : pos + len(paren)], "", 1)
+            paren = fullparenthesis(s, include=True)
         paren = ""
         while paren != s:
             if paren.strip():
                 res += 1 + paren.count(",")
             s = s.replace("[" + paren + "]", "", 1)
             paren = fullparenthesis(s, "[", "]")
-        paren = ""
-        while paren != s:
-            print("s pre:", s)
-            if paren:
-                pos = s.find(paren)
-                s = s.replace(s[max(0, pos - 1) : pos + len(paren)], "", 1)
-            print("s post:", s)
-            paren = fullparenthesis(s, include=True)
+
         res = sum([1 for x in s if x.strip()])
-        print("result", res)
         return res
 
     @staticmethod

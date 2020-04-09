@@ -20,10 +20,10 @@
             {%- for vk,vv in v.items() -%}
                 <tr>
                     <td style="text-align: left; word-wrap: break-word">{{ vk|remove_leading_underscore }} </td>
-                    <td>{%- if vv|remove_leading_underscore|int(-1) != -1 -%}{{
+                    <td class="tooltip">{%- if vv|remove_leading_underscore|int(-1) != -1 -%}{{
                             dots(vv|remove_leading_underscore|int, userconf["fensheet_dot_max"]|int(5))
                             if userconf["fensheet_dots"]|int(0) else vv }}
-                    {%- else -%}{{ vv }}{%- endif -%}</td>
+                    {%- else -%}{{ vv }}{%- endif -%} <span class="tooltiptext">&nbsp;+&nbsp;{{ character.seekxp(vk) }}&nbsp;FP</span></td>
                 </tr>
             {%- endfor -%}
         {% else %}
