@@ -117,11 +117,13 @@ class FenCharacter:
                 pass
 
         f = c.get("Vorteile", {})
+        f.update(c.get("Zauber", {}))
         for v in f.values():
             try:
                 res += int(v)
             except ValueError:
-                pass
+                if not v or v[0] != "_":
+                    res += 1
 
         return res
 
@@ -137,7 +139,6 @@ class FenCharacter:
                 sel = self.parse_part(
                     "\n".join(["\n".join(x) for x in self.Meta[k].values()]), True
                 ).get(name, None)
-                print(k)
                 if sel:
                     res += self.parse_xp(sel)
         return res
@@ -146,7 +147,6 @@ class FenCharacter:
     def parse_xp(s):
         res = 0
         paren = ""
-        print(s)
         while paren != s:
             if paren:
                 pos = s.find(paren)
@@ -158,7 +158,6 @@ class FenCharacter:
                 res += 1 + paren.count(",")
             s = s.replace("[" + paren + "]", "", 1)
             paren = fullparenthesis(s, "[", "]")
-        print(s)
         res = sum([1 for x in s if x.strip()])
         return res
 
