@@ -178,6 +178,7 @@ def load_fen_char(user):
         for catname, cat in char.Categories.items():
             for secname, sec in cat.items():
                 for statname, stat in sec.items():
+                    stat = stat.strip(" _")
                     if statname.strip() and is_int(stat):
                         if definitions.get(statname, None) is None:
                             definitions[statname.strip()] = ".".join(
@@ -194,5 +195,5 @@ def load_fen_char(user):
                             ".".join(
                                 [catname.strip(), secname.strip(), statname.strip()]
                             )
-                        ] = stat.strip()
+                        ] = stat
         return definitions

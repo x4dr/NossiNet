@@ -158,7 +158,7 @@ async def rollhandle(msg, comment, message: discord.Message, persist):
         await process_roll(r, p, msg, comment, message.channel.send, author)
     except DiceCodeError as e:
         if errreport:  # query for error
-            await author.send("Invalid Dicecode:" + "\n".join(e.args)[:2000])
+            await author.send("Error with roll:\n" + "\n".join(e.args)[:2000])
     except asyncio.exceptions.TimeoutError:
         await message.add_reaction("\U000023F0")
     except Exception as e:
