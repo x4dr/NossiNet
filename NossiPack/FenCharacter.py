@@ -116,7 +116,7 @@ class FenCharacter:
             except ValueError:
                 pass
 
-        f = c.get("Vorteile", {})
+        f = c.get("Vorteile", {}).copy()
         f.update(c.get("Zauber", {}))
         for v in f.values():
             try:
