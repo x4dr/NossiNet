@@ -158,7 +158,7 @@ class FenCharacter:
                 res += 1 + paren.count(",")
             s = s.replace("[" + paren + "]", "", 1)
             paren = fullparenthesis(s, "[", "]")
-        res = sum([1 for x in s if x.strip()])
+        res += sum([1 for x in s if x.strip()])
         return res
 
     @staticmethod

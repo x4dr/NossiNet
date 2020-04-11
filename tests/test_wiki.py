@@ -4,6 +4,7 @@ from unittest import mock
 from flask import url_for
 
 import Data
+from NossiPack.FenCharacter import FenCharacter
 from NossiSite import helpers
 from NossiSite.wiki import wikisave
 from tests.NossiTestCase import NossiTestCase
@@ -36,3 +37,9 @@ class TestViews(NossiTestCase):
         c = app.test_client()
         c.get("/ewsheet/test")
         self.create_app()
+
+    def test_xp_parsing(self):
+        self.assertEqual(
+            FenCharacter.parse_xp("[Worogra, Istan, Dinas Godol, Yon]KKLP(1/3) (nvm)"),
+            7,
+        )
