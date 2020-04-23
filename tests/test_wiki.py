@@ -47,7 +47,6 @@ class TestViews(NossiTestCase):
         )
 
     def test_matrix_parsing(self):
-
         testdat = {"_lines": ["|a|b|c", "-|-|-|", "|1|2|3|4", "hi|ho|hu"]}
         sut = FenCharacter.parse_matrix(testdat)
         self.assertEqual(
@@ -57,9 +56,8 @@ class TestViews(NossiTestCase):
 
         testdat = {"_lines": ["|a|b|c", "-|-|-|", "|1|2|3|", "hi|ho|hu"]}
         sut = FenCharacter.parse_matrix(testdat)
-        self.assertEqual(testdat["_lines"], [])
-        self.assertEqual(sut[2][1], "2")
-        testdat = {"_lines": ["|a|b|c", "-|-|-|", "|1|2|3|", "4|5|6", "Total|||"]}
+        self.assertEqual(sut, [])  # uneven format
+        testdat = {"_lines": ["|a|b|c|", "|-|-|-|", "|1|2|3|", "|4|5|6|", "|Total|||"]}
         sut = FenCharacter.parse_matrix(testdat)
         self.assertEqual(testdat["_lines"], [])
         self.assertEqual(sut[4][2], "9.0")

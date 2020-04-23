@@ -4,9 +4,10 @@ from unittest import TestCase, mock
 from unittest.mock import Mock
 
 import Data
-from NossiInterface import Tools
-from NossiInterface.Tools import splitpara, replacedefines, load_fen_char
+from NossiInterface.Tools import splitpara, replacedefines
 from NossiPack.krypta import connect_db
+from NossiSite import wiki
+from NossiSite.wiki import load_fen_char
 
 
 class TestInterface(TestCase):
@@ -42,7 +43,7 @@ class TestInterface(TestCase):
 
     @mock.patch.object(Data, "DATABASE", "loadchara.db")
     @mock.patch.object(
-        Tools,
+        wiki,
         "wikiload",
         lambda x: ("", [], "#Werte\n##TestWert\n###Attribut\nkey|valb\n---|---\na|3"),
     )
