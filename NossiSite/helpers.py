@@ -33,10 +33,15 @@ def register(app=None):
         if isinstance(s, str):
             return Markup(markdown.markdown(s, extensions=["tables", "toc", "nl2br"]))
         if isinstance(s, list):
-            n = Markup(
-                markdown.markdown("  \n".join(s), extensions=["tables", "toc", "nl2br"])
-            )
-            return str(n).split("\n")
+            try:
+                n = Markup(
+                    markdown.markdown(
+                        "  \n".join(s), extensions=["tables", "toc", "nl2br"]
+                    )
+                )
+                return str(n).split("\n")
+            except:
+                return "ERRR"
         raise DescriptiveError("Templating error: \n" + str(s) + "\ndoes not belong")
 
     @app.before_request
@@ -67,11 +72,9 @@ def register(app=None):
             log.exception("Handled Descriptive Error")
             if request.url.endswith("/raw"):
                 return error.args[0]
-        if app.testing:
-            raise error
         flash("internal error. sorry", category="error")
         log.exception("Unhandled internal error")
-        return render_template("show_entries.html")
+        raise error
 
     @app.errorhandler(404)
     def page_not_found(e):

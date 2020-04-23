@@ -1,10 +1,8 @@
 import asyncio
-import time
 from concurrent.futures.thread import ThreadPoolExecutor
 
 import discord
 
-from NossiInterface.Tools import discordname, load_fen_char
 from NossiPack.WoDDice import WoDDice
 from NossiPack.WoDParser import WoDParser, DiceCodeError
 from NossiPack.krypta import terminate_thread
@@ -13,14 +11,11 @@ numemoji = ("1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7
 numemoji_2 = ("❗", "‼️", "\U0001F386")
 
 lastroll = {}
-statcache = {}
 
 
 def prepare(msg: str, author, persist, comment):
     errreport = msg.startswith("?")
-    cachetimeout = 3600
     if errreport:
-        cachetimeout = 0
         msg = msg[1:]
     msg = msg.strip()
     if all(x == "+" for x in msg):
@@ -31,19 +26,7 @@ def prepare(msg: str, author, persist, comment):
         lastroll[author] = (
             lastroll.get(author, []) + [msg + (("//" + comment) if comment else "")]
         )[-10:]
-
-    pers = persist.get(discordname(author), {"defines": {}})
-    defines = {}
-    whoami = pers.get("NossiAccount", None)
-    if whoami:
-        cache = statcache.get(whoami, [0, {}])
-        if time.time() - cache[0] > cachetimeout:
-            defines = cache[1]
-        if not defines:
-            defines = load_fen_char(whoami)
-            statcache[whoami] = (time.time(), defines)
-    defines.update(pers["defines"])  # add in /override explicit defines
-    p = WoDParser(defines)
+    p = WoDParser(persist.get(author, {}).get("defines", {}))
     return msg, p, errreport
 
 
@@ -77,6 +60,13 @@ def construct_shortened_multiroll_reply(p: WoDParser, verbose):
         else:
             reply += ", " + str(x.result)
     return reply.strip("\n") + "\n"
+
+
+async def chunk_reply(send, message, chunk=2000):
+    i = 0
+    while i < len(message):
+        await send(message[i : i + chunk])
+        i += chunk
 
 
 async def get_reply(author, comment, msg, send, reply, r):

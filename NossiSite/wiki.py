@@ -1,4 +1,5 @@
 import decimal
+import html
 import json
 import os
 import re
@@ -15,13 +16,34 @@ from markupsafe import Markup
 from NossiPack.FenCharacter import FenCharacter
 from NossiPack.User import User, Userlist
 from NossiPack.fengraph import weapondata
-from NossiPack.krypta import DescriptiveError
+from NossiPack.krypta import DescriptiveError, is_int
 from NossiSite.base import app as defaultapp, log
 from NossiSite.helpers import checktoken, checklogin
 
 wikipath = Path.home() / "wiki"
 wikistamp = [0.0]
 wikitags = {}
+bleach.ALLOWED_TAGS += [
+    "br",
+    "u",
+    "p",
+    "pre",
+    "table",
+    "th",
+    "tr",
+    "td",
+    "tbody",
+    "thead",
+    "tfoot",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "div",
+    "hr",
+]
 
 
 def register(app=None):
@@ -63,11 +85,13 @@ def register(app=None):
             flash("That page doesn't exist. Log in to create it!")
             return redirect(url_for("wiki_index"))
         if not raw:
+
+            body = markdown.markdown(body, extensions=["tables", "toc", "nl2br"])
+            print(bleach.ALLOWED_TAGS)
             body = bleach.clean(body)
-            body = Markup(
-                markdown.markdown(body, extensions=["tables", "toc", "nl2br"])
+            body = fill_infolets(
+                body, page[:-10] if page.endswith("_character") else page
             )
-            body = fill_infolets(body)
             return render_template(
                 "wikipage.html", title=title, tags=tags, body=body, wiki=page
             )
@@ -126,12 +150,13 @@ def register(app=None):
         try:
             char = FenCharacter()
             char.load_from_md(*wikiload(c + "_character"))
+            print("Inv", char.Meta.get("Inventar", None))
             body = render_template(
                 "fensheet.html",
                 character=char,
                 userconf=User(session.get("user", "")).configs(),
             )
-            return fill_infolets(body)
+            return fill_infolets(body, c)
         except DescriptiveError as e:
             flash("Error with character sheet:\n" + e.args[0])
             return redirect(url_for("showsheet", name=c))
@@ -148,7 +173,7 @@ def register(app=None):
                 character=char.Data,
                 userconf=User(session.get("user", "")).configs(),
             )
-            return fill_infolets(body)
+            return fill_infolets(body, c)
         except DescriptiveError as e:
             flash("Error with your configuration value character_sheet: " + e.args[0])
             return redirect(url_for("showsheet", name=c))
@@ -184,7 +209,7 @@ def register(app=None):
                     i += 1
                     print(res[-1][1])
                 r = "\n".join(x[0] + "\t".join(x[1]) for x in res[1:])
-
+                f.write(r)
                 return r, 200, {"Content-Type": "text/plain; charset=utf-8"}
         except:
             with open(p, "w") as f:
@@ -340,7 +365,7 @@ def weaponadd(weapon_damage_array, b, ind=0):
     return c
 
 
-def magicalweapontable(code: str, par=None, as_json=False):
+def magicalweapontable(code: str, par=None, as_json=False, context=None):
     calc = re.compile(r"<(?P<x>.*?)>")
     code = code.strip()
     for match in calc.findall(code):
@@ -348,17 +373,16 @@ def magicalweapontable(code: str, par=None, as_json=False):
     code = re.sub(r"^CODE\s+", "", code)
     step = code.split(":")
     if step[0].strip() == "WEAPON":
-        return weapontable(step[1], step[2], as_json)
+        return weapontable(step[1], step[2], as_json, context)
     raise DescriptiveError("Dont know what do do with \n" + code)
 
 
-def calculate(calc, par):
+def calculate(calc, par=None):
     loose_par = [0]  # last pop ends the loop
     if par is None:
         par = {}
 
     else:
-        print(par)
         loose_par += [x for x in par.split(",") if ":" not in x]
         par = {
             x.upper(): y
@@ -370,22 +394,33 @@ def calculate(calc, par):
     res = 0
     while len(loose_par) > 0:
         try:
-            print("PAR:", par, loose_par)
             res = numexpr.evaluate(calc, local_dict=par, truediv=True).item()
             missing = None  # success
             break
         except KeyError as e:
-
             missing = e
-            print("LOOSE:", loose_par)
             par[e.args[0]] = int(loose_par.pop())  # try autofilling
     if missing:
+        if missing.args[0] == "em":
+            raise DescriptiveError("Parameter " + missing.args[0] + " is missing!")
         raise DescriptiveError("Parameter " + missing.args[0] + " is missing!")
     return decimal.Decimal(res).quantize(1, decimal.ROUND_HALF_UP)
 
 
-def weapontable(w, mods="", as_json=False):
+def weapontable(w, mods="", as_json=False, context=None):
     try:
+        mods = html.unescape(mods)
+        if context:
+            for k, v in load_fen_char(context).items():
+                mods = mods.replace(k, v)
+        calc = re.compile(r"<(?P<x>.*?)>")
+        mods = mods.strip()
+
+        for match in calc.findall(mods):
+            try:
+                mods = mods.replace(f"<{match}>", str(calculate(match)))
+            except SyntaxError:
+                raise DescriptiveError(f"{mods} is not correct!")
         data = weapondata()
         data = {k.lower(): v for k, v in data.items()}
         weapon = data.get(w.lower(), None)
@@ -398,7 +433,7 @@ def weapontable(w, mods="", as_json=False):
             if not mod:
                 continue
             modregex = re.compile(
-                r"^(?P<direction>[LR])(?P<sharp>X?)(?P<amount>-?\d+)(?P<apply>[HSCB]+)$"
+                r"^(?P<direction>[LR])\s*(?P<sharp>X?)\s*(?P<amount>-?\d+)\s*(?P<apply>[HSCB]+)$"
             )
             match = modregex.match(mod)
             if not match:
@@ -448,34 +483,14 @@ def weapontable(w, mods="", as_json=False):
     except Exception as e:
         return (
             '<div style="color: red"> WeaponCode Invalid: '
-            + " ".join(e.args)
+            + " ".join(str(html.escape(x)) for x in e.args)
             + " </div>"
         )
 
 
-def fill_infolets(body):
-    bleach_ok_list = [
-        "br",
-        "u",
-        "p",
-        "table",
-        "th",
-        "tr",
-        "td",
-        "tbody",
-        "thead",
-        "tfoot",
-        "h2",
-        "h3",
-        "h4",
-        "h5",
-        "h6",
-        "div",
-        "hr",
-    ]
-
+def fill_infolets(body, context=None):
     def gettable(match):
-        return weapontable(match.group("ref"), match.group("mod"))
+        return weapontable(match.group("ref"), match.group("mod"), context=context)
 
     def getinfo(match):
         a = match.group("ref").split(":")
@@ -496,17 +511,19 @@ def fill_infolets(body):
         elif hide_headline:
             article = article[article.find("\n") * hide_headline :]
         return markdown.markdown(
-            bleach.clean(article, tags=bleach_ok_list),
-            extensions=["tables", "toc", "nl2br"],
+            bleach.clean(article), extensions=["tables", "toc", "nl2br"],
         )
 
     def hide(func):
         def hidden(text):
             header = text.group("name") or text.group(0).strip("[]")
-            return (
-                "<div class=hideable><b> " + header + "</b></div>"
-                "<div>" + func(text) + "</div>"
-            )
+            try:
+                return (
+                    "<div class=hideable><b> " + header + "</b></div>"
+                    "<div>" + func(text) + "</div>"
+                )
+            except Exception as e:
+                return f"Error with {header}:\n  {e.args} !"
 
         return hidden
 
@@ -608,3 +625,37 @@ def updatewikitags():
     for m in wikindex():
         wikitags[m.stem] = wikiload(m)[1]
     print("index took: " + str(1000 * (time.time() - wikistamp[0])) + " milliseconds")
+
+
+def load_fen_char(c):
+    char = FenCharacter()
+    char.load_from_md(*wikiload(c + "_character"))
+    definitions = {}
+    for catname, cat in char.Categories.items():
+        for secname, sec in cat.items():
+            for statname, stat in sec.items():
+                stat = stat.strip(" _")
+                if statname.strip() and is_int(stat):
+                    if definitions.get(statname, None) is None:
+                        definitions[statname.strip()] = ".".join(
+                            [catname.strip(), secname.strip(), statname.strip()]
+                        )
+                        if statname.strip().lower() != statname.strip():
+                            definitions[statname.strip().lower()] = statname.strip()
+                        definitions[
+                            ".".join(
+                                [catname.strip(), secname.strip(), statname.strip()]
+                            )
+                        ] = statname.strip()
+                    definitions[
+                        ".".join([catname.strip(), secname.strip(), statname.strip()])
+                    ] = stat
+    return definitions
+
+
+def load_user_char(user):
+    u = User(user)
+    d = u.config("discord", "not set")
+    c = u.config("character_sheet", "")
+    if re.match(r".*#\d{4}$", d):
+        return load_fen_char(c)

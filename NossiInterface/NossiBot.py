@@ -14,7 +14,7 @@ import requests
 from dateparser import parse as dateparse
 
 from Data import getnossihelp
-from NossiInterface.RollInterface import rollhandle
+from NossiInterface.RollInterface import rollhandle, chunk_reply
 from NossiInterface.Tools import discordname, split_send, handle_defines
 from NossiPack.fengraph import chances
 from NossiPack.krypta import DescriptiveError
@@ -214,18 +214,21 @@ async def oraclehandle(msg, comment, send, author):
             await send(author.mention + " <selectors> <modifier>")
 
 
-async def weaponhandle(msg, comment, send, author):
+async def weaponhandle(msg, comment, send, author, react):
     n = requests.get(
         nossiUrl + "/".join(quote(x.strip()) for x in msg.split(":", 2)) + "/txt"
     )
     if n.status_code == 200:
         n = n.content.decode("utf-8")
-        await send(
-            (author.mention + comment + "```" + msg + "\n" + n[:1950] + "```")[:1950]
-        )
+        if len(n) > 1950:
+            await chunk_reply(author.send, n)
+        else:
+            await chunk_reply(
+                send, author.mention + comment + "```" + msg + "\n" + n + "```"
+            )
     else:
+        await react("😕")
         print("failed request:", n.status_code, n.url)
-        return
 
 
 async def specifichandle(msg, comment, send, author):
@@ -247,7 +250,9 @@ async def tick():
         return
     next_call = time.time()
     while True:
-        ticking.append(requests.get("http://www.google.com").elapsed)
+        ticking.append(
+            requests.get("http://www.google.com").elapsed.microseconds / 1000
+        )
         if len(ticking) > 10:
             ticking.pop(0)
         k = "remind"
@@ -392,7 +397,7 @@ async def on_message(message: discord.Message):
     if not msg:
         return
     if msg.startswith("weapon:") or msg.startswith("magicalweapon:"):
-        await weaponhandle(msg, comment, send, message.author)
+        await weaponhandle(msg, comment, send, message.author, message.add_reaction)
     elif msg.startswith("specific:"):
         await specifichandle(msg, comment, send, message.author)
     elif msg.startswith("oracle"):

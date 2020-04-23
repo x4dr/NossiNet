@@ -24,5 +24,6 @@
         {% endfor %}
         <br>
     </div>
+    <a href="{{ url_for("editwiki", x=wiki) }}"><input type="button" class="leeet" style="margin-bottom: 1em" value="Edit"></a><br/>
     <div><button id="TopButton" title="Upwards">Top</button></div>
 {% endblock %}

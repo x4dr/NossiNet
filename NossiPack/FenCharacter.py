@@ -11,6 +11,16 @@ from typing import List, Tuple
 from NossiPack.WoDParser import fullparenthesis
 
 
+def tryfloatbeginning(param, default: float) -> float:
+    while param:
+        try:
+            return float(param)
+        except ValueError:
+            param = param[:-1]
+            continue
+    return default
+
+
 class FenCharacter:
     def __init__(self, name="", meta=None):
         self.Tags = ""
@@ -137,7 +147,14 @@ class FenCharacter:
         for k in self.Meta.keys():
             if k.lower().strip() in ["erfahrung", "experience", "xp"]:
                 sel = self.parse_part(
-                    "\n".join(["\n".join(x) for x in self.Meta[k].values()]), True
+                    "\n".join(
+                        [
+                            "\n".join(x)
+                            for x in self.Meta[k].values()
+                            if isinstance(x[0], str)
+                        ]
+                    ),
+                    True,
                 ).get(name, None)
                 if sel:
                     res += self.parse_xp(sel)
@@ -182,7 +199,6 @@ class FenCharacter:
                 firstline = section.find("\n")
                 sectionname = section[:firstline].strip()
                 section = section[firstline + 1 :].strip()
-                li = []
                 result[categoryname][sectionname] = OrderedDict()
                 result[categoryname][sectionname]["_lines"] = []
                 tablestate = 0
@@ -211,7 +227,14 @@ class FenCharacter:
                     else:
                         tablestate = 0
                         result[categoryname][sectionname]["_lines"].append(line)
-                result[categoryname][sectionname]["_lines"].extend(li)
+                table = FenCharacter.parse_matrix(result[categoryname][sectionname])
+                if table:
+                    if len(table[0]) > 1:
+                        result[categoryname][sectionname]["_table"] = table
+                    else:
+                        result[categoryname][sectionname]["_lines"].extend(
+                            x[0] for x in table
+                        )
                 if len(result[categoryname][sectionname]["_lines"]) == 0:
                     del result[categoryname][sectionname]["_lines"]
                 if not sectionname:
@@ -325,3 +348,37 @@ class FenCharacter:
     def deserialize(serialized):
         tmp = pickle.loads(serialized)
         return tmp
+
+    @staticmethod
+    def parse_matrix(param):
+        lines = param.get("_lines", [])
+        if not lines:
+            return []
+        output = None
+        copy = lines[:]
+        while lines:
+            line = lines.pop(0)
+            parts = line.strip()[
+                1
+                if line.startswith("|")
+                else 0 : -1
+                if line.endswith("|")
+                else len(line)
+            ].split("|")
+            if output is None or len(output[-1]) == len(parts):
+                output = (output or []) + [parts]
+            else:
+                param["_lines"] = copy
+                return []
+        if output[-1][0].lower().strip() in ["total", "summe", "gesamt"]:
+            for i in range(1, len(output[-1])):
+                output[-1][i] = (
+                    "{}".format(
+                        sum(
+                            tryfloatbeginning(outputline[i], 0)
+                            for outputline in output[:-1]
+                        )
+                    )
+                    + output[-1][i]
+                )
+        return output

@@ -96,27 +96,49 @@
         {% endfor -%}
     </div>
     {%- for key,data in character.Meta.items() -%}
-        <h2 class="hideable">*{{ key }}</h2>
+        <h2 class="hideable">o{{ key }}</h2>
         <div>
             {%- for section,sectiondata in data.items() -%}
-                {%- if section|trim|length -%}
-                    <h3 class="hideable">*{{ section|markdown}}</h3>
+                {%- if section|trim|length and section != "_table" -%}
+                    <h3 class="hideable">*{{ section|markdown }}</h3>
                 {%- endif -%}
                 <div>
-
                     {% if sectiondata is mapping %}
                         {% for k, v in sectiondata.items() %}
                             <h4 class="hideable">*{{ k|markdown }}</h4>
                             <div>{% for line in v["_lines"]  %}
                                 {{ line|markdown }}
-                                {% endfor %}
+                            {% endfor %}
                             </div>
-                        {% endfor %}
-                    {% else %}
-                        {%- for line in sectiondata|markdown -%}
-                            {{ line| markdown }}
-                        {%- endfor %}
-
+                        {% endfor -%}
+                    {%- else %}
+                        {%- if section =="_table" -%}
+                            <table class="dividedtable">
+                                {% for line in sectiondata -%}
+                                    {% if loop.index0!=1 %} {# the - - - line in md #}
+                                        {% if loop.first %}
+                                            <thead>
+                                        {% endif %}
+                                    <tr>
+                                        {% set outer_loop = loop %}
+                                        {% for subline in line -%}
+                                            <td class="le{% if outer_loop.first %}e{% endif %}et">{{ subline }}</td>
+                                        {% endfor -%}
+                                    </tr>
+                                    {% if loop.first %}
+                                        </thead>
+                                        <tbody>
+                                        {% elif loop.last %}
+                                        </tbody>
+                                    {% endif %}
+                                    {% endif %}
+                                {%- endfor %}
+                            </table>
+                        {%- else -%}
+                            {%- for line in sectiondata|markdown -%}
+                                {{ line| markdown }}
+                            {%- endfor %}
+                        {% endif %}
                     {% endif %}
 
                 </div>

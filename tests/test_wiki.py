@@ -40,6 +40,27 @@ class TestViews(NossiTestCase):
 
     def test_xp_parsing(self):
         self.assertEqual(
-            FenCharacter.parse_xp("[Worogra, Istan, Dinas Godol, Yon]KKLP(1/3) (nvm)"),
+            FenCharacter.parse_xp(
+                "[Worograd, Istan, Dinas Godol, Yonn]KKLP(1/3) (nvm)"
+            ),
             7,
         )
+
+    def test_matrix_parsing(self):
+
+        testdat = {"_lines": ["|a|b|c", "-|-|-|", "|1|2|3|4", "hi|ho|hu"]}
+        sut = FenCharacter.parse_matrix(testdat)
+        self.assertEqual(
+            testdat["_lines"], ["|a|b|c", "-|-|-|", "|1|2|3|4", "hi|ho|hu"]
+        )
+        self.assertEqual(sut, [])
+
+        testdat = {"_lines": ["|a|b|c", "-|-|-|", "|1|2|3|", "hi|ho|hu"]}
+        sut = FenCharacter.parse_matrix(testdat)
+        self.assertEqual(testdat["_lines"], [])
+        self.assertEqual(sut[2][1], "2")
+        testdat = {"_lines": ["|a|b|c", "-|-|-|", "|1|2|3|", "4|5|6", "Total|||"]}
+        sut = FenCharacter.parse_matrix(testdat)
+        self.assertEqual(testdat["_lines"], [])
+        self.assertEqual(sut[4][2], "9.0")
+        self.assertEqual(sut[4][0], "Total")

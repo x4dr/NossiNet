@@ -1,10 +1,10 @@
 import re
+import time
 
-from NossiPack.FenCharacter import FenCharacter
-from NossiPack.User import User
 from NossiPack.WoDParser import fullparenthesis
-from NossiPack.krypta import is_int
-from NossiSite.wiki import wikiload
+from NossiSite.wiki import load_user_char
+
+statcache = {}
 
 
 def discordname(user):
@@ -28,7 +28,7 @@ async def split_send(send, lines, i=0):
             i += 1
             replypart = ""
         else:
-            print("aborting sending: unexpected state")
+            print("aborting sending: unexpected state", i, lines)
             break
 
 
@@ -140,21 +140,35 @@ async def handle_defines(msg, message, persist):
     :param persist: dictionary that is intended to persist between calls
     :return: the mutated message or None if message was consumed
     """
-    msg = msg.strip("`")
+    msg = msg.strip("` ")
     author = discordname(message.author)
     try:
         persist[author]["defines"]
     except KeyError:
         persist[author] = {"defines": {}}
 
+    cachetimeout = 0 if msg.startswith("?") else 3600
+    pers = persist[author]
+
     if msg.startswith("def "):
         await define(msg, message, persist)
     elif msg.startswith("undef "):
         await undefine(msg, message, persist)
+
+    defines = {}
+    whoami = pers.get("NossiAccount", None)
+    if whoami:
+        cache = statcache.get(whoami, [0, {}])
+        if time.time() - cache[0] > cachetimeout:
+            defines = cache[1]
+        if not defines:
+            defines = load_user_char(whoami)
+            statcache[whoami] = (time.time(), defines)
+    defines.update(pers["defines"])  # add in /override explicit defines
+
+    for k, v in defines.items():
+        msg = msg.replace(k, v)
     return msg
-    # else:
-    # defines should now be totally handled inside wodparser again
-    # return await replacedefines(msg, message, persist)
 
 
 def dict_path(path, d):
@@ -165,35 +179,3 @@ def dict_path(path, d):
         else:
             res.append((path + "." + k, v))
     return res
-
-
-def load_fen_char(user):
-    u = User(user)
-    d = u.config("discord", "not set")
-    c = u.config("character_sheet", "")
-    if re.match(r".*#\d{4}$", d):
-        char = FenCharacter()
-        char.load_from_md(*wikiload(c + "_character"))
-        definitions = {}
-        for catname, cat in char.Categories.items():
-            for secname, sec in cat.items():
-                for statname, stat in sec.items():
-                    stat = stat.strip(" _")
-                    if statname.strip() and is_int(stat):
-                        if definitions.get(statname, None) is None:
-                            definitions[statname.strip()] = ".".join(
-                                [catname.strip(), secname.strip(), statname.strip()]
-                            )
-                            if statname.strip().lower() != statname.strip():
-                                definitions[statname.strip().lower()] = statname.strip()
-                            definitions[
-                                ".".join(
-                                    [catname.strip(), secname.strip(), statname.strip()]
-                                )
-                            ] = statname.strip()
-                        definitions[
-                            ".".join(
-                                [catname.strip(), secname.strip(), statname.strip()]
-                            )
-                        ] = stat
-        return definitions

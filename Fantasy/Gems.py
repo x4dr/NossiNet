@@ -1,5 +1,5 @@
-import time
 import random
+import time
 
 
 def roll(lvl):
@@ -208,8 +208,6 @@ class Character:
 
     def test_gem(self):
         artifact_attribute = 5
-
-        print("Artifactskill:", artifact_attribute)
         self.Gem.Artifactattribute = artifact_attribute
         totaldamage = 0
         totalpretty = 0

@@ -26,6 +26,13 @@ bleach.ALLOWED_TAGS += [
     "tbody",
     "thead",
     "tfoot",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "div",
+    "hr",
 ]
 
 
