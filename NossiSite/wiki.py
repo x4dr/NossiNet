@@ -16,7 +16,7 @@ from markupsafe import Markup
 from NossiPack.FenCharacter import FenCharacter
 from NossiPack.User import User, Userlist
 from NossiPack.fengraph import weapondata
-from NossiPack.krypta import DescriptiveError, is_int
+from NossiPack.krypta import DescriptiveError
 from NossiSite.base import app as defaultapp, log
 from NossiSite.helpers import checktoken, checklogin
 
@@ -87,7 +87,6 @@ def register(app=None):
         if not raw:
 
             body = markdown.markdown(body, extensions=["tables", "toc", "nl2br"])
-            print(bleach.ALLOWED_TAGS)
             body = bleach.clean(body)
             body = fill_infolets(
                 body, page[:-10] if page.endswith("_character") else page
@@ -152,13 +151,12 @@ def register(app=None):
             title, tags, body = wikiload(c + "_character")
             body = bleach.clean(body)
             char.load_from_md(title, tags, body)
-            print("Inv", char.Meta.get("Inventar", None))
             body = render_template(
                 "fensheet.html",
                 character=char,
                 userconf=User(session.get("user", "")).configs(),
             )
-            return fill_infolets(body.replace("&amp;", "&"), c)
+            return fill_infolets(body.replace("&amp;", "&"), char)
         except DescriptiveError as e:
             flash("Error with character sheet:\n" + e.args[0])
             return redirect(url_for("showsheet", name=c))
@@ -409,11 +407,11 @@ def calculate(calc, par=None):
     return decimal.Decimal(res).quantize(1, decimal.ROUND_HALF_UP)
 
 
-def weapontable(w, mods="", as_json=False, context=None):
+def weapontable(w, mods="", as_json=False, context: FenCharacter = None):
     try:
         mods = html.unescape(mods)
         if context:
-            for k, v in load_fen_char(context).items():
+            for k, v in context.stat_definitions():
                 mods = mods.replace(k, v)
         calc = re.compile(r"<(?P<x>.*?)>")
         mods = mods.strip()
@@ -632,27 +630,7 @@ def updatewikitags():
 def load_fen_char(c):
     char = FenCharacter()
     char.load_from_md(*wikiload(c + "_character"))
-    definitions = {}
-    for catname, cat in char.Categories.items():
-        for secname, sec in cat.items():
-            for statname, stat in sec.items():
-                stat = stat.strip(" _")
-                if statname.strip() and is_int(stat):
-                    if definitions.get(statname, None) is None:
-                        definitions[statname.strip()] = ".".join(
-                            [catname.strip(), secname.strip(), statname.strip()]
-                        )
-                        if statname.strip().lower() != statname.strip():
-                            definitions[statname.strip().lower()] = statname.strip()
-                        definitions[
-                            ".".join(
-                                [catname.strip(), secname.strip(), statname.strip()]
-                            )
-                        ] = statname.strip()
-                    definitions[
-                        ".".join([catname.strip(), secname.strip(), statname.strip()])
-                    ] = stat
-    return definitions
+    return char.stat_definitions()
 
 
 def load_user_char(user):

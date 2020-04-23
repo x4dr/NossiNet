@@ -9,6 +9,7 @@ __author__ = "maric"
 from typing import List, Tuple
 
 from NossiPack.WoDParser import fullparenthesis
+from NossiPack.krypta import is_int
 
 
 def tryfloatbeginning(param, default: float) -> float:
@@ -33,6 +34,7 @@ class FenCharacter:
         self.Inventory = OrderedDict()
         self.Notes = ""
         self.Timestamp = time.strftime("%Y/%m/%d-%H:%M:%S")
+        self._xp_cache = None
 
     @staticmethod
     def sublvl():
@@ -51,6 +53,31 @@ class FenCharacter:
                 for spec in self.Categories[kind][cat].keys():
                     unified[spec] = self.Categories[kind][cat][spec]
         return unified
+
+    def stat_definitions(self):
+        definitions = {}
+        for catname, cat in self.Categories.items():
+            for secname, sec in cat.items():
+                for statname, stat in sec.items():
+                    stat = stat.strip(" _")
+                    if statname.strip() and is_int(stat):
+                        if definitions.get(statname, None) is None:
+                            definitions[statname.strip()] = ".".join(
+                                [catname.strip(), secname.strip(), statname.strip()]
+                            )
+                            if statname.strip().lower() != statname.strip():
+                                definitions[statname.strip().lower()] = statname.strip()
+                            definitions[
+                                ".".join(
+                                    [catname.strip(), secname.strip(), statname.strip()]
+                                )
+                            ] = statname.strip()
+                        definitions[
+                            ".".join(
+                                [catname.strip(), secname.strip(), statname.strip()]
+                            )
+                        ] = stat
+        return definitions
 
     def process_trigger(self, trigger):
         pass  # for when triggers are being built in
@@ -134,7 +161,6 @@ class FenCharacter:
             except ValueError:
                 if not v or v[0] != "_":
                     res += 1
-
         return res
 
     def seekxp(self, name) -> int:
@@ -146,7 +172,7 @@ class FenCharacter:
                         res += self.parse_xp(sec[name])
         for k in self.Meta.keys():
             if k.lower().strip() in ["erfahrung", "experience", "xp"]:
-                sel = self.parse_part(
+                self._xp_cache = self._xp_cache or self.parse_part(
                     "\n".join(
                         [
                             "\n".join(x)
@@ -155,9 +181,9 @@ class FenCharacter:
                         ]
                     ),
                     True,
-                ).get(name, None)
-                if sel:
-                    res += self.parse_xp(sel)
+                )
+                if self._xp_cache.get(name, None):
+                    res += self.parse_xp(self._xp_cache.get(name, None))
         return res
 
     @staticmethod
@@ -259,7 +285,7 @@ class FenCharacter:
     def load_from_md(self, title, tags, body):
         self.Name = title
         self.Tags = tags
-
+        self._xp_cache = None
         sheetparts = re.split(r"\n#(?!#)", "\n" + body, re.MULTILINE)
         if len(sheetparts) == 0:
             sheetparts = [body]
@@ -358,18 +384,20 @@ class FenCharacter:
         copy = lines[:]
         while lines:
             line = lines.pop(0)
-            parts = line.strip()[
-                1
-                if line.startswith("|")
-                else 0 : -1
-                if line.endswith("|")
-                else len(line)
-            ].split("|")
+            if not line.strip():
+                continue
+            parts = line.strip().split("|")
             if output is None or len(output[-1]) == len(parts):
                 output = (output or []) + [parts]
             else:
+                if len(output[-1]) - len(parts) <= 2:
+                    output = output + [parts + ["", ""]][: len(output[-1])]
                 param["_lines"] = copy
                 return []
+        if all(not x[0] for x in output):
+            output = [x[1:] for x in output]
+        if all(not x[-1] for x in output):
+            output = [x[:-1] for x in output]
         if output[-1][0].lower().strip() in ["total", "summe", "gesamt"]:
             for i in range(1, len(output[-1])):
                 output[-1][i] = (
