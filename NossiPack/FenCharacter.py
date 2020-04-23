@@ -402,9 +402,12 @@ class FenCharacter:
             for i in range(1, len(output[-1])):
                 output[-1][i] = (
                     "{}".format(
-                        sum(
-                            tryfloatbeginning(outputline[i], 0)
-                            for outputline in output[:-1]
+                        round(
+                            sum(
+                                tryfloatbeginning(outputline[i], 0)
+                                for outputline in output[:-1]
+                            ),
+                            6,
                         )
                     )
                     + output[-1][i]
