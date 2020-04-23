@@ -149,14 +149,16 @@ def register(app=None):
     def fensheet(c):
         try:
             char = FenCharacter()
-            char.load_from_md(*wikiload(c + "_character"))
+            title, tags, body = wikiload(c + "_character")
+            body = bleach.clean(body)
+            char.load_from_md(title, tags, body)
             print("Inv", char.Meta.get("Inventar", None))
             body = render_template(
                 "fensheet.html",
                 character=char,
                 userconf=User(session.get("user", "")).configs(),
             )
-            return fill_infolets(body, c)
+            return fill_infolets(body.replace("&amp;", "&"), c)
         except DescriptiveError as e:
             flash("Error with character sheet:\n" + e.args[0])
             return redirect(url_for("showsheet", name=c))
