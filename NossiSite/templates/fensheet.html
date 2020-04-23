@@ -11,6 +11,29 @@
         ○
     {%- endfor -%}
 {%- endmacro -%}
+{% macro tablematrix(sectiondata) %}
+    <table class="dividedtable">
+        {% for line in sectiondata -%}
+            {% if loop.index0!=1 %} {# the - - - line in md #}
+                {% if loop.first %}
+                    <thead>
+                {% endif %}
+            <tr>
+                {% set outer_loop = loop %}
+                {% for subline in line -%}
+                    <td class="le{% if outer_loop.first %}e{% endif %}et">{{ subline }}</td>
+                {% endfor -%}
+            </tr>
+            {% if loop.first %}
+                </thead>
+                <tbody>
+                {% elif loop.last %}
+                </tbody>
+            {% endif %}
+            {% endif %}
+        {%- endfor %}
+    </table>
+{% endmacro %}
 {% macro sectionformat(cat) %}
     {%- for k,v in cat.items() -%}
         {%- if v is mapping -%}
@@ -105,35 +128,19 @@
                 <div>
                     {% if sectiondata is mapping %}
                         {% for k, v in sectiondata.items() %}
-                            <h4 class="hideable">*{{ k|markdown }}</h4>
-                            <div>{% for line in v["_lines"]  %}
-                                {{ line|markdown }}
-                            {% endfor %}
-                            </div>
+                            {%- if k =="_table" -%}
+                                {{ tablematrix(v) }}
+                            {%- else -%}
+                                <h4 class="hideable">*{{ k|markdown }}</h4>
+                                <div>{% for line in v["_lines"]  %}
+                                    {{ line|markdown }}
+                                {% endfor %}
+                                </div>
+                            {% endif %}
                         {% endfor -%}
                     {%- else %}
                         {%- if section =="_table" -%}
-                            <table class="dividedtable">
-                                {% for line in sectiondata -%}
-                                    {% if loop.index0!=1 %} {# the - - - line in md #}
-                                        {% if loop.first %}
-                                            <thead>
-                                        {% endif %}
-                                    <tr>
-                                        {% set outer_loop = loop %}
-                                        {% for subline in line -%}
-                                            <td class="le{% if outer_loop.first %}e{% endif %}et">{{ subline }}</td>
-                                        {% endfor -%}
-                                    </tr>
-                                    {% if loop.first %}
-                                        </thead>
-                                        <tbody>
-                                        {% elif loop.last %}
-                                        </tbody>
-                                    {% endif %}
-                                    {% endif %}
-                                {%- endfor %}
-                            </table>
+                            {{ tablematrix(sectiondata) }}
                         {%- else -%}
                             {%- for line in sectiondata|markdown -%}
                                 {{ line| markdown }}

@@ -43,7 +43,10 @@ bleach.ALLOWED_TAGS += [
     "h6",
     "div",
     "hr",
+    "img",
 ]
+
+bleach.ALLOWED_ATTRIBUTES.update({"img": ["src"]})
 
 
 def register(app=None):
