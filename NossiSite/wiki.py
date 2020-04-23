@@ -411,7 +411,7 @@ def weapontable(w, mods="", as_json=False, context: FenCharacter = None):
     try:
         mods = html.unescape(mods)
         if context:
-            for k, v in context.stat_definitions():
+            for k, v in context.stat_definitions().items():
                 mods = mods.replace(k, v)
         calc = re.compile(r"<(?P<x>.*?)>")
         mods = mods.strip()
