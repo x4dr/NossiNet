@@ -39,6 +39,7 @@ bleach.ALLOWED_TAGS += [
     "h2",
     "h3",
     "h4",
+    "id",
     "h5",
     "h6",
     "div",
