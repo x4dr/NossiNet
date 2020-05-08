@@ -179,7 +179,7 @@ class FenCharacter:
                         [
                             "\n".join(x)
                             for x in self.Meta[k].values()
-                            if isinstance(x[0], str)
+                            if len(x) and isinstance(x[0], str)
                         ]
                     ),
                     True,
