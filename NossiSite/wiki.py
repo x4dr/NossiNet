@@ -47,6 +47,7 @@ bleach.ALLOWED_TAGS += [
     "img",
 ]
 
+
 bleach.ALLOWED_ATTRIBUTES.update({"img": ["src"]})
 
 

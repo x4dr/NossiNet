@@ -165,9 +165,15 @@ async def handle_defines(msg, message, persist):
             defines = load_user_char(whoami)
             statcache[whoami] = (time.time(), defines)
     defines.update(pers["defines"])  # add in /override explicit defines
-
-    for k, v in defines.items():
-        msg = msg.replace(k, v)
+    loopconstraint = 100
+    while loopconstraint > 0:
+        loopconstraint -= 1
+        for k, v in defines.items():
+            if k in msg:
+                msg = msg.replace(k, v)
+                break
+        else:
+            loopconstraint = 0  # no break means no replacements
     return msg
 
 

@@ -1,3 +1,4 @@
+import base64
 import itertools
 import pickle
 import re
@@ -56,27 +57,28 @@ class FenCharacter:
 
     def stat_definitions(self):
         definitions = {}
+
         for catname, cat in self.Categories.items():
             for secname, sec in cat.items():
                 for statname, stat in sec.items():
                     stat = stat.strip(" _")
                     if statname.strip() and is_int(stat):
-                        if definitions.get(statname, None) is None:
-                            definitions[statname.strip()] = ".".join(
-                                [catname.strip(), secname.strip(), statname.strip()]
+                        qualifier = str(
+                            base64.b64encode(
+                                ".".join(
+                                    [catname.strip(), secname.strip(), statname.strip()]
+                                ).encode()
                             )
-                            if statname.strip().lower() != statname.strip():
-                                definitions[statname.strip().lower()] = statname.strip()
+                        )
+                        if definitions.get(statname, None) is None:
+                            definitions[statname.strip()] = qualifier
+                            definitions[statname.strip().lower()] = qualifier
                             definitions[
                                 ".".join(
                                     [catname.strip(), secname.strip(), statname.strip()]
                                 )
-                            ] = statname.strip()
-                        definitions[
-                            ".".join(
-                                [catname.strip(), secname.strip(), statname.strip()]
-                            )
-                        ] = stat
+                            ] = qualifier
+                        definitions[qualifier] = stat
         return definitions
 
     def process_trigger(self, trigger):

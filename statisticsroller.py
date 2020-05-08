@@ -7,7 +7,7 @@ from math import ceil
 from typing import Tuple
 
 import pydealer
-from NossiPack.FenCharacter import FenCharacter
+
 from NossiPack.WoDParser import WoDParser
 from NossiPack.krypta import d10
 
@@ -147,7 +147,7 @@ def run_duel(a, b, c=None, d=None, duration=60):
         % (str(a) + ", " + str(b), str(c) + ", " + str(d), time.time() - time1)
     )
     print(sum(successes.values()))
-    return plot(dict(successes))
+    return plotdata(dict(successes))
 
 
 def run_sel(sel, addon=""):
@@ -158,7 +158,7 @@ def run_sel(sel, addon=""):
         x: (total.count(x) if x in total else 0)
         for x in range(min(total), max(total) + 1)
     }
-    plot(pr)
+    plotdata(pr)
     print(sum(total) / 100000)
 
 
@@ -185,7 +185,7 @@ def run():
     print(
         "rolling %d dice against %d for %.1f seconds" % (amount, difficulty, duration)
     )
-    plot(dict(successes))
+    plotdata(dict(successes))
 
 
 def get_multiples(xs):
@@ -416,9 +416,9 @@ def run_craft(
         for x in range(0, max(rolls) + 1, 5)
     }
     print("rolls")
-    plot(nrolls, grouped=1)
+    plotdata(nrolls, grouped=1)
     print("levels:")
-    plot(levels)
+    plotdata(levels)
     print(
         "averages=",
         sum(k * v for k, v in rolls.items()) / len(rolls),
@@ -426,6 +426,77 @@ def run_craft(
     )
 
 
+def bowdpstest(bowmana_rate, draw, aim, fire, quickdraw, quickaim, quickfire):
+    bowmana_max = bowmana_rate * 4
+    bowmana = bowmana_max
+    state = 0
+    transitions = [draw, aim, fire, bowmana_max * 2]
+    quickperks = [quickdraw, quickaim, quickfire]
+    damage = 0
+    for i in range(20):
+        bowmana += bowmana_rate
+        bowmana = min(bowmana_max, bowmana)
+        while True:
+            if bowmana >= transitions[state]:
+                bowmana -= transitions[state]
+                state += 1
+                if state >= len(transitions) - 1:
+                    damage += 1
+                    state = 0
+                if quickperks[state - 1]:
+                    if bowmana >= transitions[state - 1]:
+                        bowmana -= transitions[state]
+                        continue  # getto goto what is wrong with me
+            break
+    return damage
+
+
 if __name__ == "__main__":
-    print(vars(FenCharacter()))
-    print(run_craft(1000, 40, 0, 1, (5, 5), ""))
+    line = 0
+    data = []
+    for stats in range(0, 11):
+        data.append([])
+        for quick in range(8):
+            data[-1].append([])
+            for bowdraw in range(2, 6):
+                data[-1][-1].append([])
+                for bowaim in range(2, 6):
+                    data[-1][-1][-1].append([])
+                    for bowfire in range(2, 6):
+                        line += 1
+                        data[-1][-1][-1][-1].append(
+                            bowdpstest(
+                                1 + stats,
+                                1 + bowdraw,
+                                1 + bowaim,
+                                1 + bowfire,
+                                (quick & 4) // 4,
+                                (quick & 2) // 2,
+                                quick & 1,
+                            )
+                        )
+            print(line)
+
+    import matplotlib.pyplot as plt
+
+    line = 0
+    plots = {}
+    for statsi, stats in enumerate(data):
+        for quicki, quick in enumerate(stats):
+            for drawi, draw in enumerate(quick):
+                for aimi, aim in enumerate(draw):
+                    for firei, fire in enumerate(aim):
+                        plt.plot(fire)
+                        line += 1
+                        title = (
+                            f"quick:{((quicki & 4) // 4, (quicki & 2) // 2, quicki & 1)}"
+                            f"stats:{drawi+1,aimi+1,firei+1}"
+                        )
+                        print(title, statsi)
+                        plots[title] = plots.get(title, []) + [fire]
+
+    for title, plotdata in plots.items():
+        print(title, plotdata)
+        plt.title(title)
+        plt.plot(plotdata)
+        plt.show()
