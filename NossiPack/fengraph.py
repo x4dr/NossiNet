@@ -275,11 +275,11 @@ def chances(selector, modifier=0, number_of_quantiles=None, mode=None):
             runningsum = sum(occurrences.values())
             for k in sorted(occurrences):
                 if occurrences[k]:
-                    runningsum -= occurrences[k]
                     res += (
                         f"{k:5d} {100 * runningsum / total: >5.2f} "
                         f"{'#' * int(40 * runningsum / total)}\n"
                     )
+                    runningsum -= occurrences[k]
         total = sum(occurrences.values())
         avg = sum(k * v for k, v in occurrences.items()) / total
         dev = math.sqrt(
@@ -294,7 +294,7 @@ def chances(selector, modifier=0, number_of_quantiles=None, mode=None):
         elif mode > 0:
             fy = [sum(vals[: i + 1]) / total for i in range(len(vals))]
         elif mode < 0:
-            fy = [(total - sum(vals[: i + 1])) / total for i in range(len(vals))]
+            fy = [(total - sum(vals[:i])) / total for i in range(len(vals))]
 
         fx = sorted(list(occurrences.keys()))
         f = interp1d(fx, fy, kind=2, bounds_error=False, fill_value=0)
