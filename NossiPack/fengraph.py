@@ -8,6 +8,8 @@ from math import ceil
 import numpy
 import requests
 
+from Data import append, get
+
 try:
     from scipy.integrate import quad
     from scipy.interpolate import interp1d
@@ -219,7 +221,7 @@ def helper(f, integratedsum, q, lastquant):
     return internalhelper
 
 
-def chances(selector, modifier=0, number_of_quantiles=None):
+def chances(selector, modifier=0, number_of_quantiles=None, mode=None):
     selector = tuple(sorted(int(x) for x in selector if 0 < int(x) < 6))
     if not selector:
         raise DescriptiveError("No Selectors!")
@@ -227,27 +229,25 @@ def chances(selector, modifier=0, number_of_quantiles=None):
     occurrences = {}
     yield "processing..."
     try:
-        with open("unordered_data") as f:
-            for line in f.readlines():
-                if line.startswith(str(selector)):
-                    occurrences = ast.literal_eval(line[len(str(selector)) :])[modifier]
-                    break
-            if not occurrences:
-                yield "did not find" + str(selector)
-                raise DescriptiveError("no data found")
+        for line in get("unordered_data").splitlines():
+            if line.startswith(str(selector)):
+                occurrences = ast.literal_eval(line[len(str(selector)) :])[modifier]
+                break
+        if not occurrences:
+            yield "did not find" + str(selector)
+            raise DescriptiveError("no data found")
         yield "data found..."
     except DescriptiveError:
         yield f"generating Data for {selector}..."
-        with open("unordered_data", "a") as f:
-            occurren = {}
-            for mod in range(-5, 6):
-                df = dataset(mod)
-                occ = {k: 0 for k in range(1, 10 * len(selector) + 1)}
-                for row, series in df.iterrows():
-                    k, v = select_modified(selector, series)
-                    occ[k] += v
-                occurren[mod] = occ
-            f.write(str(tuple(selector)) + str(occurren) + "\n")
+        occurren = {}
+        for mod in range(-5, 6):
+            df = dataset(mod)
+            occ = {k: 0 for k in range(1, 10 * len(selector) + 1)}
+            for row, series in df.iterrows():
+                k, v = select_modified(selector, series)
+                occ[k] += v
+            occurren[mod] = occ
+        append("unordered_data", str(tuple(selector)) + str(occurren) + "\n")
         occurrences = occurren[modifier]
         yield f"Data for {selector} has been generated"
     yield "generating result..."
@@ -255,12 +255,31 @@ def chances(selector, modifier=0, number_of_quantiles=None):
     total = sum(occurrences.values())
     if number_of_quantiles is None:
         res = ""
-        for k in sorted(occurrences):
-            if occurrences[k]:
-                res += (
-                    f"{k:5d} {100 * occurrences[k] / total: >5.2f} "
-                    f"{'#' * int(40 * occurrences[k] / max_val)}\n"
-                )
+        if not mode:
+            for k in sorted(occurrences):
+                if occurrences[k]:
+                    res += (
+                        f"{k:5d} {100 * occurrences[k] / total: >5.2f} "
+                        f"{'#' * int(40 * occurrences[k] / max_val)}\n"
+                    )
+        elif mode > 0:
+            runningsum = 0
+            for k in sorted(occurrences):
+                if occurrences[k]:
+                    runningsum += occurrences[k]
+                    res += (
+                        f"{k:5d} {100 * runningsum / total: >5.2f} "
+                        f"{'#' * int(40 * runningsum / total)}\n"
+                    )
+        elif mode < 0:
+            runningsum = sum(occurrences.values())
+            for k in sorted(occurrences):
+                if occurrences[k]:
+                    runningsum -= occurrences[k]
+                    res += (
+                        f"{k:5d} {100 * runningsum / total: >5.2f} "
+                        f"{'#' * int(40 * runningsum / total)}\n"
+                    )
         total = sum(occurrences.values())
         avg = sum(k * v for k, v in occurrences.items()) / total
         dev = math.sqrt(
@@ -269,7 +288,14 @@ def chances(selector, modifier=0, number_of_quantiles=None):
         yield res, avg, dev
     else:
         yield "generating graph..."
-        fy = [x / total for x in occurrences.values()]
+        vals = [occurrences[x] for x in sorted(occurrences.keys())]
+        if not mode:
+            fy = [x / total for x in vals]
+        elif mode > 0:
+            fy = [sum(vals[: i + 1]) / total for i in range(len(vals))]
+        elif mode < 0:
+            fy = [(total - sum(vals[: i + 1])) / total for i in range(len(vals))]
+
         fx = sorted(list(occurrences.keys()))
         f = interp1d(fx, fy, kind=2, bounds_error=False, fill_value=0)
         import matplotlib.pyplot as plt
@@ -277,7 +303,7 @@ def chances(selector, modifier=0, number_of_quantiles=None):
         plt.figure()
         plt.bar(
             range(1, len(occurrences.values()) + 1),
-            [1 * x / total for x in occurrences.values()],
+            fy,
             facecolor="green",
             alpha=0.75,
             linewidth=1,

@@ -150,10 +150,17 @@ async def oraclehandle(msg, comment, send, author):
     if errreport:
         msg = msg[1:].strip()
     sentmessage = None
+    mode = None
+    if msg.endswith(" asc"):
+        mode = 1
+        msg = msg[:-4]
+    if msg.endswith(" desc"):
+        mode = -1
+        msg = msg[:-5]
     if msg.startswith("show"):
         try:
             parameters = msg[5:].split(" ")
-            it = chances(parameters[:-2], parameters[-2], parameters[-1])
+            it = chances(parameters[:-2], parameters[-2], parameters[-1], mode=mode)
             sentmessage = await send(author.mention + comment + " " + next(it))
             for n in it:
                 if isinstance(n, str):
@@ -170,11 +177,14 @@ async def oraclehandle(msg, comment, send, author):
             if sentmessage:
                 await sentmessage.edit(content=author.mention + " ERROR")
                 await sentmessage.delete(delay=3)
-            await send(author.mention + " <selectors> <modifier> <number of quantiles>")
+            await send(
+                author.mention
+                + " <selectors> <modifier> <number of quantiles> [asc|desc]"
+            )
     else:
         try:
             parameters = msg.split(" ")
-            it = chances(parameters[:-1], parameters[-1])
+            it = chances(parameters[:-1], parameters[-1], mode=mode)
             sentmessage = await send(author.mention + comment + " " + next(it))
             n = ""
             p = (
@@ -187,6 +197,7 @@ async def oraclehandle(msg, comment, send, author):
                     await sentmessage.edit(content=author.mention + comment + " " + n)
             if n:
                 n, avg, dev = n
+                print(n)
                 await sentmessage.edit(
                     content=(
                         author.mention
@@ -211,7 +222,7 @@ async def oraclehandle(msg, comment, send, author):
                 await sentmessage.delete(delay=3)
             if errreport:
                 await author.send("Oracle error: " + " ".join(str(x) for x in e.args))
-            await send(author.mention + " <selectors> <modifier>")
+            await send(author.mention + " <selectors> <modifier> [asc|desc]")
 
 
 async def weaponhandle(msg, comment, send, author, react):

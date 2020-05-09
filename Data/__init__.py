@@ -10,6 +10,13 @@ def get(res):
         return data.read()
 
 
+def append(res, d):
+    with open(
+        next(importlib.resources.path("Data", pathlib.Path(res))).as_posix()
+    ) as data:
+        data.write(d)
+
+
 def getlocale_data():
     return json.loads(get("EN.json"))
 
