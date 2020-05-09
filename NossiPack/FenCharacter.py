@@ -172,9 +172,10 @@ class FenCharacter:
                 if secname.lower().strip() in ["erfahrung", "experience", "xp"]:
                     if sec.get(name, None):
                         res += self.parse_xp(sec[name])
-        try:
-            for k in self.Meta.keys():
-                if k.lower().strip() in ["erfahrung", "experience", "xp"]:
+
+        for k in self.Meta.keys():
+            if k.lower().strip() in ["erfahrung", "experience", "xp"]:
+                try:
                     self._xp_cache = self._xp_cache or self.parse_part(
                         "\n".join(
                             [
@@ -187,10 +188,9 @@ class FenCharacter:
                     )
                     if self._xp_cache.get(name, None):
                         res += self.parse_xp(self._xp_cache.get(name, None))
-            return res
-        except:
-            print("XPERROR", k, self.Meta.keys())
-            return -9999999
+                except:
+                    res += 0  # invalid xp part
+        return res
 
     @staticmethod
     def parse_xp(s):
