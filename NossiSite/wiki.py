@@ -39,7 +39,6 @@ bleach.ALLOWED_TAGS += [
     "h2",
     "h3",
     "h4",
-    "id",
     "h5",
     "h6",
     "div",
@@ -48,7 +47,16 @@ bleach.ALLOWED_TAGS += [
 ]
 
 
-bleach.ALLOWED_ATTRIBUTES.update({"img": ["src"]})
+bleach.ALLOWED_ATTRIBUTES.update(
+    {
+        "img": ["src"],
+        "h1": ["id"],
+        "h2": ["id"],
+        "h3": ["id"],
+        "h4": ["id"],
+        "h5": ["id"],
+    }
+)
 
 
 def register(app=None):
