@@ -1,3 +1,4 @@
+import html
 import re
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -52,6 +53,7 @@ class Armor(Item):
         return cls(line[0].strip(), *[fenconvert(x) for x in line[1:]])
 
     def apply_mods(self, mods):
+        mods = html.unescape(mods)
         for mod in mods.split(","):
             match = modregex.match(mod)
             if match:

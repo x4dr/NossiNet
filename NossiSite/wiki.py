@@ -433,7 +433,6 @@ def get_armor(a, mods="", context: str = "") -> Union[Armor, None]:
     armor = lowercase_access(armordata(), a)
     if armor is None:
         return None
-    mods = process_mods(mods, context)
     armor.apply_mods(mods)
     return armor
 
@@ -657,11 +656,9 @@ def updatewikitags():
 def get_fen_char(c: str) -> FenCharacter:
     c = c + "_character" if not c.endswith("_character") else c
     char = chara_objects.get(c, None)
-    print("getting...", c, char, chara_objects)
     if char is None:
         char = FenCharacter.from_md(wikiload(c)[2])
         chara_objects[c] = char
-    print("got", char, char.definitions)
     return char
 
 

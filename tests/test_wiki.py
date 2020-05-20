@@ -75,9 +75,11 @@ class TestViews(NossiTestCase):
         self.assertEqual(fendeconvert(fenconvert("3332c"), "money"), "33.32s")
         self.assertEqual(fendeconvert(fenconvert("0.001g"), "money"), "10c")
 
-    def test_sandbox(self):
+    def test_armor(self):
         armordata()
         for a in armordata().values():
+            n = a.name
             a.apply_mods(
                 "N <> of Resilience, P x+2,S x+1, Wx/2, K x *1.1, R 100 * (x/100) **2"
             )
+            self.assertTrue(a.name.endswith("Resilience") and a.name.startswith(n))
