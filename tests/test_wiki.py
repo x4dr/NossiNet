@@ -78,8 +78,6 @@ class TestViews(NossiTestCase):
     def test_sandbox(self):
         armordata()
         for a in armordata().values():
-            print(a)
             a.apply_mods(
                 "N <> of Resilience, P x+2,S x+1, Wx/2, K x *1.1, R 100 * (x/100) **2"
             )
-            print(a)

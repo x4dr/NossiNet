@@ -7,7 +7,7 @@ import Data
 from NossiInterface.Tools import splitpara, replacedefines
 from NossiPack.krypta import connect_db
 from NossiSite import wiki
-from NossiSite.wiki import load_fen_char_stats
+from NossiSite.wiki import get_fen_char
 
 
 class TestInterface(TestCase):
@@ -32,13 +32,11 @@ class TestInterface(TestCase):
     def test_replacedef_simple(self):
         msg = "a"
         test = asyncio.run(replacedefines(msg, self.message, self.persist))
-        print(test)
         self.assertEqual(test, "c 4")
 
     def test_replacedef_ignore_trigger(self):
         msg = "a & a & a"
         test = asyncio.run(replacedefines(msg, self.message, self.persist))
-        print(test)
         self.assertEqual(test, "c 4 & a & c 4")
 
     @mock.patch.object(Data, "DATABASE", "loadchara.db")
@@ -47,12 +45,12 @@ class TestInterface(TestCase):
         "wikiload",
         lambda x: ("", [], "#Werte\n##TestWert\n###Attribut\nkey|valb\n---|---\na|3"),
     )
+    @mock.patch.object(wiki, "chara_objects", {})
     def test_loadchara(self):
         self.addCleanup(lambda x: Path(x).unlink(), Data.DATABASE)
         c = connect_db("Testing...")
         c.execute('INSERT INTO users VALUES ("test","__",0,"",0)')
         c.execute('INSERT INTO configs VALUES ("test","discord", "test#1234")')
         c.execute('INSERT INTO configs VALUES ("test","character_sheet", "test")')
-        test = load_fen_char_stats("test")
-
+        test = get_fen_char("test").stat_definitions()
         self.assertEqual(test[test["a"]], "3")

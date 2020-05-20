@@ -53,7 +53,6 @@ def fendeconvert(val: float, conv: str) -> str:
             )
         ]
         base = conversions[0]
-        print("log", base, val, conversions)
         exp = int(math.log(val, base)) if val > 0 else 0  # no log possible
         exp = min(len(units) - 1, exp)  # biggest unit for all that are too big
         return f"{val / conversions[1][units[exp]]:.10g}" + units[exp]
