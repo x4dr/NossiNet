@@ -17,6 +17,9 @@ jobs:
           python3 -m venv .venv
           . .venv/bin/activate
           pip install -r requirements.txt
+      - name: set up the wiki environment
+        run: |
+          git clone https://github.com/x4dr/Fen.git ~/wiki
       - name: Run unittests/coverage
         run: |
           . .venv/bin/activate
