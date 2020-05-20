@@ -21,7 +21,9 @@
         let hideables=$(".hideable");
         hideables.click(function () {
             let $hideable = $(this);
-            let $content = $hideable.next();
+            let $content = $hideable.next("div");
+            if ($content.length==0)
+                $content = $hideable.parent().nextAll("div").first()
             $content.slideToggle(100, function () {
                 $hideable.text(function () {
                     return ($content.is(":visible") ? "-" : "+") + $hideable.text().slice(1);

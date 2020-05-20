@@ -76,10 +76,15 @@ class TestViews(NossiTestCase):
         self.assertEqual(fendeconvert(fenconvert("0.001g"), "money"), "10c")
 
     def test_armor(self):
-        armordata()
-        for a in armordata().values():
+        d = armordata()
+        for a in d.values():
             n = a.name
             a.apply_mods(
                 "N <> of Resilience, P x+2,S x+1, Wx/2, K x *1.1, R 100 * (x/100) **2"
             )
             self.assertTrue(a.name.endswith("Resilience") and a.name.startswith(n))
+        a = list(d.values())[0]
+        n = a.name
+        a.apply_mods("N<>a")
+        a.apply_mods("Nb<>")
+        self.assertEqual(a.name, f"b{n}a")

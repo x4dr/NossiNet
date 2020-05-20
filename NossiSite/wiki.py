@@ -4,6 +4,7 @@ import os
 import re
 import time
 from pathlib import Path
+from re import Match
 from typing import Tuple, List, Union
 
 import bleach
@@ -539,16 +540,28 @@ def fill_infolets(body, character_name: str):
 
     def hide(func):
         def hidden(text):
-            header = text.group("name") or text.group(0).strip("[]")
+            header = (
+                text.group("name")
+                or text.group("ref").strip("[]-:").split(":")[-1].title()
+            )
             try:
                 return (
-                    "<div class=hideable><b> " + header + "</b></div>"
+                    "<div class=hideable><b> " + header + "</b></div>\n"
                     "<div>" + str(func(text)) + "</div>"
                 )
             except Exception as e:
                 return f"Error with {header}:\n  {e.args} !"
 
         return hidden
+
+    def headerfix(text: Match):
+        if "\n" not in text.group("content"):
+            return text.group()
+        return (
+            f"<{text.group('h')} {text.group('extra')}> "
+            f"{text.group('content').splitlines()[0]}</{text.group('h')}>"
+            + "\n".join(text.group("content").splitlines()[1:])
+        )
 
     hiddentable = re.compile(
         r"\[(?P<name>.*?)\[\[(?P<kind>.+?):(?P<ref>.+?):(?P<mod>.*?)\]\]\]",
@@ -562,11 +575,16 @@ def fill_infolets(body, character_name: str):
     )
     infos = re.compile(r"\[\[specific:(?P<ref>.+?)\]\]", re.IGNORECASE)
     links = re.compile(r"\[(.+?)\]\((?P<ref>.+?)\)")
+    headers = re.compile(
+        r"<(?P<h>h[0-9]*)\b(?P<extra>[^>]*)>(?P<content>.*?)</(?P=h)\b[^>]*>",
+        re.IGNORECASE | re.DOTALL,
+    )
 
     body = links.sub(r'<a href="/wiki/\g<2>"> \g<1> </a>', body)
 
     body = infos.sub(getinfo, hiddeninfos.sub(hide(getinfo), body))
-    return table.sub(get_table, hiddentable.sub(hide(get_table), body))
+    body = table.sub(get_table, hiddentable.sub(hide(get_table), body))
+    return headers.sub(headerfix, body)
 
 
 def traverse_md(md: str, seek: str) -> str:
@@ -613,7 +631,6 @@ def wikiload(page: Union[str, Path]) -> Tuple[str, List[str], str]:
 
 
 def wikisave(page, author, title, tags, body):
-
     print(f"saving {page} ...")
     with (wikipath / (page + ".md")).open("w+") as f:
         f.write("title: " + title + "  \n")
