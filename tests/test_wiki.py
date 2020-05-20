@@ -4,7 +4,9 @@ from unittest import mock
 from flask import url_for
 
 import Data
+from Fantasy.Item import fenconvert, fendeconvert
 from NossiPack.FenCharacter import FenCharacter
+from NossiPack.fengraph import armordata
 from NossiSite import helpers
 from NossiSite.wiki import wikisave
 from tests.NossiTestCase import NossiTestCase
@@ -62,3 +64,22 @@ class TestViews(NossiTestCase):
         self.assertEqual(testdat["_lines"], [])
         self.assertEqual(sut[4][2], "9.0")
         self.assertEqual(sut[4][0], "Total")
+
+    def test_fenconvert(self):
+        self.assertEqual(fenconvert("30kg"), 30000)
+        self.assertEqual(fendeconvert(30000, "weight"), "30kg")
+        self.assertEqual(fendeconvert(30001, "weight"), "30.001kg")
+        self.assertEqual(fendeconvert(31, "weight"), "31gr")
+        self.assertEqual(fendeconvert(3000000001, "weight"), "3000.000001t")
+        self.assertEqual(fendeconvert(fenconvert("252s"), "money"), "2.52g")
+        self.assertEqual(fendeconvert(fenconvert("3332c"), "money"), "33.32s")
+        self.assertEqual(fendeconvert(fenconvert("0.001g"), "money"), "10c")
+
+    def test_sandbox(self):
+        armordata()
+        for a in armordata().values():
+            print(a)
+            a.apply_mods(
+                "N <> of Resilience, P x+2,S x+1, Wx/2, K x *1.1, R 100 * (x/100) **2"
+            )
+            print(a)

@@ -1,4 +1,3 @@
-import decimal
 import html
 import json
 import os
@@ -9,20 +8,23 @@ from typing import Tuple, List, Union
 
 import bleach
 import markdown
-import numexpr
 from flask import render_template, request, redirect, url_for, session, flash, abort
 from markupsafe import Markup
 
+from Fantasy.Armor import Armor
 from NossiPack.FenCharacter import FenCharacter
 from NossiPack.User import User, Userlist
-from NossiPack.fengraph import weapondata
-from NossiPack.krypta import DescriptiveError
+from NossiPack.fengraph import weapondata, armordata
+from NossiPack.krypta import DescriptiveError, calculate
+from NossiSite.AfterResponse import AfterResponse
 from NossiSite.base import app as defaultapp, log
 from NossiSite.helpers import checktoken, checklogin
 
 wikipath = Path.home() / "wiki"
 wikistamp = [0.0]
 wikitags = {}
+chara_objects = {}
+
 bleach.ALLOWED_TAGS += [
     "br",
     "u",
@@ -46,7 +48,6 @@ bleach.ALLOWED_TAGS += [
     "img",
 ]
 
-
 bleach.ALLOWED_ATTRIBUTES.update(
     {
         "img": ["src"],
@@ -62,6 +63,15 @@ bleach.ALLOWED_ATTRIBUTES.update(
 def register(app=None):
     if app is None:
         app = defaultapp
+
+    AfterResponse(app)
+
+    @app.after_response
+    def update():
+        if not wikitags.keys():
+            updatewikitags()
+
+    update()  # while registering and from then on every time the wikitags get cleared
 
     @app.route("/index/")
     def wiki_index():
@@ -98,12 +108,9 @@ def register(app=None):
             flash("That page doesn't exist. Log in to create it!")
             return redirect(url_for("wiki_index"))
         if not raw:
-
-            body = markdown.markdown(body, extensions=["tables", "toc", "nl2br"])
             body = bleach.clean(body)
-            body = fill_infolets(
-                body, page[:-10] if page.endswith("_character") else page
-            )
+            body = markdown.markdown(body, extensions=["tables", "toc", "nl2br"])
+            body = fill_infolets(body, page)
             return render_template(
                 "wikipage.html", title=title, tags=tags, body=body, wiki=page
             )
@@ -160,35 +167,18 @@ def register(app=None):
     @app.route("/fensheet/<c>")
     def fensheet(c):
         try:
-            char = FenCharacter()
+            char = get_fen_char(c)
             title, tags, body = wikiload(c + "_character")
             body = bleach.clean(body)
-            char.load_from_md(title, tags, body)
+            char.load_from_md(body)
             body = render_template(
                 "fensheet.html",
                 character=char,
                 userconf=User(session.get("user", "")).configs(),
             )
-            return fill_infolets(body.replace("&amp;", "&"), char)
+            return fill_infolets(body.replace("&amp;", "&"), c)
         except DescriptiveError as e:
             flash("Error with character sheet:\n" + e.args[0])
-            return redirect(url_for("showsheet", name=c))
-
-    @app.route("/ewsheet/<c>")
-    def ewsheet(c):
-        try:
-            from NossiPack.EWCharacter import EWCharacter
-
-            char = EWCharacter()
-            char.load_from_md(*wikiload(c + "_character"))
-            body = render_template(
-                "endworldsheet.html",
-                character=char.Data,
-                userconf=User(session.get("user", "")).configs(),
-            )
-            return fill_infolets(body, c)
-        except DescriptiveError as e:
-            flash("Error with your configuration value character_sheet: " + e.args[0])
             return redirect(url_for("showsheet", name=c))
 
     @app.route("/costcalc/all/<costs>/<penalty>")
@@ -242,6 +232,27 @@ def register(app=None):
             200,
             {"Content-Type": "text/plain; charset=utf-8"},
         )
+
+    @app.route("/armor/<a>")
+    @app.route("/armor/<a>/<mods>")
+    @app.route("/armor/<a>/json")
+    @app.route("/armor/<a>/<mods>/json")
+    @app.route("/armor/<a>/<mods>/txt")
+    @app.route("/armor/<a>/txt")
+    def show_armortable(a, mods=""):
+        format_json = request.url.endswith("/json")
+        a = a.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
+        try:
+            armor = get_armor(a, mods)
+        except Exception as e:
+            return (
+                '<div style="color: red"> ArmorCode Invalid: '
+                + " ".join(str(html.escape(x)) for x in e.args)
+                + " </div>"
+            )
+        if format_json:
+            return {armor.name: armor.format(",", "").split(",")[1:]}
+        return str(armor)
 
     @app.route("/weapon/<w>")
     @app.route("/weapon/<w>/<mods>")
@@ -318,9 +329,10 @@ def register(app=None):
                 abort(403)
             char = u.getsheet()
         else:
+
             c = wikiload(selection_path[0] + "_character")
             char = FenCharacter()
-            char.load_from_md(*c)
+            char.load_from_md(c[2])
         d = char.getdictrepr()
         for x_part in selection_path[1:]:
             if x_part in d.keys():
@@ -390,57 +402,46 @@ def magicalweapontable(code: str, par=None, as_json=False, context=None):
     raise DescriptiveError("Dont know what do do with \n" + code)
 
 
-def calculate(calc, par=None):
-    loose_par = [0]  # last pop ends the loop
-    if par is None:
-        par = {}
+def process_mods(mods: str, context: str = ""):
+    mods = html.unescape(mods)
+    if context:
+        context = get_fen_char(context)
+        for k, v in context.stat_definitions().items():
+            mods = mods.replace(k, v)
+    calc = re.compile(r"<(?P<x>.*?)>")
+    mods = mods.strip()
 
-    else:
-        loose_par += [x for x in par.split(",") if ":" not in x]
-        par = {
-            x.upper(): y
-            for x, y in [pair.split(":") for pair in par.split(",") if ":" in pair]
-        }
-    for k, v in par.items():
-        calc = calc.replace(k, v)
-    missing = None
-    res = 0
-    while len(loose_par) > 0:
+    for match in calc.findall(mods):
         try:
-            res = numexpr.evaluate(calc, local_dict=par, truediv=True).item()
-            missing = None  # success
-            break
-        except KeyError as e:
-            missing = e
-            par[e.args[0]] = int(loose_par.pop())  # try autofilling
-    if missing:
-        if missing.args[0] == "em":
-            raise DescriptiveError("Parameter " + missing.args[0] + " is missing!")
-        raise DescriptiveError("Parameter " + missing.args[0] + " is missing!")
-    return decimal.Decimal(res).quantize(1, decimal.ROUND_HALF_UP)
+            mods = mods.replace(f"<{match}>", str(calculate(match)))
+        except SyntaxError:
+            raise DescriptiveError(f"{mods} is not correct!")
+    return mods
 
 
-def weapontable(w, mods="", as_json=False, context: FenCharacter = None):
+def lowercase_access(d, k):
+    data = {k.lower(): v for k, v in d.items()}
+    res = data.get(k.lower(), None)
+    if res is None:
+        raise DescriptiveError(
+            d.lower() + " does not exist in " + " ".join(data.keys())
+        )
+    return res
+
+
+def get_armor(a, mods="", context: str = "") -> Union[Armor, None]:
+    armor = lowercase_access(armordata(), a)
+    if armor is None:
+        return None
+    mods = process_mods(mods, context)
+    armor.apply_mods(mods)
+    return armor
+
+
+def weapontable(w, mods="", as_json=False, context: str = ""):
     try:
-        mods = html.unescape(mods)
-        if context:
-            for k, v in context.stat_definitions().items():
-                mods = mods.replace(k, v)
-        calc = re.compile(r"<(?P<x>.*?)>")
-        mods = mods.strip()
-
-        for match in calc.findall(mods):
-            try:
-                mods = mods.replace(f"<{match}>", str(calculate(match)))
-            except SyntaxError:
-                raise DescriptiveError(f"{mods} is not correct!")
-        data = weapondata()
-        data = {k.lower(): v for k, v in data.items()}
-        weapon = data.get(w.lower(), None)
-        if weapon is None:
-            raise DescriptiveError(
-                w.lower() + " does not exist in " + " ".join(data.keys())
-            )
+        mods = process_mods(mods, context)
+        weapon = lowercase_access(weapondata(), w)
         for mod in mods.split(","):
             mod = mod.strip()
             if not mod:
@@ -501,9 +502,21 @@ def weapontable(w, mods="", as_json=False, context: FenCharacter = None):
         )
 
 
-def fill_infolets(body, context=None):
-    def gettable(match):
-        return weapontable(match.group("ref"), match.group("mod"), context=context)
+def fill_infolets(body, character_name: str):
+    def get_table(match: re.Match):
+        kind = match.group("kind").lower().strip()
+        if kind == "weapon":
+            return weapontable(
+                match.group("ref"), match.group("mod"), context=character_name
+            )
+        elif kind == "armor":
+            return str(
+                get_armor(
+                    match.group("ref"), match.group("mod"), context=character_name
+                )
+            )
+        else:
+            return "Unknown infolet: " + kind
 
     def getinfo(match):
         a = match.group("ref").split(":")
@@ -523,9 +536,7 @@ def fill_infolets(body, context=None):
             article = "[[not found]]"
         elif hide_headline:
             article = article[article.find("\n") * hide_headline :]
-        return markdown.markdown(
-            bleach.clean(article), extensions=["tables", "toc", "nl2br"],
-        )
+        return markdown.markdown(article, extensions=["tables", "toc", "nl2br"])
 
     def hide(func):
         def hidden(text):
@@ -533,17 +544,20 @@ def fill_infolets(body, context=None):
             try:
                 return (
                     "<div class=hideable><b> " + header + "</b></div>"
-                    "<div>" + func(text) + "</div>"
+                    "<div>" + str(func(text)) + "</div>"
                 )
             except Exception as e:
                 return f"Error with {header}:\n  {e.args} !"
 
         return hidden
 
-    hiddenweapons = re.compile(
-        r"\[(?P<name>.*?)\[\[weapon:(?P<ref>.+?):(?P<mod>.*?)\]\]\]", re.IGNORECASE
+    hiddentable = re.compile(
+        r"\[(?P<name>.*?)\[\[(?P<kind>.+?):(?P<ref>.+?):(?P<mod>.*?)\]\]\]",
+        re.IGNORECASE,
     )
-    weapons = re.compile(r"\[\[weapon:(?P<ref>.+?):(?P<mod>.*?)\]\]", re.IGNORECASE)
+    table = re.compile(
+        r"\[\[(?P<kind>.+?):(?P<ref>.+?):(?P<mod>.*?)\]\]", re.IGNORECASE
+    )
     hiddeninfos = re.compile(
         r"\[(?P<name>.*?)\[\[specific:(?P<ref>.+?)\]\]\]", re.IGNORECASE
     )
@@ -553,7 +567,7 @@ def fill_infolets(body, context=None):
     body = links.sub(r'<a href="/wiki/\g<2>"> \g<1> </a>', body)
 
     body = infos.sub(getinfo, hiddeninfos.sub(hide(getinfo), body))
-    return weapons.sub(gettable, hiddenweapons.sub(hide(gettable), body))
+    return table.sub(get_table, hiddentable.sub(hide(get_table), body))
 
 
 def traverse_md(md: str, seek: str) -> str:
@@ -600,6 +614,7 @@ def wikiload(page: Union[str, Path]) -> Tuple[str, List[str], str]:
 
 
 def wikisave(page, author, title, tags, body):
+
     print(f"saving {page} ...")
     with (wikipath / (page + ".md")).open("w+") as f:
         f.write("title: " + title + "  \n")
@@ -610,7 +625,7 @@ def wikisave(page, author, title, tags, body):
     with (wikipath / "control").open("r") as f:
         print((wikipath / "control").as_posix() + "control", ":", f.read())
     os.system(os.path.expanduser("~/") + "bin/wikiupdate & ")
-    updatewikitags()
+    wikitags.clear()  # triggers reparsing after request
 
 
 def wikindex() -> List[Path]:
@@ -633,22 +648,40 @@ def updatewikitags():
         + " seconds since the last wiki indexing"
     )
     wikistamp[0] = time.time()
-    for k in list(wikitags.keys()):
-        del wikitags[k]  # reset everything
     for m in wikindex():
         wikitags[m.stem] = wikiload(m)[1]
+    refresh_cache()
     print("index took: " + str(1000 * (time.time() - wikistamp[0])) + " milliseconds")
 
 
-def load_fen_char(c):
-    char = FenCharacter()
-    char.load_from_md(*wikiload(c + "_character"))
-    return char.stat_definitions()
+def get_fen_char(c: str) -> FenCharacter:
+    c = c + "_character" if not c.endswith("_character") else c
+    char = chara_objects.get(c, None)
+    if char is None:
+        char = FenCharacter.from_md(wikiload(c)[2])
+        chara_objects[c] = char
+    return char
 
 
-def load_user_char(user):
+def load_user_char_stats(user):
     u = User(user)
     d = u.config("discord", "not set")
     c = u.config("character_sheet", "")
     if re.match(r".*#\d{4}$", d):
-        return load_fen_char(c)
+        return get_fen_char(c).stat_definitions()
+
+
+def refresh_cache(page=""):
+    for key in chara_objects.keys():
+        if page[:-10] and page[:-10] in key:
+            del chara_objects[key]
+    for key in wikitags.keys():
+        if key.endswith("_character"):
+            get_fen_char(key)
+    Armor.shorthand = {
+        y[0].lower().strip(): y[1]
+        for y in [
+            x.strip(" |").split("|")
+            for x in traverse_md(wikiload("shorthand")[2], "armor").splitlines()[3:]
+        ]
+    }

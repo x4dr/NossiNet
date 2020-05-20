@@ -3,7 +3,10 @@ import os
 import random
 import sqlite3
 from contextlib import closing
+from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
+
+import numexpr
 
 import Data
 
@@ -36,6 +39,34 @@ def init_db():
     with closing(connect_db("initialization")) as db:
         db.cursor().executescript(Data.getschema())
         db.commit()
+
+
+def calculate(calc, par=None):
+    loose_par = [0]  # last pop ends the loop
+    if par is None:
+        par = {}
+    else:
+        loose_par += [x for x in par.split(",") if ":" not in x]
+        par = {
+            x.upper(): y
+            for x, y in [pair.split(":") for pair in par.split(",") if ":" in pair]
+        }
+    for k, v in par.items():
+        calc = calc.replace(k, v)
+    calc = calc.strip()
+    missing = None
+    res = 0
+    while len(loose_par) > 0:
+        try:
+            res = numexpr.evaluate(calc, local_dict=par, truediv=True).item()
+            missing = None  # success
+            break
+        except KeyError as e:
+            missing = e
+            par[e.args[0]] = float(loose_par.pop())  # try autofilling
+    if missing:
+        raise DescriptiveError("Parameter " + missing.args[0] + " is missing!")
+    return Decimal(res).quantize(1, ROUND_HALF_UP)
 
 
 g = {}  # module level caching

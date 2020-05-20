@@ -7,7 +7,7 @@ import Data
 from NossiInterface.Tools import splitpara, replacedefines
 from NossiPack.krypta import connect_db
 from NossiSite import wiki
-from NossiSite.wiki import load_fen_char
+from NossiSite.wiki import load_fen_char_stats
 
 
 class TestInterface(TestCase):
@@ -53,6 +53,6 @@ class TestInterface(TestCase):
         c.execute('INSERT INTO users VALUES ("test","__",0,"",0)')
         c.execute('INSERT INTO configs VALUES ("test","discord", "test#1234")')
         c.execute('INSERT INTO configs VALUES ("test","character_sheet", "test")')
-        test = load_fen_char("test")
+        test = load_fen_char_stats("test")
 
         self.assertEqual(test[test["a"]], "3")

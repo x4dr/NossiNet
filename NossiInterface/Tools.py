@@ -2,7 +2,7 @@ import re
 import time
 
 from NossiPack.WoDParser import fullparenthesis
-from NossiSite.wiki import load_user_char
+from NossiSite.wiki import load_user_char_stats
 
 statcache = {}
 
@@ -162,7 +162,7 @@ async def handle_defines(msg, message, persist):
         if time.time() - cache[0] > cachetimeout:
             defines = cache[1]
         if not defines:
-            defines = load_user_char(whoami)
+            defines = load_user_char_stats(whoami)
             statcache[whoami] = (time.time(), defines)
     defines.update(pers["defines"])  # add in /override explicit defines
     loopconstraint = 100

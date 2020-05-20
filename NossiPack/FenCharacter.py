@@ -25,6 +25,7 @@ def tryfloatbeginning(param, default: float) -> float:
 
 class FenCharacter:
     def __init__(self, name="", meta=None):
+        self.definitions = None
         self.Tags = ""
         self.Name = name
         self.Character = OrderedDict()
@@ -56,6 +57,8 @@ class FenCharacter:
         return unified
 
     def stat_definitions(self):
+        if self.definitions is not None:
+            return self.definitions
         definitions = {}
 
         for catname, cat in self.Categories.items():
@@ -79,6 +82,7 @@ class FenCharacter:
                                 )
                             ] = qualifier
                         definitions[qualifier] = stat
+        self.definitions = definitions
         return definitions
 
     def process_trigger(self, trigger):
@@ -288,9 +292,7 @@ class FenCharacter:
                 result.move_to_end(cn, True)
         return result
 
-    def load_from_md(self, title, tags, body):
-        self.Name = title
-        self.Tags = tags
+    def load_from_md(self, body):
         self._xp_cache = None
         sheetparts = re.split(r"\n#(?!#)", "\n" + body, re.MULTILINE)
         if len(sheetparts) == 0:
@@ -319,6 +321,8 @@ class FenCharacter:
             except AttributeError:
                 d = OrderedDict()
                 for s in secv:
+                    if not isinstance(s, str):
+                        continue
                     s = s.strip()
                     if " " in s:
                         k, v = s.rsplit(" ", 1)
@@ -396,10 +400,12 @@ class FenCharacter:
             if output is None or len(output[-1]) == len(parts):
                 output = (output or []) + [parts]
             else:
-                if len(output[-1]) - len(parts) <= 2:
-                    output = output + [parts + ["", ""]][: len(output[-1])]
+                # if len(output[-1]) - len(parts) <= 2:
+                #    output = output + [parts + ["", ""]][: len(output[-1])]
                 param["_lines"] = copy
                 return []
+        if output is None:
+            return []
         if all(not x[0] for x in output):
             output = [x[1:] for x in output]
         if all(not x[-1] for x in output):
@@ -419,3 +425,9 @@ class FenCharacter:
                     + output[-1][i]
                 )
         return output
+
+    @classmethod
+    def from_md(cls, arg):
+        res = cls()
+        res.load_from_md(arg)
+        return res

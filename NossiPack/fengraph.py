@@ -2,13 +2,16 @@ import ast
 import io
 import json
 import math
+import pathlib
 from _md5 import md5
 from math import ceil
+from typing import Dict
 
 import numpy
 import requests
 
 from Data import append, get
+from Fantasy.Armor import Armor
 
 try:
     from scipy.integrate import quad
@@ -156,16 +159,7 @@ def supply_graphdata():
 
 
 def weapondata():
-    try:
-        import os
-
-        with open(os.path.expanduser("~/wiki/weapons.md")) as f:
-            dmgraw = f.read()
-    except Exception as e:
-        r = requests.get("https://nosferatu.vampir.es/wiki/weapons/raw")
-        dmgraw = r.content.decode()
-        print("loaded weapons.md via web, because", e, e.args)
-
+    dmgraw = rawload("weapons")
     weapons = {}
     for dmgsect in dmgraw.split("###"):
         if not dmgsect.strip() or "[TOC]" in dmgsect:
@@ -194,6 +188,32 @@ def weapondata():
                 for x in wi.get(dt, "|" * 11).split("|")
             ]
     return weapons
+
+
+def rawload(page) -> str:
+    try:
+        with pathlib.Path.expanduser(pathlib.Path(f"~/wiki/{page}.md")).open() as f:
+            return f.read()
+    except Exception as e:
+        r = requests.get(f"https://nosferatu.vampir.es/wiki/{page}/raw")
+        print(f"loaded {page}.md via web, because", e, e.args)
+        return r.content.decode()
+
+
+def armordata() -> Dict[str, Armor]:
+    armraw = rawload("armor")
+    armor = {}
+    begun = 0
+    for armline in armraw.splitlines():
+        if begun and "|" not in armline:
+            break
+        elif "|" not in armline:
+            continue
+        begun += 1
+        if begun > 2:
+            a = Armor.from_formatted(armline)
+            armor[a.name] = a
+    return armor
 
 
 def dataset(modifier):
@@ -293,7 +313,7 @@ def chances(selector, modifier=0, number_of_quantiles=None, mode=None):
             fy = [x / total for x in vals]
         elif mode > 0:
             fy = [sum(vals[: i + 1]) / total for i in range(len(vals))]
-        elif mode < 0:
+        else:  # elif mode < 0:
             fy = [(total - sum(vals[:i])) / total for i in range(len(vals))]
 
         fx = sorted(list(occurrences.keys()))
