@@ -54,7 +54,6 @@ def register(app=None):
             if exception.args and exception.args[0] == "REDIR":
                 return exception.args[1]
             # log.exception("exception caught by teardown:", exception)
-            raise exception
         return None
 
     @app.context_processor
