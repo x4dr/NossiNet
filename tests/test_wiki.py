@@ -65,6 +65,17 @@ class TestViews(NossiTestCase):
         self.assertEqual(sut[4][2], "9.0")
         self.assertEqual(sut[4][0], "Total")
 
+    def test_FenCharacter_cost(self):
+        sut = [
+            FenCharacter.cost_calc("1,0,1"),
+            FenCharacter.cost_calc("3,2,4"),
+            FenCharacter.cost_calc("4,4,5"),
+        ]
+        self.assertEqual([0, 110, 320], sut)
+        self.assertEqual(
+            [[3, 3, 2], [4, 3, 1], [5, 1, 1], [4, 2, 2]], FenCharacter.cost_calc("100")
+        )
+
     def test_fenconvert(self):
         self.assertEqual(fenconvert("30kg"), 30000)
         self.assertEqual(fendeconvert(30000, "weight"), "30kg")

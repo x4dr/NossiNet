@@ -5,7 +5,7 @@ from typing import List, Union
 
 import numexpr
 
-from NossiPack.WoDDice import WoDDice
+from NossiPack.Dice import Dice
 from NossiPack.krypta import DescriptiveError
 
 
@@ -131,8 +131,8 @@ class Node:
         return self.__repr__()
 
 
-class WoDParser:
-    rolllogs: List[WoDDice]
+class DiceParser:
+    rolllogs: List[Dice]
 
     def __init__(self, defines=None):
         self.dbg = ""
@@ -143,7 +143,7 @@ class WoDParser:
             "onebehaviour": 1,
             "sides": 10,
             "return": "sum",
-        }  # WoDbasic
+        }  # threshhold basic
         self.defines.update(defines or {})
         self.rolllogs = []  # if the last roll isnt interesting
 
@@ -187,7 +187,7 @@ class WoDParser:
             if not message.strip():
                 return None
             raise DiceCodeError(
-                "invalid dicecode:'" + message + "'\n usage: " + WoDParser.usage
+                "invalid dicecode:'" + message + "'\n usage: " + DiceParser.usage
             )
         if dice.get("sides", None) is not None:
             info["sides"] = int(dice["sides"])
@@ -224,7 +224,7 @@ class WoDParser:
 
         return info
 
-    def do_roll(self, roll, depth=0) -> WoDDice:
+    def do_roll(self, roll, depth=0) -> Dice:
         """Wrapper around make_roll that handles edgecases"""
         if isinstance(roll, str):
             if ";" in roll:
@@ -235,18 +235,18 @@ class WoDParser:
         if roll.code:
             self.rolllogs.append(self.make_roll(roll.code))
         else:
-            self.rolllogs.append(WoDDice.empty())
+            self.rolllogs.append(Dice.empty())
         return self.rolllogs[-1]
 
-    def make_roll(self, roll: str) -> WoDDice:
-        """Uses full and valid Rolls and returns WoDDice."""
+    def make_roll(self, roll: str) -> Dice:
+        """Uses full and valid Rolls and returns Dice."""
         roll = roll.strip()
         params = self.extract_diceparams(roll)
         if not params:  # no dice
-            return WoDDice.empty()
+            return Dice.empty()
         fullparams = self.defines.copy()
         fullparams.update(params)
-        return WoDDice(fullparams)
+        return Dice(fullparams)
 
     def resolveroll(self, roll: Union[Node, str], depth) -> Node:
         if isinstance(roll, str):

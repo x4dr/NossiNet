@@ -60,9 +60,9 @@
     <table style = "width: 100%">
         <tr>
             <td colspan="2" style="text-align: center;" class="leeet tooltip">{{ name }} {% if name!='Magie' %}<a href="{{url_for('fen_calc',
-            inputstring=cost) }} ">{{ cost }}</a><span class="tooltiptext">{% for l in
+            inputstring=cost) }} ">{{ cost }}</a><span class="tooltiptext"><br/>&nbsp;Options:<br/>{% for l in
                     character.cost_calc(cost)
-                    %}{{ l }}<br/> {% endfor %}{% else %}<a href="{{
+                    %}&nbsp;&nbsp;{% for b in l %}{{ b }}{% if not loop.last %}, {% endif %}{% endfor %}&nbsp;&nbsp;<br/> {% endfor %}<br/> {% else %}<a href="{{
                     url_for('fen_calc', inputstring=cost, costs='30, 80, 140, 210, 300',penalty='',width=1)
                     }}">{{ cost }}</a><span class="tooltiptext">{% for l in
                     character.cost_calc(cost,'30, 80, 140, 210, 300','', width=1)

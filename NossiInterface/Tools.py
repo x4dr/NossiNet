@@ -1,7 +1,7 @@
 import re
 import time
 
-from NossiPack.WoDParser import fullparenthesis
+from NossiPack.DiceParser import fullparenthesis
 from NossiSite.wiki import load_user_char_stats
 
 statcache = {}

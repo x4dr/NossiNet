@@ -4,11 +4,10 @@ from flask import render_template, session, request, flash, url_for, redirect
 from flask_socketio import emit, join_room, leave_room, disconnect
 
 from Data import getlocale_data
-from NossiPack import WoDData
 from NossiPack.Chatrooms import Chatroom
+from NossiPack.DiceParser import DiceParser
 from NossiPack.User import Userlist
 from NossiPack.VampireCharacter import VampireCharacter
-from NossiPack.WoDParser import WoDParser
 from NossiPack.krypta import connect_db
 from NossiSite.base import app as defaultapp, socketio as defaultsocketio, log
 
@@ -59,7 +58,7 @@ def register(app=None, socketio=None):
             if message == "#?":
                 echo("".join(named_strings["generalHelp"]))
                 return
-            parser = WoDParser(defines())
+            parser = DiceParser(defines())
             parser.rights = ["Administrator" if session.get("admin", None) else False]
             if not (("?" in message) or ("=" in message)):
                 try:
@@ -75,7 +74,7 @@ def register(app=None, socketio=None):
 
             elif "?" in message:
                 message = message.replace("?", " ")
-                parser = WoDParser(defines())
+                parser = DiceParser(defines())
                 roll = parser.make_roll(message[1:])
                 if parser.dbg:
                     echo(parser.dbg, "'s TEST: ")
@@ -146,7 +145,7 @@ def register(app=None, socketio=None):
             if workdef == {}:
                 workdef = u.getsheet().unify()
                 echo("Definitions reset.")
-            workdef = {**workdef, **shorthand(), **WoDData.disciplines(workdef)}
+            workdef = {**workdef, **shorthand()}
             echo("Presets setup.")
         elif message[0] != "=":  # actually saving a new define
             parts = message.split("=")

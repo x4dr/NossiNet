@@ -140,7 +140,7 @@ def sumdict(inp):
     return result
 
 
-def d10(amt, diff, ones=True):  # faster than the WoDDice
+def d10(amt, diff, ones=True):  # faster than the Dice
     succ = 0
     anti = 0
     for _ in range(amt):

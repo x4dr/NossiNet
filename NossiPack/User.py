@@ -136,10 +136,7 @@ class User:
             self.savesheet(self.getsheet().setfromform(form), self.sheetid)
 
     def savesheet(self, sheet, num: int = None):
-        print("saving sheet:", sheet.getdictrepr())
-        print(sheet.checksum())
         if not isinstance(sheet, VampireCharacter):
-            print("LEGACY CHARACTER!", sheet.getdictrepr())
             flash(f"UPDATING LEGACY CHAR FROM {self.username}@{sheet.timestamp}")
             sheet = VampireCharacter.from_character(sheet)
             sheet.legacy_convert()

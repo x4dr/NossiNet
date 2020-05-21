@@ -3,8 +3,8 @@ from concurrent.futures.thread import ThreadPoolExecutor
 
 import discord
 
-from NossiPack.WoDDice import WoDDice
-from NossiPack.WoDParser import WoDParser, DiceCodeError
+from NossiPack.Dice import Dice
+from NossiPack.DiceParser import DiceParser, DiceCodeError
 from NossiPack.krypta import terminate_thread
 
 numemoji = ("1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟")
@@ -26,7 +26,7 @@ def prepare(msg: str, author, persist, comment):
         lastroll[author] = (
             lastroll.get(author, []) + [msg + (("//" + comment) if comment else "")]
         )[-10:]
-    p = WoDParser(persist.get(author, {}).get("defines", {}))
+    p = DiceParser(persist.get(author, {}).get("defines", {}))
     return msg, p, errreport
 
 
@@ -38,16 +38,16 @@ def get_verbosity(verbose):
 
         verbose = v
     else:
-        verbose = WoDDice.roll_v
+        verbose = Dice.roll_v
     return verbose
 
 
-def construct_multiroll_reply(p: WoDParser, verbose):
+def construct_multiroll_reply(p: DiceParser, verbose):
     v = get_verbosity(verbose)
     return "\n".join(x.name + ": " + v(x) for x in p.rolllogs if v(x)) + "\n"
 
 
-def construct_shortened_multiroll_reply(p: WoDParser, verbose):
+def construct_shortened_multiroll_reply(p: DiceParser, verbose):
     last = ""
     reply = ""
     v = get_verbosity(verbose)
@@ -103,7 +103,7 @@ async def get_reply(author, comment, msg, send, reply, r):
                 await sent.add_reaction(numemoji_2[amplitude - 2])
 
 
-async def process_roll(r: WoDDice, p: WoDParser, msg: str, comment, send, author):
+async def process_roll(r: Dice, p: DiceParser, msg: str, comment, send, author):
     verbose = p.triggers.get("verbose", None)
 
     if isinstance(p.rolllogs, list) and len(p.rolllogs) > 1:

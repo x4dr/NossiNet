@@ -11,7 +11,7 @@ def str_to_slice(inp):
     return slice(*s)
 
 
-class WoDDice:
+class Dice:
     returnfun: str
 
     def __init__(self, info):
@@ -102,7 +102,7 @@ class WoDDice:
         if not self.amount:
             raise DescriptiveError("No Amount set for reroll!")
 
-        return WoDDice(
+        return Dice(
             {
                 "sides": self.max,
                 "difficulty": self.difficulty,
@@ -315,8 +315,8 @@ class WoDDice:
         return self.result
 
     @classmethod
-    def empty(cls) -> "WoDDice":
-        return WoDDice({"max": 0, "amount": 0, "return": "", "sides": 0})
+    def empty(cls) -> "Dice":
+        return Dice({"max": 0, "amount": 0, "return": "", "sides": 0})
 
     def isempty(self):
         return len(self.r) == 0 and self.amount == 0

@@ -1,6 +1,5 @@
 import base64
 import itertools
-import pickle
 import re
 import time
 from collections import OrderedDict
@@ -9,7 +8,7 @@ __author__ = "maric"
 
 from typing import List, Tuple
 
-from NossiPack.WoDParser import fullparenthesis
+from NossiPack.DiceParser import fullparenthesis
 from NossiPack.krypta import is_int
 
 
@@ -36,31 +35,16 @@ class FenCharacter:
         self.Inventory = OrderedDict()
         self.Notes = ""
         self.Timestamp = time.strftime("%Y/%m/%d-%H:%M:%S")
-        self._xp_cache = None
-
-    @staticmethod
-    def sublvl():
-        return OrderedDict(
-            [
-                ("Attribute", OrderedDict()),
-                ("Fähigkeiten", OrderedDict()),
-                ("Vorteile", OrderedDict()),
-            ]
-        )
-
-    def unify(self):
-        unified = OrderedDict()
-        for kind in self.Categories.keys():
-            for cat in self.Categories[kind].keys():
-                for spec in self.Categories[kind][cat].keys():
-                    unified[spec] = self.Categories[kind][cat][spec]
-        return unified
+        self._xp_text_cache = None
+        self._xp_cache = {}
 
     def stat_definitions(self):
+        """
+        :return: simplified dictionary of stats and their values
+        """
         if self.definitions is not None:
             return self.definitions
         definitions = {}
-
         for catname, cat in self.Categories.items():
             for secname, sec in cat.items():
                 for statname, stat in sec.items():
@@ -85,24 +69,40 @@ class FenCharacter:
         self.definitions = definitions
         return definitions
 
-    def process_trigger(self, trigger):
-        pass  # for when triggers are being built in
-
     @staticmethod
     def cost(
         att: Tuple[int, ...], internal_costs: List[int], internal_penalty: List[int]
     ) -> int:
+        """
+        tuple of attributes to xp costs
+
+        :param att: attributes
+        :param internal_costs: absolute cost of each level
+        :param internal_penalty: point costs for all attributes beyond the first to reach that level
+        :return: total fp costs
+        """
         pen = 0
         for ip, p in enumerate(internal_penalty):
             pen += (max(sum(1 for a in att if a > ip), 1) - 1) * p
-        return sum(internal_costs[a - 1] if a else 0 for a in att) + pen
+        return sum(internal_costs[a - 1] if a > 0 else 0 for a in att) + pen
 
     @staticmethod
-    def cost_calc(inputstring: str, costs=None, penalty=None, width=3):
+    def cost_calc(inputstring, costs=None, penalty=None, width=3):
+        """
+        returns fp cost of attributes if given a , separated list of attributes
+        if given a single integer (or a integer representing string) it will output possible
+        attribute distributions for those costs and penalties
+
+        :param inputstring:  or output of points
+        :param costs: absolute cost for each level
+        :param penalty: point costs for all attributes beyond the first to reach that level
+        :param width: amount of attributes
+        :return: list -> int, int -> list of lists
+        """
         if costs:
             costs = [int(x) for x in costs.split(",")]
         else:
-            costs = [0, 15, 35, 60, 100]
+            costs = [0, 15, 35, 60, 100]  # default are attribute costs
         if penalty:
             penalty = [int(x) for x in penalty.split(",")]
         else:
@@ -114,7 +114,6 @@ class FenCharacter:
                 tuple(sorted(x, reverse=True))
                 for x in itertools.product(range(6), repeat=int(width))
             )
-
             correct = [
                 [y for y in x]
                 for x in allconf
@@ -134,10 +133,17 @@ class FenCharacter:
                         j -= 1
                         break
                 i += 1
-            return [str(c) for c in maximal]
-        return FenCharacter.cost(tuple(x - 1 for x in xp), costs, penalty)
+            return [c for c in maximal]
+        return FenCharacter.cost(tuple(xp), costs, penalty)
 
     def points(self, name) -> int:
+        """
+        total fp for a given category.
+        members with a _ prefix are treated differently, according to their type
+
+        :param name: the CATEGORY name to calculate
+        :return: number of FP (full for the already skilled ones and partial for those written down in the xp table)
+        """
         res = 0
         c = self.Categories[name]
         f = c.get("Fähigkeiten", {}) or c.get("Aspekte", {})
@@ -170,7 +176,16 @@ class FenCharacter:
         return res
 
     def seekxp(self, name) -> int:
-        res = 0
+        """
+        seeks for a xp format table in "erfahrung", "experience", "xp" sections and parses with parse_xp
+        :param name: what xp should be sought
+        :return: total amount of xp
+        """
+        res = self._xp_cache.get(name, None)
+        if res is not None:
+            return res
+        else:
+            res = 0
         for catname, cat in self.Categories.items():
             for secname, sec in cat.items():
                 if secname.lower().strip() in ["erfahrung", "experience", "xp"]:
@@ -180,7 +195,7 @@ class FenCharacter:
         for k in self.Meta.keys():
             if k.lower().strip() in ["erfahrung", "experience", "xp"]:
                 try:
-                    self._xp_cache = self._xp_cache or self.parse_part(
+                    self._xp_text_cache = self._xp_text_cache or self.parse_part(
                         "\n".join(
                             [
                                 "\n".join(x)
@@ -190,14 +205,19 @@ class FenCharacter:
                         ),
                         True,
                     )
-                    if self._xp_cache.get(name, None):
-                        res += self.parse_xp(self._xp_cache.get(name, None))
+                    if self._xp_text_cache.get(name, None):
+                        res += self.parse_xp(self._xp_text_cache.get(name, None))
                 except:
                     res += 0  # invalid xp part
+        self._xp_cache[name] = res
         return res
 
     @staticmethod
     def parse_xp(s):
+        """
+        every letter is one xp, parenthesis mean the xp is conditional and will not be counted
+        entries in [] are counted as , separated and allow for longer names
+        """
         res = 0
         paren = ""
         while paren != s:
@@ -216,6 +236,13 @@ class FenCharacter:
 
     @staticmethod
     def parse_part(s, parse_table):
+        """
+        TODO: rework
+
+        :param s:
+        :param parse_table:
+        :return:
+        """
         result = OrderedDict()
         categories = [
             x
@@ -293,7 +320,13 @@ class FenCharacter:
         return result
 
     def load_from_md(self, body):
-        self._xp_cache = None
+        """
+        takes in the entire character sheet and constructs the Fencharacter object from it
+
+        :param body:
+        :return:
+        """
+        self._xp_text_cache = None
         sheetparts = re.split(r"\n#(?!#)", "\n" + body, re.MULTILINE)
         if len(sheetparts) == 0:
             sheetparts = [body]
@@ -332,38 +365,6 @@ class FenCharacter:
                 self.Categories[catname] = d
         return self.Categories
 
-    def validate_char(self,):
-        comment = self.Name + "NOT IMPLEMENTED"
-        return comment
-
-    def setfromform(self, form):  # accesses internal dicts
-        form = dict(form)
-        self.Notes = form.pop("Notes")[0]
-        self.Name = form.pop("Name")[0]
-        self.Meta = [
-            ("Species", form.pop("Species", [""])[0]),
-            ("XP", form.pop("XP", [""])[0]),
-            ("Home", form.pop("Home", [""])[0]),
-            ("Story", form.pop("Story", [""])[0]),
-            ("Size", form.pop("Size", [""])[0]),
-            ("Weight", form.pop("Weight", [""])[0]),
-            ("Concept", form.pop("Concept", [""])[0]),
-            ("Player", form.pop("Player", [""])[0]),
-        ]
-
-        for key, val in form.items():
-            s = key.split("_")
-            if len(s) != 3:
-                continue
-            k = key.split("_")[0]
-            sub_key = key.split("_")[1]
-            if form.get(key + "_val"):
-                if self.Categories.get(k, None) is None:
-                    self.Categories[k] = OrderedDict()
-                if self.Categories[k].get(sub_key, None) is None:
-                    self.Categories[k][sub_key] = OrderedDict()
-                self.Categories[k][sub_key][val[0]] = int(form.get(key + "_val")[0])
-
     def getdictrepr(self):
         character = OrderedDict(
             [
@@ -376,14 +377,6 @@ class FenCharacter:
             ]
         )
         return character
-
-    def serialize(self):
-        return pickle.dumps(self)
-
-    @staticmethod
-    def deserialize(serialized):
-        tmp = pickle.loads(serialized)
-        return tmp
 
     @staticmethod
     def parse_matrix(param):

@@ -8,13 +8,13 @@ from typing import Tuple
 
 import pydealer
 
-from NossiPack.WoDParser import WoDParser
+from NossiPack.DiceParser import DiceParser
 from NossiPack.krypta import d10
 
 
 def selector(sel, addon=""):
     sel = [str(x) for x in sel]
-    p = WoDParser({})
+    p = DiceParser({})
     r = p.make_roll(",".join(sel) + "@5" + addon)
     return r.result
 
@@ -356,7 +356,7 @@ def crafting(
     rolls = 0
     level = 0
     increase_adverse_every = increase_every
-    p = WoDParser({})
+    p = DiceParser({})
     craftingroll = p.make_roll(",".join((str(x) for x in stats)) + "@5" + addon)
     while True:
         rolls += 1

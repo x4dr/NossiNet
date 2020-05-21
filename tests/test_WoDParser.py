@@ -1,12 +1,12 @@
 from unittest import TestCase
 
-from NossiPack.WoDParser import WoDParser, Node, fullparenthesis, DiceCodeError
+from NossiPack.DiceParser import DiceParser, Node, fullparenthesis, DiceCodeError
 from NossiPack.krypta import DescriptiveError
 
 
-class TestWoDParser(TestCase):
+class TestDiceParser(TestCase):
     def setUp(self) -> None:
-        self.p = WoDParser()
+        self.p = DiceParser()
 
     def test_extract_diceparams(self):
         self.assertEqual(self.p.extract_diceparams("3")["amount"], 3)
@@ -42,7 +42,7 @@ class TestWoDParser(TestCase):
             ("1,2@6", 5, "1 , 2@"),
             ("6,2@6", 10, "6 , 2@"),
         ]:
-            d = WoDParser({"return": "sum"}).do_roll(roll)
+            d = DiceParser({"return": "sum"}).do_roll(roll)
             d.r = [2, 3, 4, 5, 6, 7]
             self.assertEqual(ret, d.returnfun, roll)
             self.assertEqual(1 if "=" in roll else 10, d.max, roll + " sides")
@@ -69,7 +69,7 @@ class TestWoDParser(TestCase):
         )
 
     def test_default(self):
-        p = WoDParser({"sides": 17, "return": "max"})
+        p = DiceParser({"sides": 17, "return": "max"})
         r = p.do_roll("9")
         self.assertIn(int(r), range(10, 9 * 17 + 1))
         r = p.do_roll("9f7")
@@ -104,7 +104,7 @@ class TestWoDParser(TestCase):
         self.assertNotEqual(self.p.do_roll("&loop 7 2&;6g;&loop 4 3&").result, None)
 
     def test_pretrigger(self):
-        p = WoDParser(
+        p = DiceParser(
             {
                 "shoot": "dex fire",
                 "dex": "Dexterity",
@@ -127,7 +127,7 @@ class TestWoDParser(TestCase):
         )
 
     def test_ifthen(self):
-        p = WoDParser()
+        p = DiceParser()
         r = p.do_roll("&param difficulty& &if 3 4 f6 then 4 $ -1 e6 else 0 done& f6")
         r.r = [10 for _ in r.r]
         self.assertIn(
@@ -135,19 +135,19 @@ class TestWoDParser(TestCase):
         )
 
     def test_resolvedefine(self):
-        p = WoDParser()
+        p = DiceParser()
         p.defines = {"a": "b c D", "b": "e f", "c": "3", "D": "1", "e": "9", "f": "10"}
         r = p.resolveroll("a d1g", 0)
         self.assertEqual(r.code, "23 d 1 g")
 
     def test_whitespacing(self):
-        p = WoDParser()
+        p = DiceParser()
         p.defines = {"b": "3", "a": "2"}  # no defaults
         r = p.do_roll("a,b@5d10", 0)
         self.assertIn(r.result, range(2, 20))
 
     def test_recursion(self):
-        p = WoDParser({"a": "b.a", "b": "3"})
+        p = DiceParser({"a": "b.a", "b": "3"})
         self.assertRaises(DiceCodeError, p.do_roll, "a,b@5d10", 0)
 
     def test_explosion(self):
@@ -200,7 +200,7 @@ class TestWoDParser(TestCase):
         self.assertGreater(r.result, 3)
 
     def test_identityreturn(self):
-        p = WoDParser({"return": "id"})
+        p = DiceParser({"return": "id"})
         r = p.do_roll("&loopsum 1 8&")
         self.assertEqual(8, r.result)
 
