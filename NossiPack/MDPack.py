@@ -1,5 +1,6 @@
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Callable
 
+from Fantasy.Item import fendeconvert, value_category, fenconvert, Item
 from NossiSite.base import log
 
 
@@ -51,17 +52,18 @@ def split_md(lines, level=0) -> Tuple[str, Dict[str, Tuple]]:
 
 
 def extract_tables(
-    mdtree: Tuple[str, Dict]
+    mdtree: Tuple[str, Dict], flash: Callable[[str], None] = None
 ) -> Tuple[str, Dict[str, Tuple], List[List[List[str]]]]:
     """
     traverses the output of split_md and consumes table text where possible.
     Tables are appended to a List, at the end of each tuple
+    :param flash: if given, tables are processed through
     :param mdtree: output of split_md
     :return: a Tuple of the remaining direct text a dict containing children and a List of Tables
     """
     children = {}
     for child, content in mdtree[1].items():
-        children[child] = extract_tables(content)
+        children[child] = extract_tables(content, flash)
     text = ""
     tables = []
     run = ""
@@ -75,6 +77,9 @@ def extract_tables(
         text += line
     if run:
         tables.append(table(run))
+    if flash:
+        for t in tables:
+            total_table(t, flash)
     return text, children, tables
 
 
@@ -85,6 +90,7 @@ def confine_to_tables(
     simplifies an mdtree into just a dictionary of dictionaries.
     Makes the assumption that either children or a table can be had, and that if children exist they
     only consist of text (and are thus key values)
+    :param headers: if false, headers of the tables will be cut off
     :param mdtree: output of extract_tables
     :return: Dictionary that recursively always endsin ints
     """
@@ -159,3 +165,31 @@ def split_row(row: str, length: int) -> List[str]:
         split = split[1:]
     # fill jagged edges with empty strings and cut tolength
     return (split + [""] * (length - len(split)))[:length]
+
+
+def total_table(table_input, flash):
+    try:
+        if table_input[-1][0].lower() in Item.total_row_marker:
+            trackers = [[0, ""] for _ in range(len(table_input[0]) - 1)]
+            for row in table_input[1:-1]:
+                for i in range(len(trackers)):
+                    r = row[i + 1].strip().lower()
+                    if "," in r:
+                        flash(f"',' in {r} should not be there")
+                        continue
+                    if r:
+                        try:
+                            if not trackers[i][1]:
+                                trackers[i][1] = value_category(r)
+                            trackers[i][0] += fenconvert(r)
+                        except Exception as e:
+                            flash(
+                                str(e.args)
+                                + f" {r} cannot be processed by a totalling table"
+                            )
+            for i, t in enumerate(trackers):
+                table_input[-1][i + 1] = fendeconvert(t[0], t[1])
+    except:
+        flash(
+            "tabletotal failed for " + "\n".join("\t".join(row) for row in table_input)
+        )

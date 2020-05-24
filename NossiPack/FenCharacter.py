@@ -1,29 +1,46 @@
 import base64
 import itertools
 import time
-from collections import OrderedDict
 
 __author__ = "maric"
 
+from collections import OrderedDict
+
 from typing import List, Tuple
 
+from Fantasy.Item import Item
 from NossiPack.DiceParser import fullparenthesis
-from NossiPack.MDPack import split_md, extract_tables, confine_to_tables
+from NossiPack.MDPack import split_md, extract_tables, confine_to_tables, total_table
 from NossiPack.krypta import is_int
 
 
 class FenCharacter:
-    def __init__(self, name="", meta=None):
+    Inventory: List[Item]
+    description_headings = [
+        "charakter",
+        "character",
+        "beschreibung",
+        "description",
+    ]
+    value_headings = ["werte", "values", "statistics", "stats"]
+    inventory_headings = ["inventar", "inventory"]
+    doublepoint_sections = ["Quellen", "Sources"]
+    fullpoint_sections = ["fähigkeiten", "skills", "aspekte", "aspects"]
+    onepoint_sections = ["vorteile", "perks", "zauber", "spells"]
+    experience_headings = ["erfahrung", "experience", "xp"]
+
+    def __init__(
+        self, name="",
+    ):
         self.definitions = None
         self.Tags = ""
         self.Name = name
         self.Character = OrderedDict()
-        self.Meta = meta or OrderedDict()
+        self.Meta = OrderedDict()
         self.Categories = OrderedDict()
-        self.Wounds = []
-        self.Modifiers = OrderedDict()
-        self.Inventory = OrderedDict()
+        self.Inventory = []
         self.Notes = ""
+        self.Storage = ""
         self.Timestamp = time.strftime("%Y/%m/%d-%H:%M:%S")
         self._xp_cache = {}
 
@@ -135,9 +152,12 @@ class FenCharacter:
         """
         res = 0
         c = self.Categories[name]
-        f = c.get("Fähigkeiten", {}) or c.get("Aspekte", {})
+        f = {}
+        for k in c.keys():
+            if k.lower() in self.fullpoint_sections:
+                f.update(c[k])
         for k, v in f.items():
-            res += self.seekxp(k)
+            res += self.get_xp_for(k)
             try:
                 res += int(v) * 10
             except ValueError:
@@ -146,16 +166,21 @@ class FenCharacter:
                         res += int(v[1:]) * 5
                     except ValueError:
                         pass
-        f = c.get("Quellen", {})
+        f = {}
+        for k in c.keys():
+            if k.lower() in self.doublepoint_sections:
+                f.update(c[k])
         for k, v in f.items():
-            res += self.seekxp(k)
+            res += self.get_xp_for(k)
             try:
                 res += int(v) * 20
             except ValueError:
                 pass
 
-        f = c.get("Vorteile", {}).copy()
-        f.update(c.get("Zauber", {}))
+        f = {}
+        for k in c.keys():
+            if k.lower() in self.onepoint_sections:
+                f.update(c[k])
         for v in f.values():
             try:
                 res += int(v)
@@ -164,23 +189,11 @@ class FenCharacter:
                     res += 1
         return res
 
-    def seekxp(self, name) -> int:
+    def get_xp_for(self, name) -> int:
         """
-        seeks for a xp format table in "erfahrung", "experience", "xp" sections and parses with parse_xp
-        :param name: what xp should be sought
-        :return: total amount of xp
+        :param name: name of some stat
+        :return: total amount of xp associated with that name
         """
-        res = self._xp_cache.get(name, None)
-        if res is not None:
-            return res
-        if not self._xp_cache:  # generate once
-            for k in self.Meta.keys():
-                if k.lower().strip() in ["erfahrung", "experience", "xp"]:
-                    for table in self.Meta[k][2]:
-                        for row in table:
-                            if len(row) < 2:
-                                continue  # skip invalid rows
-                            self._xp_cache[row[0]] = self.parse_xp(row[1])
         return self._xp_cache.get(name, 0)
 
     @staticmethod
@@ -216,9 +229,10 @@ class FenCharacter:
         if not flash:
 
             def flash(err):
-                print(err)
+                if err:
+                    pass
 
-        sheetparts = extract_tables(split_md(body))
+        sheetparts = extract_tables(split_md(body), flash)
 
         # inform about things that should not be there
         if sheetparts[0].strip():
@@ -232,28 +246,75 @@ class FenCharacter:
                     )
 
         for s in sheetparts[1].keys():
-            if s.lower().strip() in ["werte", "values", "statistics", "stats"]:
+            if s.lower().strip() in self.value_headings:
                 d, errors = confine_to_tables(sheetparts[1][s], headers=False)
                 self.Categories.update(d)
                 for e in errors:
                     flash(e)
             else:
-                if s.strip().lower() in [
-                    "charakter",
-                    "character",
-                    "beschreibung",
-                    "description",
-                ]:
+                if s.strip().lower() in self.description_headings:
                     d, errors = confine_to_tables(sheetparts[1][s], headers=False)
                     self.Character = d
                     for e in errors:
                         flash(e)
                 else:
                     self.Meta[s] = sheetparts[1][s]
-        return self.Categories
+
+        self.post_process(flash)
+
+    def post_process(self, flash):
+        # tally inventory
+        for k in self.Meta.keys():
+            if k.lower() in self.inventory_headings:
+                self.process_inventory(self.Meta[k], flash)
+                self.Meta[k][2].insert(0, self.inventory_table())
+            if k.lower() in self.experience_headings:
+                if not self._xp_cache:  # generate once
+                    self._xp_cache = {}
+                    self.process_xp(self.Meta[k])
+
+    def process_inventory(self, node, flash):
+        for table in node[2]:
+            self.Inventory += Item.process_table(table, flash)
+        for content in node[1].values():
+            self.process_inventory(content, flash)
+
+    def process_xp(self, node):
+        for table in node[2]:
+            first = True
+            for row in table:
+                if len(row) < 2:
+                    continue  # skip invalid rows
+                self._xp_cache[row[0]] = self.parse_xp(row[1])
+                if first:
+                    row.append("=")
+                    first = False
+                else:
+                    row.append(self._xp_cache[row[0]])
+        for content in node[1].values():
+            self.process_xp(content)
 
     @classmethod
     def from_md(cls, arg, flash=None):
         res = cls()
         res.load_from_md(arg, flash)
         return res
+
+    def inventory_table(self):
+        inv_table = [
+            ["Name", "Anzahl", "Gewicht", "Preis", "Gewicht Gesamt", "Preis Gesamt"]
+        ]
+        for i in self.Inventory:
+            inv_table.append(
+                [
+                    f"[{i.name}[[q:-:{i.name}:-]]]",
+                    f"{i.count:g}",
+                    i.singular_weight,
+                    i.singular_price,
+                    i.total_weight,
+                    i.total_price,
+                ]
+            )
+        inv_table.append(["Gesamt", "", "", "", "", ""])
+        total_table(inv_table, print)
+        return inv_table

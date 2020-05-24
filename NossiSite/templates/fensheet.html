@@ -46,7 +46,8 @@
                             dots(vv|remove_leading_underscore|int, userconf["fensheet_dot_max"]|int(5))
                             if userconf["fensheet_dots"]|int(0) else vv }}
                     {%- else -%}{{ vv }}{%- endif -%}{% if
-                            k in ["Fähigkeiten", "Aspekte","Quellen"] %} <span class="tooltiptext">&nbsp;+&nbsp;{{ character.seekxp(vk) }}&nbsp;FP</span>{%- endif -%}</td>
+                            k.lower() in character.doublepoint_sections+character.fullpoint_sections
+                            %} <span class="tooltiptext">&nbsp;+&nbsp;{{ character.get_xp_for(vk) }}&nbsp;FP</span>{%- endif -%}</td>
                 </tr>
             {%- endfor -%}
         {% else %}
@@ -95,6 +96,8 @@
 {%- endblock -%}
 
 {%- block body -%}
+        {% if owner %}<a href="{{ url_for("editwiki", x=owner) }}"><input type="button" class="leeet" style="margin-bottom: 1em" value="Edit"></a><br/>
+    {% endif %}
     <table style ="width:100%; " class="leet dividedtable">
         <tr>
             <td colspan="6" style="text-align: center; font-size: 1.5em" class="leeet">
@@ -135,5 +138,6 @@
         </div>
     {%- endfor -%}
     <div><button id="TopButton" title="Upwards">Top</button></div>
-
+    {% if owner %}<a href="{{ url_for("editwiki", x=owner) }}"><input type="button" class="leeet" style="margin-top: 1em" value="Edit"></a><br/>
+    {% endif %}
 {%- endblock -%}
