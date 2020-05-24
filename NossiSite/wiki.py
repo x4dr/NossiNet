@@ -1,5 +1,4 @@
 import html
-import json
 import os
 import re
 import time
@@ -14,7 +13,8 @@ from markupsafe import Markup
 
 from Fantasy.Armor import Armor
 from NossiPack.FenCharacter import FenCharacter
-from NossiPack.User import User, Userlist
+from NossiPack.MDPack import traverse_md
+from NossiPack.User import User
 from NossiPack.fengraph import weapondata, armordata
 from NossiPack.krypta import DescriptiveError, calculate
 from NossiSite.AfterResponse import AfterResponse
@@ -168,10 +168,10 @@ def register(app=None):
     @app.route("/fensheet/<c>")
     def fensheet(c):
         try:
-            char = get_fen_char(c)
+            # char = get_fen_char(c) # get cached
             title, tags, body = wikiload(c + "_character")
             body = bleach.clean(body)
-            char.load_from_md(body)
+            char = FenCharacter.from_md(body, flash=flash)
             body = render_template(
                 "fensheet.html",
                 character=char,
@@ -317,37 +317,6 @@ def register(app=None):
         tags = {t: v for t, v in a.items() if tag in v}
         entries = [e for e in r if e in tags.keys()]
         return render_template("wikindex.html", entries=entries, tags=tags, heads=heads)
-
-    @app.route("/char_access/<path:x>")
-    def char_access(x):
-        selection_path = x.split(".")
-        discord = request.cookies.get("discord", "")
-        ul = Userlist()
-        u = ul.loaduserbyname(selection_path[0])
-        if u:
-            u = ul.loaduserbyname(session.get("user"))
-            if discord.strip() and u.config("discord") != discord:
-                abort(403)
-            char = u.getsheet()
-        else:
-
-            c = wikiload(selection_path[0] + "_character")
-            char = FenCharacter()
-            char.load_from_md(c[2])
-        d = char.getdictrepr()
-        for x_part in selection_path[1:]:
-            if x_part in d.keys():
-                d = d[x_part]  # accesses parts of character, dict of dicts
-            else:
-                d = {
-                    "error": "could not find d in current selection",
-                    "current selection": d,
-                }
-                break
-        return app.response_class(
-            json.dumps(d, indent=2, ensure_ascii=False) + "\n",
-            mimetype=app.config["JSONIFY_MIMETYPE"],
-        )
 
     @app.route("/magicalweapon/<w>")
     @app.route("/magicalweapon/<w>/<par>")
@@ -585,23 +554,6 @@ def fill_infolets(body, character_name: str):
     body = infos.sub(getinfo, hiddeninfos.sub(hide(getinfo), body))
     body = table.sub(get_table, hiddentable.sub(hide(get_table), body))
     return headers.sub(headerfix, body)
-
-
-def traverse_md(md: str, seek: str) -> str:
-    result = ""
-    level = 0
-    for line in md.split("\n"):
-        line = line.strip()
-        if line.startswith("#") or level:
-            current_level = len(line) - len(line.lstrip("#"))
-            if current_level and level >= current_level:
-                level = 0
-                continue
-            if level or line.lstrip("#").strip().upper() == seek.upper():
-                if not level:
-                    level = current_level
-                result += line + "\n"
-    return result
 
 
 def wikiload(page: Union[str, Path]) -> Tuple[str, List[str], str]:

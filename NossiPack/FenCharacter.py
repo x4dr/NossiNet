@@ -1,6 +1,5 @@
 import base64
 import itertools
-import re
 import time
 from collections import OrderedDict
 
@@ -9,17 +8,8 @@ __author__ = "maric"
 from typing import List, Tuple
 
 from NossiPack.DiceParser import fullparenthesis
+from NossiPack.MDPack import split_md, extract_tables, confine_to_tables
 from NossiPack.krypta import is_int
-
-
-def tryfloatbeginning(param, default: float) -> float:
-    while param:
-        try:
-            return float(param)
-        except ValueError:
-            param = param[:-1]
-            continue
-    return default
 
 
 class FenCharacter:
@@ -35,7 +25,6 @@ class FenCharacter:
         self.Inventory = OrderedDict()
         self.Notes = ""
         self.Timestamp = time.strftime("%Y/%m/%d-%H:%M:%S")
-        self._xp_text_cache = None
         self._xp_cache = {}
 
     def stat_definitions(self):
@@ -184,33 +173,15 @@ class FenCharacter:
         res = self._xp_cache.get(name, None)
         if res is not None:
             return res
-        else:
-            res = 0
-        for catname, cat in self.Categories.items():
-            for secname, sec in cat.items():
-                if secname.lower().strip() in ["erfahrung", "experience", "xp"]:
-                    if sec.get(name, None):
-                        res += self.parse_xp(sec[name])
-
-        for k in self.Meta.keys():
-            if k.lower().strip() in ["erfahrung", "experience", "xp"]:
-                try:
-                    self._xp_text_cache = self._xp_text_cache or self.parse_part(
-                        "\n".join(
-                            [
-                                "\n".join(x)
-                                for x in self.Meta[k].values()
-                                if len(x) and isinstance(x[0], str)
-                            ]
-                        ),
-                        True,
-                    )
-                    if self._xp_text_cache.get(name, None):
-                        res += self.parse_xp(self._xp_text_cache.get(name, None))
-                except:
-                    res += 0  # invalid xp part
-        self._xp_cache[name] = res
-        return res
+        if not self._xp_cache:  # generate once
+            for k in self.Meta.keys():
+                if k.lower().strip() in ["erfahrung", "experience", "xp"]:
+                    for table in self.Meta[k][2]:
+                        for row in table:
+                            if len(row) < 2:
+                                continue  # skip invalid rows
+                            self._xp_cache[row[0]] = self.parse_xp(row[1])
+        return self._xp_cache.get(name, 0)
 
     @staticmethod
     def parse_xp(s):
@@ -234,193 +205,55 @@ class FenCharacter:
         res += sum([1 for x in s if x.strip()])
         return res
 
-    @staticmethod
-    def parse_part(s, parse_table):
-        """
-        TODO: rework
-
-        :param s:
-        :param parse_table:
-        :return:
-        """
-        result = OrderedDict()
-        categories = [
-            x
-            for x in re.split(r"\n##(?!#)", "\n" + s, maxsplit=1000, flags=re.MULTILINE)
-            if x.strip()
-        ]
-        for category in categories:
-            firstline = category.find("\n")
-            categoryname = category[:firstline].strip()
-            category = category[firstline + 1 :].strip()
-            result[categoryname] = OrderedDict()
-            for section in [
-                x
-                for x in re.split(r"\n###(?!#)", "\n" + category, 1000, re.MULTILINE)
-                if x.strip()
-            ]:
-                firstline = section.find("\n")
-                sectionname = section[:firstline].strip()
-                section = section[firstline + 1 :].strip()
-                result[categoryname][sectionname] = OrderedDict()
-                result[categoryname][sectionname]["_lines"] = []
-                tablestate = 0
-                for line in section.split("\n"):
-                    line = line.strip()
-                    candidate = [x.strip() for x in line.split("|")]
-                    candidate = (
-                        candidate
-                        if len(candidate) == 2
-                        else line[
-                            1
-                            if line.startswith("|")
-                            else 0 : -1
-                            if line.endswith("|")
-                            else len(line)
-                        ].split("|")
-                    )
-                    if parse_table and len(candidate) == 2:
-                        tablestate += 1
-                        if tablestate > 2:  # 1: header, 2: alignment
-                            while candidate[0] in result[categoryname][sectionname]:
-                                candidate[0] = "_" + candidate[0]
-                            result[categoryname][sectionname][candidate[0].strip()] = (
-                                candidate[1]
-                            ).strip()
-                    else:
-                        tablestate = 0
-                        result[categoryname][sectionname]["_lines"].append(line)
-                table = FenCharacter.parse_matrix(result[categoryname][sectionname])
-                if table:
-                    if len(table[0]) > 1:
-                        result[categoryname][sectionname]["_table"] = table
-                    else:
-                        result[categoryname][sectionname]["_lines"].extend(
-                            x[0] for x in table
-                        )
-                if len(result[categoryname][sectionname]["_lines"]) == 0:
-                    del result[categoryname][sectionname]["_lines"]
-                if not sectionname:
-                    for k, v in result[categoryname][sectionname].items():
-                        result[categoryname][k] = v
-                    del result[categoryname][sectionname]
-            if (
-                len(result[categoryname].keys()) == 1
-                and "_lines" in result[categoryname].keys()
-            ):
-                result[categoryname] = list(result[categoryname].values())[0]
-        for cn in list(result.keys()):
-            if not cn:
-                if isinstance(result[cn], dict):
-                    for k, v in result[cn].items():
-                        result[k] = v
-                    del result[cn]
-            else:
-                result.move_to_end(cn, True)
-        return result
-
-    def load_from_md(self, body):
+    def load_from_md(self, body, flash=None):
         """
         takes in the entire character sheet and constructs the Fencharacter object from it
 
-        :param body:
+        :param flash: function to call for each error
+        :param body: md string with the charactersheet
         :return:
         """
-        self._xp_text_cache = None
-        sheetparts = re.split(r"\n#(?!#)", "\n" + body, re.MULTILINE)
-        if len(sheetparts) == 0:
-            sheetparts = [body]
-        for s in sheetparts:
-            firstline = s.find("\n")
-            partname = s[:firstline]
-            s = s[firstline:]
-            if partname.strip().startswith("Werte") or len(sheetparts) == 1:
-                parsed_parts = self.parse_part(s, True)
-                self.Categories.update(parsed_parts)
+        if not flash:
+
+            def flash(err):
+                print(err)
+
+        sheetparts = extract_tables(split_md(body))
+
+        # inform about things that should not be there
+        if sheetparts[0].strip():
+            flash("Loose Text: " + sheetparts[0])
+        if sheetparts[2]:
+            for t in sheetparts[2]:
+                if t:
+                    flash(
+                        "Loose Table:"
+                        + "\n".join("\t".join(x for x in row) for row in t)
+                    )
+
+        for s in sheetparts[1].keys():
+            if s.lower().strip() in ["werte", "values", "statistics", "stats"]:
+                d, errors = confine_to_tables(sheetparts[1][s], headers=False)
+                self.Categories.update(d)
+                for e in errors:
+                    flash(e)
             else:
-                if partname.strip() in ["", "Charakter"]:
-                    self.Character = self.parse_part(s, True)
+                if s.strip().lower() in [
+                    "charakter",
+                    "character",
+                    "beschreibung",
+                    "description",
+                ]:
+                    d, errors = confine_to_tables(sheetparts[1][s], headers=False)
+                    self.Character = d
+                    for e in errors:
+                        flash(e)
                 else:
-                    parsed_parts = self.parse_part(s, False)
-                    self.Meta[partname] = parsed_parts
-        for catname, catv in list(self.Categories.items()):
-            secv = []
-            try:
-                for secv in list(catv.values()):
-                    for itemn, itemv in list(secv.items()):
-                        if itemn == "_lines":
-                            secv[""] = "\n".join(itemv)
-                            del secv["_lines"]
-            except AttributeError:
-                d = OrderedDict()
-                for s in secv:
-                    if not isinstance(s, str):
-                        continue
-                    s = s.strip()
-                    if " " in s:
-                        k, v = s.rsplit(" ", 1)
-                    else:
-                        k, v = s, {}
-                    d[k] = v
-                self.Categories[catname] = d
+                    self.Meta[s] = sheetparts[1][s]
         return self.Categories
 
-    def getdictrepr(self):
-        character = OrderedDict(
-            [
-                ("Categories", self.Categories),
-                ("Wounds", self.Wounds),
-                ("Modifiers", self.Modifiers),
-                ("Inventory", self.Inventory),
-                ("Notes", self.Notes),
-                ("Type", "FEN"),
-            ]
-        )
-        return character
-
-    @staticmethod
-    def parse_matrix(param):
-        lines = param.get("_lines", [])
-        if not lines:
-            return []
-        output = None
-        copy = lines[:]
-        while lines:
-            line = lines.pop(0)
-            if not line.strip():
-                continue
-            parts = line.strip().split("|")
-            if output is None or len(output[-1]) == len(parts):
-                output = (output or []) + [parts]
-            else:
-                # if len(output[-1]) - len(parts) <= 2:
-                #    output = output + [parts + ["", ""]][: len(output[-1])]
-                param["_lines"] = copy
-                return []
-        if output is None:
-            return []
-        if all(not x[0] for x in output):
-            output = [x[1:] for x in output]
-        if all(not x[-1] for x in output):
-            output = [x[:-1] for x in output]
-        if output[-1][0].lower().strip() in ["total", "summe", "gesamt"]:
-            for i in range(1, len(output[-1])):
-                output[-1][i] = (
-                    "{}".format(
-                        round(
-                            sum(
-                                tryfloatbeginning(outputline[i], 0)
-                                for outputline in output[:-1]
-                            ),
-                            6,
-                        )
-                    )
-                    + output[-1][i]
-                )
-        return output
-
     @classmethod
-    def from_md(cls, arg):
+    def from_md(cls, arg, flash=None):
         res = cls()
-        res.load_from_md(arg)
+        res.load_from_md(arg, flash)
         return res

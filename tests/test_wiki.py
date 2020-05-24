@@ -6,6 +6,7 @@ from flask import url_for
 import Data
 from Fantasy.Item import fenconvert, fendeconvert
 from NossiPack.FenCharacter import FenCharacter
+from NossiPack.MDPack import table, split_row, split_md
 from NossiPack.fengraph import armordata
 from NossiSite import helpers
 from NossiSite.wiki import wikisave
@@ -48,23 +49,6 @@ class TestViews(NossiTestCase):
             7,
         )
 
-    def test_matrix_parsing(self):
-        testdat = {"_lines": ["|a|b|c", "-|-|-|", "|1|2|3|4", "hi|ho|hu"]}
-        sut = FenCharacter.parse_matrix(testdat)
-        self.assertEqual(
-            testdat["_lines"], ["|a|b|c", "-|-|-|", "|1|2|3|4", "hi|ho|hu"]
-        )
-        self.assertEqual(sut, [])
-
-        testdat = {"_lines": ["|a|b|c", "-|-|-|", "|1|2|3|", "hi|ho|hu"]}
-        sut = FenCharacter.parse_matrix(testdat)
-        self.assertEqual(sut, [])  # uneven format
-        testdat = {"_lines": ["|a|b|c|", "|-|-|-|", "|1|2|3|", "|4|5|6|", "|Total|||"]}
-        sut = FenCharacter.parse_matrix(testdat)
-        self.assertEqual(testdat["_lines"], [])
-        self.assertEqual(sut[4][2], "9.0")
-        self.assertEqual(sut[4][0], "Total")
-
     def test_FenCharacter_cost(self):
         sut = [
             FenCharacter.cost_calc("1,0,1"),
@@ -85,6 +69,48 @@ class TestViews(NossiTestCase):
         self.assertEqual(fendeconvert(fenconvert("252s"), "money"), "2.52g")
         self.assertEqual(fendeconvert(fenconvert("3332c"), "money"), "33.32s")
         self.assertEqual(fendeconvert(fenconvert("0.001g"), "money"), "10c")
+
+    def test_table_md(self):
+        self.assertEqual(["", "", "a"], split_row("||a", 3))
+        self.assertEqual([["a", "b"], ["1", "2"]], table("|a|b|\n|-|-\n1|2\n"))
+        self.assertEqual([], table("h|i"))
+        self.assertEqual(
+            [["a", "b"], ["1", "2"], ["extra", ""]],
+            table("|a|b|cut\n|-|-\n1|2\nextra\n"),
+        )
+
+    def test_split_md(self):
+        self.assertEqual(
+            (
+                "abctext\n",
+                {
+                    "first heading": (
+                        "",
+                        {
+                            "first subhead": (
+                                "first subhead text\nwith multiple lines\n",
+                                {"subsub": ("subsub text\n", {})},
+                            ),
+                            "second subhead": ("moretext\n", {}),
+                        },
+                    ),
+                    "next heading": ("direct text\n", {}),
+                },
+            ),
+            split_md(
+                """ abctext
+                    # first heading
+                    ## first subhead
+                    first subhead text
+                    with multiple lines
+                    ### subsub
+                    subsub text
+                    ## second subhead
+                    moretext
+                    # next heading
+                    direct text"""
+            ),
+        )
 
     def test_armor(self):
         d = armordata()

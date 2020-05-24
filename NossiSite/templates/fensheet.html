@@ -11,26 +11,24 @@
         ○
     {%- endfor -%}
 {%- endmacro -%}
-{% macro tablematrix(sectiondata) %}
+{% macro tablematrix(table) %}
     <table class="dividedtable">
-        {% for line in sectiondata -%}
-            {% if loop.index0!=1 %} {# the - - - line in md #}
-                {% if loop.first %}
-                    <thead>
-                {% endif %}
-            <tr>
-                {% set outer_loop = loop %}
-                {% for subline in line -%}
-                    <td class="le{% if outer_loop.first %}e{% endif %}et">{{ subline }}</td>
-                {% endfor -%}
-            </tr>
+        {% for line in table -%}
             {% if loop.first %}
-                </thead>
-                <tbody>
-                {% elif loop.last %}
-                </tbody>
+                <thead>
             {% endif %}
-            {% endif %}
+        <tr>
+            {% set outer_loop = loop %}
+            {% for subline in line -%}
+                <td class="le{% if outer_loop.first %}e{% endif %}et">{{ subline }}</td>
+            {% endfor -%}
+        </tr>
+        {% if loop.first %}
+            </thead>
+            <tbody>
+            {% elif loop.last %}
+            </tbody>
+        {% endif %}
         {%- endfor %}
     </table>
 {% endmacro %}
@@ -76,6 +74,18 @@
         {% endif %}
     </table>
 {%- endmacro -%}
+{% macro treepart(tree, depth) %}
+    {{ tree[0] | markdown }}
+    {% for table in tree[2] %}
+        {{ tablematrix(table) }}
+    {% endfor %}
+    {% for child, content in tree[1].items() %}
+        <h{{ depth }} class="hideable">o{{ child }}</h{{ depth }}>
+        <div>
+            {{ treepart(content, depth + 1) }}
+        </div>
+    {% endfor %}
+{% endmacro %}
 {%- block title -%}
     {%- if character.Name -%}
         <title>{{ character.Name }}</title>
@@ -121,35 +131,7 @@
     {%- for key,data in character.Meta.items() -%}
         <h2 class="hideable">o{{ key }}</h2>
         <div>
-            {%- for section,sectiondata in data.items() -%}
-                {%- if section|trim|length and section != "_table" -%}
-                    <h3 class="hideable">*{{ section|markdown }}</h3>
-                {%- endif -%}
-                <div>
-                    {% if sectiondata is mapping %}
-                        {% for k, v in sectiondata.items() %}
-                            {%- if k =="_table" -%}
-                                {{ tablematrix(v) }}
-                            {%- else -%}
-                                <h4 class="hideable">*{{ k|markdown }}</h4>
-                                <div>{% for line in v["_lines"]  %}
-                                    {{ line|markdown }}
-                                {% endfor %}
-                                </div>
-                            {% endif %}
-                        {% endfor -%}
-                    {%- else %}
-                        {%- if section =="_table" -%}
-                            {{ tablematrix(sectiondata) }}
-                        {%- else -%}
-                            {%- for line in sectiondata|markdown -%}
-                                {{ line| markdown }}
-                            {%- endfor %}
-                        {% endif %}
-                    {% endif %}
-
-                </div>
-            {%- endfor -%}
+            {{ treepart(data,3) }}
         </div>
     {%- endfor -%}
     <div><button id="TopButton" title="Upwards">Top</button></div>
