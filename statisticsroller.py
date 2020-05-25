@@ -32,68 +32,6 @@ def d10fnolossguard(amt, diff):  # faster than the normal d10
     return succ - anti
 
 
-def plot(data, showsucc=False, showgraph=True, showdmgmods=False, grouped=1):
-    success = sum(v for k, v in data.items() if k > 0)
-    zeros = sum(v for k, v in data.items() if k == 0)
-    botches = sum(v for k, v in data.items() if k < 0)
-    total = sum(v for k, v in data.items())
-    pt = total / 100
-    width = 1
-    highest = 0
-    if showsucc:
-        print(
-            "Of the %d rolls, %d were successes, "
-            "%d were failures and %d were botches, averaging %.2f"
-            % (
-                total,
-                success,
-                zeros,
-                botches,
-                (sum(k * v for k, v in data.items()) / total),
-            )
-        )
-        print(
-            "The percentages are:\n+ : %f.3%%\n0 : %f.3%%\n- : %f.3%%"
-            % (success / pt, zeros / pt, botches / pt)
-        )
-
-        barsuc = int((success / pt) / width)
-        barbot = int((botches / pt) / width)
-        barzer = int(100 / width - barsuc - barbot)
-        print("+" * barsuc + "0" * barzer + "-" * barbot)
-    if showgraph:
-
-        lowest = min(data.keys())
-        highest = max(data.keys())
-        width = (
-            1
-            / 60
-            * max(
-                int(data[i] / pt) if i in data else 0
-                for i in range(lowest, highest + 1)
-            )
-        )
-        for i in range(lowest, highest + 1):
-            if i == 0 and showsucc:
-                print()
-            if i not in data.keys():
-                data[i] = 0
-            if grouped == 1:
-                print("%2d : %7.3f%% " % (i, data[i] / pt), end="")
-            else:
-                print(
-                    "%2d-%2d : %7.3f%% "
-                    % (i * grouped, (i + 1) * grouped - 1, data[i] / pt),
-                    end="",
-                )
-            print("#" * int((data[i] / pt) / width))
-            if i == 0 and showsucc:
-                print()
-    if showdmgmods:
-        print("dmgmods(adjusted):")
-        print([data[i] / success for i in range(1, highest + 1)])
-
-
 def run_duel(a, b, c=None, d=None, duration=60):
     if c is None:
         c = a

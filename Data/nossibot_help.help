@@ -40,7 +40,8 @@ oracle : prefix for selector system standard 5 dice (+modifiers) roll graphs
     it expects a list of at least 2 integers as a parameter. the last one is the bonus/malusdice, all previous are selectors
     Subcommand:
         show : will make the graph as a picture with quantiles. number of quantiles is new last parameter, rest as normal
-    asc/desc can be appended to have at most/at least chances instead
+    asc/desc or under/over can be appended to have at most/at least chances instead
+    try: will run that dicerol for 10 seconds and format less prettily
 
 Unprefixed messages are passed to the diceroller:
 Triggers:

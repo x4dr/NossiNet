@@ -14,9 +14,9 @@ import requests
 from dateparser import parse as dateparse
 
 from Data import getnossihelp
-from NossiInterface.RollInterface import rollhandle, chunk_reply
+from NossiInterface.RollInterface import rollhandle, chunk_reply, timeout
 from NossiInterface.Tools import discordname, split_send, handle_defines
-from NossiPack.fengraph import chances
+from NossiPack.fengraph import chances, montecarlo
 from NossiPack.krypta import DescriptiveError
 
 client = discord.Client()
@@ -151,10 +151,10 @@ async def oraclehandle(msg, comment, send, author):
         msg = msg[1:].strip()
     sentmessage = None
     mode = None
-    if msg.endswith(" asc"):
+    if msg.endswith(" under") or msg.endswith(" asc"):
         mode = 1
         msg = msg[:-4]
-    if msg.endswith(" desc"):
+    if msg.endswith(" over") or msg.endswith(" desc"):
         mode = -1
         msg = msg[:-5]
     if msg.startswith("show"):
@@ -181,6 +181,11 @@ async def oraclehandle(msg, comment, send, author):
                 author.mention
                 + " <selectors> <modifier> <number of quantiles> [asc|desc]"
             )
+    elif msg.startswith("try"):
+        sentmessage = await send("Applying the numerical HAMMER for 10 seconds...")
+        r = await timeout(montecarlo, msg[3:], 12)
+        await sentmessage.edit(content=author.mention + "\n" + str(r)[:1950])
+
     else:
         try:
             parameters = msg.split(" ")
