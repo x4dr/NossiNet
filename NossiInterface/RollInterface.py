@@ -151,6 +151,11 @@ async def rollhandle(msg, comment, message: discord.Message, persist):
             await author.send("Error with roll:\n" + "\n".join(e.args)[:2000])
     except asyncio.exceptions.TimeoutError:
         await message.add_reaction("\U000023F0")
+    except ValueError as e:
+        if not any(x in msg for x in "\"'"):
+            print(f"not quotes {msg}" + "\n" + "\n".join(e.args))
+        await message.add_reaction("🙃")
+
     except Exception as e:
         ermsg = f"big oof during rolling {msg}" + "\n" + "\n".join(e.args)
         print(ermsg)
@@ -158,4 +163,3 @@ async def rollhandle(msg, comment, message: discord.Message, persist):
             await author.send(ermsg[:2000])
         else:
             await message.add_reaction("😕")
-        print(ermsg)
