@@ -153,6 +153,7 @@ async def rollhandle(msg, comment, message: discord.Message, persist):
         await message.add_reaction("\U000023F0")
     except Exception as e:
         ermsg = f"big oof during rolling {msg}" + "\n" + "\n".join(e.args)
+        print(ermsg)
         if errreport:  # query for error
             await author.send(ermsg[:2000])
         else:
