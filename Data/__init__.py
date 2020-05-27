@@ -10,10 +10,13 @@ def get(res):
         return data.read()
 
 
+def handle(res):
+    with importlib.resources.path("Data", pathlib.Path(res)) as path:
+        return path.as_posix()
+
+
 def append(res, d):
-    with open(
-        next(importlib.resources.path("Data", pathlib.Path(res))).as_posix()
-    ) as data:
+    with open(handle(res), "a") as data:
         data.write(d)
 
 

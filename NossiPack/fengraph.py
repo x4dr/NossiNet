@@ -11,7 +11,7 @@ from typing import Dict
 import numpy
 import requests
 
-from Data import append, get
+from Data import append, get, handle
 from Fantasy.Armor import Armor
 from NossiPack.DiceParser import DiceParser
 
@@ -222,7 +222,7 @@ def dataset(modifier):
     import pandas
 
     return pandas.read_csv(
-        "roll_frequencies_" + str(modifier) + ".csv",
+        handle("roll_frequencies_" + str(modifier) + ".csv"),
         names=["D1", "D2", "D3", "D4", "D5", "frequency"],
     )
 

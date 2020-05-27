@@ -228,6 +228,7 @@ async def oraclehandle(msg, comment, send, author):
             if errreport:
                 await author.send("Oracle error: " + " ".join(str(x) for x in e.args))
             await send(author.mention + " <selectors> <modifier> [asc|desc]")
+            raise
 
 
 async def weaponhandle(msg, comment, send, author, react):
