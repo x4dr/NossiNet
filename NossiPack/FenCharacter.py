@@ -161,7 +161,8 @@ class FenCharacter:
             try:
                 res += int(v) * 10
             except ValueError:
-                if v[0].lower() == "_":
+
+                if v and v[0].lower() == "_":
                     try:
                         res += int(v[1:]) * 5
                     except ValueError:
