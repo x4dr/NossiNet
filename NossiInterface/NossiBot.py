@@ -7,6 +7,7 @@ import shelve
 import string
 import time
 import traceback
+from typing import List
 from urllib.parse import quote
 
 import discord
@@ -27,6 +28,7 @@ if shutdownflag.exists():
 remindfile = os.path.expanduser("~/reminders.txt")
 remindnext = os.path.expanduser("~/reminders_next.txt")
 ticking = [time.time()]
+disconnecting = []
 print("initializing NossiBot...")
 
 
@@ -270,6 +272,8 @@ async def tick():
         ticking.append(
             requests.get("http://www.google.com").elapsed.microseconds / 1000
         )
+        while disconnecting:
+            await disconnecting.pop().disconnect()
         if len(ticking) > 10:
             ticking.pop(0)
         k = "remind"
@@ -343,6 +347,7 @@ async def on_raw_message_edit(payload: discord.RawMessageUpdateEvent):
 async def on_message(message: discord.Message):
     msg: str = message.content.strip("` ")
     send = message.channel.send
+    author: discord.member.Member = message.author
     if message.author == client.user:
         return
     if msg.startswith("NossiBot") or isinstance(message.channel, discord.DMChannel):
@@ -354,6 +359,23 @@ async def on_message(message: discord.Message):
             await message.add_reaction("\U0001f480")
             await send("I shall die.")
             await client.close()
+            return
+        if "JOIN ME" in msg.upper() and discordname(message.author) == persist["owner"]:
+            vc: discord.VoiceChannel = author.voice.channel
+            connection = await vc.connect()
+            connection.play(
+                discord.FFmpegOpusAudio("default", before_options="-f pulse"),
+                after=lambda e: disconnecting.append(connection),
+            )
+
+        if "LEAVE" in msg.upper():
+            vcs: List[discord.VoiceClient] = client.voice_clients
+            for x in vcs:
+                if author.voice.channel == x.channel:
+                    await x.disconnect()
+                    break
+            await message.add_reaction("🔇")
+
             return
         if msg.lower().startswith("i am ") or msg.lower().startswith("who am i"):
             if msg.lower().startswith("i am"):
