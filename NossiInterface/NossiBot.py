@@ -367,7 +367,8 @@ async def on_message(message: discord.Message):
                 # discord.FFmpegOpusAudio("default", before_options="-f pulse"),
                 # contents of pacatffmpeg
                 # #!/bin/bash
-                # pacat -r -d alsa_output.pci-0000_00_1b.0.analog-stereo.monitor --format=s32le --rate=48000 | ffmpeg "$@"
+                # pacat -r -d alsa_output.pci-0000_00_1b.0.analog-stereo.monitor \
+                # --format=s32le --rate=48000 | ffmpeg "$@"
                 discord.FFmpegOpusAudio(
                     "-",
                     executable="pacatffmpeg",
