@@ -200,7 +200,7 @@ async def replacedefines(msg, message, persist):
 def who_am_i(persist):
     whoami = persist.get("NossiAccount", None)
     if whoami is None:
-        raise DescriptiveError(f"No NossiAccount linked!")
+        return None
     checkagainst = Config.load(whoami, "discord")
     da = persist.get("DiscordAccount", None)
     if da is None:  # should have been set up at the same time
@@ -246,26 +246,29 @@ async def handle_defines(msg, message, persist):
         await undefine(msg, message, persist)
 
     defines = {}
-    whoami = who_am_i(pers)
-    if whoami:
-        cache = statcache.get(whoami, [0, {}])
-        if time.time() - cache[0] > cachetimeout:
-            defines = cache[1]
-        if not defines:
-            defines = load_user_char_stats(whoami)
-            statcache[whoami] = (time.time(), defines)
-    defines.update(pers["defines"])  # add in /override explicit defines
-    loopconstraint = 100
-    used = []
-    while loopconstraint > 0:
-        loopconstraint -= 1
-        for k, v in defines.items():
-            if k in msg and k not in used:
-                msg = msg.replace(k, v)
-                used.append(k)
-                break
-        else:
-            loopconstraint = 0  # no break means no replacements
+    try:
+        whoami = who_am_i(pers)
+        if whoami:
+            cache = statcache.get(whoami, [0, {}])
+            if time.time() - cache[0] > cachetimeout:
+                defines = cache[1]
+            if not defines:
+                defines = load_user_char_stats(whoami)
+                statcache[whoami] = (time.time(), defines)
+        defines.update(pers["defines"])  # add in /override explicit defines
+        loopconstraint = 100
+        used = []
+        while loopconstraint > 0:
+            loopconstraint -= 1
+            for k, v in defines.items():
+                if k in msg and k not in used:
+                    msg = msg.replace(k, v)
+                    used.append(k)
+                    break
+            else:
+                loopconstraint = 0  # no break means no replacements
+    except DescriptiveError as e:
+        await message.author.send(e.args[0])
     return msg
 
 
