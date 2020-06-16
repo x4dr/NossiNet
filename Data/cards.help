@@ -1,0 +1,34 @@
+Structure:
+cards:command:parameter
+
+Possible commands:
+
+draw : deck -> hand; Parameters: (int|list)
+spend: hand -> discardpile; Parameters: (list)
+return: discardpile -> deck; Parameters: (int|list)
+dedicate: dedicates cards (https://nosferatu.vampir.es/wiki/alchemymagic) Parameters: (list):reason
+remove: anywhere -> removed; Parameters: (list)
+free: removed or dedicated -> deck; Parameters: (list)
+undedicate: dedicated -> removed; Parameters: (list)
+hand: shows hand; Parameters: none
+deck: shows deck; Parameters: none
+pile: shows discardpile; Parameters: none
+removed: shows removed and dedicated cards; Parameters: none
+notes: shows dedications and the associated cards
+
+Parameters:
+none means no further parameters are expected
+() means parameter is mandatory. the () themselves are not part of the parameter
+| means either the option to the left or the right
+list is a space separated list of the shortform of cards (for example h2, s7, DA) case insensitive
+int is a number of cards that will be randomly chosen
+
+Tips and Tricks:
+The Deck can be Manipulated under your configuration Options. Cardcolors are completely arbitrary and are sorted
+alphabetically, values outside the 2-10 BDJQKA will be sorted to the front, but work otherwise.
+The longform can also be freely manipulated. Missing values use the short form, the longform name will always be
+"Colorname Valuename".
+Here is an example Deck (all other piles should be set to empty strings to clear them out)
+O2 O3 O4 O5 O6 O7 O8 O9 O0 OB OD OK OA M2 M3 M4 M5 M6 M7 M8 M9 M0 MB MD MK MA N2 N3 N4 N5 N6 N7 N8 N9 N0 NB ND NK NA E2 E3 E4 E5 E6 E7 E8 E9 E0 EB ED EK EA
+and an example of a fitting namescheme
+{'O': 'Ordnung', 'M': 'Materie', 'E': 'Energie', 'N': 'Entropie', '0': '10', 'B': 'Bube', 'D': 'Dame', 'K': 'König', 'A': 'Ass'}

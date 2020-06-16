@@ -353,7 +353,7 @@ async def on_message(message: discord.Message):
     if msg.startswith("NossiBot") or isinstance(message.channel, discord.DMChannel):
         msg = msg[len("NossiBot") :] if msg.startswith("NossiBot") else msg
         if msg.strip() == "help":
-            await split_send(message.author.send, getnossihelp().split("\n"))
+            await split_send(message.author.send, getnossihelp().splitlines())
             return
         if "DIE" in msg and discordname(message.author) == persist["owner"]:
             await message.add_reaction("\U0001f480")

@@ -43,6 +43,11 @@ oracle : prefix for selector system standard 5 dice (+modifiers) roll graphs
     asc/desc or under/over can be appended to have at most/at least chances instead
     try: will run that dicerol for 10 seconds and format less prettily
 
+specific from https://nosferatu.vampir.es/wiki/conventions
+work as well!
+
+for help on cards, type cards:help
+
 Unprefixed messages are passed to the diceroller:
 Triggers:
 Triggers are pieces of the dicecode that have effects which are not strictly dicerolling. They are ignored by replacements. As of writing, the established triggers are:

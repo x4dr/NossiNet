@@ -1,6 +1,7 @@
 import re
 import time
 
+import Data
 from NossiPack.Cards import Cards
 from NossiPack.DiceParser import fullparenthesis
 from NossiPack.User import Config
@@ -88,6 +89,8 @@ async def cardhandle(msg, message, persist, send):
                 + f" Affected Dedication{'s' if len(message)!=1 else ''}: "
                 + (",\n and ".join(message) or "none")
             )
+        elif command == "help":
+            await split_send(message.author.send, Data.getcardhelp().splitlines())
         else:
             infos = deck.renderlong
             if command in infos:

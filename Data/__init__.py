@@ -29,4 +29,8 @@ def getschema():
 
 
 def getnossihelp():
-    return get("nossibot_help.help")
+    return get("nossibot.help")
+
+
+def getcardhelp():
+    return get("cards.help")
