@@ -1,9 +1,19 @@
 from random import random
 
-from flask import request, session, flash, redirect, url_for, Response, render_template
+from flask import (
+    request,
+    session,
+    flash,
+    redirect,
+    url_for,
+    Response,
+    render_template,
+)
 
+from NossiPack.Cards import Cards
 from NossiPack.User import Userlist
 from NossiPack.VampireCharacter import VampireCharacter
+from NossiPack.krypta import DescriptiveError
 from NossiSite.base import app as defaultapp, log
 from NossiSite.helpers import checklogin
 
@@ -115,6 +125,45 @@ def register(app=None):
         return redirect(
             url_for("chargen", a=3, b=5, c=7, abia=5, abib=9, abic=13, shuffle=1)
         )
+
+    @app.route("/cards/", methods=["GET"])
+    @app.route("/cards/<command>", methods=["POST", "GET"])
+    def cards(command: str = None):
+        checklogin()
+        deck = Cards.getdeck(session["user"])
+        try:
+            if request.method == "GET":
+                if command is None:
+                    return deck.serialized_parts
+            elif request.method == "POST":
+                par = request.form.get("parameter", None)
+                if command == "draw":
+                    return {"result": list(deck.draw(par))}
+                elif command == "spend":
+                    return {"result": list(deck.spend(par))}
+                elif command == "return":
+                    return {"result": list(deck.pilereturn(par))}
+                elif command == "dedicate":
+                    return {"result": list(deck.dedicate(par))}
+                elif command == "remove":
+                    return {"result": list(deck.remove(par))}
+                elif command == "free":
+                    message = deck.undedicate(par)
+                    for m in message:
+                        flash("Affected Dedication: " + m)
+                        return {"messages": list(message)}
+                elif command == "free":
+                    affected, message = deck.free(par)
+                    for m in message:
+                        flash("Affected Dedication: " + m)
+                    return {"result": list(affected), "messages": message}
+                else:
+                    return f"invalid command {command}"
+            return render_template("cards.html", cards=deck)
+        except DescriptiveError as e:
+            return {"error": e.args[0]}
+        finally:
+            Cards.savedeck(session["user"], deck)
 
     @app.route("/chargen", methods=["GET", "POST"])
     def chargen_menu():

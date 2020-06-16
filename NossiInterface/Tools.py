@@ -1,7 +1,10 @@
 import re
 import time
 
+from NossiPack.Cards import Cards
 from NossiPack.DiceParser import fullparenthesis
+from NossiPack.User import Config
+from NossiPack.krypta import DescriptiveError
 from NossiSite.wiki import load_user_char_stats
 
 statcache = {}
@@ -30,6 +33,62 @@ async def split_send(send, lines, i=0):
         else:
             print("aborting sending: unexpected state", i, lines)
             break
+
+
+async def cardhandle(msg, message, persist, send):
+    def form(inp):
+
+        if isinstance(inp, dict):
+            outp = ""
+            for k, j in inp.items():
+                outp += "\n" + str(k) + ": " + form(j)
+            return outp
+        elif isinstance(inp, list):
+            return ", ".join(inp)
+        elif isinstance(inp, str):
+            return inp
+        else:
+            DescriptiveError("HUH?")
+
+    command = msg.split(":")[1]
+    par = ":".join(msg.split(":")[2:])
+    mention = message.author.mention
+    deck = None
+    whoami = None
+    try:
+        whoami = who_am_i(persist)
+        if not whoami:
+            return await send(mention + " Could not ascertain Identity!")
+
+        deck = Cards.getdeck(whoami)
+        if command == "draw":
+            await send(mention + " " + form(deck.elongate(deck.draw(par))))
+        elif command == "spend":
+            deck.spend(par)
+            await send(mention + " " + "OK")
+        elif command == "return":
+            await send(mention + " " + form(deck.elongate(deck.pilereturn(par))))
+        elif command == "dedicate":
+            await send(mention + " " + "OK")
+        elif command == "remove":
+            await send(mention + " " + "OK")
+        elif command == "free":
+            message = deck.undedicate(par)
+            await send(mention + " " + "\n".join(message))
+        elif command == "free":
+            _, message = deck.free(par)
+            await send(mention + " " + "\n".join(message))
+        else:
+            infos = deck.renderlong
+            if command in infos:
+                await send(mention + " " + form(infos[command]))
+            else:
+                await send(mention + f" invalid command {command}")
+    except DescriptiveError as e:
+        await send(mention + " " + e.args[0])
+    finally:
+        if deck and whoami:
+            deck.savedeck(whoami, deck)
 
 
 def fakemessage(message):
@@ -125,6 +184,24 @@ async def replacedefines(msg, message, persist):
     return msg
 
 
+def who_am_i(persist):
+    whoami = persist.get("NossiAccount", None)
+    if whoami is None:
+        raise DescriptiveError(f"No NossiAccount linked!")
+    checkagainst = Config.load(whoami, "discord")
+    da = persist.get("DiscordAccount", None)
+    if da is None:  # should have been set up at the same time
+        persist["NossiAccount"] = "?"  # force resetup
+        raise DescriptiveError(
+            f"Whoops, I have forgotten who you are, tell me again please."
+        )
+    if da == checkagainst:
+        return whoami
+    raise DescriptiveError(
+        f"The NossiAccount {whoami} has not confirmed this discord account!"
+    )
+
+
 async def handle_defines(msg, message, persist):
     """
     processes defines and mutates the message accordingly.
@@ -156,7 +233,7 @@ async def handle_defines(msg, message, persist):
         await undefine(msg, message, persist)
 
     defines = {}
-    whoami = pers.get("NossiAccount", None)
+    whoami = who_am_i(pers)
     if whoami:
         cache = statcache.get(whoami, [0, {}])
         if time.time() - cache[0] > cachetimeout:
@@ -166,11 +243,13 @@ async def handle_defines(msg, message, persist):
             statcache[whoami] = (time.time(), defines)
     defines.update(pers["defines"])  # add in /override explicit defines
     loopconstraint = 100
+    used = []
     while loopconstraint > 0:
         loopconstraint -= 1
         for k, v in defines.items():
-            if k in msg:
+            if k in msg and k not in used:
                 msg = msg.replace(k, v)
+                used.append(k)
                 break
         else:
             loopconstraint = 0  # no break means no replacements

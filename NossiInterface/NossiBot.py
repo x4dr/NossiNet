@@ -16,7 +16,7 @@ from dateparser import parse as dateparse
 
 from Data import getnossihelp
 from NossiInterface.RollInterface import rollhandle, chunk_reply, timeout
-from NossiInterface.Tools import discordname, split_send, handle_defines
+from NossiInterface.Tools import discordname, split_send, handle_defines, cardhandle
 from NossiPack.fengraph import chances, montecarlo
 from NossiPack.krypta import DescriptiveError
 
@@ -369,7 +369,7 @@ async def on_message(message: discord.Message):
                 # #!/bin/bash
                 # pacat -r -d alsa_output.pci-0000_00_1b.0.analog-stereo.monitor \
                 # --format=s32le --rate=48000 | ffmpeg "$@"
-                discord.FFmpegOpusAudio(
+                discord.FFmpegPCMAudio(
                     "-",
                     executable="pacatffmpeg",
                     before_options="-f s32le -ac 2 -ar 48000",
@@ -394,6 +394,9 @@ async def on_message(message: discord.Message):
                 persist[discordname(message.author)][
                     "NossiAccount"
                 ] = msg.strip().upper()
+                persist[discordname(message.author)]["DiscordAccount"] = discordname(
+                    message.author
+                )
                 await message.add_reaction("\N{THUMBS UP SIGN}")
             try:
                 await send(
@@ -450,6 +453,8 @@ async def on_message(message: discord.Message):
         await specifichandle(msg, comment, send, message.author)
     elif msg.startswith("oracle"):
         await oraclehandle(msg, comment, send, message.author)
+    elif msg.startswith("cards:"):
+        await cardhandle(msg, message, persist[discordname(message.author)], send)
     else:
         await rollhandle(
             msg, comment, message, persist,

@@ -1,125 +1,83 @@
 {% extends "layout.html" %}
 {% block head %}
-    <!--suppress , JSUnresolvedVariable, JSUnresolvedFunction -->
     <script type="text/javascript" charset="utf-8">
-        var socket = null;
-        var bell = new Audio("/static/bell.wav");
-        var ring = false;
-        var ringoverwrite = false;
-        window.onload=function() {
-            socket = io.connect('https://' + document.domain + ':' + location.port + '/cards');
-            socket.on('Message', function(msg) {
-                var box = $('#chatbox');
-                box.append('<br>' + $('<div/>').text(msg.data).html());
-                box.scrollTop(box[0].scrollHeight);
-                if (ring){
-                    bell.play()
-                }
-            });
-            socket.on('Status', function(msg) {
-                document.getElementById('statusmessage').innerHTML = msg.status
-            });
-
-            socket.on('SetCmd', function(msg) {
-                $('#message_data').val(msg.data)
-            });
-
-            socket.on('Exec', function(msg){
-                eval(msg.command)
-
-            });
-
-            socket.on('Update', function(msg){
-                socket.emit('ClientServerEvent', {data: '///silent'});
-            });
-
-            socket.on('connect', function() {
-                socket.emit('ClientServerEvent', {data: '///silent'});
-                $('#message_data').focus();
-            });
-
-            var prevCommand = [];
-            var commandCount = 0;
-            var keyCount = 0;
-
-            $('form#message').submit(function() {
-                var message_data=$('#message_data').val();
-                if (message_data==="/ring off"){
-                    ringoverwrite = true
-                }
-                if (message_data==="/ring on"){
-                    ringoverwrite = false
-                }
-                if(document.getElementById('message_data').value !== ''){
-                    socket.emit('ClientServerEvent',
-                        {data: message_data});
-                    commandCount++;
-                    keyCount = 0;
-                    prevCommand[commandCount] = message_data;
-                    document.getElementById('message_data').value = ''}
+        $(document).ready(function () {
+            $('#interactionform').submit(function(){
+                let action = $('#action').find('option:selected');
+                $.ajax({
+                    type:    "POST",
+                    url:     action.data("url"),
+                    data:    {"parameter":$('#parameter').val()},
+                    success: function(data) {
+                        if ("error" in data) {
+                            alert(data.error);
+                        }
+                        else{
+                            location.reload();
+                        }
+                    },
+                    error:   function() {
+                        alert("Internal Server Error");
+                    }
+                });
                 return false;
             });
-
-            $(document).keydown(function(event){
-                var msgdata = $('#message_data');
-                var index;
-                if(event.which === 32){
-                    if (!msgdata.is(':focus')){
-                        msgdata.focus();
-                        return false
-                    }
-
-                }
-
-                if(event.which === 38){
-                    keyCount++;
-                    msgdata.focus();
-                    if(typeof prevCommand[keyCount] !== "undefined") {
-                        index = prevCommand.length-keyCount;
-                        msgdata.val(prevCommand[index]);
-                    } else {
-                        keyCount = 1;
-                        index = prevCommand.length-keyCount;
-                        msgdata.val(prevCommand[index]);
-                    }
-                    return false;
-                }else if(event.which === 40) {
-                    keyCount--;
-                    msgdata.focus();
-                    if(typeof prevCommand[keyCount] !== "undefined") {
-                        index = prevCommand.length-keyCount;
-                        msgdata.val(prevCommand[index]);
-                        //  moveCursorToEnd(msgdata)
-                    } else {
-                        if (prevCommand[commandCount] !== msgdata.val() && msgdata.val() !== '' ) {
-                            commandCount++;
-                            keyCount = 0;
-                            prevCommand[commandCount] = msgdata.val();
-                        }
-                        msgdata.val('')
-                    }
-                    return false;
-                }
-            });
-        }
+        });
     </script>
 {% endblock %}
 {% block body %}
-
-
-    <div id="wrapper">
-        <div id="inner" style="width: 100%;">
-            <div id="chatbox" class="chatbox"></div>
-        </div>
-        <div id="statusmessage">Waiting for Server connection...</div>
-        <form id="message" name="message" method="POST" action="#">
-            <div class="formline">
-                <input class="leet" name="submitmsg" type="submit"  id="submitmsg"
-                       value="Send" style="float: right; width:  10%" />
-                <span><input class="leet" type="text" name="message_data" id="message_data"
-                             placeholder="Message" autocomplete="off" style="width: 88%"></span>
-            </div>
-        </form>
+    <h2>Handcards</h2>
+    <p>
+        Welcome to the NossiNetCardDeckService, NNCDS lets manage a Deck of Cards in magical ways!<br/>
+        IF YOU WANT MORE FEATURES JUST REQUEST THEM AND I WILL TELL YOU IF THEY CAN BE DONE
+    </p>
+    <h4>Status</h4>
+    {% set deck = cards.render %}
+    <h5>Hand</h5>
+    <span style="font-size: 144%; ">{%- for card in deck["hand"] -%}{{ card }}&nbsp;{%- endfor %}</span>
+    <h5>Deck</h5>
+    {% for color in deck["deck"].keys()| sort -%}
+        <p>{{ color }}: {% for card in deck["deck"][color] -%}
+            {{ card }} {%- if not loop.last %}, {% endif %}
+        {%- endfor -%}</p>
+    {% endfor %}
+    <h5 class="hideable"> Discard Pile</h5>
+    <div>
+        {% for color in deck["pile"].keys()| sort -%}
+            <p>{{ color }}: {% for card in deck["pile"][color] -%}
+                {{ card }} {%- if not loop.last %}, {% endif %}
+            {%- endfor -%}</p>
+        {% endfor %}
     </div>
+    <h5 class="hideable"> Removed</h5>
+    <div>
+        {% for color in deck["removed"].keys() | sort%}
+            <p>{{ color }}: {% for card in deck["deck"][color] -%}
+                {{ card }} {%- if not loop.last %}, {% endif %}
+            {%- endfor -%}</p>
+        {% endfor %}
+        {% for k,j in deck["notes"].items() %}
+            <p>{{ k }}: {{ ", ".join(j) }}</p>
+        {% endfor %}
+    </div>
+    <h3>Actions</h3>
+    <p>If context allows, number of cards can be supplied, otherwise the exact cardnames separated by spaces are needed.</p>
+    <p>For dedication, the reason should be supplied after a ":".</p>
+    <form id="interactionform" action="javascript:void(0);" method=post>
+        <label for="action" >Action:</label>
+        <select name="action" class ="leeet" id="action">
+            <option value="draw" data-url="{{ url_for('cards', command='draw') }}">Draw</option>
+            <option value="spend" data-url="{{ url_for('cards', command='spend') }}">Spend</option>
+            <option value="return" data-url="{{ url_for('cards', command='return') }}">Return</option>
+            <option value="dedicate" data-url="{{ url_for('cards', command='dedicate') }}">Dedicate</option>
+            <option value="remove" data-url="{{ url_for('cards', command='remove') }}">Remove</option>
+            <option value="free" data-url="{{ url_for('cards', command='free') }}">Free</option>
+            <option value="undedicate" data-url="{{ url_for('cards', command='undedicate') }}">Undedicate</option>
+        </select>
+        <label for="parameter">Parameter</label>
+        <input type="text" name="parameter" id="parameter"/>
+        <br><br>
+        <input type="submit" value="OK" class="leet">
+    </form>
 
 {% endblock %}
