@@ -9,6 +9,7 @@ from typing import Tuple
 import pydealer
 
 from NossiPack.DiceParser import DiceParser
+from NossiPack.fengraph import plot
 from NossiPack.krypta import d10
 
 
@@ -80,12 +81,9 @@ def run_duel(a, b, c=None, d=None, duration=60):
         if i % 10 == 0:
             if time.time() - time1 >= duration:
                 break
-    print(
-        "rolling %s against %s for %.1f seconds"
-        % (str(a) + ", " + str(b), str(c) + ", " + str(d), time.time() - time1)
-    )
+    print(f"rolling {a},{b} against {c},{d} for {time.time() - time1} seconds")
     print(sum(successes.values()))
-    return plotdata(dict(successes))
+    return plot(dict(successes))
 
 
 def run_sel(sel, addon=""):
@@ -96,7 +94,7 @@ def run_sel(sel, addon=""):
         x: (total.count(x) if x in total else 0)
         for x in range(min(total), max(total) + 1)
     }
-    plotdata(pr)
+    plot(pr)
     print(sum(total) / 100000)
 
 
@@ -123,7 +121,7 @@ def run():
     print(
         "rolling %d dice against %d for %.1f seconds" % (amount, difficulty, duration)
     )
-    plotdata(dict(successes))
+    plot(dict(successes))
 
 
 def get_multiples(xs):
@@ -354,9 +352,9 @@ def run_craft(
         for x in range(0, max(rolls) + 1, 5)
     }
     print("rolls")
-    plotdata(nrolls, grouped=1)
+    plot(nrolls, grouped=1)
     print("levels:")
-    plotdata(levels)
+    plot(levels)
     print(
         "averages=",
         sum(k * v for k, v in rolls.items()) / len(rolls),
@@ -390,51 +388,4 @@ def bowdpstest(bowmana_rate, draw, aim, fire, quickdraw, quickaim, quickfire):
 
 
 if __name__ == "__main__":
-    line = 0
-    data = []
-    for stats in range(0, 11):
-        data.append([])
-        for quick in range(8):
-            data[-1].append([])
-            for bowdraw in range(2, 6):
-                data[-1][-1].append([])
-                for bowaim in range(2, 6):
-                    data[-1][-1][-1].append([])
-                    for bowfire in range(2, 6):
-                        line += 1
-                        data[-1][-1][-1][-1].append(
-                            bowdpstest(
-                                1 + stats,
-                                1 + bowdraw,
-                                1 + bowaim,
-                                1 + bowfire,
-                                (quick & 4) // 4,
-                                (quick & 2) // 2,
-                                quick & 1,
-                            )
-                        )
-            print(line)
-
-    import matplotlib.pyplot as plt
-
-    line = 0
-    plots = {}
-    for statsi, stats in enumerate(data):
-        for quicki, quick in enumerate(stats):
-            for drawi, draw in enumerate(quick):
-                for aimi, aim in enumerate(draw):
-                    for firei, fire in enumerate(aim):
-                        plt.plot(fire)
-                        line += 1
-                        title = (
-                            f"quick:{((quicki & 4) // 4, (quicki & 2) // 2, quicki & 1)}"
-                            f"stats:{drawi+1,aimi+1,firei+1}"
-                        )
-                        print(title, statsi)
-                        plots[title] = plots.get(title, []) + [fire]
-
-    for title, plotdata in plots.items():
-        print(title, plotdata)
-        plt.title(title)
-        plt.plot(plotdata)
-        plt.show()
+    run_duel(2, 3, 2, 3, 60)

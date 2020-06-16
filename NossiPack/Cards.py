@@ -1,6 +1,6 @@
 import ast
 import random
-from typing import Dict, Set
+from typing import Dict, Set, List
 
 from NossiPack.User import Config
 from NossiPack.krypta import DescriptiveError
@@ -66,7 +66,7 @@ class Cards:
     @property
     def render(self):
         def bycolor(inp):
-            bycolors = {}
+            bycolors: Dict[str, List[str]] = {}
             for c in inp:
                 if not c:
                     continue
@@ -137,7 +137,10 @@ class Cards:
                     if p in source:
                         moved.add(p)
                     else:
-                        raise DescriptiveError(f"{p} not found in {source}.")
+
+                        raise DescriptiveError(
+                            f"{p} not found in {source if len(source) else 'empty collection'}."
+                        )
                     target.update(set(moved))
         except ValueError:
             if movemode == 0:
@@ -180,8 +183,11 @@ class Cards:
     def undedicate(self, toundedicate):
         messages = []
         for f in toundedicate.split(" "):
-            messages.append(self.Notes.get(f, None))
-            del self.Notes[f]
+            f = f.upper()
+            m = self.Notes.get(f, None)
+            if m:
+                messages.append(m)
+                del self.Notes[f]
         return set(x for x in messages if x)
 
     @classmethod

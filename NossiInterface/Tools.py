@@ -69,15 +69,25 @@ async def cardhandle(msg, message, persist, send):
         elif command == "return":
             await send(mention + " " + form(deck.elongate(deck.pilereturn(par))))
         elif command == "dedicate":
+            deck.dedicate(*par.split(":", 1))
             await send(mention + " " + "OK")
         elif command == "remove":
+            deck.remove(par)
             await send(mention + " " + "OK")
-        elif command == "free":
+        elif command == "undedicate":
             message = deck.undedicate(par)
-            await send(mention + " " + "\n".join(message))
+            await send(
+                mention
+                + f" Affected Dedication{'s' if len(message)!=1 else ''}: "
+                + ("\n".join(message) or "none")
+            )
         elif command == "free":
             _, message = deck.free(par)
-            await send(mention + " " + "\n".join(message))
+            await send(
+                mention
+                + f" Affected Dedication{'s' if len(message)!=1 else ''}: "
+                + (",\n and ".join(message) or "none")
+            )
         else:
             infos = deck.renderlong
             if command in infos:
