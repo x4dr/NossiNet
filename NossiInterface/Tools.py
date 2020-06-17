@@ -66,15 +66,15 @@ async def cardhandle(msg, message, persist, send):
             await send(mention + " " + form(deck.elongate(deck.draw(par))))
         elif command == "spend":
             deck.spend(par)
-            await send(mention + " " + "OK")
+            await message.add_reaction("\N{THUMBS UP SIGN}")
         elif command == "return":
             await send(mention + " " + form(deck.elongate(deck.pilereturn(par))))
         elif command == "dedicate":
             deck.dedicate(*par.split(":", 1))
-            await send(mention + " " + "OK")
+            await message.add_reaction("\N{THUMBS UP SIGN}")
         elif command == "remove":
             deck.remove(par)
-            await send(mention + " " + "OK")
+            await message.add_reaction("\N{THUMBS UP SIGN}")
         elif command == "undedicate":
             message = deck.undedicate(par)
             await send(

@@ -156,7 +156,7 @@ class Cards:
         return self.move(self.Deck, self.Hand, todraw, 1)
 
     def spend(self, tospend: str):
-        return self.move(self.Hand, self.Pile, tospend)
+        return self.move(self.Hand, self.Pile, tospend, 2)
 
     def pilereturn(self, toreturn: str):
         return self.move(self.Pile, self.Deck, toreturn, 1)

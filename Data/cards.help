@@ -4,10 +4,10 @@ cards:command:parameter
 Possible commands:
 
 draw : deck -> hand; Parameters: (int|list)
-spend: hand -> discardpile; Parameters: (list)
+spend: hand -> discardpile; Parameters: (int|list); int picks highest
 return: discardpile -> deck; Parameters: (int|list)
 dedicate: dedicates cards (https://nosferatu.vampir.es/wiki/alchemymagic) Parameters: (list):reason
-remove: anywhere -> removed; Parameters: (list)
+remove: anywhere -> removed; Parameters: (int|list); int picks highest
 free: removed or dedicated -> deck; Parameters: (list)
 undedicate: dedicated -> removed; Parameters: (list)
 hand: shows hand; Parameters: none

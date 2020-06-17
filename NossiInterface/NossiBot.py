@@ -397,6 +397,7 @@ async def on_message(message: discord.Message):
                 persist[discordname(message.author)]["DiscordAccount"] = discordname(
                     message.author
                 )
+                persist["mutated"] = True
                 await message.add_reaction("\N{THUMBS UP SIGN}")
             try:
                 await send(
