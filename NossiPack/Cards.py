@@ -128,7 +128,7 @@ class Cards:
                 moved = random.sample(source, int(par))
                 target.update(set(moved))
             elif movemode == 2:
-                moved = sorted(list(source), key=cls.cardvalue())[: -int(par)]
+                moved = sorted(list(source), key=cls.cardvalue())[-int(par) :]
                 target.update(set(moved))
             else:
                 for p in par.split(" "):

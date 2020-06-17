@@ -345,6 +345,7 @@ async def on_raw_message_edit(payload: discord.RawMessageUpdateEvent):
 
 @client.event
 async def on_message(message: discord.Message):
+    persist["mutated"] = True
     msg: str = message.content.strip("` ")
     send = message.channel.send
     author: discord.member.Member = message.author
@@ -397,7 +398,6 @@ async def on_message(message: discord.Message):
                 persist[discordname(message.author)]["DiscordAccount"] = discordname(
                     message.author
                 )
-                persist["mutated"] = True
                 await message.add_reaction("\N{THUMBS UP SIGN}")
             try:
                 await send(
