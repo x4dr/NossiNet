@@ -99,10 +99,10 @@ def supply_graphdata():
 
         modifiers = {}
         try:
-            lines = Data.get("5d10r0_ordered_data")
+            lines = Data.get("5d10r0vr0_ordered_data")
         except:
-            generate(0)
-            lines = Data.get("5d10r0_ordered_data")
+            generate(0, 0)
+            lines = Data.get("5d10r0vr0_ordered_data")
 
         for line in lines.splitlines():
             line = ast.literal_eval(line)

@@ -181,7 +181,7 @@ async def oraclehandle(msg, comment, send, author):
                 await sentmessage.delete(delay=3)
             await send(
                 author.mention
-                + " <selectors> <modifier> <number of quantiles> [asc|desc]"
+                + " <selectors> <modifier> <number of quantiles> [asc|over|desc|under]"
             )
     elif msg.startswith("try"):
         sentmessage = await send("Applying the numerical HAMMER for 10 seconds...")

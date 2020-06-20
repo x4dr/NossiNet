@@ -29,6 +29,10 @@ def handle(res):
         return path.as_posix()
 
 
+def check(res):
+    return pathlib.Path(handle(res)).exists()
+
+
 def append(res, d):
     with open(handle(res), "a") as data:
         data.write(d)
