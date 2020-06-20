@@ -5,6 +5,7 @@ install:
   - pip install -r requirements.txt
 script: |
   pip install coveralls;
+  git clone https://github.com/x4dr/Fen.git ~/wiki;
   coverage run --source . --omit "*venv/*" -m unittest discover --verbose tests;
   coveralls
 notifications:
