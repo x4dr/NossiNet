@@ -64,11 +64,11 @@ class TestViews(NossiTestCase):
         self.assertEqual(fenconvert("30kg"), 30000)
         self.assertEqual(fendeconvert(30000, "weight"), "30kg")
         self.assertEqual(fendeconvert(30001, "weight"), "30.001kg")
-        self.assertEqual(fendeconvert(31, "weight"), "31gr")
+        self.assertEqual(fendeconvert(31, "weight"), "31g")
         self.assertEqual(fendeconvert(3000000001, "weight"), "3000.000001t")
-        self.assertEqual(fendeconvert(fenconvert("252s"), "money"), "2.52g")
+        self.assertEqual(fendeconvert(fenconvert("252s"), "money"), "2.52au")
         self.assertEqual(fendeconvert(fenconvert("3332c"), "money"), "33.32s")
-        self.assertEqual(fendeconvert(fenconvert("0.001g"), "money"), "10c")
+        self.assertEqual(fendeconvert(fenconvert("0.001au"), "money"), "10k")
 
     def test_table_md(self):
         self.assertEqual(["", "", "a"], split_row("||a", 3))
