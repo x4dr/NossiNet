@@ -1,31 +1,9 @@
 import collections
 import multiprocessing
+import sys
 import time
 
-dice5 = {}  # define global variable dice, takes less than 1 sec
-for roll_id in range(100000):
-    r = tuple(sorted([(roll_id // (10 ** i)) % 10 or 10 for i in [4, 3, 2, 1, 0]]))
-    dice5[tuple(r)] = dice5.get(tuple(r), 0) + 1
-
-dice4 = {}  # define global variable dice, takes less than 1 sec
-for roll_id in range(10000):
-    r = tuple(sorted([(roll_id // (10 ** i)) % 10 or 10 for i in [3, 2, 1, 0]]))
-    dice4[tuple(r)] = dice5.get(tuple(r), 0) + 1
-
-dice3 = {}  # define global variable dice, takes less than 1 sec
-for roll_id in range(1000):
-    r = tuple(sorted([(roll_id // (10 ** i)) % 10 or 10 for i in [2, 1, 0]]))
-    dice3[tuple(r)] = dice5.get(tuple(r), 0) + 1
-
-dice2 = {}  # define global variable dice, takes less than 1 sec
-for roll_id in range(100):
-    r = tuple(sorted([(roll_id // (10 ** i)) % 10 or 10 for i in [1, 0]]))
-    dice2[tuple(r)] = dice5.get(tuple(r), 0) + 1
-
-dice1 = {}  # define global variable dice, takes less than 1 sec
-for roll_id in range(10):
-    r = tuple(sorted([(roll_id // (10 ** i)) % 10 or 10 for i in [0]]))
-    dice1[tuple(r)] = dice5.get(tuple(r), 0) + 1
+import Data
 
 
 def selector(sel, roll):
@@ -49,20 +27,22 @@ def calc_mods(data, showdmgmods=False):
     return dmgmods
 
 
-def comparison(sel):
-    sel1, sel2 = sel
+def comparator(param):
+    seltuple, dice = param
+    sel1, sel2 = seltuple
     print(f"starting {sel1}, {sel2}")
     occurences = collections.defaultdict(lambda: 0)
     j = 0
     time1 = time.time()
-    for i, first in dice5.items():
-        for k, second in dice5.items():
+    for roll_left, absolute_left in dice.items():
+        for roll_right, absolute_right in dice.items():
             j += 1
-            delta = selector(sel1, i) - selector(sel2, k)
+            delta = selector(sel1, roll_left) - selector(sel2, roll_right)
             # delta = min(10, max(delta, 0))  # clamp to 0-10
-            occurences[delta] += second * first
-    print(f"rolling {sel1} against {sel2} for {time.time() - time1:.4} seconds")
-    return sel, dict(occurences), time.time() - time1
+            occurences[delta] += absolute_right * absolute_left
+    print(f"comparing {sel1} against {sel2} took {time.time() - time1:.4} seconds")
+    sys.stdout.flush()
+    return seltuple, dict(occurences), time.time() - time1
 
 
 tuples = []
@@ -75,15 +55,17 @@ for t1 in tuples:
         tuplecombos.append((t1, t2))
 
 
-def generate():
+def generate(mod=0):
     print("multiprocessing!")
     pool = multiprocessing.Pool(processes=3)
     time0 = time.time()
-    results = pool.map(comparison, tuplecombos)
+    dice = Data.get_roll_freq_dict(mod)
+    results = pool.map(comparator, [(x, dice) for x in tuplecombos])
     cumulativetime = sum(x[2] for x in results)
     results = [(x[0], x[1]) for x in results]
 
     def calc(x):
+        print(x)
         return (
             (x[0][0][0] * 1000)
             + (x[0][0][1] * 100)
@@ -92,9 +74,10 @@ def generate():
         )
 
     try:
-        with open("5d10_ordered_data", "w") as f:
-            for result in sorted(results, key=calc):
-                f.write(str(result) + "\n")
+        Data.set(
+            f"5d10r{mod}_ordered_data",
+            "\n".join(str(x) for x in sorted(results, key=calc)),
+        )
     finally:
         print("Total time taken:", time.time() - time0, "/", cumulativetime)
 

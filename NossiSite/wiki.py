@@ -242,7 +242,10 @@ def register(app=None):
     @app.route("/costcalc/<inputstring>")
     def fen_calc(inputstring: str, costs=None, penalty=None, width=3):
         return (
-            "\t".join(FenCharacter.cost_calc(inputstring, costs, penalty, width)),
+            "\n".join(
+                ", ".join(str(y) for y in line)
+                for line in FenCharacter.cost_calc(inputstring, costs, penalty, width)
+            ),
             200,
             {"Content-Type": "text/plain; charset=utf-8"},
         )

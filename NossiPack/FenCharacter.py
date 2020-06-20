@@ -182,11 +182,11 @@ class FenCharacter:
         for k in c.keys():
             if k.lower() in self.onepoint_sections:
                 f.update(c[k])
-        for v in f.values():
+        for k, v in f.items():
             try:
                 res += int(v)
             except ValueError:
-                if not v or v[0] != "_":
+                if k.strip() and (not v or v[0] != "_"):
                     res += 1
         return res
 

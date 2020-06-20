@@ -6,14 +6,16 @@ import pathlib
 import time
 from _md5 import md5
 from math import ceil
-from typing import Dict
+from typing import Dict, List, Union
 
 import numpy
 import requests
 
+import Data
 from Data import append, get, handle
 from Fantasy.Armor import Armor
 from NossiPack.DiceParser import DiceParser
+from NossiPack.generate_dmgmods import generate
 
 try:
     from scipy.integrate import quad
@@ -22,7 +24,7 @@ try:
 except ImportError:
 
     def notfound(*args, **kwargs):
-        raise Exception("Scipy is not installed!")
+        raise Exception("Scipy is not installed!", [args, kwargs])
 
     quad = notfound
     interp1d = notfound
@@ -70,23 +72,23 @@ def supply_graphdata():
     weapons = weapondata()
     armormax = 14
     wmd5 = md5(str(weapons).encode("utf-8")).hexdigest()
-    damages = {}
+    damages: Dict[str, Dict[str, List[Dict[str, Dict[str, float]]]]] = {}
     try:
-        with open("weaponstuff_internal") as f:
-            nmd5 = f.readline()
-            if str(nmd5).strip() == str(wmd5).strip():
-                with open("NossiSite/static/graphdata.json") as g:
-                    if str(wmd5) in g.read(
-                        len(str(wmd5) * 2)
-                    ):  # find hash at the beginning of the json
-                        return
-                damages = ast.literal_eval(f.read())
-            else:
-                print(
-                    f"fengraph hashes: {str(nmd5).strip()} != "
-                    f"{str(wmd5).strip()}, so graphdata will be regenerated"
-                )
-                damages = {}
+        f = Data.get("weaponstuff_internal").splitlines()
+        nmd5 = f[0]
+        if str(nmd5).strip() == str(wmd5).strip():
+            with open("NossiSite/static/graphdata.json") as g:
+                if str(wmd5) in g.read(
+                    len(str(wmd5) * 2)
+                ):  # find hash at the beginning of the json
+                    return
+            damages = ast.literal_eval("\n".join(f[1:]))
+        else:
+            print(
+                f"fengraph hashes: {str(nmd5).strip()} != "
+                f"{str(wmd5).strip()}, so graphdata will be regenerated"
+            )
+            damages = {}
     except SyntaxError as e:
         print("syntax error in weaponstuff_internal, regenerating:", e.msg)
     except FileNotFoundError:
@@ -96,14 +98,19 @@ def supply_graphdata():
     if not damages:
 
         modifiers = {}
-        with open("5d10_ordered_data") as f:
-            for line in f.readlines():
-                line = ast.literal_eval(line)
-                total = sum(line[1].values())
-                zero_excluded_positive = [line[1].get(i, 0) for i in range(1, 21)]
-                zepc = zero_excluded_positive[:9] + [sum(zero_excluded_positive[9:])]
-                zepc_relative = [x / total for x in zepc]
-                modifiers[line[0]] = zepc_relative
+        try:
+            lines = Data.get("5d10r0_ordered_data")
+        except:
+            generate(0)
+            lines = Data.get("5d10r0_ordered_data")
+
+        for line in lines.splitlines():
+            line = ast.literal_eval(line)
+            total = sum(line[1].values())
+            zero_excluded_positive = [line[1].get(i, 0) for i in range(1, 21)]
+            zepc = zero_excluded_positive[:9] + [sum(zero_excluded_positive[9:])]
+            zepc_relative = [x / total for x in zepc]
+            modifiers[line[0]] = zepc_relative
 
         print("regenerating weapon damage data")
         for stats, modifier in modifiers.items():
@@ -120,44 +127,50 @@ def supply_graphdata():
                     for d, di in wi.items():
                         damage[-1][w][d] = modify_dmg(modifier, di, d, i)
         print("writing weaponstuff...")
-        with open("weaponstuff_internal", "w") as f:
-            f.write(str(wmd5) + "\n")
-            f.write(str(damages))
+        Data.set("weaponstuff_internal", str(wmd5) + "\n" + str(damages))
 
-    cmprjsn = {"Hash": wmd5, "Names": list(weapons.keys()), "Types": list(dmgtypes)}
+    comparison_json: Dict[
+        str, Union[List[str], Dict[str, List[List[List[float]]]], float, int]
+    ] = {
+        "Hash": wmd5,
+        "Names": list(weapons.keys()),
+        "Types": list(dmgtypes),
+    }
+    attackerstat: str
     for attackerstat, defender in sorted(damages.items()):
-        cmprjsn[attackerstat] = {}
+        attackdict = {}
+        defenderstat: str
         for defenderstat, damage in defender.items():
-            cmprjsn[attackerstat][defenderstat] = []
+            damagematrix = []
+            per_armor: Dict[str, Dict[str, float]]
             for per_armor in damage:
                 print(per_armor)
-                # noinspection PyTypeChecker
-                cmprjsn[attackerstat][defenderstat].append(
-                    [
-                        [per_armor[weapon][damagetype] for weapon in cmprjsn["Names"]]
+                dmg_per_dmgtype: List[List[float]] = [
+                    [per_armor[weapon][damagetype] for weapon in list(weapons.keys())]
+                    for damagetype in dmgtypes
+                ]
+
+                damagematrix.append(dmg_per_dmgtype)
+                candidates = max(
+                    x
+                    for x in [
+                        [
+                            per_armor[weapon][damagetype]
+                            for weapon in comparison_json["Names"]
+                        ]
                         for damagetype in dmgtypes
                     ]
                 )
-                nm = max(
-                    [
-                        max(
-                            x
-                            for x in [
-                                [
-                                    per_armor[weapon][damagetype]
-                                    for weapon in cmprjsn["Names"]
-                                ]
-                                for damagetype in dmgtypes
-                            ]
-                        )
-                    ]
-                )
+                nm = max(candidates)
+                print(nm, maxdmg)
                 if nm > maxdmg:
                     print("updating maxdmg to", nm)
                     maxdmg = nm
-    cmprjsn["max"] = math.ceil(maxdmg)
+            attackdict[defenderstat]: List[List[List[float]]] = damagematrix
+        comparison_json[attackerstat] = attackdict
+    comparison_json["max"] = math.ceil(maxdmg)
     with open("NossiSite/static/graphdata.json", "w") as f:
-        f.write(json.dumps(cmprjsn))
+        f.write(json.dumps(comparison_json))
 
 
 def weapondata():

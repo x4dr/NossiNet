@@ -369,10 +369,9 @@ async def on_message(message: discord.Message):
                 # contents of pacatffmpeg
                 # #!/bin/bash
                 # pacat -r -d alsa_output.pci-0000_00_1b.0.analog-stereo.monitor \
-                # --format=s32le --rate=48000 | ffmpeg "$@"
+                # --format=s32le --rate=48000 > ~/soundpipe
                 discord.FFmpegPCMAudio(
-                    "-",
-                    executable="pacatffmpeg",
+                    pathlib.Path("~/soundpipe").expanduser(),
                     before_options="-f s32le -ac 2 -ar 48000",
                 ),
                 after=lambda e: disconnecting.append(connection),
@@ -439,7 +438,6 @@ async def on_message(message: discord.Message):
             n.content = m
             await on_message(n)
         return
-
     if msg.startswith("#remind"):
         newreminder(str(message.channel.id), msg[7:])
         await send(str(message))

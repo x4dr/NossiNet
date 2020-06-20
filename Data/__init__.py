@@ -10,13 +10,32 @@ def get(res):
         return data.read()
 
 
+def get_roll_freq_dict(mod):
+    lines = get(f"roll_frequencies_{mod}.csv")
+    return {
+        tuple(x[:5]): int(x[5])
+        for x in [[int(z) for z in y.split(",")] for y in lines.splitlines()]
+    }
+
+
 def handle(res):
-    with importlib.resources.path("Data", pathlib.Path(res)) as path:
+    path: pathlib.Path
+    try:
+        with importlib.resources.path("Data", pathlib.Path(res)) as path:
+            return path.as_posix()
+    except FileNotFoundError as e:
+        path = pathlib.Path(e.filename)
+        path.touch()
         return path.as_posix()
 
 
 def append(res, d):
     with open(handle(res), "a") as data:
+        data.write(d)
+
+
+def set(res, d):
+    with open(handle(res), "w") as data:
         data.write(d)
 
 
