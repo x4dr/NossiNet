@@ -30,7 +30,11 @@ def handle(res):
 
 
 def check(res):
-    return pathlib.Path(handle(res)).exists()
+    try:
+        with importlib.resources.path("Data", pathlib.Path(res)) as path:
+            return path.as_posix()
+    except:
+        return ""
 
 
 def append(res, d):
