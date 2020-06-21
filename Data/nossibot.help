@@ -41,6 +41,7 @@ oracle : prefix for selector system standard 5 dice (+modifiers) roll graphs
     Subcommand:
         show : will make the graph as a picture with quantiles. number of quantiles is new last parameter, rest as normal
     asc/desc or under/over can be appended to have at most/at least chances instead
+    a b c v e f g will compare a,b@5Rc against e,f@5Rg
     try: will run that dicerol for 10 seconds and format less prettily
 
 specific from https://nosferatu.vampir.es/wiki/conventions

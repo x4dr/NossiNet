@@ -151,10 +151,10 @@ async def oraclehandle(msg, comment, send, author):
         msg = msg[1:].strip()
     sentmessage = None
     mode = None
-    if msg.endswith(" under") or msg.endswith(" asc"):
+    if msg.endswith(" under") or msg.endswith(" asc") or msg.endswith(" below"):
         mode = 1
         msg = msg[:-4]
-    if msg.endswith(" over") or msg.endswith(" desc"):
+    if msg.endswith(" over") or msg.endswith(" desc") or msg.endswith(" above"):
         mode = -1
         msg = msg[:-5]
     if msg.startswith("show"):
@@ -179,7 +179,7 @@ async def oraclehandle(msg, comment, send, author):
                 await sentmessage.delete(delay=3)
             await send(
                 author.mention
-                + " <selectors> <modifier> <number of quantiles> [asc|over|desc|under]"
+                + " <selectors> <modifier> <number of quantiles> [above|asc|over|below|desc|under]"
             )
     elif msg.startswith("try"):
         sentmessage = await send("Applying the numerical HAMMER for 10 seconds...")
@@ -201,11 +201,11 @@ async def oraclehandle(msg, comment, send, author):
                     )
                     return
                 p = (
-                    ", ".join(str(x) for x in a[:-1])
+                    ",".join(str(x) for x in a[:-1])
                     + "@5"
                     + ("R" + str(a[-1]))
-                    + "v"
-                    + ", ".join(str(x) for x in a[:-1])
+                    + " v "
+                    + ",".join(str(x) for x in a[:-1])
                     + "@5"
                     + ("R" + str(a[-1]))
                 )
@@ -214,7 +214,7 @@ async def oraclehandle(msg, comment, send, author):
                 parameters = [x.strip() for x in msg.lower().split(" ") if x.strip()]
                 it = chances(parameters[:-1], parameters[-1], mode=mode)
                 p = (
-                    ", ".join(str(x) for x in parameters[:-1])
+                    ",".join(str(x) for x in parameters[:-1])
                     + "@5"
                     + (("R" + str(parameters[-1])) if parameters[-1] else "")
                 )
