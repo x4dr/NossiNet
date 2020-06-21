@@ -15,7 +15,7 @@ import Data
 from Data import append, get, handle
 from Fantasy.Armor import Armor
 from NossiPack.DiceParser import DiceParser
-from NossiPack.generate_dmgmods import generate
+from NossiPack.generate_dmgmods import generate, tuplecombos
 
 try:
     from scipy.integrate import quad
@@ -333,6 +333,60 @@ def montecarlo(roll):
     return plot(occurences)
 
 
+def versus(part1, part2, mode):
+    yield "processing..."
+    mod1, mod2 = part1[2], part2[2]
+    data = Data.get(f"5d10r{mod1}vr{mod2}_ordered_data")
+    yield "load complete..."
+    stat1 = tuple(sorted([int(x) for x in part1[:2]], reverse=True))
+    stat2 = tuple(sorted([int(x) for x in part2[:2]], reverse=True))
+    print("\n".join(str(x) for x in tuplecombos))
+    index = tuplecombos.index((stat1, stat2))
+    occurences = ast.literal_eval(data.splitlines()[index])
+    if occurences[0] != (stat1, stat2):
+        raise DescriptiveError(
+            f"possible corruption: expected {(stat1,stat2)} found {occurences[0]}"
+        )
+    yield "data found..."
+    occurences = occurences[1]  # only the dict is now relevant
+    yield ascii_graph(occurences, mode)
+
+
+def ascii_graph(occurrences: dict, mode: int):
+    res = ""
+    max_val = max(list(occurrences.values()))
+    total = sum(occurrences.values())
+    if not mode:
+        for k in sorted(occurrences):
+            if occurrences[k]:
+                res += (
+                    f"{k:5d} {100 * occurrences[k] / total: >5.2f} "
+                    f"{'#' * int(40 * occurrences[k] / max_val)}\n"
+                )
+    elif mode > 0:
+        runningsum = 0
+        for k in sorted(occurrences):
+            if occurrences[k]:
+                runningsum += occurrences[k]
+                res += (
+                    f"{k:5d} {100 * runningsum / total: >5.2f} "
+                    f"{'#' * int(40 * runningsum / total)}\n"
+                )
+    elif mode < 0:
+        runningsum = sum(occurrences.values())
+        for k in sorted(occurrences):
+            if occurrences[k]:
+                res += (
+                    f"{k:5d} {100 * runningsum / total: >5.2f} "
+                    f"{'#' * int(40 * runningsum / total)}\n"
+                )
+                runningsum -= occurrences[k]
+    total = sum(occurrences.values())
+    avg = sum(k * v for k, v in occurrences.items()) / total
+    dev = math.sqrt(sum(((k - avg) ** 2) * v for k, v in occurrences.items()) / total)
+    return res, avg, dev
+
+
 def chances(selector, modifier=0, number_of_quantiles=None, mode=None):
     selector = tuple(sorted(int(x) for x in selector if 0 < int(x) < 6))
     if not selector:
@@ -363,42 +417,11 @@ def chances(selector, modifier=0, number_of_quantiles=None, mode=None):
         occurrences = occurren[modifier]
         yield f"Data for {selector} has been generated"
     yield "generating result..."
-    max_val = max(list(occurrences.values()))
-    total = sum(occurrences.values())
+
     if number_of_quantiles is None:
-        res = ""
-        if not mode:
-            for k in sorted(occurrences):
-                if occurrences[k]:
-                    res += (
-                        f"{k:5d} {100 * occurrences[k] / total: >5.2f} "
-                        f"{'#' * int(40 * occurrences[k] / max_val)}\n"
-                    )
-        elif mode > 0:
-            runningsum = 0
-            for k in sorted(occurrences):
-                if occurrences[k]:
-                    runningsum += occurrences[k]
-                    res += (
-                        f"{k:5d} {100 * runningsum / total: >5.2f} "
-                        f"{'#' * int(40 * runningsum / total)}\n"
-                    )
-        elif mode < 0:
-            runningsum = sum(occurrences.values())
-            for k in sorted(occurrences):
-                if occurrences[k]:
-                    res += (
-                        f"{k:5d} {100 * runningsum / total: >5.2f} "
-                        f"{'#' * int(40 * runningsum / total)}\n"
-                    )
-                    runningsum -= occurrences[k]
-        total = sum(occurrences.values())
-        avg = sum(k * v for k, v in occurrences.items()) / total
-        dev = math.sqrt(
-            sum(((k - avg) ** 2) * v for k, v in occurrences.items()) / total
-        )
-        yield res, avg, dev
+        yield ascii_graph(occurrences, mode)
     else:
+        total = sum(occurrences.values())
         yield "generating graph..."
         vals = [occurrences[x] for x in sorted(occurrences.keys())]
         if not mode:

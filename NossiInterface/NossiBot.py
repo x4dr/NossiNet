@@ -17,7 +17,7 @@ from dateparser import parse as dateparse
 from Data import getnossihelp
 from NossiInterface.RollInterface import rollhandle, chunk_reply, timeout
 from NossiInterface.Tools import discordname, split_send, handle_defines, cardhandle
-from NossiPack.fengraph import chances, montecarlo
+from NossiPack.fengraph import chances, montecarlo, versus
 from NossiPack.krypta import DescriptiveError
 
 client = discord.Client()
@@ -41,8 +41,6 @@ class MutationLoggingDict(dict):
 storagefile = "~/NossiBot.storage"
 
 nossiUrl = "http://127.0.0.1:5000/"
-if not (requests.get(nossiUrl).status_code == 200):
-    raise DescriptiveError("No running NosferatuNetwork found")
 
 persist = MutationLoggingDict()
 with shelve.open(os.path.expanduser(storagefile)) as shelvefile:
@@ -190,20 +188,44 @@ async def oraclehandle(msg, comment, send, author):
 
     else:
         try:
-            parameters = msg.split(" ")
-            it = chances(parameters[:-1], parameters[-1], mode=mode)
-            sentmessage = await send(author.mention + comment + " " + next(it))
-            n = ""
-            p = (
-                ", ".join(str(x) for x in parameters[:-1])
-                + "@5"
-                + (("R" + str(parameters[-1])) if parameters[-1] else "")
-            )
-            for n in it:
-                if isinstance(n, str):
-                    await sentmessage.edit(content=author.mention + comment + " " + n)
+            if " v " in msg:
+                a, b = msg.split("v", 1)
+                a = [x.strip() for x in a.lower().split(" ") if x.strip()]
+                b = [x.strip() for x in b.lower().split(" ") if x.strip()]
+                if len(a) == len(b) == 3:
+                    it = versus(a, b, mode)
+                else:
+                    await send(
+                        author.mention
+                        + "versus mode needs exactly 3 numbers on each side"
+                    )
+                    return
+                p = (
+                    ", ".join(str(x) for x in a[:-1])
+                    + "@5"
+                    + ("R" + str(a[-1]))
+                    + "v"
+                    + ", ".join(str(x) for x in a[:-1])
+                    + "@5"
+                    + ("R" + str(a[-1]))
+                )
+
+            else:
+                parameters = [x.strip() for x in msg.lower().split(" ") if x.strip()]
+                it = chances(parameters[:-1], parameters[-1], mode=mode)
+                p = (
+                    ", ".join(str(x) for x in parameters[:-1])
+                    + "@5"
+                    + (("R" + str(parameters[-1])) if parameters[-1] else "")
+                )
+            sentmessage = await send("received")
+            n = []
+            for i in it:
+                n.append(i)
+                if isinstance(i, str):
+                    await sentmessage.edit(content=author.mention + comment + " " + i)
             if n:
-                n, avg, dev = n
+                n, avg, dev = n[-1]
                 print(n)
                 await sentmessage.edit(
                     content=(
