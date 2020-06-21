@@ -60,7 +60,7 @@ def generate(mod1=0, mod2=0):
         print(f"5d10r{mod1}vr{mod2}_ordered_data exists.")
         return
     print("multiprocessing!")
-    pool = multiprocessing.Pool(processes=8)
+    pool = multiprocessing.Pool(processes=3)
     time0 = time.time()
     dice1 = Data.get_roll_freq_dict(mod1)
     dice2 = Data.get_roll_freq_dict(mod2)
