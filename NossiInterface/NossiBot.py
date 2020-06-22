@@ -2,9 +2,8 @@ import asyncio
 import datetime
 import os
 import pathlib
-import random
+import re
 import shelve
-import string
 import time
 import traceback
 from typing import List
@@ -12,11 +11,11 @@ from urllib.parse import quote
 
 import discord
 import requests
-from dateparser import parse as dateparse
 
 from Data import getnossihelp
 from NossiInterface.RollInterface import rollhandle, chunk_reply, timeout
 from NossiInterface.Tools import discordname, split_send, handle_defines, cardhandle
+from NossiInterface.reminder import reminders, newreminder, delreminder, listreminder
 from NossiPack.fengraph import chances, montecarlo, versus
 from NossiPack.krypta import DescriptiveError
 
@@ -25,8 +24,6 @@ bufferfile = "NossiBotBuffer"
 shutdownflag = pathlib.Path("shutdown_nossibot")
 if shutdownflag.exists():
     shutdownflag.unlink()  # ignore previously set shutdown
-remindfile = os.path.expanduser("~/reminders.txt")
-remindnext = os.path.expanduser("~/reminders_next.txt")
 ticking = [time.time()]
 disconnecting = []
 print("initializing NossiBot...")
@@ -52,96 +49,7 @@ now = datetime.datetime.now
 with open(os.path.expanduser("~/token.discord"), "r") as tokenfile:
     TOKEN = tokenfile.read().strip()
 
-repeats = {}
 active_channels = []
-
-
-async def reminders(clearjob=None):
-    jobs = []
-    nextevent = 600
-    with open(remindfile, "r") as f:
-        for line in f.readlines():
-            print(line)
-            channelid, jobid, date, message, repeat, interval = [
-                p.strip() for p in line.split(";")
-            ]
-            date = int(date)
-            if date < time.time():
-                print(jobid, "relevant now")
-                if repeats.get(jobid, None) is None:
-                    repeats[jobid] = 0
-                if repeats[jobid] < int(repeat.split(" ")[1]):
-                    print("reminding,")
-                    delay = int(repeat.split(" ")[0])
-                    reminddate = date + repeats[jobid] * delay
-                    if time.time() > date + repeats[jobid] * delay:
-                        repeats[jobid] += 1
-                        status = (
-                            ""
-                            if int(repeat.split(" ")[1]) < 2
-                            else str(repeats[jobid]) + "/" + repeat.split(" ")[1]
-                        )
-                        await client.get_channel(int(channelid)).send(
-                            message + " " + status + jobid
-                        )
-                        nextevent = reminddate + delay - time.time()
-                else:
-                    print("resetting")
-                    repeats[jobid] = 0
-                    if interval and int(interval):
-                        date += int(interval)
-                    else:
-                        repeat = ""
-            else:
-                nextevent = min(nextevent, date - time.time())
-                print(nextevent, "until next event")
-            if repeat and (jobid != clearjob):
-                jobs.append(
-                    ";".join(
-                        [
-                            channelid,
-                            jobid,
-                            str(round(date)),
-                            message,
-                            repeat,
-                            str(interval),
-                        ]
-                    )
-                )
-            else:
-                print("job", jobid, "deleted")
-    with open(remindnext, "w") as f:
-        f.write("\n".join(jobs))
-    os.replace(remindnext, remindfile)
-
-
-def newreminder(channelid, message):
-    jobid = "".join(random.choice(string.ascii_letters).lower() for _ in range(4))
-    print(message)
-    date, message, repeat, interval = [
-        x.strip() for x in (message.split(";") + ["", ""])[:4]
-    ]
-    date = datetime.datetime.timestamp(dateparse(date))
-    repeat = (
-        str(
-            round(
-                abs(
-                    dateparse(repeat.split(" ")[0]) - datetime.datetime.now()
-                ).total_seconds()
-            )
-        )
-        + " "
-        + repeat.split(" ")[1]
-    )
-    interval = str(
-        round(abs(dateparse(interval) - datetime.datetime.now()).total_seconds())
-    )
-    newline = (
-        ";".join((channelid, jobid, str(round(date)), message, repeat, interval)) + "\n"
-    )
-    print("new line:", newline)
-    with open(remindfile, "a") as f:
-        f.write(newline)
 
 
 async def oraclehandle(msg, comment, send, author):
@@ -300,10 +208,10 @@ async def tick():
             ticking.pop(0)
         k = "remind"
         try:
-            await reminders()
+            nexttime = await reminders(client.get_channel)
         except Exception as e:
             print("Exception reminding:", e, e.args, traceback.format_exc())
-
+            nexttime = 10
         try:
             if persist["mutated"]:
                 with shelve.open(os.path.expanduser(storagefile)) as shelvingfile:
@@ -314,14 +222,14 @@ async def tick():
                     persist["mutated"] = False
         except Exception as e:
             print(f"Exception in tick with {k}:", e, e.args, traceback.format_exc())
-        next_call += 10
+        next_call += nexttime
         if client.is_closed():
             break
+        info = await client.application_info()
         if shutdownflag.exists():
             shutdownflag.unlink()
-            info = await client.application_info()
             await info.owner.send("I got Killed")
-        await asyncio.sleep(next_call - time.time())
+        await asyncio.sleep(next_call - time.time(),)
 
 
 @client.event
@@ -460,9 +368,14 @@ async def on_message(message: discord.Message):
             n.content = m
             await on_message(n)
         return
-    if msg.startswith("#remind"):
-        newreminder(str(message.channel.id), msg[7:])
-        await send(str(message))
+    if msg.startswith("remind;"):
+        if msg.strip() == "remind;del":
+            await delreminder(message)
+        elif msg.strip() == "remind;list":
+            await listreminder(message, mentionreplacer())
+        else:
+            newreminder(str(message.channel.id), msg[7:])
+            await send("noted")
     msg, comment = msg.rsplit("//", 1) if "//" in msg else (msg, "")
     comment = " " + comment.strip("` ")
     msg = await handle_defines(msg, message, persist)
@@ -480,6 +393,15 @@ async def on_message(message: discord.Message):
         await rollhandle(
             msg, comment, message, persist,
         )
+
+
+def mentionreplacer():
+    def replace(m: re.Match):
+        u: discord.User = client.get_user(int(m.group(1)))
+        print(u.name)
+        return "@" + u.name
+
+    return replace
 
 
 if __name__ == "__main__":
