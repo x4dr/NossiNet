@@ -161,7 +161,7 @@ def satisfy(source, reqs):
         if not req:
             if sum(source.values()) < val:
                 return False
-        elif source[req.lower()] < val:
+        elif source.get(req.lower(), 0) < val:
             return False
 
     else:
