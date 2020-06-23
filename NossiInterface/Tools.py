@@ -149,7 +149,7 @@ async def spellhandle(deck: Cards, whoami, par, send):
                     res += (
                         f"{spelldict['Name']: <25} "
                         f"{', '.join([(str(v)+' '+k).strip()  for k,v in spelldict.get('Effektive Kosten',{}).items()]): >25} "
-                        f"(specific:{spec}:-)\n"
+                        f"\n(specific:{spec}:-)\n"
                     )
         await split_send(send, res.splitlines())
 
