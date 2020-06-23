@@ -224,7 +224,6 @@ def register(app=None):
                     if time.time() - start > 30:
                         raise TimeoutError()
                     i += 1
-                    print(res[-1][1])
                 r = "\n".join(x[0] + "\t".join(x[1]) for x in res[1:])
                 f.write(r)
                 return r, 200, {"Content-Type": "text/plain; charset=utf-8"}
@@ -271,6 +270,7 @@ def register(app=None):
             return {armor.name: armor.format(",", "").split(",")[1:]}
         return str(armor)
 
+    @app.route("/spells/character")
     @app.route("/weapon/<w>")
     @app.route("/weapon/<w>/<mods>")
     @app.route("/weapon/<w>/json")
@@ -676,11 +676,15 @@ def get_fen_char(c: str) -> FenCharacter:
 
 
 def load_user_char_stats(user):
+    return load_user_char(user).stat_definitions()
+
+
+def load_user_char(user):
     u = User(user)
     d = u.config("discord", "not set")
     c = u.config("character_sheet", "")
     if re.match(r".*#\d{4}$", d):
-        return get_fen_char(c).stat_definitions()
+        return get_fen_char(c)
 
 
 def refresh_cache(page=""):
@@ -718,3 +722,41 @@ def refresh_cache(page=""):
     for key in wikitags.keys():
         if key.endswith("_character"):
             get_fen_char(key)
+
+
+def spells(page):
+    result = None
+    for spell in traverse_md(wikiload(page)[2], "Zauber").split("###"):
+        if result is None:
+            result = {}  # skips section before first spell
+            continue
+        curspell = {}
+
+        for line in spell.splitlines():
+            if not line.strip():
+                break
+            if not curspell:
+                curspell["Name"] = line.strip()
+                continue
+            if ":" not in line:
+                raise DescriptiveError(
+                    f"spell {curspell} has format issues in line {line}"
+                )
+            a, b = line.split(":", 1)
+            curspell[a.strip("* ")] = b.strip()
+        result[curspell["Name"].lower()] = curspell
+
+    for r in result.values():
+        for k, v in list(r.items()):
+            if k == "Dedikation" or k == "Zauberkosten":
+                ek = r.get("Effektive Kosten", {})
+                for part in v.split(","):
+                    part = part.strip().lower()
+                    m = re.match(r"(\d+)\s*(ordnung|materie|energie|entropie|)", part)
+                    if not m:
+                        raise DescriptiveError(
+                            f"spell {r['Name']} has format issues in {part}"
+                        )
+                    ek[m.group(2)] = ek.get(m.group(2), 0) + int(m.group(1))
+                r["Effektive Kosten"] = ek
+    return result

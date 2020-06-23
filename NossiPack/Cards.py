@@ -53,6 +53,14 @@ class Cards:
             }
         )
 
+    def scorehand(self):
+        scores = {x: 0 for x in self.Longform.values()}
+        for card in self.Hand:
+            scores[self.Longform[card[0]].lower()] = (
+                scores.get(self.Longform[card[0]].lower(), 0) + self.values[card[1]]
+            )
+        return scores
+
     @property
     def serialized_parts(self):
         return {

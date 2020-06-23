@@ -6,7 +6,7 @@ from NossiPack.Cards import Cards
 from NossiPack.DiceParser import fullparenthesis
 from NossiPack.User import Config
 from NossiPack.krypta import DescriptiveError
-from NossiSite.wiki import load_user_char_stats
+from NossiSite.wiki import load_user_char_stats, load_user_char, spells
 
 statcache = {}
 
@@ -38,7 +38,6 @@ async def split_send(send, lines, i=0):
 
 async def cardhandle(msg, message, persist, send):
     def form(inp):
-
         if isinstance(inp, dict):
             outp = ""
             for k, j in inp.items():
@@ -79,18 +78,20 @@ async def cardhandle(msg, message, persist, send):
             message = deck.undedicate(par)
             await send(
                 mention
-                + f" Affected Dedication{'s' if len(message)!=1 else ''}: "
+                + f" Affected Dedication{'s' if len(message) != 1 else ''}: "
                 + ("\n".join(message) or "none")
             )
         elif command == "free":
             _, message = deck.free(par)
             await send(
                 mention
-                + f" Affected Dedication{'s' if len(message)!=1 else ''}: "
+                + f" Affected Dedication{'s' if len(message) != 1 else ''}: "
                 + (",\n and ".join(message) or "none")
             )
         elif command == "help":
             await split_send(message.author.send, Data.getcardhelp().splitlines())
+        elif command == "spells":
+            await spellhandle(deck, whoami, par, send)
         else:
             infos = deck.renderlong
             if command in infos:
@@ -98,7 +99,7 @@ async def cardhandle(msg, message, persist, send):
             else:
                 await send(mention + f" invalid command {command}")
     except DescriptiveError as e:
-        await send(mention + " " + e.args[0])
+        await send(mention + " " + str(e.args[0]))
     finally:
         if deck and whoami:
             deck.savedeck(whoami, deck)
@@ -119,6 +120,52 @@ def fakemessage(message):
             author=Fake(name=n, discriminator=d, send=error), add_reaction=print
         )
         return message
+
+
+async def spellhandle(deck: Cards, whoami, par, send):
+    spellbook = {}
+    existing = {}
+    power = deck.scorehand()
+    for spelltext in load_user_char(whoami).Meta.get("Zauber")[1].values():
+        matches = re.findall(r"specific:(.*?):([^-]*?)(:-)?]", spelltext[0], flags=re.I)
+        for m in matches:
+            school = m[0]
+            spell = m[1].split(":")[-1]
+            spellbook[school] = spellbook.get(school, spells(school))
+            existing[school + ":" + spell] = spellbook[school].get(
+                spell.lower(), {"Name": spell, "Error": "?"}
+            )
+
+    if par == "all":
+        send(", ".join(existing.keys()))
+    elif par == "":
+        res = ""
+        for spec, spelldict in existing.items():
+            if not spelldict.get("Name", None):
+                continue
+            spelltime = spelldict.get("Zauberzeit", "0").strip()
+            if "Runde" in spelltime or spelltime == "0":
+                if satisfy(power, spelldict.get("Effektive Kosten")):
+                    res += (
+                        f"{spelldict['Name']: <25} "
+                        f"{', '.join([(str(v)+' '+k).strip()  for k,v in spelldict.get('Effektive Kosten',{}).items()]): >25} "
+                        f"(specific:{spec}:-)\n"
+                    )
+        await split_send(send, res.splitlines())
+
+
+def satisfy(source, reqs):
+    if not reqs:
+        return True
+    for req, val in reqs.items():
+        if not req:
+            if sum(source.values()) < val:
+                return False
+        elif source[req.lower()] < val:
+            return False
+
+    else:
+        return True
 
 
 async def define(msg, message, persist):
