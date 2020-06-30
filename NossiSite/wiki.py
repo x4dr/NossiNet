@@ -190,7 +190,9 @@ def register(app=None):
             )
             time2 = time.time()
             done = fill_infolets(body.replace("&amp;", "&"), c + "_character")
-            return done + f"<!---{time.time()-time2} {time2-time1} {time1-time0}--->"
+            return (
+                done + f"<!---{time.time() - time2} {time2 - time1} {time1 - time0}--->"
+            )
         except DescriptiveError as e:
             flash("Error with character sheet:\n" + e.args[0])
             return redirect(url_for("showsheet", name=c))
@@ -760,4 +762,34 @@ def spells(page):
                         )
                     ek[m.group(2)] = ek.get(m.group(2), 0) + int(m.group(1))
                 r["Effektive Kosten"] = ek
+    return result
+
+
+def transitions(page, current=None):
+    result = None
+    for trans in traverse_md(wikiload(page)[2], "Übergänge").split("###"):
+        if result is None:
+            result = {}  # skips section before first transition
+            continue
+        curtran = {}
+
+        for line in trans.splitlines():
+            if not line.strip():
+                break
+            if not curtran:
+                curtran["name"] = line.strip()
+                continue
+            if "=>" not in line or curtran.get("transition", None):
+                raise DescriptiveError(
+                    f"Transition {curtran['name']} has format issues in line {line}"
+                )
+            a, b = line.split("=>", 1)
+            curtran["transition"] = a.strip(), b.strip()
+        result[curtran["name"].lower()] = curtran["transition"]
+    if current is not None and result:
+        result = {
+            k: v
+            for k, v in result.items()
+            if v[0].lower() == current.lower() or v[0] == "*"
+        }
     return result

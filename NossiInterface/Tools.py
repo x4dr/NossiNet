@@ -6,7 +6,7 @@ from NossiPack.Cards import Cards
 from NossiPack.DiceParser import fullparenthesis
 from NossiPack.User import Config
 from NossiPack.krypta import DescriptiveError
-from NossiSite.wiki import load_user_char_stats, load_user_char, spells
+from NossiSite.wiki import load_user_char_stats, load_user_char, spells, transitions
 
 statcache = {}
 
@@ -146,9 +146,15 @@ async def spellhandle(deck: Cards, whoami, par, send):
             spelltime = spelldict.get("Zauberzeit", "0").strip()
             if "Runde" in spelltime or spelltime == "0":
                 if satisfy(power, spelldict.get("Effektive Kosten")):
+                    sr = ", ".join(
+                        [
+                            (str(v) + " " + k).strip()
+                            for k, v in spelldict.get("Effektive Kosten", {}).items()
+                        ]
+                    )
                     res += (
                         f"{spelldict['Name']: <25} "
-                        f"{', '.join([(str(v)+' '+k).strip()  for k,v in spelldict.get('Effektive Kosten',{}).items()]): >25} "
+                        f"{sr: >25} "
                         f"\n(specific:{spec}:-)\n"
                     )
         await split_send(send, res.splitlines())
@@ -166,6 +172,52 @@ def satisfy(source, reqs):
 
     else:
         return True
+
+
+def available_transitions():
+    pass
+
+
+async def statehandle(msg, message, persist, send):
+    curstate = None
+    mention = message.author.mention
+    whoami = None
+    msg = msg[6:] if msg.startswith("state:") else msg  # remove state:
+    msg = [x.strip() for x in msg.lower().split(":")]
+    if not msg or not msg[0]:
+        return await message.add_reaction("😕")
+    try:
+        whoami = who_am_i(persist)
+        curstate = Config.load(whoami, "state_" + msg[0]) or ""
+        if len(msg) == 1:
+            return await send(mention + " " + curstate or "None")
+        selection = [
+            v for k, v in transitions(msg[0], curstate).items() if msg[1] in k.lower()
+        ]
+        if len(selection) > 1:
+            return await send(
+                mention
+                + f" Ambiguous command \"{msg[1]}\" between {', '.join(x.title() for x in selection)}"
+            )
+        if len(selection) == 0:
+            return await send(
+                mention
+                + f' No transition for "{msg[1]}" in state "{curstate}", available are: ```'
+                + "\n".join(
+                    [
+                        k.title() + " => " + v[1].title()
+                        for k, v in transitions(msg[0], curstate).items()
+                    ]
+                )
+                + "```"
+            )
+        curstate = selection[0][1]
+        return await send(mention + f" => {curstate.title()}")
+    except DescriptiveError as e:
+        await send(mention + " " + str(e.args[0]))
+    finally:
+        if curstate is not None and whoami:
+            Config.save(whoami, "state_" + msg[0], curstate)
 
 
 async def define(msg, message, persist):

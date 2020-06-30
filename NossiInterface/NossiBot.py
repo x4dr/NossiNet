@@ -14,7 +14,13 @@ import requests
 
 from Data import getnossihelp
 from NossiInterface.RollInterface import rollhandle, chunk_reply, timeout
-from NossiInterface.Tools import discordname, split_send, handle_defines, cardhandle
+from NossiInterface.Tools import (
+    discordname,
+    split_send,
+    handle_defines,
+    cardhandle,
+    statehandle,
+)
 from NossiInterface.reminder import reminders, newreminder, delreminder, listreminder
 from NossiPack.fengraph import chances, montecarlo, versus
 from NossiPack.krypta import DescriptiveError
@@ -389,6 +395,9 @@ async def on_message(message: discord.Message):
         await oraclehandle(msg, comment, send, message.author)
     elif msg.startswith("cards:"):
         await cardhandle(msg, message, persist[discordname(message.author)], send)
+    elif msg.startswith("state:"):
+        await statehandle(msg, message, persist[discordname(message.author)], send)
+
     else:
         await rollhandle(
             msg, comment, message, persist,
