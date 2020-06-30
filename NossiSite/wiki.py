@@ -197,7 +197,8 @@ def register(app=None):
 
     @app.route("/costcalc/all/<costs>/<penalty>")
     @app.route("/costcalc/all/<costs>/<penalty>/<width>")
-    def ddos(costs, penalty, width=3):
+    @app.route("/costcalc/all")
+    def ddos(costs="0, 15, 35, 60, 100", penalty="0, 0, 0, 50, 100", width=3):
         p = Path(costs + "-" + penalty + ".result")
         try:
             if p.exists():
@@ -211,22 +212,22 @@ def register(app=None):
             ):
                 raise AttributeError("just too large of a space")
             with open(p, "w") as f:
-                res = [["[0]", "[0]"]]
+                res = []
                 i = 0
-                while not all(
-                    all(int(x) >= 5 for x in y.strip("[]").split(",") if x)
-                    for y in res[-1][1]
+                while i == 0 or not all(
+                    all(int(x) >= 5 for x in y if x) for y in res[-1][1]
                 ):
                     r = FenCharacter.cost_calc(str(i), costs, penalty, width)
                     log.debug(f"Fencalc {i} {res}")
                     if i == 0 or r != res[-1][1]:
-                        res.append([(str(i) + "   ")[:4] + " : ", r])
+                        res.append([str(i), r])
                     if time.time() - start > 30:
                         raise TimeoutError()
                     i += 1
-                r = "\n".join(x[0] + "\t".join(x[1]) for x in res[1:])
-                f.write(r)
-                return r, 200, {"Content-Type": "text/plain; charset=utf-8"}
+                for k, v in res:
+                    line = f"{'      '.join(', '.join(str(y) for y in x) for x in v)}"
+                    f.write(f" {k: <4}: {line} \n")
+            return "Reload please", 200, {"Content-Type": "text/plain; charset=utf-8"}
         except:
             with open(p, "w") as f:
                 f.write("an error has previously occured and this request is blocked")
