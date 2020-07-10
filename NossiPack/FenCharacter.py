@@ -25,6 +25,7 @@ class FenCharacter:
     value_headings = ["werte", "values", "statistics", "stats"]
     inventory_headings = ["inventar", "inventory"]
     doublepoint_sections = ["quellen", "sources"]
+    halfpoint_sections = ["forma"]
     fullpoint_sections = ["fähigkeiten", "skills", "aspekte", "aspects"]
     onepoint_sections = ["vorteile", "perks", "zauber", "spells"]
     experience_headings = ["erfahrung", "experience", "xp"]
@@ -175,6 +176,17 @@ class FenCharacter:
             res += self.get_xp_for(k)
             try:
                 res += int(v) * 20
+            except ValueError:
+                pass
+
+        f = {}
+        for k in c.keys():
+            if k.lower() in self.halfpoint_sections:
+                f.update(c[k])
+        for k, v in f.items():
+            res += self.get_xp_for(k)
+            try:
+                res += int(v) * 5
             except ValueError:
                 pass
 
