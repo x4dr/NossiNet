@@ -1,4 +1,5 @@
 import re
+import urllib
 
 import markdown
 from flask import request, session, redirect, url_for, render_template, flash
@@ -42,6 +43,10 @@ def register(app=None):
             except:
                 return "ERRR"
         raise DescriptiveError("Templating error: \n" + str(s) + "\ndoes not belong")
+
+    @app.template_filter("urldecode")
+    def filter_urldecode(s):
+        return urllib.parse.unquote(s)
 
     @app.before_request
     def before_request():
