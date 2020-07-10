@@ -24,7 +24,7 @@ class FenCharacter:
     ]
     value_headings = ["werte", "values", "statistics", "stats"]
     inventory_headings = ["inventar", "inventory"]
-    doublepoint_sections = ["Quellen", "Sources"]
+    doublepoint_sections = ["quellen", "sources"]
     fullpoint_sections = ["fähigkeiten", "skills", "aspekte", "aspects"]
     onepoint_sections = ["vorteile", "perks", "zauber", "spells"]
     experience_headings = ["erfahrung", "experience", "xp"]
