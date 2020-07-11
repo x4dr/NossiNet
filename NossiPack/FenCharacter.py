@@ -143,6 +143,14 @@ class FenCharacter:
             return [c for c in maximal]
         return FenCharacter.cost(tuple(xp), costs, penalty)
 
+    def magicwidth(self, name) -> int:
+        c = self.Categories[name]
+        f = {}
+        for k in c.keys():
+            if k.lower() in ["konzepte", "concepts"]:
+                f.update(c[k])
+        return len(f)
+
     def points(self, name) -> int:
         """
         total fp for a given category.
