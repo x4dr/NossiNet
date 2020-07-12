@@ -15,6 +15,13 @@ class TestDiceParser(TestCase):
         self.assertEqual(info["amount"], 99)
         self.assertEqual(info["sides"], 7)
 
+        info = self.p.extract_diceparams("-")
+        self.assertEqual(info["literal"], "-")
+
+        info = self.p.extract_diceparams("[3,2]l")
+        self.assertEqual(info["literal"], [3, 2])
+        self.assertEqual(info["return"], "min")
+
         info = self.p.extract_diceparams("113d04f9")
         self.assertEqual(info["amount"], 113)
         self.assertEqual(info["sides"], 4)
@@ -31,6 +38,10 @@ class TestDiceParser(TestCase):
     def test_do_roll(self):
         self.assertGreaterEqual(self.p.do_roll("3d10h").result, 1)
         self.assertLessEqual(self.p.do_roll("3d10h").result, 10)
+
+    def test_literal(self):
+        self.assertLessEqual(self.p.do_roll("[2,99,4]h").result, 99)
+        self.assertGreaterEqual(self.p.do_roll("-l").result, 2)
 
     def test_return_funs(self):
         for roll, exp, ret in [

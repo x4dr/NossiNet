@@ -17,25 +17,33 @@ class Dice:
     def __init__(self, info):
         try:
             self.sign = 1
+            self.r = []
             self.min = info.get("additivebonus", 1)  # unlikely to get implemented
             self.returnfun = info.get("return", None)
-            try:
-                self.amount = int(info["amount"])
-            except KeyError:
-                raise DescriptiveError("No amount of dice!!")
+            self.explosions = 0
+            self.literal = []
+            if info.get("literal", None):
+                self.r = info["literal"]
+                if isinstance(self.r, Dice):
+                    self.r = self.r.r
+                self.literal = info["literal"]
+                self.amount = len(self.r)
+            else:
+                try:
+                    self.amount = int(info["amount"])
+                except KeyError:
+                    raise DescriptiveError("No amount of dice!!")
             try:
                 self.max = int(info["sides"]) + self.min - 1
             except KeyError:
                 if self.returnfun != "id":
                     raise DescriptiveError("Dice without sides!")
-            self.difficulty = info.get("difficulty", None)
-            self.subone = info.get("onebehaviour", 0)
+                self.difficulty = info.get("difficulty", None)
+                self.subone = info.get("onebehaviour", 0)
 
             self.explodeon = self.max + 1 - info.get("explosion", 0)
             self.sort = info.get("sort")
-
             self.rerolls = int(info.get("rerolls", 0))  # only used for fenrolls
-            self.r = []
             self.log = ""
             self.dbg = ""
             self.comment = ""
@@ -45,13 +53,12 @@ class Dice:
                 self.explodeon = self.max + 1
             if self.returnfun == "id":
                 self.max = 1
-            if self.amount is not None:
-                self.roll_next(int(self.amount))
+            self.roll_next(int(self.amount))
 
         except KeyError as e:
             raise DescriptiveError("Missing Parameter: " + str(e.args[0]))
         except Exception as e:
-            print("exception during die creation:", e.args, e.__traceback__)
+            print("exception during die creation:", e.args, e.__traceback__.tb_lineno)
             raise
 
     def resonance(self, resonator: int):
@@ -69,8 +76,7 @@ class Dice:
         name = (
             (self.returnfun if "@" in self.returnfun else "")
             + amount
-            + "d"
-            + str(self.max)
+            + ("d" + str(self.max) if self.max else "")
             + ("R" + str(self.rerolls) if self.rerolls != 0 else "")
             + (
                 (
@@ -120,11 +126,7 @@ class Dice:
         return random.randint(self.min, self.max)
 
     def modified_amount(self, amount):
-        return (
-            amount
-            + abs(self.rerolls)
-            + sum(1 if x >= self.explodeon else 0 for x in self.r)
-        )
+        return amount + abs(self.rerolls) + self.explosions
 
     def process_rerolls(self):
         self.log = ""
@@ -170,7 +172,6 @@ class Dice:
             amount = self.amount
         self.rolled = True
         self.log = ""
-        self.r = []
         if amount < 0:
             amount = abs(amount)
             self.sign = -1
@@ -180,10 +181,12 @@ class Dice:
             self.r = [1] * amount
             return self
         while len(self.r) < self.modified_amount(amount):
-            self.r += [
+            nextr = [
                 self.rolldie()
                 for _ in range(self.modified_amount(amount) - len(self.r))
             ]
+            self.explosions += sum(self.explodeon <= x for x in nextr)
+            self.r += nextr
 
         self.log = ", ".join(str(x) for x in self.r)
 
@@ -311,6 +314,7 @@ class Dice:
             amount = self.amount
         if not amount:
             raise Exception("No Amount saved!")
+        self.r = []
         self.roll_next(amount)
         return self.result
 

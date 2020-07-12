@@ -149,9 +149,13 @@ class DiceParser:
 
     diceparse = re.compile(  # the regex matching the roll (?# ) for indentation
         r"(?# )\s*(?:(?P<selectors>(?:-?[0-9](?:\s*,\s*)?)*)\s*@)?"  # selector matching
-        r"(?# )\s*(?P<amount>-?[0-9]{1,5})(\.[0-9]+)?\s*"  # amount of dice -99999--99999,
+        r"(?# )("
+        r"(?#   )\s*(?P<literal>(\[[0-9, ]+\])|-)"  # literal matching
+        r"(?#   )|"  # or
+        r"(?#   )\s*(?P<amount>-?[0-9]{1,5})(\.[0-9]+)?\s*"  # amount of dice -99999 - 99999,
         # any number after the decimal point will be ignored
-        r"(?# )(d *(?P<sides>[0-9]{1,5}))? *"  # sides of dice 0-99999
+        r"(?# )) *"  # sides of dice 0-99999
+        r"(?# )(d *(?P<sides>[0-9]{1,5}))?"
         r"(?# )(?:[rR]\s*(?P<rerolls>-?\s*\d+))?"  # reroll highest/lowest dice
         r"(?#   )\s*(?P<sort>s)?"  # sorting rolls
         r"(?# )\s*(?P<operation>"  # what is happening with the roll
@@ -172,6 +176,12 @@ class DiceParser:
 
     @classmethod
     def extract_diceparams(cls, message):
+        """
+        extracts the dice parameters
+        :param message: the actual dicecode, after all processing
+        :return: dictionary of paramaters
+        """
+
         def setreturn(d, n):
             ret = d.get("return", None)
             if ret:
@@ -181,21 +191,27 @@ class DiceParser:
         dice = cls.diceparse.match(message)
         dice = {k: v for (k, v) in dice.groupdict().items() if v} if dice else {}
         info = {}
-        if dice.get("amount", None) is not None:
-            info["amount"] = int(float(dice["amount"]))
+        if dice.get("literal", None):
+            literal = dice["literal"].strip()
+            if literal == "-":
+                info["literal"] = "-"
+            else:
+                info["literal"] = [int(x) for x in literal[1:-1].split(",")]
         else:
-            if not message.strip():
-                return None
-            raise DiceCodeError(
-                "invalid dicecode:'" + message + "'\n usage: " + DiceParser.usage
-            )
+            if dice.get("amount", None) is not None:
+                info["amount"] = int(float(dice["amount"]))
+            else:
+                if not message.strip():
+                    return None
+                raise DiceCodeError(
+                    "invalid dicecode:'" + message + "'\n usage: " + DiceParser.usage
+                )
         if dice.get("sides", None) is not None:
             info["sides"] = int(dice["sides"])
         if dice.get("rerolls", None) is not None:
             info["rerolls"] = int(dice["rerolls"].replace(" ", ""))
         if dice.get("sort", None) is not None:
             info["sort"] = dice["sort"]
-
         if dice.get("selectors", None):
             setreturn(info, dice["selectors"] + "@")
         else:
@@ -245,8 +261,13 @@ class DiceParser:
         if not params:  # no dice
             return Dice.empty()
         fullparams = self.defines.copy()
+        fullparams["literal"] = None
         fullparams.update(params)
-        return Dice(fullparams)
+        if fullparams.get("literal", None) == "-":
+            fullparams["literal"] = fullparams.get("__last_roll", None)
+        d = Dice(fullparams)
+        self.defines["__last_roll"] = d
+        return d
 
     def resolveroll(self, roll: Union[Node, str], depth) -> Node:
         if isinstance(roll, str):

@@ -9,8 +9,13 @@ from NossiPack.krypta import terminate_thread
 
 numemoji = ("1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟")
 numemoji_2 = ("❗", "‼️", "\U0001F386")
-
 lastroll = {}
+
+
+def postprocess(r, msg, author, comment):
+    lastroll[author] = (
+        lastroll.get(author, []) + [[msg + (("//" + comment) if comment else ""), r]]
+    )[-10:]
 
 
 def prepare(msg: str, author, persist, comment):
@@ -18,15 +23,15 @@ def prepare(msg: str, author, persist, comment):
     if errreport:
         msg = msg[1:]
     msg = msg.strip()
+    msgs = lastroll.get(author, [["", None]])
+    which = msg.count("+") or 1
+    nm, lr = msgs[-min(which, len(msgs))]
     if all(x == "+" for x in msg):
-        which = msg.count("+")
-        msgs = lastroll.get(author, [])
-        msg = msgs[-min(which, len(msgs))]
-    else:
-        lastroll[author] = (
-            lastroll.get(author, []) + [msg + (("//" + comment) if comment else "")]
-        )[-10:]
-    p = DiceParser(persist.get(author, {}).get("defines", {}))
+        msg = nm
+
+    persist[str(author)] = persist.get(author, {})
+    p = DiceParser(persist[str(author)].get("defines", {}))
+    p.defines["__last_roll"] = lr
     return msg, p, errreport
 
 
@@ -90,8 +95,10 @@ async def get_reply(author, comment, msg, send, reply, r):
             + ": ... try generating less output"
         )
     sent = await send(tosend)
-    if r.returnfun.endswith("@") and r.result >= r.max * len(
-        r.returnfun[:-1].split(",")
+    if (
+        r.max
+        and r.returnfun.endswith("@")
+        and r.result >= r.max * len(r.returnfun[:-1].split(","))
     ):
         await sent.add_reaction("\U0001f4a5")
     if r.max == 10 and (r.returnfun.endswith("@") or r.amount == 5):
@@ -114,14 +121,10 @@ async def process_roll(r: Dice, p: DiceParser, msg: str, comment, send, author):
     else:
         reply = ""
 
-    tosend = "uninitialized"
     try:
         await get_reply(author, comment, msg, send, reply, r)
     except Exception as e:
-        raise Exception(
-            f"Exception during sending: {str(e)}\n"
-            f"length:{len(tosend)} \nfirst 100 {tosend[:100]}"
-        )
+        raise Exception(f"Exception during sending: {str(e)}\n")
 
 
 async def timeout(func, arg, time_out=1):
@@ -146,6 +149,7 @@ async def rollhandle(msg, comment, message: discord.Message, persist):
     try:
         r = await timeout(p.do_roll, msg, 2)
         await process_roll(r, p, msg, comment, message.channel.send, author)
+        postprocess(r, msg, author, comment)
     except DiceCodeError as e:
         if errreport:  # query for error
             await author.send("Error with roll:\n" + "\n".join(e.args)[:2000])
@@ -163,3 +167,4 @@ async def rollhandle(msg, comment, message: discord.Message, persist):
             await author.send(ermsg[:2000])
         else:
             await message.add_reaction("😕")
+        raise
