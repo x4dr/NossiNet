@@ -26,6 +26,7 @@ def prepare(msg: str, author, persist, comment):
     msgs = lastroll.get(author, [["", None]])
     which = msg.count("+") or 1
     nm, lr = msgs[-min(which, len(msgs))]
+    lr = [m[1] for m in msgs]
     if all(x == "+" for x in msg):
         msg = nm
 
@@ -158,6 +159,7 @@ async def rollhandle(msg, comment, message: discord.Message, persist):
     except ValueError as e:
         if not any(x in msg for x in "\"'"):
             print(f"not quotes {msg}" + "\n" + "\n".join(e.args))
+            raise
         await message.add_reaction("🙃")
 
     except Exception as e:

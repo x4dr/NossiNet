@@ -150,7 +150,7 @@ class DiceParser:
     diceparse = re.compile(  # the regex matching the roll (?# ) for indentation
         r"(?# )\s*(?:(?P<selectors>(?:-?[0-9](?:\s*,\s*)?)*)\s*@)?"  # selector matching
         r"(?# )("
-        r"(?#   )\s*(?P<literal>(\[[0-9, ]+\])|-)"  # literal matching
+        r"(?#   )\s*(?P<literal>(\[[0-9, ]+\])|-+)"  # diceliteral matching
         r"(?#   )|"  # or
         r"(?#   )\s*(?P<amount>-?[0-9]{1,5})(\.[0-9]+)?\s*"  # amount of dice -99999 - 99999,
         # any number after the decimal point will be ignored
@@ -193,8 +193,8 @@ class DiceParser:
         info = {}
         if dice.get("literal", None):
             literal = dice["literal"].strip()
-            if literal == "-":
-                info["literal"] = "-"
+            if literal and all(x == "-" for x in literal):
+                info["literal"] = literal
             else:
                 info["literal"] = [int(x) for x in literal[1:-1].split(",")]
         else:
@@ -261,12 +261,13 @@ class DiceParser:
         if not params:  # no dice
             return Dice.empty()
         fullparams = self.defines.copy()
-        fullparams["literal"] = None
+        fullparams["literal"] = ""
         fullparams.update(params)
-        if fullparams.get("literal", None) == "-":
-            fullparams["literal"] = fullparams.get("__last_roll", None)
+        fpl = fullparams.get("literal", "")
+        if fpl and all(x == "-" for x in fpl):
+            fullparams["literal"] = fullparams.get("__last_roll", [])[-len(fpl)]
         d = Dice(fullparams)
-        self.defines["__last_roll"] = d
+        self.defines["__last_roll"].append(d)
         return d
 
     def resolveroll(self, roll: Union[Node, str], depth) -> Node:
