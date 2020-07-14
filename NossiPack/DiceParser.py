@@ -272,8 +272,13 @@ class DiceParser:
 
     def resolveroll(self, roll: Union[Node, str], depth) -> Node:
         if isinstance(roll, str):
-            roll, _ = self.pretrigger(roll)
-            roll = Node(roll, depth)
+            oldroll = roll[:]
+            try:
+                roll, _ = self.pretrigger(roll)
+                roll = Node(roll, depth)
+            except Exception as e:
+                print("pretrigger exc", e.args[0])
+                roll = Node(oldroll, depth)
             res = self.resolveroll(roll, depth)
             return res
         roll.code, change = self.pretrigger(roll.code)
@@ -294,17 +299,6 @@ class DiceParser:
                 roll.code = roll.code.replace(k, toreplace, 1)
         roll.calculate()
         return roll
-
-    def assume(self, message):
-        """consumes a parenthesis"""
-        if message.strip()[0] == "(":
-            p = fullparenthesis(message)
-            if len(message.replace(p, "").strip()[1:].strip()[1:].strip()) > 0:
-                raise DescriptiveError(
-                    "Leftovers after " + message + ":" + message.replace(p, "")
-                )
-            return self.do_roll(fullparenthesis(message))
-        return message
 
     def breakthrough(self, body: str) -> str:
         roll, current, goal, adversity = body, None, None, None
@@ -466,6 +460,14 @@ class DiceParser:
             for p in reversed(param):  # right to left
                 change = True
                 roll, val = roll.rsplit(" ", 1)  # take rightmost thing
+                while val.count(")") > val.count("("):
+                    if not roll:
+                        raise DescriptiveError("unmatched ')' in " + val)
+                    val: str = roll[-1] + val
+                    roll = roll[:-1]
+                val = val.strip()
+                if val.startswith("(") and val.endswith(")"):
+                    val = str(self.do_roll(val[1:-1]).result)
                 self.defines[p] = val  # and write it into the defines
         for kv in triggerreplace:
             change = True

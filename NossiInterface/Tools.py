@@ -371,7 +371,6 @@ async def handle_defines(msg, message, persist):
                 loopconstraint = 0  # no break means no replacements
     except DescriptiveError as e:
         await message.author.send(e.args[0])
-    print("end", defines)
     return msg
 
 
