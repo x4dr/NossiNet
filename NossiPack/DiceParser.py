@@ -150,7 +150,7 @@ class DiceParser:
     diceparse = re.compile(  # the regex matching the roll (?# ) for indentation
         r"(?# )\s*(?:(?P<selectors>(?:-?[0-9](?:\s*,\s*)?)*)\s*@)?"  # selector matching
         r"(?# )("
-        r"(?#   )\s*(?P<literal>(\[[0-9, ]+\])|-+)"  # diceliteral matching
+        r"(?#   )\s*(?P<literal>(\[(\s*-?\s*\d+\s*,?)+\s*\])|-+)"  # diceliteral matching
         r"(?#   )|"  # or
         r"(?#   )\s*(?P<amount>-?[0-9]{1,5})(\.[0-9]+)?\s*"  # amount of dice -99999 - 99999,
         # any number after the decimal point will be ignored
@@ -267,7 +267,7 @@ class DiceParser:
         if fpl and all(x == "-" for x in fpl):
             fullparams["literal"] = fullparams.get("__last_roll", [])[-len(fpl)]
         d = Dice(fullparams)
-        self.defines["__last_roll"].append(d)
+        self.defines["__last_roll"] = self.defines.get("__last_roll", []) + [d]
         return d
 
     def resolveroll(self, roll: Union[Node, str], depth) -> Node:

@@ -334,6 +334,7 @@ async def handle_defines(msg, message, persist):
     try:
         persist[author]["defines"]
     except KeyError:
+        print("User", author, "not found, regenerating")
         persist[author] = {"defines": {}}
 
     cachetimeout = 0 if msg.startswith("?") else 3600
@@ -341,8 +342,10 @@ async def handle_defines(msg, message, persist):
 
     if msg.startswith("def "):
         await define(msg, message, persist)
+        return ""
     elif msg.startswith("undef "):
         await undefine(msg, message, persist)
+        return ""
 
     defines = {}
     try:
@@ -368,6 +371,7 @@ async def handle_defines(msg, message, persist):
                 loopconstraint = 0  # no break means no replacements
     except DescriptiveError as e:
         await message.author.send(e.args[0])
+    print("end", defines)
     return msg
 
 

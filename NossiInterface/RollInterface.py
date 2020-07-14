@@ -30,7 +30,7 @@ def prepare(msg: str, author, persist, comment):
     if all(x == "+" for x in msg):
         msg = nm
 
-    persist[str(author)] = persist.get(author, {})
+    persist[str(author)] = persist.get(str(author), {})
     p = DiceParser(persist[str(author)].get("defines", {}))
     p.defines["__last_roll"] = lr
     return msg, p, errreport

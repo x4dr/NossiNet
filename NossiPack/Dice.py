@@ -21,7 +21,7 @@ class Dice:
             self.min = info.get("additivebonus", 1)  # unlikely to get implemented
             self.returnfun = info.get("return", None)
             self.explosions = 0
-            self.literal = []
+            self.literal = None
             if info.get("literal", None):
                 self.r = info["literal"]
                 if isinstance(self.r, Dice):
@@ -314,7 +314,8 @@ class Dice:
             amount = self.amount
         if not amount:
             raise Exception("No Amount saved!")
-        self.r = []
+        if not self.literal:
+            self.r = []
         self.roll_next(amount)
         return self.result
 

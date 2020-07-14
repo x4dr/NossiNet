@@ -199,6 +199,21 @@ async def specifichandle(msg, comment, send, author):
     return False
 
 
+def savepersist():
+    try:
+        if persist["mutated"]:
+            with shelve.open(os.path.expanduser(storagefile)) as shelvingfile:
+                for k in persist:
+                    if k == "mutated":
+                        continue  # mutated will never be saved!
+                    shelvingfile[k] = persist[k]
+                persist["mutated"] = False
+    except Exception as e:
+        print(
+            f"Exception in savepersist with key {k}:", e, e.args, traceback.format_exc()
+        )
+
+
 async def tick():
     if len(ticking) > 1:
         print("attempted to doubletick")
@@ -212,22 +227,12 @@ async def tick():
             await disconnecting.pop().disconnect()
         if len(ticking) > 10:
             ticking.pop(0)
-        k = "remind"
         try:
             nexttime = await reminders(client.get_channel)
         except Exception as e:
             print("Exception reminding:", e, e.args, traceback.format_exc())
             nexttime = 10
-        try:
-            if persist["mutated"]:
-                with shelve.open(os.path.expanduser(storagefile)) as shelvingfile:
-                    for k in persist:
-                        if k == "mutated":
-                            continue  # mutated will never be saved!
-                        shelvingfile[k] = persist[k]
-                    persist["mutated"] = False
-        except Exception as e:
-            print(f"Exception in tick with {k}:", e, e.args, traceback.format_exc())
+        savepersist()
         next_call += nexttime
         if client.is_closed():
             break
@@ -386,6 +391,7 @@ async def on_message(message: discord.Message):
     comment = " " + comment.strip("` ")
     msg = await handle_defines(msg, message, persist)
     if not msg:
+        savepersist()
         return
     if msg.startswith("weapon:") or msg.startswith("magicalweapon:"):
         await weaponhandle(msg, comment, send, message.author, message.add_reaction)

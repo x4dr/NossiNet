@@ -330,7 +330,7 @@ def montecarlo(roll):
     while time.time() - time0 < 10:
         r = p.do_roll(roll).result
         occurences[r] = occurences.get(r, 0) + 1
-    return plot(occurences)
+    return f"from {sum(occurences.values())} results:\n {plot(occurences)}"
 
 
 def versus(part1, part2, mode):
