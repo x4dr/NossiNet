@@ -20,6 +20,8 @@ from NossiInterface.Tools import (
     handle_defines,
     cardhandle,
     statehandle,
+    get_remembering_send,
+    delete_replies,
 )
 from NossiInterface.reminder import reminders, newreminder, delreminder, listreminder
 from NossiPack.fengraph import chances, montecarlo, versus
@@ -285,10 +287,15 @@ async def on_raw_message_edit(payload: discord.RawMessageUpdateEvent):
 
 
 @client.event
+async def on_message_delete(message: discord.Message):
+    await delete_replies(message)
+
+
+@client.event
 async def on_message(message: discord.Message):
     persist["mutated"] = True
     msg: str = message.content.strip("` ")
-    send = message.channel.send
+    send = get_remembering_send(message)
     author: discord.member.Member = message.author
     if message.author == client.user:
         return
@@ -406,7 +413,7 @@ async def on_message(message: discord.Message):
 
     else:
         await rollhandle(
-            msg, comment, message, persist,
+            msg, comment, author, send, message.add_reaction, persist,
         )
 
 

@@ -38,8 +38,8 @@ class Dice:
             except KeyError:
                 if self.returnfun != "id":
                     raise DescriptiveError("Dice without sides!")
-                self.difficulty = info.get("difficulty", None)
-                self.subone = info.get("onebehaviour", 0)
+            self.difficulty = info.get("difficulty", None)
+            self.subone = info.get("onebehaviour", 0)
 
             self.explodeon = self.max + 1 - info.get("explosion", 0)
             self.sort = info.get("sort")

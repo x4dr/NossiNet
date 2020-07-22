@@ -1,6 +1,8 @@
 import re
 import time
 
+from discord import Message
+
 import Data
 from NossiPack.Cards import Cards
 from NossiPack.DiceParser import fullparenthesis
@@ -9,10 +11,37 @@ from NossiPack.krypta import DescriptiveError
 from NossiSite.wiki import load_user_char_stats, load_user_char, spells, transitions
 
 statcache = {}
+sent_messages = {}
 
 
 def discordname(user):
     return user.name + "#" + user.discriminator
+
+
+async def delete_replies(message: Message):
+    r: Message
+    if message.id in sent_messages:
+        for r in sent_messages[message.id]["replies"]:
+            await r.delete()
+        del sent_messages[message.id]
+
+
+def get_remembering_send(message: Message):
+    async def send_and_save(msg):
+        sent = await message.channel.send(msg)
+        sent_messages[message.id] = sent_messages.get(
+            message.id, {"received": time.time(), "replies": []}
+        )
+        sent_messages[message.id]["replies"].append(sent)
+        sent_messages[message.id]["received"] = time.time()
+        byage = sorted(
+            [(m["received"], k) for k, m in sent_messages.items()], key=lambda x: x[0]
+        )
+        for m, k in byage[100:]:
+            del sent_messages[k]  # remove references for the oldes ones
+        return sent
+
+    return send_and_save
 
 
 async def split_send(send, lines, i=0):

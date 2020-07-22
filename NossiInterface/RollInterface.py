@@ -1,8 +1,6 @@
 import asyncio
 from concurrent.futures.thread import ThreadPoolExecutor
 
-import discord
-
 from NossiPack.Dice import Dice
 from NossiPack.DiceParser import DiceParser, DiceCodeError
 from NossiPack.krypta import terminate_thread
@@ -18,7 +16,7 @@ def postprocess(r, msg, author, comment):
     )[-10:]
 
 
-def prepare(msg: str, author, persist, comment):
+def prepare(msg: str, author, persist):
     errreport = msg.startswith("?")
     if errreport:
         msg = msg[1:]
@@ -125,7 +123,8 @@ async def process_roll(r: Dice, p: DiceParser, msg: str, comment, send, author):
     try:
         await get_reply(author, comment, msg, send, reply, r)
     except Exception as e:
-        raise Exception(f"Exception during sending: {str(e)}\n")
+        print(f"Exception during sending: {str(e)}\n")
+        raise
 
 
 async def timeout(func, arg, time_out=1):
@@ -143,24 +142,23 @@ async def timeout(func, arg, time_out=1):
         raise
 
 
-async def rollhandle(msg, comment, message: discord.Message, persist):
-    author = message.author
+async def rollhandle(msg, comment, author, send, react, persist):
     comment = comment.strip()
-    msg, p, errreport = prepare(msg, author, persist, comment)
+    msg, p, errreport = prepare(msg, author, persist)
     try:
         r = await timeout(p.do_roll, msg, 2)
-        await process_roll(r, p, msg, comment, message.channel.send, author)
+        await process_roll(r, p, msg, comment, send, author)
         postprocess(r, msg, author, comment)
     except DiceCodeError as e:
         if errreport:  # query for error
             await author.send("Error with roll:\n" + "\n".join(e.args)[:2000])
     except asyncio.exceptions.TimeoutError:
-        await message.add_reaction("\U000023F0")
+        await react("\U000023F0")
     except ValueError as e:
         if not any(x in msg for x in "\"'"):
             print(f"not quotes {msg}" + "\n" + "\n".join(e.args))
             raise
-        await message.add_reaction("🙃")
+        await react("🙃")
 
     except Exception as e:
         ermsg = f"big oof during rolling {msg}" + "\n" + "\n".join(e.args)
@@ -168,5 +166,5 @@ async def rollhandle(msg, comment, message: discord.Message, persist):
         if errreport:  # query for error
             await author.send(ermsg[:2000])
         else:
-            await message.add_reaction("😕")
+            await react("😕")
         raise
