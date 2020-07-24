@@ -1,0 +1,153 @@
+{%- extends "layout.html" -%}
+{%- macro dots(val,max=3) -%}
+    {%- if val is not defined -%}
+        {%- set val = 0 -%}
+    {%- endif -%}
+    {%- for i in range(val) -%}
+        {%- if loop.index0%5 == 0 and loop.index0 > 0 %} {% endif -%}
+        ●
+    {%- endfor -%}
+    {%- for i in range(max-val) -%}
+        ○
+    {%- endfor -%}
+{%- endmacro -%}
+
+{% macro lolformat(k,v,redir=0) %}
+    <tr>
+        <td colspan="2" style="text-align: center;" class="{% if redir %}leet
+                                        {%- else %}leeet{% endif %}" >{{ k }}</td>
+    </tr>
+    {%- set table = v[0] -%}
+    {%- set lines = v[1] -%}
+    {%- if table -%}
+        {%- for row in table -%}
+            <tr>
+                {%- for cell in row %}
+                    <td>{{ cell }}</td>
+                {% endfor -%}
+            </tr>
+        {% endfor -%}
+
+    {%- endif -%}
+    {% for lin in lines -%}
+        {%- if lin -%}
+            <tr>
+                <td>
+                    {{- lin -}}
+                </td>
+            </tr>
+        {%- endif -%}
+    {% endfor -%}
+
+{%- endmacro %}
+{% macro dictformat(k,v) -%}
+    <tr>
+        <td colspan="2" style="text-align: center;" class="leeet">{{ k }}</td>
+    </tr>
+
+    {%- for vk,vv in v.items() -%}
+        {% if v and v[0] is sequence %}
+            {{ lolformat(vk,vv,1) }}
+        {% else  %}
+            <tr>
+                <td style="text-align: left; word-wrap: break-word">{{ vk|remove_leading_underscore }} </td>
+                <td>{%- if vv|int(-1) != -1 -%}{{ dots(vv|int, userconf["fensheet_dot_max"]|int(5))
+                if userconf["fensheet_dots"]|int(0) else vv }}
+                {%- else -%}{{ vv }}{%- endif -%}</td>
+            </tr>
+        {% endif %}
+    {%- endfor -%}
+{% endmacro %}
+{%- macro catformat(cat, name) -%}
+    <table style = "width: 100%">
+        <tr>
+            <td colspan="2" style="text-align: center;" class="leeeet">{{ name }}</td>
+        </tr>
+        {%- if cat is mapping  -%}
+            {%- for k,v in cat.items() -%}
+                {%- if v is mapping -%}
+                    {{ dictformat(k,v) }}
+                {% else %}
+                    {{ lolformat(k,v) }}
+                {% endif -%}
+            {%- endfor %}
+        {%- else -%}
+            {{ cat }} is no dic
+        {% endif %}
+    </table>
+{%- endmacro -%}
+{%- block title -%}
+    {%- if character.Name -%}
+        <title>{{ character.Name }}</title>
+    {%- else -%}
+        <title>Charactersheet</title>
+    {%- endif -%}
+{%- endblock -%}
+
+{%- block body -%}
+    <div style="text-align: center ">
+    <table style ="width:100%; margin: 0 0 4px" class="leet dividedtable">
+        <tr>
+            <td colspan="6" style="text-align: center; font-size: 1.5em" class="leeeet">
+                {%- if character.Name -%}
+                    Charactersheet&nbspfor&nbsp{{ character.Name }}
+                {%- else -%}
+                    Charactersheet&nbspfor&nbspUnnamed&nbspCharacter
+                {%- endif -%}</td>
+        </tr> <tr>
+        {% if character.Character is mapping %}
+            {%- for key,val in character.Character.items() -%}
+
+                    {%- if val is string -%}
+                        <td class="dividedtable" style="text-align: center; width: 15%; border-bottom-color: #0d9318; border-left-color: #0d9318;  ">{{ key }}</td>
+                <td class="dividedtable" style="text-align: center; width: 15%; border-bottom-color: #0d9318; border-right-color: #0d9318;  white-space: pre-wrap">
+                        {{ val }}
+                    {%- else -%}
+                        <td class="dividedtable" colspan="2" style=" width: 32%; text-align: center; table-layout: fixed; border-bottom-color: #0d9318; border-right-color: #0d9318; border-left-color: #0d9318;">
+                        <table style="width: 100%">
+                        {%- if v is mapping -%}
+                            {{ dictformat(key,val) }}
+                        {% else %}
+                            {{ lolformat(key,val) }}
+                        {%- endif -%}
+                        </table>
+                    {%- endif -%}
+                </td>
+                {%- if loop.index%3==0 and not loop.last -%}
+                    </tr><tr>
+                {%- endif -%}
+            {%- if loop.last -%}
+                </tr>
+            {%- endif -%}
+            {%- endfor -%}
+        {% else %}
+            [[character not mapping]]
+        {% endif %}
+    </table>
+        {%- for category,data in character.Werte.items() -%}
+            <div style="display: inline-block; width: 32%; vertical-align: top;">
+                <!--{{ category}}-->
+                {{- catformat(data,category)-}}
+            </div>
+        {% endfor -%}
+    </div>
+    {% if Meta in character %}
+        {%- for key,data in character.Meta.items() -%}
+            <h2 class="hideable">*{{ key }}</h2>
+            <div>
+                {%- for section,sectiondata in data.items() -%}
+                    {%- if section|trim|length -%}
+                        <h3 class="hideable">*{{ section|markdown}}</h3>
+                    {%- endif -%}
+                    <div>
+                        {%- for line in sectiondata|markdown -%}
+                            {{ line }}
+                        {%- endfor %}
+                    </div>
+                {%- endfor -%}
+            </div>
+        {%- endfor -%}
+    {% endif %}
+    <div><button id="TopButton" title="Upwards">Top</button></div>
+
+{%- endblock -%}

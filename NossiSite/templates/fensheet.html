@@ -1,4 +1,3 @@
-
 {%- extends "layout.html" -%}
 {%- macro dots(val,max=5) -%}
     {%- if val is not defined -%}
@@ -12,34 +11,82 @@
         ○
     {%- endfor -%}
 {%- endmacro -%}
-{%- macro catformat(cat, name) -%}
+{% macro tablematrix(table) %}
+    <table class="dividedtable">
+        {% for line in table -%}
+            {% if loop.first %}
+                <thead>
+            {% endif %}
+        <tr>
+            {% set outer_loop = loop %}
+            {% for subline in line -%}
+                <td class="le{% if outer_loop.first %}e{% endif %}et">{{ subline }}</td>
+            {% endfor -%}
+        </tr>
+        {% if loop.first %}
+            </thead>
+            <tbody>
+            {% elif loop.last %}
+            </tbody>
+        {% endif %}
+        {%- endfor %}
+    </table>
+{% endmacro %}
+{% macro sectionformat(cat) %}
+    {%- for k,v in cat.items() -%}
+        {%- if v is mapping -%}
+            <tr>
+                <td colspan="2" style="text-align: center;" class="leet">{{ k }}</td>
+            </tr>
+            {%- for vk,vv in v.items() -%}
+                <tr>
+                    <td style="text-align: left; word-wrap: break-word">{{ vk|remove_leading_underscore }} </td>
+                    <td class="tooltip">{%- if vv|remove_leading_underscore|int(-1) != -1
+                            and (userconf["fensheet_dot_max"] |int) >= vv|remove_leading_underscore|int -%}{{
+                            dots(vv|remove_leading_underscore|int, userconf["fensheet_dot_max"]|int(5))
+                            if userconf["fensheet_dots"]|int(0) else vv }}
+                    {%- else -%}{{ vv }}{%- endif -%}{% if
+                            k.lower() in character.doublepoint_sections+character.fullpoint_sections
+                            %} <span class="tooltiptext">&nbsp;+&nbsp;{{ character.get_xp_for(vk) }}&nbsp;FP</span>{%- endif -%}</td>
+                </tr>
+            {%- endfor -%}
+        {% else %}
+            Debug: {{ v }} has no items
+        {%- endif -%}
+    {%- endfor %}
+{% endmacro %}
+{%- macro catformat(cat, name, cost) -%}
     <table style = "width: 100%">
         <tr>
-            <td colspan="2" style="text-align: center;" class="leeet">{{ name }}</td>
+            <td colspan="2" style="text-align: center;" class="leeet tooltip">{{ name }} {% if name!='Magie' %}<a href="{{url_for('fen_calc',
+            inputstring=cost) }} ">{{ cost }}</a><span class="tooltiptext"><br/>&nbsp;Options:<br/>{% for l in
+                    character.cost_calc(cost)
+                    %}&nbsp;&nbsp;{% for b in l %}{{ b }}{% if not loop.last %}, {% endif %}{% endfor %}&nbsp;&nbsp;<br/> {% endfor %}<br/> {% else %}<a href="{{
+                    url_for('fen_calc', inputstring=cost, costs='30,80,140,210,300',penalty='0,0,0,0,0',width=character.magicwidth(name))|urldecode
+                    }}">{{ cost }}</a><span class="tooltiptext">{% for l in
+                    character.cost_calc(cost,'30, 80, 140, 210, 300','', width=character.magicwidth(name))
+                    %}{{ l }}<br/> {% endfor %}{% endif %}</span></td>
+
         </tr>
         {%- if cat is mapping  -%}
-            {%- for k,v in cat.items() -%}
-                {%- if v is mapping -%}
-                    <tr>
-                        <td colspan="2" style="text-align: center;" class="leet">{{ k }}</td>
-                    </tr>
-                    {%- for vk,vv in v.items() -%}
-                        <tr>
-                            <td style="text-align: left; word-wrap: break-word">{{ vk|remove_leading_underscore }} </td>
-                            <td>{%- if vv|int(-1) != -1 -%}{{ dots(vv|int, userconf["fensheet_dot_max"]|int(5))
-                                    if userconf["fensheet_dots"]|int(0) else vv }}
-                            {%- else -%}{{ vv }}{%- endif -%}</td>
-                        </tr>
-                    {%- endfor -%}
-                {% else %}
-                    Debug: {{ v }} has no items
-                {%- endif -%}
-            {%- endfor %}
+            {{ sectionformat(cat) }}
         {% else %}
-            {{ cat }} is no dic
+            Error: {{ cat }} is no dict
         {% endif %}
     </table>
 {%- endmacro -%}
+{% macro treepart(tree, depth) %}
+    {{ tree[0] | markdown }}
+    {% for table in tree[2] %}
+        {{ tablematrix(table) }}
+    {% endfor %}
+    {% for child, content in tree[1].items() %}
+        <h{{ depth }} class="hideable">o{{ child }}</h{{ depth }}>
+        <div>
+            {{ treepart(content, depth + 1) }}
+        </div>
+    {% endfor %}
+{% endmacro %}
 {%- block title -%}
     {%- if character.Name -%}
         <title>{{ character.Name }}</title>
@@ -49,6 +96,8 @@
 {%- endblock -%}
 
 {%- block body -%}
+        {% if owner %}<a href="{{ url_for("editwiki", x=owner) }}"><input type="button" class="leeet" style="margin-bottom: 1em" value="Edit"></a><br/>
+    {% endif %}
     <table style ="width:100%; " class="leet dividedtable">
         <tr>
             <td colspan="6" style="text-align: center; font-size: 1.5em" class="leeet">
@@ -78,25 +127,17 @@
     <div style="text-align: center ">
         {%- for category,data in character.Categories.items() -%}
             <div style="display: inline-block; width: 30%; vertical-align: top;">
-                {{- catformat(data,category)-}}
+                {{- catformat(data,category, character.points(category))-}}
             </div>
         {% endfor -%}
     </div>
     {%- for key,data in character.Meta.items() -%}
-        <h2 class="hideable">*{{ key }}</h2>
+        <h2 class="hideable">o{{ key }}</h2>
         <div>
-            {%- for section,sectiondata in data.items() -%}
-                {%- if section|trim|length -%}
-                    <h3 class="hideable">*{{ section|markdown}}</h3>
-                {%- endif -%}
-                <div>
-                    {%- for line in sectiondata|markdown -%}
-                        {{ line }}
-                    {%- endfor %}
-                </div>
-            {%- endfor -%}
+            {{ treepart(data,3) }}
         </div>
     {%- endfor -%}
     <div><button id="TopButton" title="Upwards">Top</button></div>
-
+    {% if owner %}<a href="{{ url_for("editwiki", x=owner) }}"><input type="button" class="leeet" style="margin-top: 1em" value="Edit"></a><br/>
+    {% endif %}
 {%- endblock -%}

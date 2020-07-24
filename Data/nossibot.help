@@ -1,0 +1,96 @@
+Welcome to the Nosferatu Robot Servant!
+General behaviour:
+    newlines: are treated as separate inputs for normal commands.
+    // : starts a comment, the rest of the line is repeated in the output but otherwise ignored
+    def : will define a replacement that is from then on applied to all your messages before (and during) processing
+        example: def a = 10
+        result: every occurence "a" will be replaced by 10
+        SPECIAL DEF VALUES:
+            difficulty: standard difficulty for threshholds/ for e and f
+            onebehaviour: 0 if standard is "e", 1 if standard is "f"
+            sides: how many sides dice have if nothing is said
+            return: standard returnfunctions threshhold, sum, min, max, id, None
+        if no = is specified, the value of the rest of the line will be looked up for you
+             example: def a
+             result: 10
+    undef : will remove a defined replacement
+        example: undef a
+        result: a will no longer be replaced by anything
+    def=? : will show all defined values
+    i am X: sets NosferatuNetwork account to X. Needs to be confirmed to discord account at https://nosferatu.vampir.es/user/X
+    ? will try to give you a more detailed error message. after oracle for oracle help or first thing for rolls (also always reloads character sheet values)
+    #remind prefix is currently not even working and WILL spam you to death with no way to stop it except muting if you use it
+Available commands:
+NossiBot : prefix for the most meta of things, assumed in DMs
+    Subcommands:
+        help : this help!
+        INVOKE : makes NossiBot listen to the Textchannel in which this was said
+        BANISH : makes NossiBot stop listening, does not work in DMs.
+weapon: : prefix for the fen weapon parser
+    usage:
+        weapon:X will get the table for the weapon X from https://nosferatu.vampir.es/wiki/weapons
+        weapon:X:M will also apply the modifier M, see https://nosferatu.vampir.es/wiki/modifiers
+        magicalweapon:X:P will try to fill in the codes from https://nosferatu.vampir.es/wiki/magicalweapons
+                P is the Parameter to be filled in to <formulas>.
+                they can be given in the format key:value or just as values. Order SHOULD be from left to right but
+                testing is advised. Delimiter is ","
+        example:  magicalweapon:blitzsäbel:roll:13,res7:0  this uses exact names
+                  magicalweapon:glassäbel:13 this tries to match names to the parameters in the order they are used
+oracle : prefix for selector system standard 5 dice (+modifiers) roll graphs
+    it expects a list of at least 2 integers as a parameter. the last one is the bonus/malusdice, all previous are selectors
+    Subcommand:
+        show : will make the graph as a picture with quantiles. number of quantiles is new last parameter, rest as normal
+    asc/desc or under/over can be appended to have at most/at least chances instead
+    a b c v e f g will compare a,b@5Rc against e,f@5Rg
+    try: will run that dicerol for 10 seconds and format less prettily
+
+specific from https://nosferatu.vampir.es/wiki/conventions
+work as well!
+
+for help on cards, type cards:help
+
+Unprefixed messages are passed to the diceroller:
+Triggers:
+Triggers are pieces of the dicecode that have effects which are not strictly dicerolling. They are ignored by replacements. As of writing, the established triggers are:
+values [k:v;[k:v;...]]: sets the ; separated key value pairs as non-saved defines for this roll
+param [a [b ...]]: space separated parameters grab the space separated values from the right edge of the roll (param a b c [...] 1 2 would be a=1, b=2)
+if a then b else c done: evaluates a as a roll, which if it is > 0, replaces itself with a, else it replaces itself with b. within a / b, $ is replaced with the result of the if roll
+verbose [x]: if x is empty or anything not containing "off" verbose is set, increasing verbosity 
+max [x]: the default value of 50 can be raised up to 500, it limits how often loops are run 
+limitbreak : if you are an admin this ups the loop limit. if not, it sets the rightsviolation trigger ;)
+breakthrough roll current goal [adversity]: keeps adding up the result of roll until goal is hit, subtracting adversity (or 0) at every step. starts at current
+loop roll times: loops roll times times
+loopsum roll times: like loop, but adds result
+
+the rolls are "best" explained by the regex used to parse it
+
+ r"(?# )\s*(?:(?P<selectors>(?:-?[0-9](?:\s*,\s*)?)*)\s*@)?"  # selector matching
+        r"(?# )\s*(?P<amount>-?[0-9]{1,5})\s*"  # amount of dice -99999--99999
+        r"(?# )(d *(?P<sides>[0-9]{1,5}))? *"  # sides of dice 0-99999
+        r"(?# )(?:[rR]\s*(?P<rerolls>-?\d+))?"  # reroll highest/lowest dice
+        r"(?#   )(?P<sort>s)?"  # sorting rolls
+        r"(?# )(?P<operation>"  # what is happening with the roll
+        r"(?#   )(?P<against>"  # rolling against a value for successes
+        r"(?#     )(?P<onebehaviour>[ef]) *"  # e is without subtracting 1,
+        # f is with subtracting a success on a 1
+        r"(?#     )(?P<difficulty>([1-9][0-9]{0,4})|([0-9]{0,4}[1-9])))|"
+        # difficulty 1-99999
+        r"(?#   )(?P<sum>g)|"  # summing rolls up
+        r"(?#   )(?P<id>=)|"  # counting the amount instead of doing anything with the dice
+        r"(?#   )(?P<none>~)|"  # returning nothing
+        r"(?#   )(?P<maximum>h)| *"  # taking the maximum die
+        r"(?#   )(?P<minimum>l))? *"  # taking the minimum die
+        r"(?# )(?P<explosion>!+)? *$",  # explosion barrier lowered by 1 per !
+
+
+Examplerolls:
+3,2@5 rolls 5 dice (standard is 10 sides) and selects the 3rd and 2nd smallest
+3d6 rolls 3 six sided dice
+69d420s rolls 69 420 sided dice and sorts them before displaying
+6v v is automatically replaced with &verbose& which leads to a bit more output!
+10h;10l;10g rolls 3 rolls, and selects highest lowest and sum respectively
+3f8 threshhold 8, so only 8 and higher counts, and WoD botch rules apply
+3e4 counts dice above 4
+&loop 3g 9& rolls 9 times the sum of 3 10 sided dice
+&loopsum 3g 9& also adds those together
+aaand probably some more

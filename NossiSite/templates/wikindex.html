@@ -17,9 +17,9 @@
         <tr>
             {% for m in entries %}
                 <td>
-                    <a href="{{ url_for("wikipage",page=m) }}"> {{ m }}</a> </td><td> |
+                    <a href="{{ url_for("wikipage", page=m) }}"> {{ m }}</a> </td><td> |
                 {% for x in tags[m] %}
-                    <a href="{{ url_for("tagsearch",tag=x) }}">{{ x }}</a> |
+                    <a href="{{ url_for("tagsearch", tag=x) }}">{{ x }}</a> |
                 {% endfor %} </td></tr>
                 <tr>
             {% endfor %}

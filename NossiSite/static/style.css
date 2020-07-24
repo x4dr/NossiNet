@@ -38,17 +38,47 @@ hr {
 
 .leet {
     background-color: black;
-    color: #00f700;
-    border: 1px solid #00f700;
+    color: #00d700;
+    border: 1px solid #00d700;
     margin: 10px;
 }
 
 .leeet {
-    background-color: #101a10;
+    background-color: #0a120a;
+    font-weight: bold;
+    color: #00e700;
+    border: 1px solid #00e700;
+    margin: 1px;
+}
+
+.leeeet {
+    background-color: #0a1012;
     font-weight: bold;
     color: #00f700;
     border: 1px solid #00f700;
     margin: 1px;
+}
+
+.tooltip {
+  position: relative;
+  border-bottom: 1px dotted black; /* If you want dots under the hoverable text */
+}
+
+/* Tooltip text */
+.tooltip .tooltiptext {
+  visibility: hidden;
+  background-color: black;
+  color: #4f4;
+  text-align: center;
+
+  /* Position the tooltip text - see examples below! */
+  position: absolute;
+  z-index: 1;
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.tooltip:hover .tooltiptext {
+  visibility: visible;
 }
 
 .dividedtable {

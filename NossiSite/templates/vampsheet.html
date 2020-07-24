@@ -43,7 +43,7 @@
 
             var namespace = '/character';
 
-            var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+            var socket = io.connect('https://' + document.domain + ':' + location.port + namespace);
 
 
             socket.on('connect', function () {
@@ -375,7 +375,6 @@ d>
     <div><pre>{{ character.Meta.Notes }}</pre></div>
     <br>
     <a href="{{ url_for('menu_oldsheets') }}">History</a>
-
 
 
 {% endblock %}

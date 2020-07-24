@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="none">
 <head>
     {% block title -%}
         <title> {%- if session.light -%}
@@ -16,12 +16,14 @@
 
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.slim.js"></script>
-    <script type="text/javascript" charset="utf-8"></script>
-    <script> $(document).ready(function() {
+    <script type="text/javascript" charset="utf-8">
+     $(document).ready(function() {
         let hideables=$(".hideable");
         hideables.click(function () {
             let $hideable = $(this);
-            let $content = $hideable.next();
+            let $content = $hideable.next("div");
+            if ($content.length==0)
+                $content = $hideable.parent().nextAll("div").first()
             $content.slideToggle(100, function () {
                 $hideable.text(function () {
                     return ($content.is(":visible") ? "-" : "+") + $hideable.text().slice(1);
@@ -62,18 +64,18 @@
 <body>
 <div id="page_complete" class=page>
     {% block pagetitle %}
-        <h1><a href={{ url_for('show_entries') }}>NOSFERATU NETWORK</a></h1>
+        <h1><a href={{ url_for('show_entries') }} >NOSFERATU NETWORK</a></h1>
     {% endblock %}
     {% block metanavcomplete %}
         <div class=metanav>
             {% if not session.logged_in %}
                 <a class=metanav href="{{ url_for('wiki_index') }}">wiki</a>
                 <a class=metanav href="{{ url_for('login') }}">log in</a>
-                <a class=metanav href="{{ url_for('register') }}">register</a>
+                <a class=metanav href="{{ url_for('register_user') }}">register</a>
             {% else %}
                 {%- block metanav -%}
                 {%- endblock -%}
-                <a class=metanav href="{{ url_for('wiki_index') }}">WIKI</a>
+                <a class=metanav href="{{ url_for('wiki_index') }}">WIKI</a>  &nbsp
                 <a class=metanav href="https://www.google.com/maps/d/viewer?mid=1TH6vryHyVxv_xFjFJDXgXQegZO4"
                    secret="{{ url_for('berlinmap') }}">MAP</a>  &nbsp
                 <a class=metanav href="{{ url_for('charsheet') }}">SHEET</a>  &nbsp

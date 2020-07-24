@@ -1,0 +1,12 @@
+/.venv/
+/venv/
+*.pyc
+/NN.db*
+*.log
+/.vscode/
+/Data/unordered_data
+/Data/weaponstuff_internal
+/NossiSite/static/graphdata.json
+/.idea/
+/.coverage
+/letsencryptbackup.tar.gz

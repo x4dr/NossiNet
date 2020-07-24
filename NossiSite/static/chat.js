@@ -1,6 +1,6 @@
 $(document).ready(function(){
-    let socket = io.connect('http://' + document.domain + ':' + location.port + '/chat');
-    let charsocket = io.connect('http://' +  document.domain + ':' +location.port + '/character');
+    let socket = io.connect('https://' + document.domain + ':' + location.port + '/chat');
+    let charsocket = io.connect('https://' +  document.domain + ':' +location.port + '/character');
     let bell = new Audio("/static/bell.wav");
     let ring = false;
     let ringoverwrite = false;

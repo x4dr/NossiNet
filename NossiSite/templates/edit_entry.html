@@ -11,9 +11,9 @@
     {% endblock %}
     {% block pagetitle %}
         {% if entry.title | length > 0 %}
-            <h1><a href={{ url_for('wiki_index') }}>{{ entry.title | capitalize }}</h1>
+            <h1><a href={{ url_for('wiki_index') }}>{{ entry.title | capitalize }}</a></h1>
         {% else %}
-            <h1><a href={{ url_for('wiki_index') }}>{{ wiki | capitalize }}</h1>
+            <h1><a href={{ url_for('wiki_index') }}>{{ wiki | capitalize }}</a></h1>
         {% endif %}
     {% endblock %}
 {% endif %}
@@ -22,7 +22,7 @@
         {% if mode=="blog" %}
             <form action="{{ url_for('editentries', x=entry.id) }}" method=post class=edit-entry>
         {% elif mode=="wiki" %}
-            <form action="{{ url_for('editentries', x=wiki) }}" method=post class=edit-entry>
+            <form action="{{ url_for('editwiki', x=wiki) }}" method=post class=edit-entry>
             <input type="hidden" name="wiki" value="{{ wiki }}">
         {% endif %}
     <input type="hidden" name="token" value="{{ token }}">
