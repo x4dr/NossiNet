@@ -144,7 +144,9 @@ def register(app=None):
                 elif command == "return":
                     return {"result": list(deck.pilereturn(par))}
                 elif command == "dedicate":
-                    return {"result": list(deck.dedicate(par))}
+                    if ":" not in par:
+                        par += ":"
+                    return {"result": list(deck.dedicate(*par.split(":", 1)))}
                 elif command == "remove":
                     return {"result": list(deck.remove(par))}
                 elif command == "free":
