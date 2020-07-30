@@ -6,6 +6,7 @@ from typing import List, Union
 import numexpr
 
 from NossiPack.Dice import Dice
+from NossiPack.RegexRouter import RegexRouter, DuplicateKeyException
 from NossiPack.krypta import DescriptiveError
 
 
@@ -133,8 +134,9 @@ class Node:
 
 class DiceParser:
     rolllogs: List[Dice]
+    regexrouter = RegexRouter()
 
-    def __init__(self, defines=None):
+    def __init__(self, defines=None, lastroll=None):
         self.dbg = ""
         self.triggers = {}
         self.rights = []
@@ -146,6 +148,7 @@ class DiceParser:
         }  # threshhold basic
         self.defines.update(defines or {})
         self.rolllogs = []  # if the last roll isnt interesting
+        self.lr = lastroll or []
 
     diceparse = re.compile(  # the regex matching the roll (?# ) for indentation
         r"(?# )\s*(?:(?P<selectors>(?:-?[0-9](?:\s*,\s*)?)*)\s*@)?"  # selector matching
@@ -172,6 +175,61 @@ class DiceParser:
         r"(?# )(?P<explosion>!+)? *$",  # explosion barrier lowered by 1 per !
     )
 
+    @staticmethod
+    @regexrouter.register(re.compile(r"^(?P<return>(-?\d+(\s*,\s*)?)+\s*@)"))
+    def extract_selectors(matches):
+        return matches
+
+    @staticmethod
+    @regexrouter.register(
+        re.compile(
+            r"^(.*@)?(?P<amount>-?(\d+))"
+            r"\s*(d\s*(?P<sides>[0-9]{1,5}))?"
+            r"\s*([rR]\s*(?P<rerolls>-?\s*\d+))?"
+            r"\s*(?P<sort>s)?"
+        )
+    )
+    def extract_core(matches):
+        r = {"amount": int(matches["amount"].replace(" ", ""))}
+        if matches.get("sides", ""):
+            r["sides"] = int(matches["sides"])
+        if matches.get("rerolls", ""):
+            r["rerolls"] = int(matches["rerolls"].replace(" ", ""))
+        if matches.get("sort", ""):
+            r["sort"] = True
+        return r
+
+    @staticmethod
+    @regexrouter.register(
+        re.compile(r"(^|\W)(.*@)?(?P<literal>(\[(\s*-?\s*\d+\s*,?)+\s*\])|-+)(?!\s*\d)")
+    )
+    def extract_literal(matches):
+        literal = matches["literal"].strip()
+        return {
+            "amount": literal
+            if literal and all(x == "-" for x in literal)
+            else [int(x) for x in literal[1:-1].split(",")]
+        }
+
+    @staticmethod
+    @regexrouter.register(re.compile(r"(?P<end>[g=~hl])!*$"))
+    def extract_base_functions(matches):
+        functions = {"g": "sum", "h": "max", "l": "min", "~": "none", "=": "id"}
+        return {"return": functions[matches["end"]]}
+
+    @staticmethod
+    @regexrouter.register(re.compile(r"(?P<one>[ef])\s*(?P<difficulty>(\d+))!*$"))
+    def extract_threshhold(matches):
+        r = {"return": "threshhold", "onebehaviour": "f" in matches["one"]}
+        if matches["difficulty"]:
+            r["difficulty"] = int(matches["difficulty"])
+        return r
+
+    @staticmethod
+    @regexrouter.register(re.compile(r"(?P<explosion>!+)$"))
+    def extract_explosion(matches):
+        return {"explosion": len(matches["explosion"])}
+
     usage = "[<Selectors>@]<dice>[d<sides>[R<rerolls>][s][ef<difficulty>ghl][!!!]]"
 
     @classmethod
@@ -181,64 +239,18 @@ class DiceParser:
         :param message: the actual dicecode, after all processing
         :return: dictionary of paramaters
         """
-
-        def setreturn(d, n):
-            ret = d.get("return", None)
-            if ret:
-                raise DescriptiveError(f"Interpretation Conflict: {ret} vs {n}")
-            d["return"] = n
-
-        dice = cls.diceparse.match(message)
-        dice = {k: v for (k, v) in dice.groupdict().items() if v} if dice else {}
-        info = {}
-        if dice.get("literal", None):
-            literal = dice["literal"].strip()
-            if literal and all(x == "-" for x in literal):
-                info["literal"] = literal
-            else:
-                info["literal"] = [int(x) for x in literal[1:-1].split(",")]
-        else:
-            if dice.get("amount", None) is not None:
-                info["amount"] = int(float(dice["amount"]))
-            else:
-                if not message.strip():
-                    return None
-                raise DiceCodeError(
-                    "invalid dicecode:'" + message + "'\n usage: " + DiceParser.usage
-                )
-        if dice.get("sides", None) is not None:
-            info["sides"] = int(dice["sides"])
-        if dice.get("rerolls", None) is not None:
-            info["rerolls"] = int(dice["rerolls"].replace(" ", ""))
-        if dice.get("sort", None) is not None:
-            info["sort"] = dice["sort"]
-        if dice.get("selectors", None):
-            setreturn(info, dice["selectors"] + "@")
-        else:
-            if "@" in message:
-                raise DescriptiveError("Missing Selectors!")
-        if dice.get("onebehaviour") == "f":
-            info["onebehaviour"] = 1
-            setreturn(info, "threshhold")
-        elif dice.get("onebehaviour") == "e":
-            info["onebehaviour"] = 0
-            setreturn(info, "threshhold")
-        # would need rewrite if more than 1 desired
-        if dice.get("difficulty", None) is not None:
-            info["difficulty"] = int(dice["difficulty"])
-        if dice.get("minimum", 0):
-            setreturn(info, "min")
-        if dice.get("maximum", 0):
-            setreturn(info, "max")
-        if dice.get("sum", 0):
-            setreturn(info, "sum")
-        if dice.get("id", 0):
-            setreturn(info, "id")
-        if dice.get("none", 0):
-            setreturn(info, "none")
-        info["explosion"] = len(dice.get("explosion", ""))
-
-        return info
+        try:
+            params = cls.regexrouter.run(message)
+        except DuplicateKeyException as e:
+            raise DescriptiveError(
+                f"Interpretation Conflict: {e.args[3]} vs {e.args[4]}"
+            )
+        # sanitychecks:
+        if "@" in message and "@" not in params.get("return", ""):
+            raise DiceCodeError(f"Invalid Selectors in: {message}")
+        if "amount" not in params:
+            raise DiceCodeError(cls.usage)
+        return params
 
     def do_roll(self, roll, depth=0) -> Dice:
         """Wrapper around make_roll that handles edgecases"""
@@ -261,13 +273,12 @@ class DiceParser:
         if not params:  # no dice
             return Dice.empty()
         fullparams = self.defines.copy()
-        fullparams["literal"] = ""
         fullparams.update(params)
-        fpl = fullparams.get("literal", "")
-        if fpl and all(x == "-" for x in fpl):
-            fullparams["literal"] = fullparams.get("__last_roll", [])[-len(fpl)]
+        a = fullparams.get("amount", "")
+        if a and isinstance(a, str) and a.count("-") == len(a):
+            fullparams["amount"] = self.lr[-len(a)].r
         d = Dice(fullparams)
-        self.defines["__last_roll"] = self.defines.get("__last_roll", []) + [d]
+        self.lr = self.lr + [d]
         return d
 
     def resolveroll(self, roll: Union[Node, str], depth) -> Node:

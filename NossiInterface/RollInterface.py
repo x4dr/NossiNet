@@ -29,8 +29,7 @@ def prepare(msg: str, author, persist):
         msg = nm
 
     persist[str(author)] = persist.get(str(author), {})
-    p = DiceParser(persist[str(author)].get("defines", {}))
-    p.defines["__last_roll"] = lr
+    p = DiceParser(persist[str(author)].get("defines", {}), lr)
     return msg, p, errreport
 
 

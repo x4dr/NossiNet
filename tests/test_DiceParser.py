@@ -16,10 +16,10 @@ class TestDiceParser(TestCase):
         self.assertEqual(info["sides"], 7)
 
         info = self.p.extract_diceparams("-")
-        self.assertEqual(info["literal"], "-")
+        self.assertEqual(info["amount"], "-")
 
         info = self.p.extract_diceparams("[3,2]l")
-        self.assertEqual(info["literal"], [3, 2])
+        self.assertEqual(info["amount"], [3, 2])
         self.assertEqual(info["return"], "min")
 
         info = self.p.extract_diceparams("113d04f9")

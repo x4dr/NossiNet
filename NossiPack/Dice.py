@@ -21,18 +21,16 @@ class Dice:
             self.min = info.get("additivebonus", 1)  # unlikely to get implemented
             self.returnfun = info.get("return", None)
             self.explosions = 0
-            self.literal = None
-            if info.get("literal", None):
-                self.r = info["literal"]
-                if isinstance(self.r, Dice):
-                    self.r = self.r.r
-                self.literal = info["literal"]
-                self.amount = len(self.r)
-            else:
-                try:
-                    self.amount = int(info["amount"])
-                except KeyError:
-                    raise DescriptiveError("No amount of dice!!")
+            self.literal = False
+            try:
+                if isinstance(info["amount"], int):
+                    self.amount = info["amount"]
+                else:
+                    self.r = info["amount"]
+                    self.literal = True
+                    self.amount = len(self.r)
+            except KeyError:
+                raise DescriptiveError("Missing dice amount!")
             try:
                 self.max = int(info["sides"]) + self.min - 1
             except KeyError:
@@ -42,7 +40,7 @@ class Dice:
             self.subone = info.get("onebehaviour", 0)
 
             self.explodeon = self.max + 1 - info.get("explosion", 0)
-            self.sort = info.get("sort")
+            self.sort = info.get("sort", False)
             self.rerolls = int(info.get("rerolls", 0))  # only used for fenrolls
             self.log = ""
             self.dbg = ""
