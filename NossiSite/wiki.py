@@ -24,6 +24,7 @@ from NossiSite.helpers import checktoken, checklogin
 
 wikipath = Path.home() / "wiki"
 wikistamp = [0.0]
+contextstack = []
 wikitags = {}
 chara_objects = {}
 page_cache = {}
@@ -113,7 +114,11 @@ def register(app=None):
         if not raw:
             body = bleach.clean(body)
             body = markdown.markdown(body, extensions=["tables", "toc", "nl2br"])
-            body = fill_infolets(body, page)
+            contextstack.append(page)
+            body = fill_infolets(body)
+
+            if contextstack.pop() != page or contextstack:
+                raise Exception("Codeerror: contextstack should be empty")
             return render_template(
                 "wikipage.html", title=title, tags=tags, body=body, wiki=page
             )
@@ -189,9 +194,8 @@ def register(app=None):
                 else "",
             )
             time2 = time.time()
-            done = fill_infolets(body.replace("&amp;", "&"), c + "_character")
             return (
-                done + f"<!---{time.time() - time2} {time2 - time1} {time1 - time0}--->"
+                body + f"<!---{time.time() - time2} {time2 - time1} {time1 - time0}--->"
             )
         except DescriptiveError as e:
             flash("Error with character sheet:\n" + e.args[0])
@@ -370,6 +374,10 @@ def register(app=None):
 
         return weapon
 
+    @app.template_filter("infolet")
+    def infolets(s):
+        return fill_infolets(str(s))
+
 
 def weaponadd(weapon_damage_array, b, ind=0):
     if len(weapon_damage_array) != len(b):
@@ -381,7 +389,7 @@ def weaponadd(weapon_damage_array, b, ind=0):
     return c
 
 
-def magicalweapontable(code: str, par=None, as_json=False, context=None):
+def magicalweapontable(code: str, par=None, as_json=False):
     calc = re.compile(r"<(?P<x>.*?)>")
     code = code.strip()
     for match in calc.findall(code):
@@ -389,19 +397,18 @@ def magicalweapontable(code: str, par=None, as_json=False, context=None):
     code = re.sub(r"^CODE\s+", "", code)
     step = code.split(":")
     if step[0].strip() == "WEAPON":
-        return weapontable(step[1], step[2], as_json, context)
+        return weapontable(step[1], step[2], as_json)
     raise DescriptiveError("Dont know what do do with \n" + code)
 
 
-def process_mods(mods: str, context: str = ""):
+def process_mods(mods: str):
     mods = html.unescape(mods)
+    context = get_fen_char("last")
     if context:
-        context = get_fen_char(context)
         for k, v in context.stat_definitions().items():
             mods = mods.replace(k, v)
     calc = re.compile(r"<(?P<x>.*?)>")
     mods = mods.strip()
-
     for match in calc.findall(mods):
         if not match:
             continue
@@ -422,18 +429,18 @@ def lowercase_access(d, k):
     return res
 
 
-def get_armor(a, mods="", context: str = "") -> Union[Armor, None]:
+def get_armor(a, mods="") -> Union[Armor, None]:
     armor: Armor = lowercase_access(armordata(), a)
     if armor is None:
         return None
-    mods = process_mods(mods, context)
+    mods = process_mods(mods)
     armor.apply_mods(mods)
     return armor
 
 
-def weapontable(w, mods="", as_json=False, context: str = ""):
+def weapontable(w, mods="", as_json=False):
     try:
-        mods = process_mods(mods, context)
+        mods = process_mods(mods)
         weapon = lowercase_access(weapondata(), w)
         for mod in mods.split(","):
             mod = mod.strip()
@@ -495,100 +502,110 @@ def weapontable(w, mods="", as_json=False, context: str = ""):
         )
 
 
-def fill_infolets(body, page: str):
-    def get_table(match: re.Match):
-        kind = match.group("kind").lower().strip()
-        if kind == "weapon":
-            return weapontable(match.group("ref"), match.group("mod"), context=page)
-        elif kind == "armor":
-            return str(get_armor(match.group("ref"), match.group("mod"), context=page))
+def get_table(match: re.Match):
+    kind = match.group("kind").lower().strip()
+    if kind == "weapon":
+        return weapontable(match.group("ref"), match.group("mod"))
+    elif kind == "armor":
+        return str(get_armor(match.group("ref"), match.group("mod")))
+    else:
+        return "Unknown infolet: " + kind
+
+
+def get_info(match):
+    def recursive_traverse(focus, path):
+        for seek in path[1:]:
+            focus = traverse_md(focus, seek)
+        return focus
+
+    a = match.group("ref").split(":")
+    article = None
+    if a[-1] == "-":
+        a = a[:-1]
+        hide_headline = 1
+    else:
+        hide_headline = 0
+    try:
+        if a[0].strip() == "-":
+            for context_attempt in [contextstack[-1], "items", "prices", "notes"]:
+                if not context_attempt:
+                    continue
+                try:
+                    article = recursive_traverse(wikiload(context_attempt,)[2], a)
+                    if article:
+                        contextstack.append(context_attempt)
+                        break
+                except:
+                    article = ""
         else:
-            return "Unknown infolet: " + kind
+            article = recursive_traverse(wikiload(a[0])[2], a)
+            contextstack.append(a[0])
+    except DescriptiveError as e:
+        flash(e.args[0])
+        article = ""
 
-    def getinfo(match):
-        def recursive_traverse(focus, path):
-            for seek in path[1:]:
-                focus = traverse_md(focus, seek)
-            return focus
-
-        a = match.group("ref").split(":")
-
-        if a[-1] == "-":
-            a = a[:-1]
-            hide_headline = 1
-        else:
-            hide_headline = 0
-        try:
-            if a[0].strip() == "-":
-                for context_attempt in [page, "items", "prices", "notes"]:
-                    try:
-                        article = recursive_traverse(wikiload(context_attempt,)[2], a)
-                        if article:
-                            break
-                    except:
-                        article = ""
-            else:
-                article = recursive_traverse(wikiload(a[0])[2], a)
-        except DescriptiveError as e:
-            flash(e.args[0])
-            article = ""
-
-        if not article:
-            if match.group("cmd") == "q":  # short version => no error
-                return None
-            article = ":".join(a) + "<br>[[not found]]"
-        elif hide_headline:
-            article = article[article.find("\n") * hide_headline :]
-        return markdown.markdown(article, extensions=["tables", "toc", "nl2br"])
-
-    def hide(func):
-        def hidden(text: Match):
-            header = (
-                text.group("name")
-                or text.group("ref").strip("[]-:").split(":")[-1].title()
-            )
-            res = func(text)
-            if res is None:  # means do not replace
-                return text.group("name")
-            try:
-                return (
-                    "<div class=hideable><b> " + header + "</b></div>\n"
-                    "<div>" + str(res) + "</div>"
-                )
-            except Exception as e:
-                return f"Error with {header}:\n  {e.args} !"
-
-        return hidden
-
-    def headerfix(text: Match):
-        if "\n" not in text.group("content"):
-            return text.group()
-        return (
-            f"<{text.group('h')} {text.group('extra')}> "
-            f"{text.group('content').splitlines()[0]}</{text.group('h')}>"
-            + "\n".join(text.group("content").splitlines()[1:])
+    if not article:
+        if match.group("cmd") == "q":  # short version => no error
+            return None
+        article = ":".join(a) + "<br>[[not found]]"
+    elif hide_headline:
+        article = article[article.find("\n") * hide_headline :]
+    else:
+        res = markdown.markdown(
+            fill_infolets(article), extensions=["tables", "toc", "nl2br"]
         )
+        contextstack.pop()
+        return res
 
-    hiddentable = re.compile(
-        r"\[(?P<name>.*?)\[\[(?P<kind>.+?):(?P<ref>.+?):(?P<mod>.*?)\]\]\]",
-        re.IGNORECASE,
-    )
-    table = re.compile(
-        r"\[\[(?P<kind>.+?):(?P<ref>.+?):(?P<mod>.*?)\]\]", re.IGNORECASE
-    )
-    hiddeninfos = re.compile(
-        r"\[(?P<name>.*?)\[\[(?P<cmd>specific|q):(?P<ref>.+?)\]\]\]", re.IGNORECASE
-    )
-    infos = re.compile(r"\[\[(?P<cmd>specific|q):(?P<ref>.+?)\]\]", re.IGNORECASE)
-    links = re.compile(r"\[(.+?)\]\((?P<ref>.+?)\)")
-    headers = re.compile(
-        r"<(?P<h>h[0-9]*)\b(?P<extra>[^>]*)>(?P<content>.*?)</(?P=h)\b[^>]*>",
-        re.IGNORECASE | re.DOTALL,
+
+def hide(func):
+    def hidden(text: Match):
+        header = (
+            text.group("name") or text.group("ref").strip("[]-:").split(":")[-1].title()
+        )
+        res = func(text)
+        if res is None:  # means do not replace
+            return text.group("name")
+        try:
+            return (
+                "<div class=hideable><b> " + header + "</b></div>\n"
+                "<div>" + str(res) + "</div>"
+            )
+        except Exception as e:
+            return f"Error with {header}:\n  {e.args} !"
+
+    return hidden
+
+
+def headerfix(text: Match):
+    if "\n" not in text.group("content"):
+        return text.group()
+    return (
+        f"<{text.group('h')} {text.group('extra')}> "
+        f"{text.group('content').splitlines()[0]}</{text.group('h')}>"
+        + "\n".join(text.group("content").splitlines()[1:])
     )
 
+
+hiddentable = re.compile(
+    r"\[(?P<name>.*?)\[\[(?P<kind>.+?):(?P<ref>[\S ]+):(?P<mod>.*?)\]\]\]",
+    re.IGNORECASE,
+)
+table = re.compile(r"\[\[(?P<kind>.+?):(?P<ref>[\S ]+):(?P<mod>.*?)\]\]", re.IGNORECASE)
+hiddeninfos = re.compile(
+    r"\[(?P<name>.*?)\[\[(?P<cmd>specific|q):(?P<ref>[\S ]+)\]\]\]", re.IGNORECASE
+)
+infos = re.compile(r"\[\[(?P<cmd>specific|q):(?P<ref>-:[\S ]+)\]\]", re.IGNORECASE)
+links = re.compile(r"\[(.+?)\]\((?P<ref>.+?)\)")
+headers = re.compile(
+    r"<(?P<h>h[0-9]*)\b(?P<extra>[^>]*)>(?P<content>.*?)</(?P=h)\b[^>]*>",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def fill_infolets(body):
     body = links.sub(r'<a href="/wiki/\g<2>"> \g<1> </a>', body)
-
-    body = infos.sub(getinfo, hiddeninfos.sub(hide(getinfo), body))
+    body = infos.sub(get_info, hiddeninfos.sub(hide(get_info), body))
     body = table.sub(get_table, hiddentable.sub(hide(get_table), body))
     return headers.sub(headerfix, body)
 
@@ -669,13 +686,20 @@ def updatewikitags():
     print("index took: " + str(1000 * (time.time() - wikistamp[0])) + " milliseconds")
 
 
-def get_fen_char(c: str) -> FenCharacter:
-    c = c + "_character" if not c.endswith("_character") else c
+def get_fen_char(c: str) -> Union[FenCharacter, None]:
     char = chara_objects.get(c, None)
-    if char is None:
-        char = FenCharacter.from_md(wikiload(c)[2])
-        chara_objects[c] = char
-    return char
+    if char:
+        return char
+    try:
+        c = c + "_character" if not c.endswith("_character") else c
+        char = chara_objects.get(c, None)
+        if char is None:
+            char = FenCharacter.from_md(wikiload(c)[2])
+            chara_objects[c] = char
+        chara_objects["last"] = char
+        return char
+    except DescriptiveError:
+        return None
 
 
 def load_user_char_stats(user):

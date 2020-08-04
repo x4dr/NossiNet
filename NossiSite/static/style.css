@@ -81,10 +81,6 @@ hr {
   visibility: visible;
 }
 
-.dividedtable {
-    border-collapse: collapse;
-    border: 1px solid #101a10;
-}
 #TopButton {
   display: none;
   position: fixed;

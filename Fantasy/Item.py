@@ -104,7 +104,7 @@ class Item:
 
 
 weights = {"g": 1, "kg": 10 ** 3, "t": 10 ** 6}
-currencies = {"k": 1, "s": 10 ** 2, "au": 10 ** 4}
+currencies = {"k": 1, "s": 10 ** 2, "a": 10 ** 4}
 
 
 def tryfloatdefault(inp, default=0):

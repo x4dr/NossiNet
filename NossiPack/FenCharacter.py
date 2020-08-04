@@ -328,7 +328,7 @@ class FenCharacter:
         for i in self.Inventory:
             inv_table.append(
                 [
-                    f"[{i.name}[[q:-:{i.name}:-]]]",
+                    f"[ {i.name} [[q:-: {i.name} :-]]]",
                     f"{i.count:g}",
                     i.singular_weight,
                     i.singular_price,
