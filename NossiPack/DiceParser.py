@@ -6,7 +6,11 @@ from typing import List, Union
 import numexpr
 
 from NossiPack.Dice import Dice
-from NossiPack.RegexRouter import RegexRouter, DuplicateKeyException
+from NossiPack.RegexRouter import (
+    RegexRouter,
+    DuplicateKeyException,
+    PartialMatchException,
+)
 from NossiPack.krypta import DescriptiveError
 
 
@@ -150,31 +154,6 @@ class DiceParser:
         self.rolllogs = []  # if the last roll isnt interesting
         self.lr = lastroll or []
 
-    diceparse = re.compile(  # the regex matching the roll (?# ) for indentation
-        r"(?# )\s*(?:(?P<selectors>(?:-?[0-9](?:\s*,\s*)?)*)\s*@)?"  # selector matching
-        r"(?# )("
-        r"(?#   )\s*(?P<literal>(\[(\s*-?\s*\d+\s*,?)+\s*\])|-+)"  # diceliteral matching
-        r"(?#   )|"  # or
-        r"(?#   )\s*(?P<amount>-?[0-9]{1,5})(\.[0-9]+)?\s*"  # amount of dice -99999 - 99999,
-        # any number after the decimal point will be ignored
-        r"(?# )) *"  # sides of dice 0-99999
-        r"(?# )(d *(?P<sides>[0-9]{1,5}))?"
-        r"(?# )(?:[rR]\s*(?P<rerolls>-?\s*\d+))?"  # reroll highest/lowest dice
-        r"(?#   )\s*(?P<sort>s)?"  # sorting rolls
-        r"(?# )\s*(?P<operation>"  # what is happening with the roll
-        r"(?#   )(?P<against>"  # rolling against a value for successes
-        r"(?#     )(?P<onebehaviour>[ef]) *"  # e is without subtracting 1,
-        # f is with subtracting a success on a 1
-        r"(?#     )(?P<difficulty>([1-9][0-9]{0,4})|([0-9]{0,4}[1-9])))|"
-        # difficulty 1-99999
-        r"(?#   )(?P<sum>g)|"  # summing rolls up
-        r"(?#   )(?P<id>=)|"  # counting the amount instead of doing anything with the dice
-        r"(?#   )(?P<none>~)|"  # returning nothing
-        r"(?#   )(?P<maximum>h)| *"  # taking the maximum die
-        r"(?#   )(?P<minimum>l))? *"  # taking the minimum die
-        r"(?# )(?P<explosion>!+)? *$",  # explosion barrier lowered by 1 per !
-    )
-
     @staticmethod
     @regexrouter.register(re.compile(r"^(?P<return>(-?\d+(\s*,\s*)?)+\s*@)"))
     def extract_selectors(matches):
@@ -183,7 +162,7 @@ class DiceParser:
     @staticmethod
     @regexrouter.register(
         re.compile(
-            r"^(.*@)?(?P<amount>-?(\d+))"
+            r"^([-\d,\s]*@)?(?P<amount>-?(\d+))"
             r"\s*(d\s*(?P<sides>[0-9]{1,5}))?"
             r"\s*([rR]\s*(?P<rerolls>-?\s*\d+))?"
             r"\s*(?P<sort>s)?"
@@ -201,7 +180,9 @@ class DiceParser:
 
     @staticmethod
     @regexrouter.register(
-        re.compile(r"(^|\W)(.*@)?(?P<literal>(\[(\s*-?\s*\d+\s*,?)+\s*\])|-+)(?!\s*\d)")
+        re.compile(
+            r"^([-\d,\s]*@)?(?P<literal>(\[(\s*-?\s*\d+\s*,?)+\s*\])|-+)(?!\s*\d)"
+        )
     )
     def extract_literal(matches):
         literal = matches["literal"].strip()
@@ -240,11 +221,13 @@ class DiceParser:
         :return: dictionary of paramaters
         """
         try:
-            params = cls.regexrouter.run(message)
+            params = cls.regexrouter.run(message, True)
         except DuplicateKeyException as e:
             raise DescriptiveError(
                 f"Interpretation Conflict: {e.args[3]} vs {e.args[4]}"
             )
+        except PartialMatchException:
+            raise DiceCodeError(message + " is not valid. \n" + cls.usage)
         # sanitychecks:
         if "@" in message and "@" not in params.get("return", ""):
             raise DiceCodeError(f"Invalid Selectors in: {message}")

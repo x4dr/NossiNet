@@ -6,6 +6,10 @@ class DuplicateKeyException(Exception):
     pass
 
 
+class PartialMatchException(Exception):
+    pass
+
+
 class RegexRouter:
     routes: Dict[re.Pattern, Callable]
 
@@ -19,12 +23,16 @@ class RegexRouter:
 
         return save
 
-    def run(self, decide):
+    def run(self, decide, require):
         result = {}
+        unused = [x.strip() for x in decide]
         for r in self.routes.keys():
             m = r.search(decide)
             if m is None:
                 continue
+            if require:
+                for x in range(*m.span()):
+                    unused[x] = ""
             for k, v in self.routes[r](
                 {k: v for (k, v) in m.groupdict().items() if v}
             ).items():
@@ -38,4 +46,7 @@ class RegexRouter:
                         v,
                     )
                 result[k] = v
+        if require:
+            if any(unused):
+                raise PartialMatchException("Not a Full match")
         return result
