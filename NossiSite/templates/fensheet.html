@@ -100,8 +100,8 @@
     {% endif %}
     <div class="flexwrapper">
         {%- for key,val in character.Character.items() -%}
-            <div class="category box">
-                <div class="heading box">{{ key }}</div>
+            <div class="infobox box">
+                <div class="heading box desc-text">{{ key }}</div>
                 <div class="desc-text">
                     {%- if val is string -%}
                         {{ val |infolet|safe }}

@@ -14,12 +14,17 @@
     align-items: flex-start;
 }
 
+.infobox {
+    flex: 1 1 0;
+    align-items: center;
+}
+
 .box{
     border: 1px solid #00a700;
 }
 
 .desc-text {
-    white-space: pre-wrap;
+    white-space: pre;
     margin:5px;
 }
 
