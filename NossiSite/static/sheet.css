@@ -9,7 +9,7 @@
 }
 
 .category {
-    flex: 1 1 200px;
+    flex: 1 1 100px;
     margin: 5px;
     align-items: flex-start;
 }
