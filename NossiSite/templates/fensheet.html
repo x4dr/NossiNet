@@ -1,5 +1,6 @@
 {%- extends "layout.html" -%}
 {% block head %}
+    <meta name="viewport" content="width=device-width">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="sheet.css") }}">
     <script>
         window.onload = () => {
@@ -85,11 +86,12 @@
     {%- for k,v in cat.items() -%}
         {%- if v is mapping -%}
             <div data-category="{{ name|urlencode }}" data-section="{{ k[:30]|urlencode }}" class="subheading span-2{% if owner %} editeable{% endif %}">
-                {{ k }}
+                {{- k -}}
             </div>
+            <div class="span-0"></div>
             {%- for vk,vv in v.items() -%}
-                <div>{{ infolet(vk | remove_leading_underscore) | safe }} </div>
-                <div class="tooltip" style="text-align: right">{%- if vv|remove_leading_underscore|int(-1) != -1
+                <div class="alternate">{{ infolet(vk | remove_leading_underscore) | safe }} </div>
+                <div class="alternate tooltip" style="text-align: right">{%- if vv|remove_leading_underscore|int(-1) != -1
                             and (userconf["fensheet_dot_max"] |int) >= vv|remove_leading_underscore|int -%}{{
                         dots(vv|remove_leading_underscore|int, userconf["fensheet_dot_max"]|int(5))
                         if userconf["fensheet_dots"]|int(0) else vv }}
@@ -112,7 +114,7 @@
                 url_for('fen_calc', inputstring=cost, costs='30,80,140,210,300',penalty='0,0,0,0,0',width=character.magicwidth(name))|urldecode
                 }}">{{ cost }}</a><span class="tooltiptext">{% for l in
                     character.cost_calc(cost,'30, 80, 140, 210, 300','', width=character.magicwidth(name))
-                %}{{ l }}<br/> {% endfor %}{% endif %}</span></div>
+                %}{{ l }}<br/> {% endfor %}{% endif %}</span></div><div class="span-0"></div>
 
         {%- if cat is mapping  -%}
             {{ sectionformat(cat,name) }}

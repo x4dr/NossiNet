@@ -251,7 +251,7 @@ class Config:
         res = db.execute(
             "SELECT value FROM configs WHERE option LIKE 'character_sheet';"
         ).fetchall()
-        res = [x for x in res if x.strip()]
+        res = [x[0] for x in res if x[0].strip()]
         if len(res) != len(set(res)):
             raise Exception("Violated Unique character sheet constraint!")
 
