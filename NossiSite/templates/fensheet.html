@@ -49,7 +49,7 @@
                         if userconf["fensheet_dots"]|int(0) else vv }}
                 {%- else -%}{{ vv }}{%- endif -%}{% if
                             k.lower() in character.doublepoint_sections+character.fullpoint_sections
-                        %} <span class="tooltiptext">&nbsp;+&nbsp;{{ character.get_xp_for(vk) }}&nbsp;FP</span>{%- endif -%}
+                        %} <span class="tooltip tooltiptext">+ {{ character.get_xp_for(vk) }} FP</span>{%- endif -%}
                 </div>
             {%- endfor -%}
         {% else %}
@@ -60,9 +60,9 @@
 {%- macro catformat(cat, name, cost) -%}
     <div class="gridwrapper category">
         <div class="tooltip heading span-2">{{ name }} {% if name!='Magie' %}<a href="{{url_for('fen_calc',
-            inputstring=cost) }} ">{{ cost }}</a><span class="tooltiptext"><br/>&nbsp;Options:<br/>{% for l in
+            inputstring=cost) }} ">{{ cost }}</a><span class="tooltiptext">Options<br/>{% for l in
                     character.cost_calc(cost)
-                %}&nbsp;&nbsp;{% for b in l %}{{ b }}{% if not loop.last %}, {% endif %}{% endfor %}&nbsp;&nbsp;<br/> {% endfor %}<br/> {% else %}<a href="{{
+                %}{% for b in l %}{{ b }}{% if not loop.last %},{% endif %}{% endfor %}<br/> {% endfor %}{% else %}<a href="{{
                 url_for('fen_calc', inputstring=cost, costs='30,80,140,210,300',penalty='0,0,0,0,0',width=character.magicwidth(name))|urldecode
                 }}">{{ cost }}</a><span class="tooltiptext">{% for l in
                     character.cost_calc(cost,'30, 80, 140, 210, 300','', width=character.magicwidth(name))
