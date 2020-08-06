@@ -116,9 +116,6 @@ def register(app=None):
             body = markdown.markdown(body, extensions=["tables", "toc", "nl2br"])
             contextstack.append(page)
             body = fill_infolets(body)
-
-            if contextstack.pop() != page or contextstack:
-                raise Exception("Codeerror: contextstack should be empty")
             return render_template(
                 "wikipage.html", title=title, tags=tags, body=body, wiki=page
             )
