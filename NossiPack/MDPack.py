@@ -42,11 +42,11 @@ def split_md(lines, level=0) -> Tuple[str, Dict[str, Tuple]]:
         line = lines.pop()
         if line.strip().startswith("#"):
 
-            current_level = len(line.strip()) - len(line.lstrip("# "))
+            current_level = len(line.strip()) - len(line.strip().lstrip("#"))
             if (
                 current_level and level >= current_level
             ):  # we are on equal level or above
-                lines.append(line.strip())  # push the current line back
+                lines.append(line)  # push the current line back
                 return text, children
             else:
                 children[line.lstrip("# ").strip()] = split_md(lines, current_level)
