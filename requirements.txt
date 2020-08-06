@@ -1,21 +1,21 @@
 blinker==1.4
 -e git://github.com/jarus/flask-testing/@ef069cab65bbbbd866a83b7b3b3aa4e57d970294#egg=flask-testing
 pyopenssl==19.1.0
-coverage==5.2
+coverage==5.2.1
 black==19.10b0
 pre-commit==2.6.0
 pydealer==1.4.0
 matplotlib==3.3.0
-pandas==1.0.5
+pandas==1.1.0
 dateparser==0.7.6
-discord.py==1.3.4
-scipy==1.5.1
+discord.py==1.4.0
+scipy==1.5.2
 bleach==3.1.5
 certifi==2020.6.20
 chardet==3.0.4
 Click==7.1.2
 dnspython==2.0.0
-eventlet==0.25.2
+eventlet==0.26.1
 Flask==1.1.2
 Flask-SocketIO==4.3.1
 github-webhook==1.0.4
@@ -32,7 +32,7 @@ python-engineio==3.13.1
 python-socketio==4.6.0
 requests==2.24.0
 six==1.15.0
-urllib3==1.25.9
+urllib3==1.25.10
 webencodings==0.5.1
 Werkzeug==1.0.1
 -e .
