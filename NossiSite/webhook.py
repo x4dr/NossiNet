@@ -32,6 +32,22 @@ def check_and_restart(commit):
     print("we should have never gotten here")
 
 
+def _get_travis_public_keys():
+    """
+    Returns the PEM encoded public
+    key from the Travis CI /config endpoint
+    """
+    sig = []
+    for travis_config_url in [
+        "https://api.travis-ci.com/config",
+        "https://api.travis-ci.org/config",
+    ]:
+        response = requests.get(travis_config_url, timeout=10.0)
+        response.raise_for_status()
+        sig.append(response.json()["config"]["notifications"]["webhook"]["public_key"])
+    return sig
+
+
 def register(app=None):
     if app is None:
         app = defaultapp
@@ -56,11 +72,6 @@ def register(app=None):
         logging.basicConfig(format="%(asctime)s %(levelname)s:%(message)s")
         logger.setLevel(logging.DEBUG)
 
-        travis_config_urls = [
-            "https://api.travis-ci.com/config",
-            "https://api.travis-ci.org/config",
-        ]
-
         def check_authorized(sig, pkey, payload):
             """
             Convert the PEM encoded public key to a format palatable for pyOpenSSL,
@@ -77,20 +88,6 @@ def register(app=None):
             """
             print("HEADERS:", request.headers)
             return base64.b64decode(request.headers["Signature"])
-
-        def _get_travis_public_keys():
-            """
-            Returns the PEM encoded public
-            key from the Travis CI /config endpoint
-            """
-            sig = []
-            for travis_config_url in travis_config_urls:
-                response = requests.get(travis_config_url, timeout=10.0)
-                response.raise_for_status()
-                sig.append(
-                    response.json()["config"]["notifications"]["webhook"]["public_key"]
-                )
-            return sig
 
         signature = _get_signature()
         body = request.get_data()
