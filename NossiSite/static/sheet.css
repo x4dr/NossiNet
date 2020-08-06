@@ -54,4 +54,82 @@
     grid-column: 1/3;
 }
 
-.tablebody:nth-child(even) {font-weight: bold; background-color: #081008}
+.editeable:hover {
+    box-shadow: inset 0 50px 100px 0 rgba(0, 200, 0, 0.25);
+    transition: 1s;
+}
+
+.failed {
+    box-shadow: inset 0 500px 100px 0 rgba(250, 0, 0, 0.9);
+    transition: 10s;
+    flex: 0 1 0;
+}
+
+#text {
+    overflow: scroll;
+}
+
+.message {
+    position: relative;
+    width: 99%;
+    height: 90%;
+    white-space: pre-wrap;
+    transition:0.1s;
+}
+
+.overlay {
+    visibility: hidden;
+    position: fixed;
+    height: 100%;
+    width: 100%;
+    z-index: 1;
+    background: rgba(50,60,55,0.8);
+    transition:0.5s;
+    top:0;
+    left:0;
+}
+
+.editfield {
+    width: 8%;
+    height:8%;
+    left: 46%;
+    top:46%;
+    z-index: -1;
+    position: absolute;
+    background: black;
+    box-shadow: inset 0 0 0 1px #00d700;
+    box-sizing: border-box;
+    visibility: hidden;
+    display:inline-block;
+    transition: 0.5s;
+
+}
+
+.activeedit {
+    width: 90%;
+    left: 5%;
+    top: 2%;
+    height: 80%;
+    z-index: 3;
+    transition: 0.5s;
+    visibility: visible;
+}
+.bottombutton{
+    bottom: 5px;
+    position: absolute;
+    right: 5px;
+}
+
+#closebutton{
+    bottom: 5px;
+    position: absolute;
+    left: 5px;
+}
+
+#editform{
+    width: 100%;
+    height:100%;
+}
+
+
+.tablebody:nth-child(even) {background-color: #081008}

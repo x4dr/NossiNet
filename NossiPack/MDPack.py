@@ -8,13 +8,16 @@ def traverse_md(md: str, seek: str) -> str:
     result = ""
     level = 0
     for line in md.split("\n"):
-        line = line.strip()
-        if line.startswith("#") or level:
-            current_level = len(line) - len(line.lstrip("#"))
+        if line.strip().startswith("#") or level:
+            current_level = len(line.strip()) - len(line.strip().lstrip("#"))
             if current_level and level >= current_level:
                 level = 0
                 continue
-            if level or line.lstrip("#").strip().upper() == seek.upper():
+            if (
+                level
+                or line.strip().lstrip("#").strip(": ").upper()
+                == seek.strip(": ").upper()
+            ):
                 if not level:
                     level = current_level
                 result += line + "\n"
@@ -36,16 +39,17 @@ def split_md(lines, level=0) -> Tuple[str, Dict[str, Tuple]]:
     text = ""
     children = {}
     while len(lines):
-        line = lines.pop().strip()
-        if line.startswith("#"):
-            current_level = len(line) - len(line.lstrip("#"))
+        line = lines.pop()
+        if line.strip().startswith("#"):
+
+            current_level = len(line.strip()) - len(line.lstrip("# "))
             if (
                 current_level and level >= current_level
             ):  # we are on equal level or above
-                lines.append(line)  # push the current line back
+                lines.append(line.strip())  # push the current line back
                 return text, children
             else:
-                children[line.lstrip("#").strip()] = split_md(lines, current_level)
+                children[line.lstrip("# ").strip()] = split_md(lines, current_level)
                 continue
         text += line + "\n"
     return text, children

@@ -1,5 +1,5 @@
 import re
-import urllib
+import urllib.parse
 
 import markdown
 from flask import request, session, redirect, url_for, render_template, flash

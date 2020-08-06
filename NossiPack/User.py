@@ -247,6 +247,15 @@ class Config:
         return {r[0]: r[1] for r in res} if res else {}
 
     @staticmethod
+    def check(db):
+        res = db.execute(
+            "SELECT value FROM configs WHERE option LIKE 'character_sheet';"
+        ).fetchall()
+        res = [x for x in res if x.strip()]
+        if len(res) != len(set(res)):
+            raise Exception("Violated Unique character sheet constraint!")
+
+    @staticmethod
     def save(user, option, value, db=None):
         db = db or User.connect_db()
         if Config.load(user, option, db) is not None:
@@ -261,6 +270,7 @@ class Config:
                 "VALUES (:user, :option, :value);",
                 dict(user=user, option=option, value=value),
             )
+        Config.check(db)
         db.commit()
 
     @staticmethod

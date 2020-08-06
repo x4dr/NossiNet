@@ -82,19 +82,19 @@ class TestViews(NossiTestCase):
     def test_split_md(self):
         self.assertEqual(
             (
-                "abctext\n",
+                " abctext\n",
                 {
                     "first heading": (
                         "",
                         {
                             "first subhead": (
-                                "first subhead text\nwith multiple lines\n",
-                                {"subsub": ("subsub text\n", {})},
+                                "                    first subhead text\n                    with multiple lines\n",
+                                {"subsub": ("                    subsub text\n", {})},
                             ),
-                            "second subhead": ("moretext\n", {}),
+                            "second subhead": ("                    moretext\n", {}),
                         },
                     ),
-                    "next heading": ("direct text\n", {}),
+                    "next heading": ("                    direct text\n", {}),
                 },
             ),
             split_md(

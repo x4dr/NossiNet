@@ -3,7 +3,12 @@
     font-family: "Lucida Grande", Monaco, monospace;
 }
 
+html {
+    min-height: 100%;
+}
+
 body {
+    min-height: 100%;
     background: black;
     overflow-x: auto;
 }

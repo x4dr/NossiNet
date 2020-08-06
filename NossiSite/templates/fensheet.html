@@ -1,6 +1,52 @@
 {%- extends "layout.html" -%}
 {% block head %}
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="sheet.css") }}">
+    <script>
+        window.onload = () => {
+            const textdiv = document.getElementById("text");
+            const editfield = document.getElementById("editfield");
+            const closebutton = document.getElementById("closebutton");
+            const overlay = document.getElementById("overlay");
+            const olddata = document.getElementById("original");
+            const get_edit_content =
+                (cat,sec, ref) => {
+                    return async () => {
+                        const response = await fetch("{{url_for("live_edit")}}", {
+                            method: 'POST',
+                            body: JSON.stringify({"context": "{{ context }}", "cat": cat, "sec": sec}),
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        editfield.classList.add("activeedit");
+                        const reply = await response.json(); //extract JSON from the http response
+                        if (reply["data"].length<1){
+                            ref.className= ref.className.replace("editeable","failed")
+                            ref.onclick=()=>{};
+                            editfield.className="editfield"
+                        }
+                        else {
+                            textdiv.innerHTML = reply["data"];
+                            olddata.value = reply["data"];
+                            textdiv.focus();
+                            overlay.style.visibility = "visible";
+                        }
+                    };
+                }
+            closebutton.onclick = () => {
+                editfield.className="editfield"
+                overlay.style.visibility="hidden";
+            }
+            const anchors = document.getElementsByClassName('editeable');
+            for (let i = 0; i < anchors.length; i++) {
+                let anchor = anchors[i];
+                anchor.onclick = get_edit_content(anchor.dataset.category, anchor.dataset.section, anchor)
+            }
+
+        }
+
+
+    </script>
 {% endblock %}
 {%- macro dots(val,max=5) -%}
     {%- if val is not defined -%}
@@ -23,7 +69,7 @@
         <tr class="tablebody">
             {% set outer_loop = loop %}
             {% for subline in line -%}
-                <td >{{ subline | infolet | safe }}</td>
+                <td >{{ infolet(subline) | safe }}</td>
             {% endfor -%}
         </tr>
         {% if loop.first %}
@@ -38,12 +84,12 @@
 {% macro sectionformat(cat,name) %}
     {%- for k,v in cat.items() -%}
         {%- if v is mapping -%}
-            <div class="subheading span-2">
+            <div data-category="{{ name|urlencode }}" data-section="{{ k[:30]|urlencode }}" class="subheading span-2{% if owner %} editeable{% endif %}">
                 {{ k }}
             </div>
             {%- for vk,vv in v.items() -%}
-                <div>{{ vk | remove_leading_underscore | infolet | safe }} </div>
-                <div id="{{ name|urlencode }}.{{ vk[:10]|urlencode }}" class="tooltip" style="text-align: right">{%- if vv|remove_leading_underscore|int(-1) != -1
+                <div>{{ infolet(vk | remove_leading_underscore) | safe }} </div>
+                <div class="tooltip" style="text-align: right">{%- if vv|remove_leading_underscore|int(-1) != -1
                             and (userconf["fensheet_dot_max"] |int) >= vv|remove_leading_underscore|int -%}{{
                         dots(vv|remove_leading_underscore|int, userconf["fensheet_dot_max"]|int(5))
                         if userconf["fensheet_dots"]|int(0) else vv }}
@@ -58,7 +104,7 @@
     {%- endfor %}
 {% endmacro %}
 {%- macro catformat(cat, name, cost) -%}
-    <div class="gridwrapper category">
+    <div data-category="{{ name|urlencode }}" class="gridwrapper category{% if owner %} editeable{% endif %}">
         <div class="tooltip heading span-2">{{ name }} {% if name!='Magie' %}<a href="{{url_for('fen_calc',
             inputstring=cost) }} ">{{ cost }}</a><span class="tooltiptext">Options<br/>{% for l in
                     character.cost_calc(cost)
@@ -76,13 +122,13 @@
     </div>
 {%- endmacro -%}
 {% macro treepart(tree, depth) %}
-    {{ tree[0] | infolet |safe}}
+    {{ infolet(tree[0]) |safe}}
     {% for table in tree[2] %}
         {{ tablematrix(table) }}
     {% endfor %}
     {% for child, content in tree[1].items() %}
         <h{{ depth }} class="hideable">o{{ child }}</h{{ depth }}>
-        <div>
+        <div class="{% if owner %}editeable{% endif %}" data-category="{{ child|urlencode }}">
             {{ treepart(content, depth + 1) }}
         </div>
     {% endfor %}
@@ -100,13 +146,13 @@
     {% endif %}
     <div class="flexwrapper">
         {%- for key,val in character.Character.items() -%}
-            <div class="infobox box">
+            <div class="infobox box{% if owner %} editeable{% endif %}" data-category="{{ key|urlencode }}">
                 <div class="heading box">{{ key }}</div>
                 <div class="desc-text">
                     {%- if val is string -%}
-                        {{ val |infolet|safe }}
+                        {{ infolet(val) |safe }}
                     {%- else -%}
-                        {{ val|join("\n")|infolet|safe }}
+                        {{ infolet(val|join("\n"))|safe }}
                     {%- endif -%}
                 </div>
             </div>
@@ -126,4 +172,15 @@
     <div><button id="TopButton" title="Upwards">Top</button></div>
     {% if owner %}<a href="{{ url_for("editwiki", x=owner) }}"><input type="button" class="leeet"  value="Edit"></a><br/>
     {% endif %}
+    <div id="editfield" class="editfield">
+        <form id="editform" action="{{ url_for("live_edit") }}" method="post">
+            <input name="context" type="hidden" value="{{ context }}">
+            <input name="original" id="original" type="hidden" value="">
+            <label for="text" class="overlay">Text to Change</label><br/><textarea class="message" name="new" id="text"></textarea>
+            <input type="button" class="leeeet " value="Close" id="closebutton">
+            <input type="submit" class="leeeet bottombutton" value="Overwrite">
+
+        </form>
+    </div>
+    <div class="overlay" id="overlay"></div>
 {%- endblock -%}

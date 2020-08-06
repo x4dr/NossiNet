@@ -2,6 +2,7 @@ import html
 import os
 import re
 import time
+import urllib.parse
 from pathlib import Path
 from re import Match
 from typing import Tuple, List, Union
@@ -24,7 +25,6 @@ from NossiSite.helpers import checktoken, checklogin
 
 wikipath = Path.home() / "wiki"
 wikistamp = [0.0]
-contextstack = []
 wikitags = {}
 chara_objects = {}
 page_cache = {}
@@ -75,8 +75,6 @@ def register(app=None):
         if not wikitags.keys():
             updatewikitags()
 
-    update()  # while registering and from then on every time the wikitags get cleared
-
     @app.route("/index/")
     def wiki_index():
         r = wikindex()
@@ -114,8 +112,7 @@ def register(app=None):
         if not raw:
             body = bleach.clean(body)
             body = markdown.markdown(body, extensions=["tables", "toc", "nl2br"])
-            contextstack.append(page)
-            body = fill_infolets(body)
+            body = fill_infolets(body, page)
             return render_template(
                 "wikipage.html", title=title, tags=tags, body=body, wiki=page
             )
@@ -175,17 +172,17 @@ def register(app=None):
     @app.route("/fensheet/<c>")
     def fensheet(c):
         try:
-            # char = get_fen_char(c) # get cached
+
             time0 = time.time()
-            title, tags, body = wikiload(c + "_character")
-            body = bleach.clean(body)
-            char = FenCharacter.from_md(body, flash=flash)
+            char = get_fen_char(c)  # get cached
             u = User(session.get("user", "")).configs()
             time1 = time.time()
             body = render_template(
                 "fensheet.html",
                 character=char,
+                context=c,
                 userconf=u,
+                infolet=infolet_filler(c + "_character"),
                 owner=u.get("character_sheet", None) + "_character"
                 if u.get("character_sheet", None) == c
                 else "",
@@ -274,7 +271,6 @@ def register(app=None):
             return {armor.name: armor.format(",", "").split(",")[1:]}
         return str(armor)
 
-    @app.route("/spells/character")
     @app.route("/weapon/<w>")
     @app.route("/weapon/<w>/<mods>")
     @app.route("/weapon/<w>/json")
@@ -304,12 +300,44 @@ def register(app=None):
             )
         return result
 
+    @app.route("/live_edit", methods=["POST"])
+    def live_edit():
+        x = request.get_json()
+        if x:
+            a = [urllib.parse.unquote(x["cat"])]
+            b = urllib.parse.unquote(x.get("sec", ""))
+            if b:
+                a += [b]
+
+            res: str = wikiload(x["context"] + "_character")[2]
+            for seek in a:
+                res = traverse_md(res, seek)
+            print(res)
+            return {"data": res}
+        x = request.form
+        context = x["context"]
+        if User(session.get("user")).config("character_sheet", "") == context:
+            old = x["original"].replace("\r\n", "\n")
+            new = x["new"].replace("\r\n", "\n")
+            title, tags, body = wikiload(context + "_character")
+            body = body.replace("\r\n", "\n")
+            if old not in body:
+                if old[:-1] in body:
+                    old = old[:-1]
+                else:
+                    raise Exception(old, "not in", body)
+            body = body.replace(old, new)
+            wikisave(context + "_character", session.get("user"), title, tags, body)
+        else:
+            flash("Unauthorized, so ... no.", "error")
+        return redirect(url_for("fensheet", c=context))
+
     @app.route("/q/<a>")
     @app.route("/q/<a>/raw")
     @app.route("/specific/<a>")
     @app.route("/specific/<a>/raw")
-    def specific(a: str):
-        parse_md = not request.url.endswith("/raw")
+    def specific(a: str, parse_md=None):
+        parse_md = not request.url.endswith("/raw") if parse_md is None else parse_md
         a = a.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
         a = a.split(":")
         if a[-1] == "-":
@@ -371,9 +399,11 @@ def register(app=None):
 
         return weapon
 
-    @app.template_filter("infolet")
-    def infolets(s):
-        return fill_infolets(str(s))
+    def infolet_filler(context):
+        def wrap(s):
+            return fill_infolets(str(s), context)
+
+        return wrap
 
 
 def weaponadd(weapon_damage_array, b, ind=0):
@@ -509,50 +539,56 @@ def get_table(match: re.Match):
         return "Unknown infolet: " + kind
 
 
-def get_info(match):
+def get_info(info_context):
     def recursive_traverse(focus, path):
         for seek in path[1:]:
-            focus = traverse_md(focus, seek)
+            focus = traverse_md(focus, seek.strip())
         return focus
 
-    a = match.group("ref").split(":")
-    article = None
-    if a[-1] == "-":
-        a = a[:-1]
-        hide_headline = 1
-    else:
-        hide_headline = 0
-    try:
-        if a[0].strip() == "-":
-            for context_attempt in [contextstack[-1], "items", "prices", "notes"]:
-                if not context_attempt:
-                    continue
-                try:
-                    article = recursive_traverse(wikiload(context_attempt,)[2], a)
-                    if article:
-                        contextstack.append(context_attempt)
-                        break
-                except:
-                    article = ""
+    def wrap(match):
+        a = match.group("ref").split(":")
+        article = None
+        if a[-1] == "-":
+            a = a[:-1]
+            hide_headline = 1
         else:
-            article = recursive_traverse(wikiload(a[0])[2], a)
-            contextstack.append(a[0])
-    except DescriptiveError as e:
-        flash(e.args[0])
-        article = ""
+            hide_headline = 0
+        try:
+            if a[0].strip() == "-":
+                for context_attempt in [info_context, "items", "prices", "notes"]:
+                    try:
+                        article = recursive_traverse(wikiload(context_attempt,)[2], a)
+                        if article:
+                            context = context_attempt
+                            break
+                    except Exception as e:
+                        print(
+                            f"searching {context_attempt} for {a} encountered Error {repr(e)}"
+                        )
+                        article = ""
+                else:
+                    context = info_context
+            else:
+                article = recursive_traverse(wikiload(a[0])[2], a)
+                context = a[0]
+        except DescriptiveError as e:
+            flash(e.args[0])
+            article = ""
+            context = info_context
 
-    if not article:
-        if match.group("cmd") == "q":  # short version => no error
-            return None
-        article = ":".join(a) + "<br>[[not found]]"
-    elif hide_headline:
-        article = article[article.find("\n") * hide_headline :]
-    else:
+        if not article:
+            if match.group("cmd") == "q":  # short version => no error
+                return None
+            article = ":".join(a) + "<br>[[not found]]"
+        elif hide_headline:
+            article = article[article.find("\n") * hide_headline :]
+
         res = markdown.markdown(
-            fill_infolets(article), extensions=["tables", "toc", "nl2br"]
+            fill_infolets(article, context), extensions=["tables", "toc", "nl2br"]
         )
-        contextstack.pop()
         return res
+
+    return wrap
 
 
 def hide(func):
@@ -600,9 +636,9 @@ headers = re.compile(
 )
 
 
-def fill_infolets(body):
+def fill_infolets(body, context):
     body = links.sub(r'<a href="/wiki/\g<2>"> \g<1> </a>', body)
-    body = infos.sub(get_info, hiddeninfos.sub(hide(get_info), body))
+    body = infos.sub(get_info(context), hiddeninfos.sub(hide(get_info(context)), body))
     body = table.sub(get_table, hiddentable.sub(hide(get_table), body))
     return headers.sub(headerfix, body)
 
@@ -655,6 +691,13 @@ def wikisave(page, author, title, tags, body):
         print((wikipath / "control").as_posix() + "control", ":", f.read())
     os.system(os.path.expanduser("~/") + "bin/wikiupdate & ")
     wikitags.clear()  # triggers reparsing after request
+    if page in chara_objects:
+        del chara_objects[page]
+    page += "_character"
+    if page in chara_objects:
+        del chara_objects[page]
+    if page in page_cache:
+        del page_cache[page]
 
 
 def wikindex() -> List[Path]:
@@ -691,7 +734,7 @@ def get_fen_char(c: str) -> Union[FenCharacter, None]:
         c = c + "_character" if not c.endswith("_character") else c
         char = chara_objects.get(c, None)
         if char is None:
-            char = FenCharacter.from_md(wikiload(c)[2])
+            char = FenCharacter.from_md(bleach.clean(wikiload(c)[2]))
             chara_objects[c] = char
         chara_objects["last"] = char
         return char
