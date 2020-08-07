@@ -6,7 +6,6 @@ import time
 from threading import Thread
 from urllib.parse import parse_qs
 
-import requests
 from OpenSSL.crypto import Error as SignatureError
 from OpenSSL.crypto import verify, load_publickey, FILETYPE_PEM, X509
 from flask import request, abort
@@ -32,22 +31,6 @@ def check_and_restart(commit):
     print("we should have never gotten here")
 
 
-def _get_travis_public_keys():
-    """
-    Returns the PEM encoded public
-    key from the Travis CI /config endpoint
-    """
-    sig = []
-    for travis_config_url in [
-        "https://api.travis-ci.com/config",
-        "https://api.travis-ci.org/config",
-    ]:
-        response = requests.get(travis_config_url, timeout=10.0)
-        response.raise_for_status()
-        sig.append(response.json()["config"]["notifications"]["webhook"]["public_key"])
-    return sig
-
-
 def register(app=None):
     if app is None:
         app = defaultapp
@@ -65,6 +48,25 @@ def register(app=None):
 
     @app.route("/travis", methods=["POST"])
     def travis():
+        import requests
+
+        def _get_travis_public_keys():
+            """
+            Returns the PEM encoded public
+            key from the Travis CI /config endpoint
+            """
+            sig = []
+            for travis_config_url in [
+                "https://api.travis-ci.com/config",
+                "https://api.travis-ci.org/config",
+            ]:
+                response = requests.get(travis_config_url, timeout=10.0)
+                response.raise_for_status()
+                sig.append(
+                    response.json()["config"]["notifications"]["webhook"]["public_key"]
+                )
+            return sig
+
         logger = logging.getLogger(__name__)
         fh = logging.FileHandler("nossilog.log", mode="a")
         fh.setLevel(logging.DEBUG)
