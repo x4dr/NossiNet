@@ -4,6 +4,22 @@ from Fantasy.Item import fendeconvert, value_category, fenconvert, Item
 from NossiSite.base import log
 
 
+def search_tables(md: str, seek: str) -> str:
+    found = False
+    curtable = ""
+    for line in md.splitlines(True):
+        if "|" in line:
+            curtable += line
+            if line.strip(" |").lower().startswith(seek.strip(" |").lower()):
+                found = True
+        else:
+            if found:
+                return curtable
+            else:
+                curtable = ""
+    return ""
+
+
 def traverse_md(md: str, seek: str) -> str:
     result = ""
     level = 0

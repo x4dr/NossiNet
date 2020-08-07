@@ -15,7 +15,7 @@ from markupsafe import Markup
 from Fantasy.Armor import Armor
 from Fantasy.Item import Item
 from NossiPack.FenCharacter import FenCharacter
-from NossiPack.MDPack import traverse_md, split_md, extract_tables
+from NossiPack.MDPack import traverse_md, split_md, extract_tables, search_tables
 from NossiPack.User import User
 from NossiPack.fengraph import weapondata, armordata
 from NossiPack.krypta import DescriptiveError, calculate
@@ -310,10 +310,12 @@ def register(app=None):
                 a += [b]
 
             res: str = wikiload(x["context"] + "_character")[2]
-            for seek in a:
+            for seek in a[:-1]:
                 res = traverse_md(res, seek)
-            print(res)
-            return {"data": res}
+            found = traverse_md(res, a[-1])
+            if not found:
+                found = search_tables(res, a[-1])
+            return {"data": found}
         x = request.form
         context = x["context"]
         if User(session.get("user")).config("character_sheet", "") == context:

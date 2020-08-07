@@ -20,7 +20,14 @@
                             }
                         });
                         editfield.classList.add("activeedit");
-                        const reply = await response.json(); //extract JSON from the http response
+                        let reply;
+                        try {
+                            reply = await response.json(); //extract JSON from the http response
+                        }
+                        catch (e) {
+                            reply = {"data":""}
+                            alert("Internal Server Error!")
+                        }
                         if (reply["data"].length<1){
                             ref.className= ref.className.replace("editeable","failed")
                             ref.onclick=()=>{};
