@@ -4,19 +4,26 @@ from Fantasy.Item import fendeconvert, value_category, fenconvert, Item
 from NossiSite.base import log
 
 
-def search_tables(md: str, seek: str) -> str:
+def search_tables(md: str, seek: str, surround=None) -> str:
     found = False
-    curtable = ""
+    curtable = []
+    end = -1
     for line in md.splitlines(True):
         if "|" in line:
-            curtable += line
+            curtable.append(line)
             if line.strip(" |").lower().startswith(seek.strip(" |").lower()):
+                if surround is not None:
+                    end = surround * 2 + 1
+                    curtable = curtable[-surround - 1 :]
                 found = True
+            if end != -1 and len(curtable) >= end:
+                return "".join(curtable[:end])
         else:
             if found:
-                return curtable
+                "".join(curtable)
             else:
-                curtable = ""
+                curtable = []
+
     return ""
 
 

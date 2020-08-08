@@ -96,6 +96,7 @@
     height: 90%;
     white-space: pre-wrap;
     transition:0.1s;
+    font-size: larger;
 }
 
 .overlay {
@@ -112,18 +113,17 @@
 
 .editfield {
     width: 8%;
-    height:8%;
+    height: 8%;
     left: 46%;
-    top:46%;
+    top: 46%;
     z-index: -1;
-    position: absolute;
+    position: fixed;
     background: black;
     box-shadow: inset 0 0 0 1px #00d700;
     box-sizing: border-box;
     visibility: hidden;
-    display:inline-block;
+    display: inline-block;
     transition: 0.5s;
-
 }
 
 .activeedit {

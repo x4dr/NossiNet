@@ -253,6 +253,7 @@ class Config:
         ).fetchall()
         res = [x[0] for x in res if x[0].strip()]
         if len(res) != len(set(res)):
+            db.rollback()
             raise Exception("Violated Unique character sheet constraint!")
 
     @staticmethod

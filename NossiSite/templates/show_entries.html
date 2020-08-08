@@ -2,22 +2,7 @@
 {% block head %}
     {% for headstate in heads %}
         {{ headstate|safe }}
-    {% else %}
     {% endfor %}
-    <script>
-        $(document).ready(function() {
-            $(".header").click(function () {
-                let $header = $(this);
-                let $content = $header.next();
-                $content.slideToggle(800, function () {
-                    $header.text(function () {
-                        return ($content.is(":visible") ? "-" : "+") + $header.text().slice(1);
-                    });
-                });
-
-            });
-        })
-    </script>
 {% endblock %}
 {%- block metanav -%}
     <form action="{{ url_for('update_filter') }}" method=post class=add-entry style="display:inline">
@@ -52,9 +37,10 @@
     {% endif %}
     <ul class=entries>
         {% for entry in entries %}
-            <li><h2 class="header">+"{{ entry.title }}" by <a
+            {% set s = srs() %}
+            <li><h2 class="header hider" data-for{{ s }}>"{{ entry.title }}" by <a
                     href="{{ url_for('show_user_profile', username=entry.author) }}">{{ entry.author }}</a>
-            </h2><div class="entry tooltip" style="word-wrap:break-word;display:none;border:1px solid">{{ entry.text|safe }}
+            </h2><div id="{{ s }}" class="hiding entry tooltip" style="word-wrap:break-word;display:none;border:1px solid">{{ entry.text|safe }}
                 <br> {#dangerous entry.text has to be cleaned before being sent here#}
                 {%- if session.logged_in -%}
                     {% if edit is defined %}

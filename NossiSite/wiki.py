@@ -21,7 +21,7 @@ from NossiPack.fengraph import weapondata, armordata
 from NossiPack.krypta import DescriptiveError, calculate
 from NossiSite.AfterResponse import AfterResponse
 from NossiSite.base import app as defaultapp, log
-from NossiSite.helpers import checktoken, checklogin
+from NossiSite.helpers import checktoken, checklogin, srs
 
 wikipath = Path.home() / "wiki"
 wikistamp = [0.0]
@@ -304,17 +304,24 @@ def register(app=None):
     def live_edit():
         x = request.get_json()
         if x:
-            a = [urllib.parse.unquote(x["cat"])]
-            b = urllib.parse.unquote(x.get("sec", ""))
-            if b:
-                a += [b]
+            a = [
+                e
+                for e in [
+                    urllib.parse.unquote(x["cat"]),
+                    urllib.parse.unquote(x.get("sec", "")),
+                    urllib.parse.unquote(x.get("it", "")),
+                ]
+                if e
+            ]
+
+            print(a)
 
             res: str = wikiload(x["context"] + "_character")[2]
             for seek in a[:-1]:
                 res = traverse_md(res, seek)
             found = traverse_md(res, a[-1])
             if not found:
-                found = search_tables(res, a[-1])
+                found = search_tables(res, a[-1], 1)
             return {"data": found}
         x = request.form
         context = x["context"]
@@ -328,7 +335,7 @@ def register(app=None):
                     old = old[:-1]
                 else:
                     raise Exception(old, "not in", body)
-            body = body.replace(old, new)
+            body = body.replace(old, new, 1)
             wikisave(context + "_character", session.get("user"), title, tags, body)
         else:
             flash("Unauthorized, so ... no.", "error")
@@ -602,9 +609,10 @@ def hide(func):
         if res is None:  # means do not replace
             return text.group("name")
         try:
+            h = srs()
             return (
-                "<div class=hideable><b> " + header + "</b></div>\n"
-                "<div>" + str(res) + "</div>"
+                f'<div class=hider data-for="{h}"><b>{header}</b></div>\n'
+                f'<div id="{h}" class="hiding">{str(res)}</div>'
             )
         except Exception as e:
             return f"Error with {header}:\n  {e.args} !"

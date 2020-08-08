@@ -3,31 +3,37 @@
     <meta name="viewport" content="width=device-width">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="sheet.css") }}">
     <script>
-        window.onload = () => {
+        window.addEventListener("load", () => {
             const textdiv = document.getElementById("text");
             const editfield = document.getElementById("editfield");
             const closebutton = document.getElementById("closebutton");
             const overlay = document.getElementById("overlay");
             const olddata = document.getElementById("original");
+            let lock = false;
             const get_edit_content =
-                (cat,sec, ref) => {
+                (cat,sec,it, ref) => {
                     return async () => {
+                        if (lock) return;
+                        lock = true
                         const response = await fetch("{{url_for("live_edit")}}", {
                             method: 'POST',
-                            body: JSON.stringify({"context": "{{ context }}", "cat": cat, "sec": sec}),
+                            body: JSON.stringify({"context": "{{ context }}", "cat": cat, "sec": sec, "it":it}),
                             headers: {
                                 'Content-Type': 'application/json'
                             }
                         });
-                        editfield.classList.add("activeedit");
+
                         let reply;
                         try {
+                            editfield.className="editfield"
                             reply = await response.json(); //extract JSON from the http response
+                            editfield.classList.add("activeedit");
                         }
                         catch (e) {
                             reply = {"data":""}
                             alert("Internal Server Error!")
                         }
+                        lock = false;
                         if (reply["data"].length<1){
                             ref.className= ref.className.replace("editeable","failed")
                             ref.onclick=()=>{};
@@ -37,22 +43,29 @@
                             textdiv.innerHTML = reply["data"];
                             olddata.value = reply["data"];
                             textdiv.focus();
+                            textdiv.click();
+                            document.body.style.overflow="hidden"
                             overlay.style.visibility = "visible";
                         }
                     };
                 }
+
             closebutton.onclick = () => {
+                document.body.style.overflow="auto"
                 editfield.className="editfield"
+                textdiv.innerHTML = ""
+                olddata.value = ""
                 overlay.style.visibility="hidden";
             }
+
             const anchors = document.getElementsByClassName('editeable');
             for (let i = 0; i < anchors.length; i++) {
                 let anchor = anchors[i];
-                anchor.onclick = get_edit_content(anchor.dataset.category, anchor.dataset.section, anchor)
+                anchor.onclick = get_edit_content(anchor.dataset.category, anchor.dataset.section, anchor.dataset.item, anchor)
             }
 
         }
-
+        );
 
     </script>
 {% endblock %}
@@ -68,16 +81,21 @@
         ○
     {%- endfor -%}
 {%- endmacro -%}
-{% macro tablematrix(table) %}
+{%- macro tablematrix(table, cat) -%}
     <table>
         {% for line in table -%}
             {% if loop.first %}
                 <thead class="heading">
             {% endif %}
-        <tr class="tablebody">
+        <tr>
             {% set outer_loop = loop %}
             {% for subline in line -%}
-                <td >{{ infolet(subline) | safe }}</td>
+                <td {% if loop.first -%}
+                        class="tablebody editeable" data-category="{{ cat|urlencode }}"
+                        data-section="{{ infolet(subline)[:30]|urlencode }}"
+                    {%- endif -%}
+                >{{ infolet(subline) | safe }}</td>
+
             {% endfor -%}
         </tr>
         {% if loop.first %}
@@ -97,7 +115,10 @@
             </div>
             <div class="span-0"></div>
             {%- for vk,vv in v.items() -%}
-                <div class="alternate">{{ infolet(vk | remove_leading_underscore) | safe }} </div>
+                <div data-category="{{ name|urlencode }}" data-section="{{ k[:30]|urlencode -}}
+                        " data-item="{{vk}}" class="alternate
+                        {%- if owner %} editeable{% endif -%}"
+                >{{ infolet(vk | remove_leading_underscore) | safe }}</div>
                 <div class="alternate tooltip" style="text-align: right">{%- if vv|remove_leading_underscore|int(-1) != -1
                             and (userconf["fensheet_dot_max"] |int) >= vv|remove_leading_underscore|int -%}{{
                         dots(vv|remove_leading_underscore|int, userconf["fensheet_dot_max"]|int(5))
@@ -113,8 +134,8 @@
     {%- endfor %}
 {% endmacro %}
 {%- macro catformat(cat, name, cost) -%}
-    <div data-category="{{ name|urlencode }}" class="gridwrapper category{% if owner %} editeable{% endif %}">
-        <div class="tooltip heading span-2">{{ name }} {% if name!='Magie' %}<a href="{{url_for('fen_calc',
+    <div class="gridwrapper category">
+        <div data-category="{{ name|urlencode }}"  class="tooltip heading span-2{% if owner %} editeable{% endif %}"">{{ name }} {% if name!='Magie' %}<a href="{{url_for('fen_calc',
             inputstring=cost) }} ">{{ cost }}</a><span class="tooltiptext">Options<br/>{% for l in
                     character.cost_calc(cost)
                 %}{% for b in l %}{{ b }}{% if not loop.last %},{% endif %}{% endfor %}<br/> {% endfor %}{% else %}<a href="{{
@@ -130,15 +151,18 @@
         {% endif %}
     </div>
 {%- endmacro -%}
-{% macro treepart(tree, depth) %}
+{% macro treepart(tree, depth, name) %}
     {{ infolet(tree[0]) |safe}}
-    {% for table in tree[2] %}
-        {{ tablematrix(table) }}
+
+    {% for table in tree[2] -%}
+        {{- tablematrix(table, name) }}
     {% endfor %}
     {% for child, content in tree[1].items() %}
-        <h{{ depth }} class="hideable">o{{ child }}</h{{ depth }}>
-        <div class="{% if owner %}editeable{% endif %}" data-category="{{ child|urlencode }}">
-            {{ treepart(content, depth + 1) }}
+        {% set s=srs() %}
+        <h{{ depth }} class="hider" data-for="{{ s }}">{{ child }}</h{{ depth }}>
+        <div id="{{ s }}" class="hiding {% if owner %}editeable{% endif %}" data-category="{{ name|urlencode }}"
+             data-section="{{ child|urlencode }}">
+            {{ treepart(content, depth + 1, child) }}
         </div>
     {% endfor %}
 {% endmacro %}
@@ -173,9 +197,12 @@
         {% endfor -%}
     </div>
     {%- for key,data in character.Meta.items() -%}
-        <h2 class="hideable">o{{ key }}</h2>
-        <div>
-            {{ treepart(data,3) }}
+        {% set r = srs() %}
+
+        <h2 class="hider" data-for="{{ r }}">{{ key }}<span class="editeable" data-category="{{ key }}">&nbsp</span></h2>
+
+        <div id="{{ r }}" class="hiding">
+            {{ treepart(data,3, key) }}
         </div>
     {%- endfor -%}
     <div><button id="TopButton" title="Upwards">Top</button></div>
