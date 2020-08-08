@@ -19,7 +19,7 @@ class TestInterface(TestCase):
         message = Mock()
         message.author.name = "a"
         message.author.discriminator = "1"
-        message.author.send = print()
+        message.author.send = print
         cls.message = message
         cls.persist = {"a#1": {"defines": {"a": "c b", "b": "4"}}}
 
@@ -39,7 +39,7 @@ class TestInterface(TestCase):
         test = asyncio.run(replacedefines(msg, self.message, self.persist))
         self.assertEqual(test, "c 4 & a & c 4")
 
-    @mock.patch.object(Data, "DATABASE", "loadchara.db")
+    @mock.patch.object(Data, "DATABASE", "loadchara.db" "")
     @mock.patch.object(
         wiki,
         "wikiload",

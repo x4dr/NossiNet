@@ -1,4 +1,6 @@
+import random
 import re
+import string
 import urllib.parse
 
 import markdown
@@ -84,6 +86,18 @@ def register(app=None):
         if e:
             print("404:", request.url)
         return render_template("404.html"), 404
+
+    @app.context_processor
+    def inject_srs():
+        return dict(srs=srs)
+
+
+def srs(w=8):
+    """
+    :param w: width of result
+    :return: short random string
+    """
+    return "".join(random.choices(string.ascii_lowercase + string.digits, k=w))
 
 
 def generate_token():

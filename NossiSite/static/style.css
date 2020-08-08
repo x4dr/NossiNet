@@ -86,6 +86,26 @@ hr {
     visibility: visible;
 }
 
+.hider:before {
+    content: "+";
+}
+
+.hider.hider-expanded:before {
+    content: "-";
+}
+
+
+.hiding{
+    height: 0 !important;
+    overflow: hidden;
+    transition: 0.2s;
+}
+
+.nothiding{
+    overflow: auto;
+    transition: 0.2s;
+}
+
 #TopButton {
     display: none;
     position: fixed;

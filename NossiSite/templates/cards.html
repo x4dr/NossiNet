@@ -41,16 +41,16 @@
             {{ card }} {%- if not loop.last %}, {% endif %}
         {%- endfor -%}</p>
     {% endfor %}
-    <h5 class="hideable"> Discard Pile</h5>
-    <div>
+    <h5 class="hider" data-for="discardpile">Discard Pile</h5>
+    <div id="discardpile" class="hiding">
         {% for color in deck["pile"].keys()| sort -%}
             <p>{{ color }}: {% for card in deck["pile"][color] -%}
                 {{ card }} {%- if not loop.last %}, {% endif %}
             {%- endfor -%}</p>
         {% endfor %}
     </div>
-    <h5 class="hideable"> Removed</h5>
-    <div>
+    <h5 class="hider" data-for="removedpile">Removed</h5>
+    <div id="removedpile" class="hiding">
         {% for color in deck["removed"].keys() | sort%}
             <p>{{ color }}: {% for card in deck["deck"][color] -%}
                 {{ card }} {%- if not loop.last %}, {% endif %}

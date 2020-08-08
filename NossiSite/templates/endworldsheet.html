@@ -133,13 +133,15 @@
     </div>
     {% if Meta in character %}
         {%- for key,data in character.Meta.items() -%}
-            <h2 class="hideable">*{{ key }}</h2>
-            <div>
+            {%set s = srs() %}
+            <h2 class="hider" data-for="{{ s }}">{{ key }}</h2>
+            <div id="{{ s }}" class="hiding">
                 {%- for section,sectiondata in data.items() -%}
+                    {%set n = srs() %}
                     {%- if section|trim|length -%}
-                        <h3 class="hideable">*{{ section|markdown}}</h3>
+                        <h3 class="hider" data-for="{{ n }}">{{ section|markdown}}</h3>
                     {%- endif -%}
-                    <div>
+                    <div id="{{ s }}" class="hiding">
                         {%- for line in sectiondata|markdown -%}
                             {{ line }}
                         {%- endfor %}
