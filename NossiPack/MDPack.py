@@ -17,14 +17,15 @@ def search_tables(md: str, seek: str, surround=None) -> str:
                     curtable = curtable[-surround - 1 :]
                 found = True
             if end != -1 and len(curtable) >= end:
-                return "".join(curtable[:end])
+                curtable = curtable[:end]
+                break
         else:
             if found:
-                "".join(curtable)
+                break
             else:
                 curtable = []
 
-    return ""
+    return "".join(curtable)
 
 
 def traverse_md(md: str, seek: str) -> str:

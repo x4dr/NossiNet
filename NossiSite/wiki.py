@@ -84,6 +84,15 @@ def register(app=None):
             tags=gettags(),
         )
 
+    @app.route("/bytag/<tag>")
+    def tagsearch(tag):
+        r = wikindex()
+        t = gettags()
+        r = [x for x in r if tag in t[x.stem]]
+        return render_template(
+            "wikindex.html", entries=[x.with_suffix("").as_posix() for x in r], tags=t,
+        )
+
     @app.route("/wiki", methods=["GET", "POST"])
     @app.route("/wiki/", methods=["GET", "POST"])
     @app.route("/wiki/<path:page>", methods=["GET", "POST"])
@@ -172,9 +181,10 @@ def register(app=None):
     @app.route("/fensheet/<c>")
     def fensheet(c):
         try:
-
             time0 = time.time()
             char = get_fen_char(c)  # get cached
+            if char is None:
+                return redirect(url_for("tagsearch", tag="character"))
             u = User(session.get("user", "")).configs()
             time1 = time.time()
             body = render_template(
@@ -182,8 +192,8 @@ def register(app=None):
                 character=char,
                 context=c,
                 userconf=u,
-                infolet=infolet_filler(c + "_character"),
-                owner=u.get("character_sheet", None) + "_character"
+                infolet=infolet_filler(c),
+                owner=u.get("character_sheet", None)
                 if u.get("character_sheet", None) == c
                 else "",
             )
@@ -316,7 +326,7 @@ def register(app=None):
 
             print(a)
 
-            res: str = wikiload(x["context"] + "_character")[2]
+            res: str = wikiload(x["context"])[2]
             for seek in a[:-1]:
                 res = traverse_md(res, seek)
             found = traverse_md(res, a[-1])
@@ -328,7 +338,7 @@ def register(app=None):
         if User(session.get("user")).config("character_sheet", "") == context:
             old = x["original"].replace("\r\n", "\n")
             new = x["new"].replace("\r\n", "\n")
-            title, tags, body = wikiload(context + "_character")
+            title, tags, body = wikiload(context)
             body = body.replace("\r\n", "\n")
             if old not in body:
                 if old[:-1] in body:
@@ -336,7 +346,7 @@ def register(app=None):
                 else:
                     raise Exception(old, "not in", body)
             body = body.replace(old, new, 1)
-            wikisave(context + "_character", session.get("user"), title, tags, body)
+            wikisave(context, session.get("user"), title, tags, body)
         else:
             flash("Unauthorized, so ... no.", "error")
         return redirect(url_for("fensheet", c=context))
@@ -367,15 +377,6 @@ def register(app=None):
                 markdown.markdown(article, extensions=["tables", "toc", "nl2br"])
             )
         return article
-
-    @app.route("/bytag/<tag>")
-    def tagsearch(tag):
-        r = wikindex()
-        heads = []
-        a = gettags()
-        tags = {t: v for t, v in a.items() if tag in v}
-        entries = [e for e in r if e in tags.keys()]
-        return render_template("wikindex.html", entries=entries, tags=tags, heads=heads)
 
     @app.route("/magicalweapon/<w>")
     @app.route("/magicalweapon/<w>/<par>")
@@ -703,9 +704,6 @@ def wikisave(page, author, title, tags, body):
     wikitags.clear()  # triggers reparsing after request
     if page in chara_objects:
         del chara_objects[page]
-    page += "_character"
-    if page in chara_objects:
-        del chara_objects[page]
     if page in page_cache:
         del page_cache[page]
 
@@ -741,11 +739,11 @@ def get_fen_char(c: str) -> Union[FenCharacter, None]:
     if char:
         return char
     try:
-        c = c + "_character" if not c.endswith("_character") else c
-        char = chara_objects.get(c, None)
-        if char is None:
-            char = FenCharacter.from_md(bleach.clean(wikiload(c)[2]))
-            chara_objects[c] = char
+        page = wikiload(c)
+        char = FenCharacter.from_md(bleach.clean(page[2]))
+        if "character" not in page[1]:
+            char.errors.append("character is not tagged as character")
+        chara_objects[c] = char
         chara_objects["last"] = char
         return char
     except DescriptiveError:
@@ -796,8 +794,8 @@ def refresh_cache(page=""):
         }
     )
 
-    for key in wikitags.keys():
-        if key.endswith("_character"):
+    for key, tags in wikitags.items():
+        if "character" in tags:
             get_fen_char(key)
 
 

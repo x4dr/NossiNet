@@ -27,10 +27,10 @@ class TestViews(NossiTestCase):
 
     def test_ewparsing(self):
         wikisave(
-            "unittest_character",
+            "unittest",
             "",
             "",
-            "",
+            "character",
             "#Layer1\n##layer2\n###layer3\ntext\n###layer 3 again\n"
             "more text\n##some more layer 2\n a|b\n--|--\nc|d\n but what about THIS\n###finalthird\nfinal text\n",
         )

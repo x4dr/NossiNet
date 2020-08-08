@@ -44,6 +44,7 @@ class FenCharacter:
         self.Storage = ""
         self.Timestamp = time.strftime("%Y/%m/%d-%H:%M:%S")
         self._xp_cache = {}
+        self.errors = []
 
     def stat_definitions(self):
         """
@@ -250,8 +251,7 @@ class FenCharacter:
         if not flash:
 
             def flash(err):
-                if err:
-                    pass
+                self.errors.append(err)
 
         sheetparts = extract_tables(split_md(body), flash)
 
