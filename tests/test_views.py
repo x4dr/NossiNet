@@ -72,11 +72,11 @@ class TestViews(NossiTestCase):
             )
             rv = c.get(url_for("show_entries"))
             self.assertIn(b"xxyxz", rv.data)
-            self.assertNotIn(b"nonpublic", rv.data)
+            self.assertNotIn(b"testpost", rv.data)
             c.post(url_for("update_filter"), data={"tags": "testtag", "token": token})
             self.assertEqual(flask.session.get("tags", None), "testtag")
             rv = c.get(url_for("show_entries"))
-            self.assertIn(b"nonpublic", rv.data)
+            self.assertIn(b"testpost", rv.data)
             self.assertNotIn(b"xxyxz", rv.data)
 
     @mock.patch.object(Data, "DATABASE", "register.db")
