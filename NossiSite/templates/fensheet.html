@@ -4,11 +4,11 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="sheet.css") }}">
     <script>
         window.addEventListener("load", () => {
-            {% if owner %}
-                {% for err in character.errors %}
-                    alert("Error in Fensheet. Please Fix because some features rely on correct formatting.\n"+`{{err|safe}}`)
-                {% endfor %}
-            {% endif %}
+                {% if owner %}
+                    {% for err in character.errors %}
+                        alert("Error in Fensheet. Please Fix because some features rely on correct formatting.\n"+`{{err|safe}}`)
+                    {% endfor %}
+                {% endif %}
                 const textdiv = document.getElementById("text");
                 const editfield = document.getElementById("editfield");
                 const closebutton = document.getElementById("closebutton");
@@ -66,7 +66,9 @@
                 const anchors = document.getElementsByClassName('editeable');
                 for (let i = 0; i < anchors.length; i++) {
                     let anchor = anchors[i];
-                    anchor.onclick = get_edit_content(anchor.dataset.category, anchor.dataset.section, anchor.dataset.item, anchor)
+                    const {category, section, item} = anchor.dataset;
+                    anchor.onclick = get_edit_content(category,
+                        section, item, anchor)
                 }
 
             }
@@ -92,15 +94,16 @@
             {% if loop.first %}
                 <thead class="heading">
             {% endif %}
-        <tr>
+        <tr class="tablebody">
             {% set outer_loop = loop %}
             {% for subline in line -%}
-                <td {% if loop.first -%}
-                    class="tablebody editeable" data-category="{{ cat|urlencode }}"
-                    data-section="{{ infolet(subline)[:30]|urlencode }}"
+                <td
+                {%- if loop.first -%}
+                    {%- set k = subline -%}
+                {%- else %} {% if owner %}class="editeable" data-category="{{ cat|urlencode }}"
+                    data-section="{{ extract(k)|urlencode }}"{% endif %}
                 {%- endif -%}
                 >{{ infolet(subline) | safe }}</td>
-
             {% endfor -%}
         </tr>
         {% if loop.first %}
@@ -115,7 +118,8 @@
 {% macro sectionformat(cat,name) %}
     {%- for k,v in cat.items() -%}
         {%- if v is mapping -%}
-            <div data-category="{{ name|urlencode }}" data-section="{{ k[:30]|urlencode }}" class="subheading span-2{% if owner %} editeable{% endif %}">
+            <div data-category="{{ name|urlencode }}" data-section="{{ k[:30]|urlencode }}" class="subheading span-2
+            {%- if owner %} editeable{% endif %}">
                 {{- k -}}
             </div>
             <div class="span-0"></div>
@@ -140,20 +144,20 @@
 {% endmacro %}
 {%- macro catformat(cat, name, cost) -%}
     <div class="gridwrapper category">
-        <div data-category="{{ name|urlencode }}"  class="tooltip heading span-2{% if owner %} editeable{% endif %}"">{{ name }} {% if name!='Magie' %}<a href="{{url_for('fen_calc',
+        <div data-category="{{ name|urlencode }}"  class="tooltip heading span-2{% if owner %} editeable{% endif %}">{{ name }} {% if name!='Magie' %}<a href="{{url_for('fen_calc',
             inputstring=cost) }} ">{{ cost }}</a><span class="tooltiptext">Options<br/>{% for l in
                     character.cost_calc(cost)
-            %}{% for b in l %}{{ b }}{% if not loop.last %},{% endif %}{% endfor %}<br/> {% endfor %}{% else %}<a href="{{
-            url_for('fen_calc', inputstring=cost, costs='30,80,140,210,300',penalty='0,0,0,0,0',width=character.magicwidth(name))|urldecode
-            }}">{{ cost }}</a><span class="tooltiptext">{% for l in
+                %}{% for b in l %}{{ b }}{% if not loop.last %},{% endif %}{% endfor %}<br/> {% endfor %}{% else %}<a href="{{
+                url_for('fen_calc', inputstring=cost, costs='30,80,140,210,300',penalty='0,0,0,0,0',width=character.magicwidth(name))|urldecode
+                }}">{{ cost }}</a><span class="tooltiptext">{% for l in
                     character.cost_calc(cost,'30, 80, 140, 210, 300','', width=character.magicwidth(name))
-            %}{{ l }}<br/> {% endfor %}{% endif %}</span></div><div class="span-0"></div>
+                %}{{ l }}<br/> {% endfor %}{% endif %}</span></div><div class="span-0"></div>
 
-    {%- if cat is mapping  -%}
-        {{ sectionformat(cat,name) }}
-    {% else %}
-        Error: {{ cat }} is no dict
-    {% endif %}
+        {%- if cat is mapping  -%}
+            {{ sectionformat(cat,name) }}
+        {% else %}
+            Error: {{ cat }} is no dict
+        {% endif %}
     </div>
 {%- endmacro -%}
 {% macro treepart(tree, depth, name) %}
@@ -204,7 +208,9 @@
     {%- for key,data in character.Meta.items() -%}
         {% set r = srs() %}
 
-        <h2 class="hider" data-for="{{ r }}">{{ key }}<span class="editeable" data-category="{{ key }}">&nbsp</span></h2>
+        <h2 class="hider" data-for="{{ r }}">{{ key }}<span
+                {%- if owner %} class="editeable" data-category="{{ key }}"{% endif -%}
+                >&nbsp</span></h2>
 
         <div id="{{ r }}" class="hiding">
             {{ treepart(data,3, key) }}

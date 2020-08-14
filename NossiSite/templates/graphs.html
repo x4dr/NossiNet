@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 {% block body %}
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.bundle.min.js"></script>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='graph.css') }}">
     <label class="switch"  onclick="window.dataChart.updatevalues()">
         <input type="checkbox" id="Highest">
@@ -29,37 +29,16 @@ window.dataChart.updatevalues()">
     <div>
         <strong>Armor: </strong><span></span>
     </div>
-
     <canvas id="DataChart" width="300" height="100"></canvas>
+    <!--suppress JSValidateTypes -->
     <script>
-        $.getJSON("{{ url_for('static', filename='graphdata.json')}}", function(json) {
-            window.values=json;
-            console.log("data received!" + window.values["Hash"]);
-            window.dataChart.updatevalues(true);
-
-            const sliders = document.querySelectorAll('.valueslider');
-            [].forEach.call(sliders, function(el, i) {
-                const span = el.nextElementSibling.querySelector('span'),
-                    btn = el.firstElementChild;
-                if (i===2){
-                    span.textContent="0";
-                    btn.value=0
-                }
-
-                else {
-                    btn.value=0;
-                    span.textContent="1 1"
-                }
-                btn.disabled=false;
-            });
-        });
         const ctx = document.getElementById('DataChart');
         window.dataChart = new Chart(ctx, {
             type: 'bar',
             data: {
                 datasets: [{
-                        backgroundColor: 'rgba(5, 210, 18, 0.8)',
-                        borderColor: 'rgba(85, 210, 50, 1)',
+                    backgroundColor: 'rgba(5, 210, 18, 0.8)',
+                    borderColor: 'rgba(85, 210, 50, 1)',
                     label: 'Maximum Damage',
                     data: []
                 }]
@@ -74,15 +53,15 @@ window.dataChart.updatevalues()">
                 }
             }
         });
-        tuples = [];
+        let tuples = [];
         let a;
         let b;
-        for (a=1;a<6;a++){
-            for (b=a;b<6;b++){
-                tuples.push((b+" "+a))
+        for (a = 1; a < 6; a++) {
+            for (b = a; b < 6; b++) {
+                tuples.push((b + " " + a))
             }
         }
-        tuples.sort(function(a,b) {
+        tuples.sort(function (a, b) {
             let splita = a.split(" ");
             let splitb = b.split(" ");
             let ca = parseInt(splita[0]) + parseInt(splita[1]);
@@ -90,21 +69,21 @@ window.dataChart.updatevalues()">
             return ca - cb;
         });
 
-        window.dataChart.selval = [0,0,0];
-        window.dataChart.updatevalues = function(init){
+        window.dataChart.selval = [0, 0, 0];
+        window.dataChart.updatevalues = function (init) {
             const dataChart = window.dataChart;
-            if (init){
+            if (init) {
                 //init code
-                dataChart.data.labels=window.values["Names"];
+                dataChart.data.labels = window.values["Names"];
                 //dataChart.options.scales.yAxes[0].ticks.max=window.values["max"];
             }
             const a = dataChart.selval[0],
                 b = dataChart.selval[1],
                 c = dataChart.selval[2];
             let damagevalues = window.values[tuples[a]][tuples[b]][c];
-            if (document.getElementById('Highest').checked){
+            if (document.getElementById('Highest').checked) {
                 if (dataChart.data.datasets[0].label === 'Maximum Damage')
-                    dataChart.data.datasets=[
+                    dataChart.data.datasets = [
                         {
                             backgroundColor: 'rgba(235, 210, 12, 0.8)',
                             borderColor: 'rgba(235, 210, 12, 1)',
@@ -119,7 +98,7 @@ window.dataChart.updatevalues()">
                         },
                         {
                             backgroundColor: 'rgba(205, 5, 9, 0.8)',
-                            borderColor:'rgba(255, 25, 0, 1)',
+                            borderColor: 'rgba(255, 25, 0, 1)',
                             label: 'Schneiden',
                             data: []
                         },
@@ -136,76 +115,102 @@ window.dataChart.updatevalues()">
                             data: []
                         }];
                 for (let index = 0; index < dataChart.data.datasets.length; ++index) {
-                    dataChart.data.datasets[index].data=damagevalues[index];
+                    dataChart.data.datasets[index].data = damagevalues[index];
                 }
-            }
-            else {
+            } else {
                 if (dataChart.data.datasets[0].label !== 'Maximum Damage')
-                    dataChart.data.datasets=[{
+                    dataChart.data.datasets = [{
                         backgroundColor: 'rgba(5, 210, 18, 0.8)',
                         borderColor: 'rgba(85, 210, 50, 1)',
                         label: 'Maximum Damage',
                         data: []
                     }];
-                let biggestval=damagevalues[0].slice();
-                for (let i = 1; i < damagevalues.length; i++){
-                    for (let j =0; j < damagevalues[i].length;j++){
-                        biggestval[j]= Math.max(biggestval[j],damagevalues[i][j])
+                let biggestval = damagevalues[0].slice();
+                for (let i = 1; i < damagevalues.length; i++) {
+                    for (let j = 0; j < damagevalues[i].length; j++) {
+                        biggestval[j] = Math.max(biggestval[j], damagevalues[i][j])
                     }
                 }
-                dataChart.data.datasets[0].data=biggestval;
+                dataChart.data.datasets[0].data = biggestval;
             }
             dataChart.update()
 
         };
-        document.addEventListener('DOMContentLoaded', function() {
-            const sliders = document.querySelectorAll('.valueslider');
 
-            [].forEach.call(sliders, function(el, i) {
+
+
+
+        window.addEventListener("load", async () => {
+            await fetch("{{url_for('static', filename='graphdata.json')}}").then(r => r.json()).then(json => {
+                window.values = json;
+                console.log("data received!" + window.values["Hash"]);
+                window.dataChart.updatevalues(true);
+
+                const sliders = document.getElementsByClassName('valueslider');
+                [].forEach.call(sliders, function (el, i) {
+                    const span = el.nextElementSibling.querySelector('span'),
+                        btn = el.firstElementChild;
+                    if (i === 2) {
+                        span.textContent = "0";
+                        btn.value = 0
+                    } else {
+                        btn.value = 0;
+                        span.textContent = "1 1"
+                    }
+                    btn.disabled = false;
+                });
+            });
+        });
+
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const sliders = document.getElementsByClassName('valueslider');
+
+            [].forEach.call(sliders, function (el, i) {
                 const btn = el.firstElementChild,
                     span = el.nextElementSibling.querySelector('span');
-                let    isMoving = false;
+                let isMoving = false;
 
-                const move = function(e) {
+                const move = function (e) {
                     if (isMoving) {
                         const min = 0,
                             max = el.offsetWidth - btn.offsetWidth,
                             mousePos = (e.pageX - el.offsetLeft - (btn.offsetWidth / 2)),
                             position = (mousePos > max ? max : mousePos < min ? min : mousePos),
-                            newvalue = Math.floor((position / max) * (i===2?13:14));
-                        let value=btn.value;
-                        if (Number(newvalue) !== Number(value)){
+                            newvalue = Math.floor((position / max) * (i === 2 ? 13 : 14));
+                        let value = btn.value;
+                        if (Number(newvalue) !== Number(value)) {
                             value = newvalue;
-                            dataChart.selval[i]=Number(newvalue);
+                            dataChart.selval[i] = Number(newvalue);
                             window.dataChart.updatevalues(false)
                         }
 
                         btn.style.marginLeft = position + 'px';
                         btn.value = value;
-                        if (i < 2){
+                        if (i < 2) {
                             span.textContent = tuples[value];
                         } else {
-                            span.textContent = value;
+                            span.textContent = value.toString();
                         }
 
                     }
                 };
 
-                el.addEventListener('mousedown', function(e) {
+                el.addEventListener('mousedown', function (e) {
                     isMoving = true;
                     move(e);
                 });
 
-                document.addEventListener('mouseup', function(e) {
+                document.addEventListener('mouseup', function () {
                     isMoving = false;
                 });
 
-                document.addEventListener('mousemove', function(e) {
+                document.addEventListener('mousemove', function (e) {
                     move(e);
                 });
-                $(document).keydown(function(event){
+                document.addEventListener('keydown', function () {
                     console.log("loading data");
-                    $.getJSON("{{ url_for('static', filename='graphdata.json')}}", function(json) {
+                    fetch("{{ url_for('static', filename='graphdata.json')}}").then(json => {
                         window.values = json;
                         console.log("data received!" + window.values["Hash"]);
                         window.dataChart.updatevalues(true);

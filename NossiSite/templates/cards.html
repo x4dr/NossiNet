@@ -1,27 +1,26 @@
 {% extends "layout.html" %}
 {% block head %}
     <script type="text/javascript" charset="utf-8">
-        $(document).ready(function () {
-            $('#interactionform').submit(function(){
-                let action = $('#action').find('option:selected');
-                $.ajax({
-                    type:    "POST",
-                    url:     action.data("url"),
-                    data:    {"parameter":$('#parameter').val()},
-                    success: function(data) {
-                        if ("error" in data) {
-                            alert(data.error);
-                        }
-                        else{
-                            location.reload();
-                        }
-                    },
-                    error:   function() {
-                        alert("Internal Server Error");
+        window.addEventListener("load", () => {
+            document.getElementById("interactionform").onsubmit = async (e) =>{
+                e.preventDefault()
+                const a = document.getElementById("action");
+                const action = a.options[a.selectedIndex];
+                const r = await(await fetch(action.dataset.url, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        parameter: document.getElementById("parameter").value
+                    }),
+                    headers: {
+                        'Content-Type': 'application/json'
                     }
-                });
+                })).json()
+                console.log(r)
+                if (r.result==="error")
+                    alert(r.error)
+                else location.reload()
                 return false;
-            });
+            };
         });
     </script>
 {% endblock %}

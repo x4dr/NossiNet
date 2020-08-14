@@ -1,4 +1,4 @@
-from random import random
+import random
 
 from flask import (
     request,
@@ -136,7 +136,7 @@ def register(app=None):
                 if command is None:
                     return deck.serialized_parts
             elif request.method == "POST":
-                par = request.form.get("parameter", None)
+                par = request.get_json()["parameter"]
                 if command == "draw":
                     return {"result": list(deck.draw(par))}
                 elif command == "spend":
@@ -153,17 +153,23 @@ def register(app=None):
                     message = deck.undedicate(par)
                     for m in message:
                         flash("Affected Dedication: " + m)
-                        return {"messages": list(message)}
+                        return {"result": "ok", "messages": list(message)}
                 elif command == "free":
                     affected, message = deck.free(par)
                     for m in message:
                         flash("Affected Dedication: " + m)
-                    return {"result": list(affected), "messages": message}
+                    return {
+                        "result": list(affected),
+                        "messages": message,
+                    }
                 else:
-                    return f"invalid command {command}"
+                    return {"result": "error", "error": f"invalid command {command}"}
+
             return render_template("cards.html", cards=deck)
         except DescriptiveError as e:
-            return {"error": e.args[0]}
+            return {"result": "error", "error": e.args[0]}
+        except TypeError:
+            return {"result": "error", "error": "Parameter is not in a valid Format"}
         finally:
             Cards.savedeck(session["user"], deck)
 

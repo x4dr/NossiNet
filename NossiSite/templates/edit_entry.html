@@ -7,7 +7,7 @@
 {% endblock %}
 {% if wiki is defined %}
     {% block title %}
-        <title> {{ wiki | capitalize}} </title>
+        <title> {{ wiki }} </title>
     {% endblock %}
     {% block pagetitle %}
         {% if entry.title | length > 0 %}
@@ -28,12 +28,12 @@
     <input type="hidden" name="token" value="{{ token }}">
     <input type="hidden" name="id" value="{{ entry.id }}">
     <dl>
-        <dt>Title:</dt>
-        <dd><input class=leet size=50 name=title value="{{ entry.title }}"></dd>
-        <dt>Text:</dt>
-        <dd><textarea class=leet name=text rows={% if mode =="blog" %}5{% elif mode =="wiki" %}40{% endif %} style="width: 80%">{{ entry.text }}</textarea></dd>
-        <dt>Tags:</dt>
-        <dd><input class=leet size=50 name=tags value="{{ entry.tags }}"></dd>
+        <dt><label for="title">Title:</label></dt>
+        <dd><input class=leet size=50 id="title" name=title value="{{ entry.title }}"></dd>
+        <dt><label for="text">Text:</label></dt>
+        <dd><textarea class=leet id=text name=text rows={% if mode =="blog" %}5{% elif mode =="wiki" %}40{% endif %} style="width: 80%">{{ entry.text }}</textarea></dd>
+        <dt><label for="tags">Tags:</label></dt>
+        <dd><input class=leet size=50 id="tags" name=tags value="{{ entry.tags }}"></dd>
         <dd><input class=leeet type=submit value=Share></dd>
     </dl>
     </form>

@@ -193,6 +193,7 @@ def register(app=None):
                 context=c,
                 userconf=u,
                 infolet=infolet_filler(c),
+                extract=infolet_extractor,
                 owner=u.get("character_sheet", None)
                 if u.get("character_sheet", None) == c
                 else "",
@@ -415,6 +416,12 @@ def register(app=None):
 
         return wrap
 
+    def infolet_extractor(x):
+        m = hiddeninfos.match(str(x))
+        if not m:
+            return str(x)
+        return m.group("name")
+
 
 def weaponadd(weapon_damage_array, b, ind=0):
     if len(weapon_damage_array) != len(b):
@@ -632,15 +639,14 @@ def headerfix(text: Match):
 
 
 hiddentable = re.compile(
-    r"\[(?P<name>.*?)\[\[(?P<kind>.+?):(?P<ref>[\S ]+):(?P<mod>.*?)\]\]\]",
-    re.IGNORECASE,
+    r"\[(?P<name>.*?)\[\[(?P<kind>.+?):(?P<ref>[\S ]+):(?P<mod>.*?)]]]", re.IGNORECASE,
 )
-table = re.compile(r"\[\[(?P<kind>.+?):(?P<ref>[\S ]+):(?P<mod>.*?)\]\]", re.IGNORECASE)
+table = re.compile(r"\[\[(?P<kind>.+?):(?P<ref>[\S ]+):(?P<mod>.*?)]]", re.IGNORECASE)
 hiddeninfos = re.compile(
-    r"\[(?P<name>.*?)\[\[(?P<cmd>specific|q):(?P<ref>[\S ]+)\]\]\]", re.IGNORECASE
+    r"\[(?P<name>.*?)\[\[(?P<cmd>specific|q):(?P<ref>[\S ]+)]]]", re.IGNORECASE
 )
-infos = re.compile(r"\[\[(?P<cmd>specific|q):(?P<ref>-:[\S ]+)\]\]", re.IGNORECASE)
-links = re.compile(r"\[(.+?)\]\((?P<ref>.+?)\)")
+infos = re.compile(r"\[\[(?P<cmd>specific|q):(?P<ref>-:[\S ]+)]]", re.IGNORECASE)
+links = re.compile(r"\[(.+?)]\((?P<ref>.+?)\)")
 headers = re.compile(
     r"<(?P<h>h[0-9]*)\b(?P<extra>[^>]*)>(?P<content>.*?)</(?P=h)\b[^>]*>",
     re.IGNORECASE | re.DOTALL,
