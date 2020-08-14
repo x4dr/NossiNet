@@ -44,7 +44,7 @@
                                 editfield.className="editfield"
                             }
                             else {
-                                textdiv.innerHTML = reply["data"];
+                                textdiv.value = reply["data"];
                                 olddata.value = reply["data"];
                                 textdiv.focus();
                                 textdiv.click();
@@ -57,7 +57,7 @@
                 closebutton.onclick = () => {
                     document.body.style.overflow="auto"
                     editfield.className="editfield"
-                    textdiv.innerHTML = ""
+                    textdiv.value = ""
                     olddata.value = ""
                     overlay.style.visibility="hidden";
                 }
