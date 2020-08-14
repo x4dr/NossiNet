@@ -720,7 +720,7 @@ def wikisave(page, author, title, tags, body):
         del page_cache[page]
     for subcache in sheet_cache.values():
         if page in subcache:
-            del sheet_cache[page]
+            del subcache[page]
 
 
 def wikindex() -> List[Path]:
