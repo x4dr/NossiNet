@@ -37,12 +37,16 @@ input[type="text"], textarea {
     border: 1px solid #000000;
 }
 
+.entries{
+    background: inherit;
+}
+
 .add-entry {
     font-size: 0.9em;
     border-bottom: 1px solid #000000;
 }
 .add-entry dl   { font-weight: bold; color: #000000; }
-.metanav        { text-align: right; font-size: 0.8em; padding: 0.3em;
+.metanav        { font-size: 0.8em; padding: 0.3em;
                   margin-bottom: 1em; background: #f0f0f0;color: #000000; }
 .flash          { background:#000000; padding: 0.5em;
                   border: 1px solid #000000; }

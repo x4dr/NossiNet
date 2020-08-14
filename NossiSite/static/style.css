@@ -64,6 +64,12 @@ hr {
     margin: 1px;
 }
 
+.entry {
+    padding: 1em;
+    display: inline-block;
+}
+
+
 .tooltip {
 }
 
@@ -97,13 +103,14 @@ hr {
 
 .hiding{
     height: 0 !important;
+    display: none;
     overflow: hidden;
-    transition: 0.2s;
+    transition: 1s;
 }
 
 .nothiding{
     overflow: auto;
-    transition: 0.2s;
+    transition: 0.5s;
 }
 
 #TopButton {
@@ -185,21 +192,15 @@ label { white-space: nowrap }
 
 .add-entry dl { font-weight: bold; color: #00f700; }
 
-.entry {
-    padding: 1em;
-    display: inline-block;
-}
-
 .metanavcontainer {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-around;
-    align-items: flex-end;
 }
 
 .metanav {
     flex: 1 1 0;
-    text-align: right;
+    text-align: center;
     font-size: smaller;
     padding: 0.3em;
     margin: 1em;

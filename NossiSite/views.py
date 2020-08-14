@@ -52,14 +52,29 @@ def register(app=None):
         result = res.stdout
         return result, 200, {"Content-Type": "text/plain; charset=utf-8"}
 
+    @app.route("/entries/")
+    @app.route("/entries/<x>")
+    def get_entry(x=None):
+        if not x:
+            return {}
+        db = connect_db("entrybyid")
+        e = [
+            dict(author=row[0], title=row[1], text=row[2], tags=row[3])
+            for row in [
+                db.execute(
+                    "SELECT author, title, text, tags FROM entries WHERE id = ?", [x]
+                ).fetchone()
+            ]
+        ][0]
+        e["text"] = bleach.clean(e["text"])
+        return e
+
     @app.route("/")
     def show_entries():
         db = connect_db("main")
-        cur = db.execute(
-            "SELECT author, title, text, id, tags FROM entries ORDER BY id DESC"
-        )
+        cur = db.execute("SELECT author, title, id, tags FROM entries ORDER BY id DESC")
         entries = [
-            dict(author=row[0], title=row[1], text=row[2], id=row[3], tags=row[4])
+            dict(author=row[0], title=row[1], id=row[2], tags=row[3])
             for row in cur.fetchall()
         ]
         entries = [
@@ -71,13 +86,13 @@ def register(app=None):
             )
         ]
         for e in entries:
-            e["text"] = bleach.clean(e["text"].replace("\n", "<br>"))
             e["own"] = (session.get("logged_in")) and (
                 session.get("user") == e["author"]
             )
         entries = [
             e for e in entries if e.get("author", "none")[0].isupper()
         ]  # dont send out lowercase authors ("deleted")
+
         return render_template("show_entries.html", entries=entries)
 
     @app.route("/edit/post/<x>", methods=["GET", "POST"])
