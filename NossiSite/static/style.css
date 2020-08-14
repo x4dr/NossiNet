@@ -190,11 +190,19 @@ label { white-space: nowrap }
     display: inline-block;
 }
 
+.metanavcontainer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    align-items: flex-end;
+}
+
 .metanav {
+    flex: 1 1 0;
     text-align: right;
     font-size: smaller;
     padding: 0.3em;
-    margin-bottom: 1em;
+    margin: 1em;
     background: #000;
     color: #00f700;
 }

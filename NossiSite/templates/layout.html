@@ -1,5 +1,8 @@
 <!doctype html>
-<html lang="none">
+<html lang="mul">
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="NosferatuNetwork by Maric
+     Pen and Paper helper to support Roleplaying">
 <head>
     {% block title -%}
         <title> {%- if session.light -%}
@@ -64,7 +67,7 @@
         <h1><a href={{ url_for('show_entries') }} >NOSFERATU NETWORK</a></h1>
     {% endblock %}
     {% block metanavcomplete %}
-        <div class=metanav>
+        <div class=metanavcontainer>
             {% if not session.logged_in %}
                 <a class=metanav href="{{ url_for('wiki_index') }}">wiki</a>
                 <a class=metanav href="{{ url_for('login') }}">log in</a>
@@ -72,12 +75,14 @@
             {% else %}
                 {%- block metanav -%}
                 {%- endblock -%}
+                <div class="metanavcontainer">
                 <a class=metanav href="{{ url_for('wiki_index') }}">WIKI</a>  &nbsp
                 <a class=metanav href="{{ url_for('charsheet') }}">SHEET</a>  &nbsp
                 <a class=metanav href="{{ url_for('chatsite') }}">CHAT</a>  &nbsp
                 <a class=metanav href="{{ url_for('show_user_profile',username=session.user) }}">{{ session.user }}</a>
                 &nbsp
-                <a class=metanav href="{{ url_for('logout') }}">LOG OUT</a>
+                <a class=metanav href="{{ url_for('logout') }}">LOG&nbsp;OUT</a>
+                </div>
             {% endif %}
         </div>
     {% endblock %}
