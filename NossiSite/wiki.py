@@ -181,16 +181,18 @@ def register(app=None):
 
     @app.route("/fensheet/<c>")
     def fensheet(c):
+        un = session.get("user", "")
         try:
             time0 = time.time()
-            cached = sheet_cache.get(c, None)
+            sheet_cache[un] = sheet_cache.get(un, {})
+            cached = sheet_cache[un].get(c, None)
             if cached:
-                return cached + f"<!---load: {time.time() - time0}"
+                return cached + f"<!---load: {time.time() - time0}--->"
 
             char = get_fen_char(c)  # get cached
             if char is None:
                 return redirect(url_for("tagsearch", tag="character"))
-            u = User(session.get("user", "")).configs()
+            u = User(un).configs()
             time1 = time.time()
             body = render_template(
                 "fensheet.html",
@@ -204,7 +206,7 @@ def register(app=None):
                 else "",
             )
             time2 = time.time()
-            sheet_cache[c] = body
+            sheet_cache[un][c] = body
             return body + f"<!---load: {time1 - time0} render: {time2 - time1}--->"
         except DescriptiveError as e:
             flash("Error with character sheet:\n" + e.args[0])
@@ -716,8 +718,9 @@ def wikisave(page, author, title, tags, body):
         del chara_objects[page]
     if page in page_cache:
         del page_cache[page]
-    if page in sheet_cache:
-        del sheet_cache[page]
+    for subcache in sheet_cache.values():
+        if page in subcache:
+            del sheet_cache[page]
 
 
 def wikindex() -> List[Path]:

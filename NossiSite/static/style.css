@@ -67,6 +67,8 @@ hr {
 .entry {
     padding: 1em;
     display: inline-block;
+    word-wrap: break-spaces;
+    white-space: pre-wrap;
 }
 
 
