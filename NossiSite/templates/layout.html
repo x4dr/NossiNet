@@ -21,7 +21,7 @@
         for (let i = 0; i < hiders.length; i++) {
             let hider = hiders[i]
             let target = document.getElementById(hider.dataset.for)
-            hider.onclick = async () => {
+            hider.addEventListener("click", async () => {
                 let cache = target.style.height;
                 target.style.height = target.scrollHeight+"px";
                 await new Promise(r => setTimeout(r, 100));
@@ -30,7 +30,7 @@
                 hider.classList.toggle("hider-expanded")
                 await new Promise(r => setTimeout(r, 100));
                 target.style.height = cache;
-            }
+            });
         }
 
         let topButton = document.getElementById("TopButton");
@@ -76,27 +76,28 @@
                 {%- block metanav -%}
                 {%- endblock -%}
                 <div class="metanavcontainer">
-                <a class=metanav href="{{ url_for('wiki_index') }}">WIKI</a>  &nbsp
-                <a class=metanav href="{{ url_for('charsheet') }}">SHEET</a>  &nbsp
-                <a class=metanav href="{{ url_for('chatsite') }}">CHAT</a>  &nbsp
+                <a class=metanav href="{{ url_for('wiki_index') }}">WIKI</a>
+                <a class=metanav href="{{ url_for('charsheet') }}">SHEET</a>
+                <a class=metanav href="{{ url_for('chatsite') }}">CHAT</a>
                 <a class=metanav href="{{ url_for('show_user_profile',username=session.user) }}">{{ session.user }}</a>
-                &nbsp
                 <a class=metanav href="{{ url_for('logout') }}">LOG&nbsp;OUT</a>
                 </div>
-            {% endif %}
+            {%- endif %}
         </div>
-    {% endblock %}
-    {% if error %}<p class=error><strong>Error:</strong> {{ error }}{% endif %}
-    {% for message in get_flashed_messages() %}
+    {%- endblock -%}
+    {%- if error %}
+        <p class=error><strong>Error:</strong> {{ error }}{% endif %}
+    {%- for message in get_flashed_messages() %}
         <div class=flash style="white-space: pre-wrap;" onclick="this.parentNode.removeChild(this)">{{ message }}</div>
-    {% endfor %}
-    {% block body %}{% endblock %}
+    {%- endfor %}
+    {%- block body %}{% endblock -%}
 </div>
+<div class="metanavcontainer">
 {% if not session.logged_in %}
-    <br>
-    <div style="text-align: center"><a href="{{ url_for('impressum') }}">Impressum</a></div>
+    <div class="metanav"><a href="{{ url_for('impressum') }}">Impressum</a></div>
 {% endif %}
-<div style="text-align: center"><a href="{{ url_for('lightswitch', x=request.path[1:]) }}">Light Switch</a></div>
+<div class="metanav"><a  href="{{ url_for('lightswitch', x=request.path[1:]) }}">Light Switch</a></div>
+</div>
 <br>
 </body>
 </html>

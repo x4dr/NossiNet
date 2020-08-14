@@ -3,6 +3,18 @@
     {% for headstate in heads %}
         {{ headstate|safe }}
     {% endfor %}
+    <script>
+        async function getEntryBody(entryid, textid, sender) {
+            sender.onclick = null;
+            let target = document.getElementById(textid + "_text");
+            if (target.innerHTML !== "") {
+                console.log("aborted load of " + entryid)
+                return true
+            }
+            let e = await fetch("{{ url_for("get_entry")}}/" + entryid).then(reply => reply.json());
+            target.innerHTML = e.text;
+        }
+    </script>
 {% endblock %}
 {%- block metanav -%}
     <form action="{{ url_for('update_filter') }}" method=post class="add-entry metanav" style="display:inline">
@@ -37,17 +49,21 @@
     <ul class=entries>
         {% for entry in entries %}
             {% set s = srs() %}
-            <li><h2 class="header hider" data-for{{ s }}>"{{ entry.title }}" by <a
+            <li><h2 onclick="getEntryBody('{{ entry.id }}','{{ s }}', this)"
+                    data-id="{{ entry.id }}"
+                    class="header hider" data-for="{{ s }}">"{{ entry.title }}" by <a
                     href="{{ url_for('show_user_profile', username=entry.author) }}">{{ entry.author }}</a>
-            </h2><div id="{{ s }}" class="hiding entry tooltip" style="word-wrap:break-word;display:none;border:1px solid">{{ entry.text|safe }}
-                <br> {#dangerous entry.text has to be cleaned before being sent here#}
+            </h2><div  id="{{ s }}" class="hiding entry tooltip" style="border:1px solid">
+                <div id="{{ s }}_text" style="word-wrap:break-word"></div>
                 {%- if session.logged_in -%}
-                    {% if edit is defined %}
+                    <!--logged in: yes-->
+                    {% if entry.own is defined %}
                         <form class="add-entry">
                             <button formaction="{{ url_for('editentries',x=entry.id) }}" class="leeet">edit</button>
                         </form>
                     {% endif %}
                     <span class="tooltiptext">Tags: {{ entry.tags }}</span>
+
                 {%- endif -%}</div> </li>
 
         {% else %}
