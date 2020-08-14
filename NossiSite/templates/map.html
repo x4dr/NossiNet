@@ -1,7 +1,10 @@
 {% extends "layout.html" %}
 {% block head %}
-    <link rel="stylesheet" type=text/css href="/static/map.css">
-    <script type="text/javascript" src="/static/svg-pan-zoom.min.js"></script>
+    <link rel="stylesheet" type=text/css href="{{url_for("map.css")}}">
+    <script type="text/javascript" src="{{url_for("svg-pan-zoom.min.js")}}"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.slim.js"></script>
+
     <!--suppress JSUnresolvedFunction -->
     <script>
         /* var colours = ["#332628", "#cc999e", "#ff001a", "#591631", "#bf004d", "#ff409f",
@@ -14,7 +17,7 @@
              "#99994d", "#403920", "#ffb300", "#f2c279", "#7f5920", "#a65300",
              "#ff6600", "#ffd2bf", "#b27459", "#661f00", "#cc5233", "#400600",
              "#8c4646", "#ff8080"];*/
-        var scrolling = true;
+        let scrolling = true;
 
         function plzIn() {
 
@@ -41,7 +44,7 @@
 
         }
 
-        var keys = {37: 1, 38: 1, 39: 1, 40: 1};
+        const keys = {37: 1, 38: 1, 39: 1, 40: 1};
 
         function preventDefaultForScrollKeys(e) {
             if (keys[e.keyCode]) {
@@ -69,32 +72,31 @@
         }
 
 
-        $(function () {
-            disableScroll();
-        });
+        disableScroll();
 
         $(document).ready(function () {
             document.getElementById("page_complete").style.minWidth = "60em";
-            var plzs = $(".plz");
-            var mapsvg = document.getElementById("map");
+            let plzs = $(".plz");
+            const mapsvg = document.getElementById("map");
             //mapsvg.addEventListener("mouseenter", mapIn);
             //mapsvg.addEventListener("mouseleave", mapOut);
             console.log("adding");
             $.getJSON("{{ url_for("mapdata") }}",{}).done(function (mapdata) {
-                var svgDoc = mapsvg.contentDocument;
+                let i;
+                const svgDoc = mapsvg.contentDocument;
                 plzs = svgDoc.getElementsByClassName("plz");
                 console.log("plzlength:", plzs.length);
                 console.log("mapdata:", mapdata.keys);
                 console.log("from:", "{{ url_for("mapdata") }}");
-                for (var i = 0; i < plzs.length; i++) {
+                for (i = 0; i < plzs.length; i++) {
 
-                    var plz = plzs.item(i);
+                    const plz = plzs.item(i);
                     plz.addEventListener("mouseenter", plzIn);
                     plz.addEventListener("mouseleave", plzOut);
                     plz.addEventListener("mousedown", report);
-                    var desc = document.createElementNS("http://www.w3.org/2000/svg", "title");
-                    var name = plz.id;
-                    var node = null;
+                    const desc = document.createElementNS("http://www.w3.org/2000/svg", "title");
+                    const name = plz.id;
+                    let node = null;
                     if (name in mapdata) {
                         node = document.createTextNode('PLZ: ' + name +
                             '\nOwner: ' + mapdata[name]['owner'] +
@@ -111,8 +113,8 @@
                     }
                     desc.appendChild(node);
                     plz.appendChild(desc);
-                    var text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                    var plztext = document.createTextNode(plz.id);
+                    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    const plztext = document.createTextNode(plz.id);
                     text.appendChild(plztext);
 
                     text.setAttribute("x", (plz.getBBox().x + plz.getBBox().width / 2 - 15).toString());
@@ -147,8 +149,8 @@
                     });
                 });
                 $("#TestButton").click(function () {
-                    var cmp = "";
-                    var testtargets = ['12559', '12526', '12527'
+                    let cmp = "";
+                    const testtargets = ['12559', '12526', '12527'
                     ];
                     $("path").each(function () {
                         if (this.getAttribute("tags")) {
@@ -184,7 +186,7 @@
     <div id="VentrueButton">Ventrue</div>
     <div id="TestButton">Test</div>
     <div id="ClearButton">Clear</div>
-    <object id="map" type="image/svg+xml" data="/static/plz-berlin.svg"
+    <object id="map" type="image/svg+xml" data="{{url_for("plz-berlin.svg")}}"
             style="width: 100%; height: 500px; border:1px solid #00f700;">Your browser does not support SVG
     </object>
     <div id="loadedmap" style="
