@@ -160,7 +160,7 @@ class DiceParser:
         return matches
 
     @staticmethod
-    @regexrouter.register(re.compile(r"(?<=[0-9-])d\s*(?P<sides>[0-9]{1,5})"))
+    @regexrouter.register(re.compile(r"(?<=[0-9 -])d\s*(?P<sides>[0-9]{1,5})"))
     def extract_sides(matches):
         if matches.get("sides", ""):
             return {"sides": int(matches["sides"])}
@@ -170,19 +170,18 @@ class DiceParser:
     def extract_reroll(matches):
         if matches.get("rerolls", ""):
             return {"rerolls": int(matches["rerolls"].replace(" ", ""))}
+        else:
+            return {}
 
     @staticmethod
     @regexrouter.register(re.compile(r"(?<=[0-9-])(?P<sort>s)"))
     def extract_sort(matches):
-        if matches.get("sides", ""):
-            return {"sort": True}
+        return {"sort": bool(matches.get("sides", ""))}
 
     @staticmethod
     @regexrouter.register(re.compile(r"^(.*@)?(?P<amount>-?(\d+))(?!.*@)"))
     def extract_core(matches):
-        r = {"amount": int(matches["amount"].replace(" ", ""))}
-
-        return r
+        return {"amount": int(matches["amount"].replace(" ", ""))}
 
     @staticmethod
     @regexrouter.register(
