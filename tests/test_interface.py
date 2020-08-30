@@ -1,10 +1,12 @@
 import asyncio
+import time
 from pathlib import Path
 from unittest import TestCase, mock
 from unittest.mock import Mock
 
 import Data
 from NossiInterface.Tools import splitpara, replacedefines
+from NossiInterface.reminder import time_eat
 from NossiPack.krypta import connect_db
 from NossiSite import wiki
 from NossiSite.wiki import get_fen_char
@@ -39,6 +41,7 @@ class TestInterface(TestCase):
         test = asyncio.run(replacedefines(msg, self.message, self.persist))
         self.assertEqual(test, "c 4 & a & c 4")
 
+    # noinspection SqlResolve,SqlInsertValues
     @mock.patch.object(Data, "DATABASE", "loadchara.db" "")
     @mock.patch.object(
         wiki,
@@ -54,3 +57,12 @@ class TestInterface(TestCase):
         c.execute('INSERT INTO configs VALUES ("test","character_sheet", "test")')
         test = get_fen_char("test").stat_definitions()
         self.assertEqual(test[test["a"]], "3")
+
+    def test_timeparse(self):
+        self.assertEqual(time_eat("in 3:45:12 test"), (13512, "test"))
+        self.assertEqual(time_eat("in 45:12 test"), (2712, "test"))
+        self.assertEqual(time_eat("3h45m12 test"), (13512, "test"))
+        self.assertEqual(time_eat("12s"), (12, ""))
+        self.assertEqual(time_eat("12"), (12, ""))
+        self.assertLess(time_eat("at 22:31:00 test")[0], 24 * 60 * 60)
+        self.assertAlmostEqual(-time_eat("01.01.1970 01:00:00")[0], time.time(), 3)

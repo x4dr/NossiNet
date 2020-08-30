@@ -210,6 +210,12 @@ class TestDiceParser(TestCase):
         r = self.p.make_roll("1,1@5R95s")
         self.assertGreater(r.result, 3)
 
+    def test_repeatrolls(self):
+        a = self.p.make_roll("2,3@5")
+        b = self.p.make_roll("2,3@-r-10")
+        print(a.r, b.r)
+        self.assertGreater(a.result, b.result)
+
     def test_identityreturn(self):
         p = DiceParser({"return": "id"})
         r = p.do_roll("&loopsum 1 8&")
