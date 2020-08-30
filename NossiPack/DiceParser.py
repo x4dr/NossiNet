@@ -160,28 +160,33 @@ class DiceParser:
         return matches
 
     @staticmethod
-    @regexrouter.register(
-        re.compile(
-            r"^([-\d,\s]*@)?(?P<amount>-?(\d+))"
-            r"\s*(d\s*(?P<sides>[0-9]{1,5}))?"
-            r"\s*([rR]\s*(?P<rerolls>-?\s*\d+))?"
-            r"\s*(?P<sort>s)?"
-        )
-    )
-    def extract_core(matches):
-        r = {"amount": int(matches["amount"].replace(" ", ""))}
+    @regexrouter.register(re.compile(r"(?<=[0-9 -])d\s*(?P<sides>[0-9]{1,5})"))
+    def extract_sides(matches):
         if matches.get("sides", ""):
-            r["sides"] = int(matches["sides"])
+            return {"sides": int(matches["sides"])}
+
+    @staticmethod
+    @regexrouter.register(re.compile(r"(?<=[0-9-])[rR]\s*(?P<rerolls>-?\s*\d+)"))
+    def extract_reroll(matches):
         if matches.get("rerolls", ""):
-            r["rerolls"] = int(matches["rerolls"].replace(" ", ""))
-        if matches.get("sort", ""):
-            r["sort"] = True
-        return r
+            return {"rerolls": int(matches["rerolls"].replace(" ", ""))}
+        else:
+            return {}
+
+    @staticmethod
+    @regexrouter.register(re.compile(r"(?<=[0-9-])(?P<sort>s)"))
+    def extract_sort(matches):
+        return {"sort": bool(matches.get("sides", ""))}
+
+    @staticmethod
+    @regexrouter.register(re.compile(r"^(.*@)?(?P<amount>-?(\d+))(?!.*@)"))
+    def extract_core(matches):
+        return {"amount": int(matches["amount"].replace(" ", ""))}
 
     @staticmethod
     @regexrouter.register(
         re.compile(
-            r"^([-\d,\s]*@)?(?P<literal>(\[(\s*-?\s*\d+\s*,?)+\s*\])|-+)(?!\s*\d)"
+            r"^([-\d,\s]*@)?(?P<literal>(\[(\s*-?\s*\d+\s*,?)+\s*])|-+)(?!\s*\d)"
         )
     )
     def extract_literal(matches):
@@ -259,7 +264,7 @@ class DiceParser:
         fullparams.update(params)
         a = fullparams.get("amount", "")
         if a and isinstance(a, str) and a.count("-") == len(a):
-            fullparams["amount"] = self.lr[-len(a)].r
+            fullparams["amount"] = self.lr[-len(a)].r[:]
         d = Dice(fullparams)
         self.lr = self.lr + [d]
         return d

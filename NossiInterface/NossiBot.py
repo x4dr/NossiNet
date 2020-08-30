@@ -386,14 +386,14 @@ async def on_message(message: discord.Message):
             n.content = m
             await on_message(n)
         return
-    if msg.startswith("remind;"):
-        if msg.strip() == "remind;del":
+    if msg.startswith("remind"):
+        if msg.strip() == "remind del":
             await delreminder(message)
-        elif msg.strip() == "remind;list":
+        elif msg.strip() == "remind list":
             await listreminder(message, mentionreplacer())
         else:
-            newreminder(str(message.channel.id), msg[7:])
-            await send("noted")
+            newdate = newreminder(message, msg[7:])
+            return await send("will remind on " + newdate.isoformat())
     msg, comment = msg.rsplit("//", 1) if "//" in msg else (msg, "")
     comment = " " + comment.strip("` ")
     msg = await handle_defines(msg, message, persist)
