@@ -27,14 +27,16 @@ async def reminders(getchannel):
             int(channelid)
         )
         if channel is None:
-            print("NoneChannel message:", message)
+            # connection problems
+            rembuf.append(line)
+            continue
         if line in delete:
             delete.remove(line)
             await channel.send(message + " has been deleted")
             continue
         date = float(date)
         if date < now:
-            await channel.send("Reminder: " + message)
+            await channel.send(message)
         else:
             rembuf.append(line)
         nexttime = max(0, min(nexttime, date - now))

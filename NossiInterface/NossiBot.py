@@ -1,3 +1,4 @@
+import ast
 import asyncio
 import datetime
 import os
@@ -12,6 +13,7 @@ from urllib.parse import quote
 import discord
 import requests
 
+import Data
 from Data import getnossihelp
 from NossiInterface.RollInterface import rollhandle, chunk_reply, timeout
 from NossiInterface.Tools import (
@@ -34,6 +36,8 @@ if shutdownflag.exists():
     shutdownflag.unlink()  # ignore previously set shutdown
 ticking = [time.time()]
 disconnecting = []
+channels = {}
+people = {}
 print("initializing NossiBot...")
 
 
@@ -210,6 +214,8 @@ def savepersist():
                         continue  # mutated will never be saved!
                     shelvingfile[k] = persist[k]
                 persist["mutated"] = False
+        Data.set("channels", str(channels))
+        Data.set("people", str(people))
     except Exception as e:
         print(
             f"Exception in savepersist with key {k}:", e, e.args, traceback.format_exc()
@@ -242,6 +248,7 @@ async def tick():
         if shutdownflag.exists():
             shutdownflag.unlink()
             await info.owner.send("I got Killed")
+            await client.close()
         await asyncio.sleep(next_call - time.time(),)
 
 
@@ -257,6 +264,8 @@ async def on_ready():
     info = await client.application_info()
     await info.owner.send("I Live... last 10 timings:" + str(ticking))
     persist["owner"] = discordname(info.owner)
+    channels.update(ast.literal_eval(Data.get("channels")))
+    people.update(ast.literal_eval(Data.get("people")))
 
 
 @client.event
@@ -297,9 +306,11 @@ async def on_message(message: discord.Message):
     msg: str = message.content.strip("` ")
     send = get_remembering_send(message)
     author: discord.member.Member = message.author
+    people[message.author.mention] = discordname(message.author)
     if message.author == client.user:
         return
     if msg.startswith("NossiBot") or isinstance(message.channel, discord.DMChannel):
+        channels[message.channel.id] = discordname(message.author)
         msg = msg[len("NossiBot") :] if msg.startswith("NossiBot") else msg
         if msg.strip() == "help":
             await split_send(message.author.send, getnossihelp().splitlines())
@@ -368,6 +379,8 @@ async def on_message(message: discord.Message):
                     "I have been invoked and shall do my duties here until BANISHed."
                 )
                 return
+    else:
+        channels[message.channel.id] = message.channel.name
 
     if message.channel.id not in persist["allowed_rooms"]:
         if isinstance(
