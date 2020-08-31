@@ -9,4 +9,5 @@
 /NossiSite/static/graphdata.json
 /.idea/
 /.coverage
-/letsencryptbackup.tar.gz
+/*.result
+/*.gz
