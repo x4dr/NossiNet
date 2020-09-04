@@ -51,7 +51,7 @@
     <h5 class="hider" data-for="removedpile">Removed</h5>
     <div id="removedpile" class="hiding">
         {% for color in deck["removed"].keys() | sort%}
-            <p>{{ color }}: {% for card in deck["deck"][color] -%}
+            <p>{{ color }}: {% for card in deck["removed"][color] -%}
                 {{ card }} {%- if not loop.last %}, {% endif %}
             {%- endfor -%}</p>
         {% endfor %}
