@@ -174,9 +174,9 @@ class DiceParser:
             return {}
 
     @staticmethod
-    @regexrouter.register(re.compile(r"(?<=[0-9-])(?P<sort>s)"))
+    @regexrouter.register(re.compile(r"(?<=[\d-])(?P<sort>s)"))
     def extract_sort(matches):
-        return {"sort": bool(matches.get("sides", ""))}
+        return {"sort": bool(matches.get("sort", ""))}
 
     @staticmethod
     @regexrouter.register(re.compile(r"^(.*@)?(?P<amount>-?(\d+))(?!.*@)"))

@@ -228,3 +228,7 @@ class TestDiceParser(TestCase):
         )
         with self.assertRaises(Exception):
             fullparenthesis("_____(######")
+
+    def test_sort(self):
+        r = self.p.make_roll("33d100s")
+        self.assertEqual(r.r, sorted(r.r))
