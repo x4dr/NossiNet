@@ -67,8 +67,14 @@ hr {
 .entry {
     padding: 1em;
     display: inline-block;
-    word-wrap: break-spaces;
+    overflow-wrap: break-spaces;
     white-space: pre-wrap;
+}
+
+.wiki {
+    padding: 1em;
+    display: inline-block;
+    overflow-wrap: break-spaces;
 }
 
 

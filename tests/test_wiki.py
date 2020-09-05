@@ -9,7 +9,7 @@ from NossiPack.FenCharacter import FenCharacter
 from NossiPack.MDPack import table, split_row, split_md
 from NossiPack.fengraph import armordata
 from NossiSite import helpers
-from NossiSite.wiki import wikisave
+from NossiSite.wiki import wikisave, fill_infolets
 from tests.NossiTestCase import NossiTestCase
 
 
@@ -125,3 +125,7 @@ class TestViews(NossiTestCase):
         a.apply_mods("N<>a")
         a.apply_mods("Nb<>")
         self.assertEqual(a.name, f"b{n}a")
+
+    def test_infolets(self):
+        sut = fill_infolets("[[specific:healing:heilung:aurier:resonanzen:-]]", "test")
+        self.assertIn("Wunde", sut)

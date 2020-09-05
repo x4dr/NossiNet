@@ -651,7 +651,7 @@ table = re.compile(r"\[\[(?P<kind>.+?):(?P<ref>[\S ]+):(?P<mod>.*?)]]", re.IGNOR
 hiddeninfos = re.compile(
     r"\[(?P<name>.*?)\[\[(?P<cmd>specific|q):(?P<ref>[\S ]+)]]]", re.IGNORECASE
 )
-infos = re.compile(r"\[\[(?P<cmd>specific|q):(?P<ref>-:[\S ]+)]]", re.IGNORECASE)
+infos = re.compile(r"\[\[(?P<cmd>specific|q):(?P<ref>(-:)?[\S ]+)]]", re.IGNORECASE)
 links = re.compile(r"\[(.+?)]\((?P<ref>.+?)\)")
 headers = re.compile(
     r"<(?P<h>h[0-9]*)\b(?P<extra>[^>]*)>(?P<content>.*?)</(?P=h)\b[^>]*>",
