@@ -1,5 +1,4 @@
 import asyncio
-import time
 from pathlib import Path
 from unittest import TestCase, mock
 from unittest.mock import Mock
@@ -65,4 +64,3 @@ class TestInterface(TestCase):
         self.assertEqual(time_eat("12s"), (12, ""))
         self.assertEqual(time_eat("12"), (12, ""))
         self.assertLess(time_eat("at 22:31:00 test")[0], 24 * 60 * 60)
-        self.assertAlmostEqual(-time_eat("01.01.1970 01:00:00")[0], time.time(), 3)
