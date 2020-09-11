@@ -223,33 +223,35 @@ def savepersist():
 
 
 async def tick():
-    if len(ticking) > 1:
+    if time.time() - ticking[0] <= 10:
         print("attempted to doubletick")
         return
     next_call = time.time()
     while True:
-        ticking.append(
-            requests.get("http://www.google.com").elapsed.microseconds / 1000
-        )
-        while disconnecting:
-            await disconnecting.pop().disconnect()
-        if len(ticking) > 10:
-            ticking.pop(0)
         try:
-            nexttime = await reminders(client.get_channel)
+            ticking[0] = time.time()
+            while disconnecting:
+                await disconnecting.pop().disconnect()
+            if len(ticking) > 10:
+                ticking.pop(0)
+            try:
+                nexttime = await reminders(client.get_channel)
+            except Exception as e:
+                print("Exception reminding:", e, e.args, traceback.format_exc())
+                nexttime = 10
+            savepersist()
+            next_call += nexttime
+            if client.is_closed():
+                print("loop died of dead client")
+                break
+            info = await client.application_info()
+            if shutdownflag.exists():
+                shutdownflag.unlink()
+                await info.owner.send("I got Killed")
+                await client.close()
+            await asyncio.sleep(next_call - time.time(),)
         except Exception as e:
-            print("Exception reminding:", e, e.args, traceback.format_exc())
-            nexttime = 10
-        savepersist()
-        next_call += nexttime
-        if client.is_closed():
-            break
-        info = await client.application_info()
-        if shutdownflag.exists():
-            shutdownflag.unlink()
-            await info.owner.send("I got Killed")
-            await client.close()
-        await asyncio.sleep(next_call - time.time(),)
+            print(f"Encountered exception in tick loop: {e} {e.args}")
 
 
 @client.event
