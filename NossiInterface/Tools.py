@@ -155,7 +155,10 @@ async def spellhandle(deck: Cards, whoami, par, send):
     spellbook = {}
     existing = {}
     power = deck.scorehand()
-    for spelltext in load_user_char(whoami).Meta.get("Zauber")[1].values():
+    spelltexts = load_user_char(whoami).Meta.get("Zauber", ("", {}))[1]
+    if not spells:
+        await send("No spells found")
+    for spelltext in spelltexts.values():
         matches = re.findall(r"specific:(.*?):([^-]*?)(:-)?]", spelltext[0], flags=re.I)
         for m in matches:
             school = m[0]
@@ -166,7 +169,7 @@ async def spellhandle(deck: Cards, whoami, par, send):
             )
 
     if par == "all":
-        send(", ".join(existing.keys()))
+        await split_send(send, list(existing.keys()))
     elif par == "":
         res = ""
         for spec, spelldict in existing.items():
