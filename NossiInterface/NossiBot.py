@@ -34,7 +34,7 @@ bufferfile = "NossiBotBuffer"
 shutdownflag = pathlib.Path("shutdown_nossibot")
 if shutdownflag.exists():
     shutdownflag.unlink()  # ignore previously set shutdown
-ticking = [time.time()]
+ticking = [0]
 disconnecting = []
 channels = {}
 people = {}
@@ -223,7 +223,7 @@ def savepersist():
 
 
 async def tick():
-    if time.time() - ticking[0] <= 10:
+    if ticking and time.time() - ticking[0] <= 10:
         print("attempted to doubletick")
         return
     next_call = time.time()
@@ -232,8 +232,6 @@ async def tick():
             ticking[0] = time.time()
             while disconnecting:
                 await disconnecting.pop().disconnect()
-            if len(ticking) > 10:
-                ticking.pop(0)
             try:
                 nexttime = await reminders(client.get_channel)
             except Exception as e:

@@ -133,5 +133,5 @@ async def listreminder(message: discord.Message, mentionreplace):
         if line.startswith(str(message.channel.id)):
             channelid, date, msg = [p.strip() for p in line.split(";")]
             toshow += f"{datetime.fromtimestamp(int(date), reference.LocalTimezone())}: {msg}\n"
-    toshow = re.sub("<@!(.*?)>", mentionreplace, toshow)
+    toshow = re.sub(r"<@!?(.*?)>", mentionreplace, toshow)
     await message.channel.send("Reminders:\n" + toshow)
