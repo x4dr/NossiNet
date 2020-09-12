@@ -232,3 +232,6 @@ class TestDiceParser(TestCase):
     def test_sort(self):
         r = self.p.make_roll("33d100s")
         self.assertEqual(r.r, sorted(r.r))
+
+    def test_project(self):
+        self.assertLess(int(self.p.project("1 10")), 10)

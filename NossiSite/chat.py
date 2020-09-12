@@ -205,14 +205,12 @@ def register(app=None, socketio=None):
                                     + ": ",
                                 )
 
-            if parser.triggers.get("breakthrough", None):
-                times, current, goal, breakthroughlog = parser.triggers.get(
-                    "breakthrough", None
-                )
-                for i in [x for x in breakthroughlog.split("\n") if x][
+            if parser.triggers.get("project", None):
+                times, current, goal, projectlog = parser.triggers.get("project", None)
+                for i in [x for x in projectlog.split("\n") if x][
                     -parser.triggers.get("cutoff", 20) :
                 ]:
-                    deliver(i, "'S BREAKTHROUGH: ")
+                    deliver(i, "'S PROJECT: ")
                     time.sleep(float(parser.triggers.get("speed", 0.5)))
                 time.sleep(1)
                 deliver(

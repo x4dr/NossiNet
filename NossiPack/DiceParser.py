@@ -299,15 +299,13 @@ class DiceParser:
         roll.calculate()
         return roll
 
-    def breakthrough(self, body: str) -> str:
-        roll, current, goal, adversity = body, None, None, None
+    def project(self, body: str) -> str:
+        roll, goal, current = body, None, 0
         try:
-            if body.count(" ") == 3:
-                body += " "
-            roll, current, goal, adversity = body.rsplit(" ", 4)
+            roll, goal = body.rsplit(" ", 2)
+            goal = int(goal)
             i = 0
             log = ""
-            adversity = 0 if not adversity else int(adversity)
             while i < min(
                 (self.triggers.get("max") or 50),
                 (500 if not self.triggers.get("limitbreak", None) else 1000),
@@ -315,36 +313,22 @@ class DiceParser:
                 x = self.do_roll(roll).result
                 log += str(x) + " : "
                 i += 1
-                while x < 0:
-                    log += str(current) + "/2 = "
-                    current //= 2
-                    log += str(current) + "\n"
-                    x += 1
-                    if x < 0:
-                        log += str(x) + " : "
-                if x > 0:
-                    log += (
-                        str(current)
-                        + " + "
-                        + str(x)
-                        + ((" - " + str(adversity)) if adversity != 0 else "")
-                        + " = "
-                    )
-                current += x - adversity
-                log += str(current) + "\n"
+                current += x
+                log += f"{str(current)} + {x} = {current}\n"
                 if current >= goal:
                     break
-            self.triggers["breakthrough"] = (i, current, goal, log)
+            self.triggers["project"] = (i, current, goal, log)
             return str(i)
-        except TypeError:
+        except TypeError as e:
+            print(e, e.__class__, e.args, traceback.format_exc())
             raise DescriptiveError(roll + " does not have a result")  # probably
         except DescriptiveError:
             raise
         except Exception as e:
             print(e, e.__class__, e.args, traceback.format_exc())
             raise DescriptiveError(
-                "Breakthrough Parameters: roll, current, goal [, adversity]\n"
-                f"not fullfilled by {roll}, {current}, {goal}, {adversity}"
+                "project parameters: roll, current, goal [, adversity]\n"
+                f"not fullfilled by {roll}, {current}, {goal}"
             )
 
     def triggerswitch(self, triggername, triggerbody):
@@ -370,8 +354,8 @@ class DiceParser:
 
             self.triggers[triggername] = x
             return ""
-        if triggername == "breakthrough":
-            return self.breakthrough(triggerbody)
+        if triggername == "project":
+            return self.project(triggerbody)
         if triggername in ["ignore", "verbose"]:
             if "off" not in triggerbody:
                 self.triggers[triggername] = triggerbody if triggerbody else True
