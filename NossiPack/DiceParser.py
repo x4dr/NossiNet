@@ -1,7 +1,7 @@
 import re
 import traceback
 import warnings
-from typing import List, Union
+from typing import List, Union, Dict
 
 import numexpr
 
@@ -15,6 +15,10 @@ from NossiPack.krypta import DescriptiveError
 
 
 class DiceCodeError(Exception):
+    pass
+
+
+class MessageReturn(Exception):
     pass
 
 
@@ -137,10 +141,11 @@ class Node:
 
 
 class DiceParser:
+    lp: "DiceParser"
     rolllogs: List[Dice]
     regexrouter = RegexRouter()
 
-    def __init__(self, defines=None, lastroll=None):
+    def __init__(self, defines=None, lastroll=None, lastparse=None):
         self.dbg = ""
         self.triggers = {}
         self.rights = []
@@ -153,6 +158,7 @@ class DiceParser:
         self.defines.update(defines or {})
         self.rolllogs = []  # if the last roll isnt interesting
         self.lr = lastroll or []
+        self.lp = lastparse or None
 
     @staticmethod
     @regexrouter.register(re.compile(r"^(?P<return>(-?\d+(\s*,\s*)?)+\s*@)"))
@@ -275,6 +281,8 @@ class DiceParser:
             try:
                 roll, _ = self.pretrigger(roll)
                 roll = Node(roll, depth)
+            except MessageReturn:
+                raise
             except Exception as e:
                 print("pretrigger exc", e.args[0])
                 roll = Node(oldroll, depth)
@@ -298,6 +306,25 @@ class DiceParser:
                 roll.code = roll.code.replace(k, toreplace, 1)
         roll.calculate()
         return roll
+
+    def resonances(self, rolls=None) -> List[Dict[int, int]]:
+        """
+        evaluates the last rolls for resonances and returns an
+        ordered list of resonances and a dict of occurences for each
+        """
+        if rolls is None:
+            rolls = self.rolllogs
+            if self.lp:
+                rolls += self.lp.rolllogs
+        res = [{} for _ in range(10)]
+        for r in rolls:
+            if "@" not in r.returnfun:
+                continue
+            for i in range(10):
+                res[i][r.resonance(i + 1)] = res[i].get(r.resonance(i + 1), 0) + 1
+                if -1 in res[i]:
+                    del res[i][-1]
+        return res
 
     def project(self, body: str) -> str:
         roll, goal, current = body, None, 0
@@ -387,6 +414,11 @@ class DiceParser:
                     "Values malformed. Expected: "
                     '"&values key:value; key:value; key:value&"'
                 )
+        if triggername == "resonances":
+            raise MessageReturn(
+                "\n"
+                + "\n".join([f"{i}: {x}" for i, x in enumerate(self.resonances()) if x])
+            )
         if triggername == "param":
             try:
                 self.triggers["param"] = self.triggers.get(

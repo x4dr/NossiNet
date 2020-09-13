@@ -6,7 +6,15 @@ from flask import url_for
 import Data
 from Fantasy.Item import fenconvert, fendeconvert
 from NossiPack.FenCharacter import FenCharacter
-from NossiPack.MDPack import table, split_row, split_md
+from NossiPack.MDPack import (
+    table,
+    split_row,
+    split_md,
+    search_tables,
+    table_remove,
+    table_add,
+    table_edit,
+)
 from NossiPack.fengraph import armordata
 from NossiSite import helpers
 from NossiSite.wiki import wikisave, fill_infolets
@@ -129,3 +137,17 @@ class TestViews(NossiTestCase):
     def test_infolets(self):
         sut = fill_infolets("[[specific:healing:heilung:aurier:resonanzen:-]]", "test")
         self.assertIn("Wunde", sut)
+
+    def test_wounds(self):
+        sut = FenCharacter.from_md("#Character\n##Wounds\nQuelle|Code\n-|-\ntest|2:3:1")
+        sut.wounds()
+
+    def test_tablesrearch(self):
+        sut = "##somestuff\n|a|b|\n|-|-|\n|x|1|\ny|2\n"
+        self.assertEqual(search_tables(sut, "y", 0), "y|2\n")
+        sut = table_add(sut, "z", "3")
+        sut = table_remove(sut, "y")
+        self.assertEqual(search_tables(sut, "z", 0), "|z|3|\n")
+        self.assertEqual(search_tables(sut, "y", 0), "")
+        sut = table_edit(sut, "z", "whoop")
+        self.assertEqual(search_tables(sut, "z", 0), "| z | whoop |\n")

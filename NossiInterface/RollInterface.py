@@ -2,12 +2,13 @@ import asyncio
 from concurrent.futures.thread import ThreadPoolExecutor
 
 from NossiPack.Dice import Dice
-from NossiPack.DiceParser import DiceParser, DiceCodeError
+from NossiPack.DiceParser import DiceParser, DiceCodeError, MessageReturn
 from NossiPack.krypta import terminate_thread
 
 numemoji = ("1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟")
 numemoji_2 = ("❗", "‼️", "\U0001F386")
 lastroll = {}
+lastparse = {}
 
 
 def postprocess(r, msg, author, comment):
@@ -25,11 +26,12 @@ def prepare(msg: str, author, persist):
     which = msg.count("+") or 1
     nm, lr = msgs[-min(which, len(msgs))]
     lr = [m[1] for m in msgs]
+    lp = lastparse.get(author, None)
     if all(x == "+" for x in msg):
         msg = nm
-
     persist[str(author)] = persist.get(str(author), {})
-    p = DiceParser(persist[str(author)].get("defines", {}), lr)
+    p = DiceParser(persist[str(author)].get("defines", {}), lr, lp)
+    lastparse[author] = p
     return msg, p, errreport
 
 
@@ -110,7 +112,6 @@ async def get_reply(author, comment, msg, send, reply, r):
 
 async def process_roll(r: Dice, p: DiceParser, msg: str, comment, send, author):
     verbose = p.triggers.get("verbose", None)
-
     if isinstance(p.rolllogs, list) and len(p.rolllogs) > 1:
         reply = construct_multiroll_reply(p, verbose)
 
@@ -124,6 +125,8 @@ async def process_roll(r: Dice, p: DiceParser, msg: str, comment, send, author):
     except Exception as e:
         print(f"Exception during sending: {str(e)}\n")
         raise
+    finally:
+        p.lp = None  # discontinue the chain or it would lead to memoryleak
 
 
 async def timeout(func, arg, time_out=1):
@@ -158,7 +161,8 @@ async def rollhandle(msg, comment, author, send, react, persist):
             print(f"not quotes {msg}" + "\n" + "\n".join(e.args))
             raise
         await react("🙃")
-
+    except MessageReturn as e:
+        await send(author.mention + " " + str(e.args[0]))
     except Exception as e:
         ermsg = f"big oof during rolling {msg}" + "\n" + "\n".join(e.args)
         print(ermsg)

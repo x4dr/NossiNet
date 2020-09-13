@@ -4,6 +4,40 @@ from Fantasy.Item import fendeconvert, value_category, fenconvert, Item
 from NossiSite.base import log
 
 
+def table_edit(md: str, key: str, value: str) -> str:
+    """
+    changes everything but the leftmost column in a table the first time key is encountered
+    :param md: markdown to operate on
+    :param key: first column value
+    :param value: all subsequent values to change to, | delimited
+    """
+    old = search_tables(md, key, 0).strip()
+    start = "|" if old.startswith("|") else ""
+    end = "|" if old.endswith("|") else ""
+    new = f"{start} {key} | {value} {end}"
+    return md.replace(old, new, 1)
+
+
+def table_add(md: str, key: str, new: str) -> str:
+    intable = False
+    sofar = ""
+    for line in md.splitlines(True):
+        if intable and "|" not in line and new:
+            sofar += f"|{key}|{new}|\n"
+            new = None
+        if "|" in line:
+            intable = True
+        sofar += line
+    if new:
+        sofar += f"|{key}|{new}|\n"
+    return sofar
+
+
+def table_remove(md: str, key: str) -> str:
+    old = search_tables(md, key, 0).strip()
+    return md.replace(old, "", 1)
+
+
 def search_tables(md: str, seek: str, surround=None) -> str:
     found = False
     curtable = []
@@ -24,8 +58,10 @@ def search_tables(md: str, seek: str, surround=None) -> str:
                 break
             else:
                 curtable = []
-
-    return "".join(curtable)
+    if found:
+        return "".join(curtable)
+    else:
+        return ""
 
 
 def traverse_md(md: str, seek: str) -> str:
@@ -120,7 +156,7 @@ def confine_to_tables(
     only consist of text (and are thus key values)
     :param headers: if false, headers of the tables will be cut off
     :param mdtree: output of extract_tables
-    :return: Dictionary that recursively always endsin ints
+    :return: Dictionary that recursively always ends in ints
     """
     result = {}
     processed = False

@@ -29,6 +29,7 @@ class FenCharacter:
     fullpoint_sections = ["fähigkeiten", "skills", "aspekte", "aspects"]
     onepoint_sections = ["vorteile", "perks", "zauber", "spells"]
     experience_headings = ["erfahrung", "experience", "xp"]
+    wound_headings = ["wunden", "wounds", "damage", "schaden"]
 
     def __init__(
         self, name="",
@@ -339,3 +340,12 @@ class FenCharacter:
         inv_table.append(["Gesamt", "", "", "", "", ""])
         total_table(inv_table, print)
         return inv_table
+
+    def wounds(self):
+        for k in self.Character.keys():
+            if k.lower() in self.wound_headings:
+                wounds = self.Character[k]
+                header = k
+                return header, wounds
+        else:
+            return None, {}

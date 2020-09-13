@@ -299,6 +299,8 @@ def register(app=None):
         format_txt = request.url.endswith("/txt")
         w = w.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
         weapon = weapontable(w, mods, format_json or format_txt)
+        if isinstance(weapon, tuple):
+            return weapon
         if format_txt:
             return format_weapon(weapon)
         return weapon
@@ -376,7 +378,7 @@ def register(app=None):
         for seek in a[1:]:
             article = traverse_md(article, seek)
         if not article:
-            article = "not found"
+            return "not found", 404
         else:
             article = article[article.find("\n") * hide_headline :]
         if parse_md:
@@ -402,7 +404,7 @@ def register(app=None):
                 code = code[code.find("\n") + 1 :]  # skip over the newline
                 code = code[: code.find("\n")]  # code should be on the next line
             else:
-                raise DescriptiveError(w.upper() + "not found in " + code)
+                return w + "not found", 404
 
             weapon = magicalweapontable(code, par, format_json or format_txt)
             if format_txt:
@@ -474,7 +476,7 @@ def lowercase_access(d, k):
     res = data.get(k.lower(), None)
     if res is None:
         raise DescriptiveError(
-            d.lower() + " does not exist in " + " ".join(data.keys())
+            k.lower() + " does not exist in " + " ".join(data.keys())
         )
     return res
 
@@ -546,9 +548,12 @@ def weapontable(w, mods="", as_json=False):
         )
     except Exception as e:
         return (
-            '<div style="color: red"> WeaponCode Invalid: '
-            + " ".join(str(html.escape(x)) for x in e.args)
-            + " </div>"
+            (
+                '<div style="color: red"> WeaponCode Invalid: '
+                + " ".join(str(html.escape(x)) for x in e.args)
+                + " </div>"
+            ),
+            404,
         )
 
 

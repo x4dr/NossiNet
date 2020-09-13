@@ -172,7 +172,7 @@ async def oraclehandle(msg, comment, send, author):
             raise
 
 
-async def weaponhandle(msg, comment, send, author, react):
+async def weaponhandle(msg, comment, fullmessage, send, author, react):
     n = requests.get(
         nossiUrl + "/".join(quote(x.strip()) for x in msg.split(":", 2)) + "/txt"
     )
@@ -184,12 +184,19 @@ async def weaponhandle(msg, comment, send, author, react):
             await chunk_reply(
                 send, author.mention + comment + "```" + msg + "\n" + n + "```"
             )
+    elif n.status_code == 404:
+        if fullmessage:
+            return await weaponhandle(
+                fullmessage.content.strip("` "), comment, None, send, author, react
+            )
+        else:
+            await send(msg + "\n" + n.content.decode("utf-8"))
     else:
         await react("😕")
         print("failed request:", n.status_code, n.url)
 
 
-async def specifichandle(msg, comment, send, author):
+async def specifichandle(msg, comment, fullmessage, send, author):
     msg = msg[len("specific:") :].strip()
     n = requests.get(nossiUrl + "specific/" + quote(msg.strip()) + "/raw")
     if n.status_code == 200:
@@ -198,6 +205,13 @@ async def specifichandle(msg, comment, send, author):
         for replypart in [n[i : i + 1950] for i in range(1950, len(n), 1950)]:
             await send("```" + replypart + "```")
         return True
+    if n.status_code == 404:
+        if fullmessage:
+            return await specifichandle(
+                fullmessage.content.strip("` "), comment, None, send, author
+            )
+        else:
+            await send(msg + "\n" + n.content.decode("utf-8"))
     print("failed request:", n.status_code, n.url)
     return False
 
@@ -411,9 +425,11 @@ async def on_message(message: discord.Message):
         savepersist()
         return
     if msg.startswith("weapon:") or msg.startswith("magicalweapon:"):
-        await weaponhandle(msg, comment, send, message.author, message.add_reaction)
+        await weaponhandle(
+            msg, comment, message, send, message.author, message.add_reaction
+        )
     elif msg.startswith("specific:"):
-        await specifichandle(msg, comment, send, message.author)
+        await specifichandle(msg, comment, message, send, message.author)
     elif msg.startswith("oracle"):
         await oraclehandle(msg, comment, send, message.author)
     elif msg.startswith("cards:"):
