@@ -154,7 +154,7 @@ def fakemessage(message):
 
 
 async def spellhandle(deck: Cards, whoami, par, send):
-    print(f"entered spellhandle at {time.time()}")
+    print(f"entered spellhandle at {time.time()} with {deck}, {whoami} and {send}")
     spellbook = {}
     existing = {}
     power = deck.scorehand()
@@ -194,6 +194,8 @@ async def spellhandle(deck: Cards, whoami, par, send):
                         f"\n(specific:{spec}:-)\n"
                     )
         await split_send(send, res.splitlines())
+    else:
+        await send(f"unknown spell command: '{par}'")
 
 
 def satisfy(source, reqs):

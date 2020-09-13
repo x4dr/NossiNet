@@ -268,7 +268,7 @@ async def on_ready():
 @client.event
 async def on_disconnect():
     print(
-        "Disconnected, accessibility of google:",
+        f"Disconnected at {time.time()}, accessibility of google:",
         requests.get("http://www.google.com").status_code,
     )
 
