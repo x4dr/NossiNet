@@ -66,6 +66,8 @@ async def split_send(send, lines, i=0):
 
 
 async def cardhandle(msg, message, persist, send):
+    print(f"entered cardhandle at {time.time()}")
+
     def form(inp):
         if isinstance(inp, dict):
             outp = ""
@@ -152,12 +154,14 @@ def fakemessage(message):
 
 
 async def spellhandle(deck: Cards, whoami, par, send):
+    print(f"entered spellhandle at {time.time()}")
     spellbook = {}
     existing = {}
     power = deck.scorehand()
     spelltexts = load_user_char(whoami).Meta.get("Zauber", ("", {}))[1]
-    if not spells:
+    if not spelltexts:
         await send("No spells found")
+    print(f"found {len(spelltexts)} spells")
     for spelltext in spelltexts.values():
         matches = re.findall(r"specific:(.*?):([^-]*?)(:-)?]", spelltext[0], flags=re.I)
         for m in matches:
@@ -171,7 +175,7 @@ async def spellhandle(deck: Cards, whoami, par, send):
     if par == "all":
         await split_send(send, list(existing.keys()))
     elif par == "":
-        res = ""
+        res = "Available Spells:\n"
         for spec, spelldict in existing.items():
             if not spelldict.get("Name", None):
                 continue

@@ -122,12 +122,9 @@ async def oraclehandle(msg, comment, send, author):
                     return
                 p = (
                     ",".join(str(x) for x in a[:-1])
-                    + "@5"
-                    + ("R" + str(a[-1]))
-                    + " v "
-                    + ",".join(str(x) for x in a[:-1])
-                    + "@5"
-                    + ("R" + str(a[-1]))
+                    + f"@5R{a[-1]} v "
+                    + ",".join(str(x) for x in b[:-1])
+                    + f"@5R{b[-1]}"
                 )
 
             else:
