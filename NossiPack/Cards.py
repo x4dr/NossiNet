@@ -190,7 +190,7 @@ class Cards:
         return removed
 
     def free(self, tofree):
-        freed = self.move(self.Removed, self.Deck, tofree)
+        freed = self.move(self.Removed, self.Pile, tofree)
         messages = self.undedicate(" ".join(freed))
         return freed, messages
 

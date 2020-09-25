@@ -95,7 +95,6 @@ async def cardhandle(msg, message, persist, send):
             await send(mention + " " + form(deck.elongate(deck.draw(par))))
         elif command == "spend":
             deck.spend(par)
-            await message.add_reaction("\N{THUMBS UP SIGN}")
         elif command == "return":
             await send(mention + " " + form(deck.elongate(deck.pilereturn(par))))
         elif command == "dedicate":
@@ -128,6 +127,7 @@ async def cardhandle(msg, message, persist, send):
                 await send(mention + " " + form(infos[command]))
             else:
                 await send(mention + f" invalid command {command}")
+        await message.add_reaction("\N{THUMBS UP SIGN}")
     except DescriptiveError as e:
         await send(mention + " " + str(e.args[0]))
     finally:
