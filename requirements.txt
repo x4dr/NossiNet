@@ -9,7 +9,7 @@ pandas==1.2.0
 dateparser==1.0.0
 discord.py==1.6.0
 scipy==1.6.0
-bleach==3.2.1
+bleach==3.3.0
 certifi==2020.12.5
 chardet==4.0.0
 Click==7.1.2
@@ -21,7 +21,7 @@ github-webhook==1.0.4
 greenlet==1.0.0
 idna==3.1
 itsdangerous==1.1.0
-Jinja2==2.11.2
+Jinja2==2.11.3
 Markdown==3.3.3
 MarkupSafe==1.1.1
 monotonic==1.5
