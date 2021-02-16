@@ -351,7 +351,7 @@ def who_am_i(persist):
     if da is None:  # should have been set up at the same time
         persist["NossiAccount"] = "?"  # force resetup
         raise DescriptiveError(
-            f"Whoops, I have forgotten who you are, tell me again please."
+            "Whoops, I have forgotten who you are, tell me again please."
         )
     if da == checkagainst:
         return whoami

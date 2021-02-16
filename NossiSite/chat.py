@@ -480,7 +480,7 @@ def register(app=None, socketio=None):
         if not session.get("user", False):
             emit("comments", {"prefix": "", "data": named_strings["notLoggedIn"]})
             return False
-        log.info(f"charsheet connecting")
+        log.info("charsheet connecting")
         emit("comments", {"data": "".join(named_strings["checkHelp"])})
         join_room(session.get("user", "?") + "_dotupdates")
         update_dots()
@@ -578,7 +578,7 @@ def register(app=None, socketio=None):
 
     @socketio.on("connect", namespace="/cards")
     def cards_connect():
-        log.info(f"cards has been accessed by " + session.get("user", "mysteryman"))
+        log.info("cards has been accessed by " + session.get("user", "mysteryman"))
         if not session.get("logged_in"):
             emit("Message", {"prefix": "", "data": named_strings["notLoggedIn"]})
             emit("Exec", {"command": 'window.location.href = "/login?r=/cards";'})

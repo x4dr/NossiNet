@@ -32,7 +32,9 @@ class NossiTestCase(TestCase):
         app.config["LIVESERVER_PORT"] = 0
         app.config["USERNAME"] = "unittest"
         app.config["PASSWORD"] = "unittest"
-        app.config.from_mapping(SECRET_KEY="dev",)
+        app.config.from_mapping(
+            SECRET_KEY="dev",
+        )
         print(self.countTestCases())
         return app
 

@@ -387,5 +387,85 @@ def bowdpstest(bowmana_rate, draw, aim, fire, quickdraw, quickaim, quickfire):
     return damage
 
 
+exp_t = []
+
+
+def experiments(maxtime, stats, discoveries=0):
+    p = DiceParser({})
+    r = p.make_roll(",".join(stats) + "@5")
+    status = 0
+    for i in range(maxtime):
+        status += r.roll_next().result
+        if status >= 10 + i * 2 + discoveries:
+            status -= 10 + i * 2 + discoveries
+            discoveries += 1
+        if len(exp_t) <= i:
+            exp_t.append(discoveries)
+        else:
+            exp_t[i] += discoveries
+    return discoveries
+
+
+def studies(modifier, cumulative, stats, discoveries, capacity, quality=0):
+    p = DiceParser({})
+    r = p.make_roll(",".join(stats) + "@5R" + str(quality))
+    status = 0
+    running_mod = 0
+    capacity -= discoveries // 2  # capacity is rounded up by rounding discoveries down
+    while capacity > 0:
+        capacity -= 1
+        status += r.roll_next().result
+        if cumulative:
+            status += running_mod  # running mod is 0 for first operation
+            running_mod += modifier
+        else:
+            status += modifier
+        if status >= 15:
+            status -= 15
+            discoveries += 1
+    return discoveries
+
+
+def batch(duration, func, params):
+    res = collections.defaultdict(lambda: 0)
+    time1 = time.time()
+    i = 0
+    while True:
+        i += 1
+        res[func(*params)] += 1
+        if i % 10 == 0:
+            if time.time() - time1 >= duration:
+                break
+    print(
+        f"rolling dice for {time.time() - time1} seconds yielded {sum(res.values())} results"
+    )
+    print(plot(dict(res)))
+    print(f"avg: {sum(k * v for k, v in res.items()) / sum(res.values())}")
+
+
+def comboresearch(
+    experimentfirst,
+    maxtime,
+    discoveries,
+    stats,
+    cumulative,
+    modifier,
+    capacity,
+    quality,
+):
+    if experimentfirst:
+        discoveries = experiments(maxtime, stats, discoveries)
+    discoveries = studies(modifier, cumulative, stats, discoveries, capacity, quality)
+    if not experimentfirst:
+        discoveries = experiments(maxtime, stats, discoveries)
+    return discoveries
+
+
 if __name__ == "__main__":
-    run_duel(2, 3, 2, 3, 60)
+    # studies(-1, True, ("1", "1"), 0, 6, -5)
+    batch(10, comboresearch, (1, 520, 0, ("3", "4"), 1, 0, 0, 0))
+    # batch(0, comboresearch, (0, 0, 0, ("2", "3"), 1, 0, 30, 0))
+    import matplotlib.pyplot as plt
+
+    plt.plot(exp_t)
+    plt.show()

@@ -91,7 +91,9 @@ def register(app=None):
         t = gettags()
         r = [x for x in r if tag in t[x.stem]]
         return render_template(
-            "wikindex.html", entries=[x.with_suffix("").as_posix() for x in r], tags=t,
+            "wikindex.html",
+            entries=[x.with_suffix("").as_posix() for x in r],
+            tags=t,
         )
 
     @app.route("/wiki", methods=["GET", "POST"])
@@ -585,7 +587,12 @@ def get_info(info_context):
             if a[0].strip() == "-":
                 for context_attempt in [info_context, "items", "prices", "notes"]:
                     try:
-                        article = recursive_traverse(wikiload(context_attempt,)[2], a)
+                        article = recursive_traverse(
+                            wikiload(
+                                context_attempt,
+                            )[2],
+                            a,
+                        )
                         if article:
                             context = context_attempt
                             break
@@ -650,7 +657,8 @@ def headerfix(text: Match):
 
 
 hiddentable = re.compile(
-    r"\[(?P<name>.*?)\[\[(?P<kind>.+?):(?P<ref>[\S ]+):(?P<mod>.*?)]]]", re.IGNORECASE,
+    r"\[(?P<name>.*?)\[\[(?P<kind>.+?):(?P<ref>[\S ]+):(?P<mod>.*?)]]]",
+    re.IGNORECASE,
 )
 table = re.compile(r"\[\[(?P<kind>.+?):(?P<ref>[\S ]+):(?P<mod>.*?)]]", re.IGNORECASE)
 hiddeninfos = re.compile(

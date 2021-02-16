@@ -70,13 +70,17 @@ class TestDiceParser(TestCase):
     def test_postmath(self):
         self.p.defines["return"] = "id"
         self.assertEqual(
-            self.p.do_roll("(100d1g)-3").result, 97, "100d1g -3 should be 97",
+            self.p.do_roll("(100d1g)-3").result,
+            97,
+            "100d1g -3 should be 97",
         )
 
     def test_premath(self):
         self.p.defines["return"] = "id"
         self.assertEqual(
-            self.p.do_roll("(5+3**2//2-3)*10+4=").result, 64, "5+3**2 should be 64",
+            self.p.do_roll("(5+3**2//2-3)*10+4=").result,
+            64,
+            "5+3**2 should be 64",
         )
 
     def test_default(self):
@@ -142,7 +146,8 @@ class TestDiceParser(TestCase):
         r = p.do_roll("&param difficulty& &if 3 4 f6 then 4 $ -1 e6 else 0 done& f6")
         r.r = [10 for _ in r.r]
         self.assertIn(
-            r.result, range(0, 11),
+            r.result,
+            range(0, 11),
         )
 
     def test_resolvedefine(self):

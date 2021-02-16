@@ -258,7 +258,9 @@ async def tick():
                 shutdownflag.unlink()
                 await info.owner.send("I got Killed")
                 await client.close()
-            await asyncio.sleep(next_call - time.time(),)
+            await asyncio.sleep(
+                next_call - time.time(),
+            )
         except Exception as e:
             print(f"Encountered exception in tick loop: {e} {e.args}")
 
@@ -439,7 +441,12 @@ async def on_message(message: discord.Message):
 
     else:
         await rollhandle(
-            msg, comment, author, send, message.add_reaction, persist,
+            msg,
+            comment,
+            author,
+            send,
+            message.add_reaction,
+            persist,
         )
 
 

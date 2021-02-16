@@ -170,6 +170,8 @@ class Dice:
             amount = self.amount
         self.rolled = True
         self.log = ""
+        if not self.literal:
+            self.r = []
         if amount < 0:
             amount = abs(amount)
             self.sign = -1

@@ -18,7 +18,13 @@ class User:
     db = None
 
     def __init__(
-        self, username, password="", passwordhash=None, funds=0, sheet=None, admin="",
+        self,
+        username,
+        password="",
+        passwordhash=None,
+        funds=0,
+        sheet=None,
+        admin="",
     ):
         self.username = username.strip().upper()
         if passwordhash is not None:

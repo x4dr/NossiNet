@@ -32,7 +32,8 @@ class FenCharacter:
     wound_headings = ["wunden", "wounds", "damage", "schaden"]
 
     def __init__(
-        self, name="",
+        self,
+        name="",
     ):
         self.definitions = None
         self.Tags = ""
