@@ -33,6 +33,8 @@ class NossiCog(commands.Cog, name="NossiBot"):
 
     @commands.group()
     async def nossi(self, ctx: commands.Context):
+        """ currently disabled """
+        pass
         """self.channels[ctx.message.channel.id] = (
             ctx.channel.name
             if hasattr(ctx.channel, "name")
@@ -87,8 +89,10 @@ class NossiCog(commands.Cog, name="NossiBot"):
         self.persist()
         await self.whoami(ctx)
 
-    @nossi.command("who am i")
-    async def whoami(self, ctx):
+    @nossi.command("who")
+    async def whoami(self, am, i, ctx):
+        if not ((am == "am") and (i == "i")):
+            raise commands.CommandNotFound(f'Command "who {am} {i}" is not found')
         try:
             await ctx.send(
                 "You are "
