@@ -67,11 +67,13 @@ def construct_shortened_multiroll_reply(p: DiceParser, verbose):
     return reply.strip("\n") + "\n"
 
 
-async def chunk_reply(send, message, chunk=2000):
+async def chunk_reply(send, premsg, message):
     i = 0
+    await send(premsg + "```" + message[i : i + 1990 - len(premsg)] + "```")
+    i += 1990 - len(premsg)
     while i < len(message):
-        await send(message[i : i + chunk])
-        i += chunk
+        await send("```" + message[i : i + 1990] + "```")
+        i += 1990
 
 
 async def get_reply(author, comment, msg, send, reply, r):
@@ -145,7 +147,7 @@ async def timeout(func, arg, time_out=1):
 
 
 async def rollhandle(msg, comment, author, send, react, persist):
-    comment = comment.strip()
+    comment = comment
     msg, p, errreport = prepare(msg, author, persist)
     try:
         r = await timeout(p.do_roll, msg, 2)

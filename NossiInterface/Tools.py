@@ -2,6 +2,7 @@ import random
 import re
 import time
 
+import discord
 from discord import Message
 
 import Data
@@ -9,7 +10,7 @@ from NossiPack.Cards import Cards
 from NossiPack.DiceParser import fullparenthesis, DiceParser
 from NossiPack.User import Config
 from NossiPack.krypta import DescriptiveError
-from NossiSite.wiki import load_user_char_stats, load_user_char, spells, transitions
+from NossiSite.wiki import load_user_char_stats, load_user_char, spells
 
 statcache = {}
 sent_messages = {}
@@ -25,6 +26,27 @@ async def delete_replies(message: Message):
         for r in sent_messages[message.id]["replies"]:
             await r.delete()
         del sent_messages[message.id]
+
+
+def extract_comment(msg):
+    comment = ""
+    if isinstance(msg, str):
+        msg = msg.split(" ")
+    for i in reversed(range(len(msg))):
+        if msg[i].startswith("//"):
+            comment = " " + " ".join(msg[i:])[2:]
+            msg = msg[:i]
+            break
+    return msg, comment
+
+
+def mentionreplacer(client):
+    def replace(m: re.Match):
+        u: discord.User = client.get_user(int(m.group(1)))
+        print(u.name)
+        return "@" + u.name
+
+    return replace
 
 
 def get_remembering_send(message: Message):
@@ -95,7 +117,7 @@ async def cardhandle(msg, message, persist, send):
             await send(mention + " " + form(deck.elongate(deck.draw(par))))
         elif command == "spend":
             deck.spend(par)
-        elif command == "return":
+        elif command == "returnfun":
             await send(mention + " " + form(deck.elongate(deck.pilereturn(par))))
         elif command == "dedicate":
             deck.dedicate(*par.split(":", 1))
@@ -133,23 +155,6 @@ async def cardhandle(msg, message, persist, send):
     finally:
         if deck and whoami:
             deck.savedeck(whoami, deck)
-
-
-def fakemessage(message):
-    if isinstance(message, str):  # message is name already
-
-        async def error(a):
-            raise Exception(a)
-
-        class Fake:
-            def __init__(self, **kwargs):
-                self.__dict__.update(kwargs)
-
-        n, d = message.split("#")
-        message = Fake(
-            author=Fake(name=n, discriminator=d, send=error), add_reaction=print
-        )
-        return message
 
 
 async def spellhandle(deck: Cards, whoami, par, send):
@@ -222,48 +227,6 @@ def satisfy(source, reqs):
 
 def available_transitions():
     pass
-
-
-async def statehandle(msg, message, persist, send):
-    curstate = None
-    mention = message.author.mention
-    whoami = None
-    msg = msg[6:] if msg.startswith("state:") else msg  # remove state:
-    msg = [x.strip() for x in msg.lower().split(":")]
-    if not msg or not msg[0]:
-        return await message.add_reaction("😕")
-    try:
-        whoami = who_am_i(persist)
-        curstate = Config.load(whoami, "state_" + msg[0]) or ""
-        if len(msg) == 1:
-            return await send(mention + " " + curstate or "None")
-        selection = [
-            v for k, v in transitions(msg[0], curstate).items() if msg[1] in k.lower()
-        ]
-        if len(selection) > 1:
-            return await send(
-                mention
-                + f" Ambiguous command \"{msg[1]}\" between {', '.join(x.title() for x in selection)}"
-            )
-        if len(selection) == 0:
-            return await send(
-                mention
-                + f' No transition for "{msg[1]}" in state "{curstate}", available are: ```'
-                + "\n".join(
-                    [
-                        k.title() + " => " + v[1].title()
-                        for k, v in transitions(msg[0], curstate).items()
-                    ]
-                )
-                + "```"
-            )
-        curstate = selection[0][1]
-        return await send(mention + f" => {curstate.title()}")
-    except DescriptiveError as e:
-        await send(mention + " " + str(e.args[0]))
-    finally:
-        if curstate is not None and whoami:
-            Config.save(whoami, "state_" + msg[0], curstate)
 
 
 async def define(msg, message, persist):
@@ -347,20 +310,20 @@ def who_am_i(persist):
     if whoami is None:
         return None
     checkagainst = Config.load(whoami, "discord")
-    da = persist.get("DiscordAccount", None)
-    if da is None:  # should have been set up at the same time
+    discord_acc = persist.get("DiscordAccount", None)
+    if discord_acc is None:  # should have been set up at the same time
         persist["NossiAccount"] = "?"  # force resetup
         raise DescriptiveError(
             "Whoops, I have forgotten who you are, tell me again please."
         )
-    if da == checkagainst:
+    if discord_acc == checkagainst:
         return whoami
     raise DescriptiveError(
         f"The NossiAccount {whoami} has not confirmed this discord account!"
     )
 
 
-async def handle_defines(msg, message, persist):
+async def handle_defines(msg, message, persist, save):
     """
     processes defines and mutates the message accordingly.
     msg:
@@ -369,6 +332,7 @@ async def handle_defines(msg, message, persist):
         "def =?" retrieves all definitions
         "undef <r>" removes all definitions for keys matching the regex
         (` will be stripped, and might be necessary to send through discord)
+    :param save: a callable to commit persist
     :param msg: the message to be processed
     :param message: message object containing author
         (which contains name and send) and add_reaction
@@ -377,20 +341,25 @@ async def handle_defines(msg, message, persist):
     """
     msg = msg.strip("` ")
     author = discordname(message.author)
+    change = False
     try:
         persist[author]["defines"]
     except KeyError:
         print("User", author, "not found, regenerating")
         persist[author] = {"defines": {}}
+        change = True
 
     cachetimeout = 0 if msg.startswith("?") else 3600
     pers = persist[author]
 
     if msg.startswith("def "):
         await define(msg, message, persist)
-        return ""
+        change = True
     elif msg.startswith("undef "):
         await undefine(msg, message, persist)
+        change = True
+    if change:
+        save()
         return ""
 
     defines = {}

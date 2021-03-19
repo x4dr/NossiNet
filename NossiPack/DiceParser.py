@@ -153,7 +153,7 @@ class DiceParser:
             "difficulty": 6,
             "onebehaviour": 1,
             "sides": 10,
-            "return": "sum",
+            "returnfun": "sum",
         }  # threshhold basic
         self.defines.update(defines or {})
         self.rolllogs = []  # if the last roll isnt interesting
@@ -161,7 +161,7 @@ class DiceParser:
         self.lp = lastparse or None
 
     @staticmethod
-    @regexrouter.register(re.compile(r"^(?P<return>(-?\d+(\s*,\s*)?)+\s*@)"))
+    @regexrouter.register(re.compile(r"^(?P<returnfun>(-?\d+(\s*,\s*)?)+\s*@)"))
     def extract_selectors(matches):
         return matches
 
@@ -207,12 +207,12 @@ class DiceParser:
     @regexrouter.register(re.compile(r"(?P<end>[g=~hl])!*$"))
     def extract_base_functions(matches):
         functions = {"g": "sum", "h": "max", "l": "min", "~": "none", "=": "id"}
-        return {"return": functions[matches["end"]]}
+        return {"returnfun": functions[matches["end"]]}
 
     @staticmethod
     @regexrouter.register(re.compile(r"(?P<one>[ef])\s*(?P<difficulty>(\d+))!*$"))
     def extract_threshhold(matches):
-        r = {"return": "threshhold", "onebehaviour": "f" in matches["one"]}
+        r = {"returnfun": "threshhold", "onebehaviour": "f" in matches["one"]}
         if matches["difficulty"]:
             r["difficulty"] = int(matches["difficulty"])
         return r
@@ -240,7 +240,7 @@ class DiceParser:
         except PartialMatchException:
             raise DiceCodeError(message + " is not valid. \n" + cls.usage)
         # sanitychecks:
-        if "@" in message and "@" not in params.get("return", ""):
+        if "@" in message and "@" not in params.get("returnfun", ""):
             raise DiceCodeError(f"Invalid Selectors in: {message}")
         if "amount" not in params:
             raise DiceCodeError(cls.usage)
@@ -271,7 +271,7 @@ class DiceParser:
         a = fullparams.get("amount", "")
         if a and isinstance(a, str) and a.count("-") == len(a):
             fullparams["amount"] = self.lr[-len(a)].r[:]
-        d = Dice(fullparams)
+        d = Dice(**fullparams)
         self.lr = self.lr + [d]
         return d
 

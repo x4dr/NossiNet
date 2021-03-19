@@ -2,6 +2,7 @@ import ctypes
 import os
 import random
 import sqlite3
+import threading
 from contextlib import closing
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
@@ -15,7 +16,7 @@ class DescriptiveError(Exception):
     pass
 
 
-def terminate_thread(thread):
+def terminate_thread(thread: threading.Thread):
     """Terminates a python thread from another thread.
 
     :param thread: a threading.Thread instance
@@ -135,7 +136,7 @@ def sumdict(inp):
     try:
         for e in inp.keys():
             result += int(inp[e])
-    except:
+    except Exception:
         result = sum(inp)
     return result
 
@@ -156,3 +157,7 @@ def d10(amt, diff, ones=True):  # faster than the Dice
             return 0
         return 0 - anti
     return succ
+
+
+def split_at(a, x):
+    return a[:x], a[x:]

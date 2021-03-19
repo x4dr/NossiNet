@@ -20,7 +20,7 @@ class TestDiceParser(TestCase):
 
         info = self.p.extract_diceparams("[3,2]l")
         self.assertEqual(info["amount"], [3, 2])
-        self.assertEqual(info["return"], "min")
+        self.assertEqual(info["returnfun"], "min")
 
         info = self.p.extract_diceparams("113d04f9")
         self.assertEqual(info["amount"], 113)
@@ -53,7 +53,7 @@ class TestDiceParser(TestCase):
             ("1,2@6", 5, "1 , 2@"),
             ("6,2@6", 10, "6 , 2@"),
         ]:
-            d = DiceParser({"return": "sum"}).do_roll(roll)
+            d = DiceParser({"returnfun": "sum"}).do_roll(roll)
             d.r = [2, 3, 4, 5, 6, 7]
             self.assertEqual(ret, d.returnfun, roll)
             self.assertEqual(1 if "=" in roll else 10, d.max, roll + " sides")
@@ -68,7 +68,7 @@ class TestDiceParser(TestCase):
             self.assertIn("==>", r.roll_v())
 
     def test_postmath(self):
-        self.p.defines["return"] = "id"
+        self.p.defines["returnfun"] = "id"
         self.assertEqual(
             self.p.do_roll("(100d1g)-3").result,
             97,
@@ -76,7 +76,7 @@ class TestDiceParser(TestCase):
         )
 
     def test_premath(self):
-        self.p.defines["return"] = "id"
+        self.p.defines["returnfun"] = "id"
         self.assertEqual(
             self.p.do_roll("(5+3**2//2-3)*10+4=").result,
             64,
@@ -84,7 +84,7 @@ class TestDiceParser(TestCase):
         )
 
     def test_default(self):
-        p = DiceParser({"sides": 17, "return": "max"})
+        p = DiceParser({"sides": 17, "returnfun": "max"})
         r = p.do_roll("9")
         self.assertIn(int(r), range(10, 9 * 17 + 1))
         r = p.do_roll("9f7")
@@ -222,7 +222,7 @@ class TestDiceParser(TestCase):
         self.assertGreater(a.result, b.result)
 
     def test_identityreturn(self):
-        p = DiceParser({"return": "id"})
+        p = DiceParser({"returnfun": "id"})
         r = p.do_roll("&loopsum 1 8&")
         self.assertEqual(8, r.result)
 

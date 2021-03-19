@@ -416,6 +416,10 @@ def chances(selector, modifier=0, number_of_quantiles=None, mode=None):
         append("unordered_data", str(tuple(selector)) + str(occurren) + "\n")
         occurrences = occurren[modifier]
         yield f"Data for {selector} has been generated"
+    except FileNotFoundError:
+        Data.set("unordered_data", "")
+        raise
+
     yield "generating result..."
 
     if number_of_quantiles is None:

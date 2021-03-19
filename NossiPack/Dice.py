@@ -1,4 +1,5 @@
 import random
+from typing import Union, List
 from warnings import warn
 
 from NossiPack.krypta import DescriptiveError
@@ -14,34 +15,46 @@ def str_to_slice(inp):
 class Dice:
     returnfun: str
 
-    def __init__(self, info):
+    def __init__(
+        self,
+        amount: Union[int, List[int]],
+        sides: int,
+        difficulty: Union[None, int] = None,
+        onebehaviour=0,
+        returnfun: Union[None, str] = None,
+        explosion=0,
+        minimum=1,
+        sort=False,
+        rerolls=0,
+        **kwargs
+    ):
         try:
             self.sign = 1
             self.r = []
-            self.min = info.get("additivebonus", 1)  # unlikely to get implemented
-            self.returnfun = info.get("return", None)
+            self.min = minimum
+            self.returnfun = returnfun
             self.explosions = 0
             self.literal = False
             try:
-                if isinstance(info["amount"], int):
-                    self.amount = info["amount"]
+                if isinstance(amount, int):
+                    self.amount = amount
                 else:
-                    self.r = info["amount"]
+                    self.r = amount
                     self.literal = True
                     self.amount = len(self.r)
             except KeyError:
                 raise DescriptiveError("Missing dice amount!")
             try:
-                self.max = int(info["sides"]) + self.min - 1
+                self.max = int(sides) + self.min - 1
             except KeyError:
                 if self.returnfun != "id":
                     raise DescriptiveError("Dice without sides!")
-            self.difficulty = info.get("difficulty", None)
-            self.subone = info.get("onebehaviour", 0)
+            self.difficulty = difficulty
+            self.subone = onebehaviour
 
-            self.explodeon = self.max + 1 - info.get("explosion", 0)
-            self.sort = info.get("sort", False)
-            self.rerolls = int(info.get("rerolls", 0))  # only used for fenrolls
+            self.explodeon = self.max + 1 - explosion
+            self.sort = sort
+            self.rerolls = int(rerolls)
             self.log = ""
             self.dbg = ""
             self.comment = ""
@@ -107,14 +120,14 @@ class Dice:
             raise DescriptiveError("No Amount set for reroll!")
 
         return Dice(
-            {
+            **{
                 "sides": self.max,
                 "difficulty": self.difficulty,
                 "onebehaviour": self.subone,
-                "return": self.returnfun,
+                "_return": self.returnfun,
                 "explode": self.max - self.explodeon - 1,
                 "amount": self.amount,
-                "additivebonus": self.min,
+                "_min": self.min,
                 "sort": self.sort,
                 "rerolls": self.rerolls,
             }
@@ -212,7 +225,7 @@ class Dice:
         self.log = ""
         try:
             diff = int(self.difficulty)
-        except:
+        except TypeError:
             raise DescriptiveError("No Difficulty set!")
         for x in self.r:
             self.log += str(x) + ": "
@@ -293,7 +306,7 @@ class Dice:
     def result(self) -> int:
         return (
             self.roll_sel()
-            if self.returnfun.endswith("@")
+            if self.returnfun is not None and self.returnfun.endswith("@")
             else self.roll_wodsuccesses()
             if self.returnfun == "threshhold"
             else max(self.r) * self.sign
@@ -321,7 +334,7 @@ class Dice:
 
     @classmethod
     def empty(cls) -> "Dice":
-        return Dice({"max": 0, "amount": 0, "return": "", "sides": 0})
+        return Dice(sides=0, amount=0, _return="")
 
     def isempty(self):
         return len(self.r) == 0 and self.amount == 0

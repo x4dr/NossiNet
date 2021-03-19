@@ -1,6 +1,7 @@
 import importlib.resources
 import json
 import pathlib
+import pickle
 
 DATABASE = "./NN.db"
 
@@ -61,3 +62,16 @@ def getnossihelp():
 
 def getcardhelp():
     return get("cards.help")
+
+
+def write(name, obj):
+    with open(handle(name), "wb") as data:
+        pickle.dump(obj, data)
+
+
+def read(name):
+    try:
+        with open(handle(name), "rb") as data:
+            return pickle.load(data)
+    except EOFError:
+        return None

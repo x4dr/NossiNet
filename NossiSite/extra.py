@@ -141,7 +141,7 @@ def register(app=None):
                     return {"result": list(deck.draw(par))}
                 elif command == "spend":
                     return {"result": list(deck.spend(par))}
-                elif command == "return":
+                elif command == "returnfun":
                     return {"result": list(deck.pilereturn(par))}
                 elif command == "dedicate":
                     if ":" not in par:
