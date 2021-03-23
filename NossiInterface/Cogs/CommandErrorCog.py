@@ -35,14 +35,15 @@ class CommandErrorCog(commands.Cog):
             return
 
         msg, ctx.comment = extract_comment(ctx.message.content)
-        await rollhandle(
-            " ".join(msg),
-            ctx.comment,
-            ctx.author,
-            ctx.send,
-            ctx.message.add_reaction,
-            self.client.cogs.get("NossiBot", None).storage,
-        )
+        if len(msg) <= 30 and not msg.startswith("?"):
+            await rollhandle(
+                " ".join(msg),
+                ctx.comment,
+                ctx.author,
+                ctx.send,
+                ctx.message.add_reaction,
+                self.client.cogs.get("NossiBot", None).storage,
+            )
 
         if ctx.message.nonce == "recursed":
             return False
@@ -59,7 +60,7 @@ class CommandErrorCog(commands.Cog):
         except CommandNotFound:
             if ctx.message.content.startswith("?"):
                 await ctx.send("Not found")
-            raise
+            # silently ignore
 
 
 def setup(client: commands.Bot):
