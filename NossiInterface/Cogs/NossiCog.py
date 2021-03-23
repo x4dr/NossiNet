@@ -1,3 +1,4 @@
+import json
 import pathlib
 
 import discord
@@ -10,7 +11,7 @@ from NossiInterface.Tools import discordname
 class NossiCog(commands.Cog, name="NossiBot"):
     def __init__(self, client):
         self.client = client
-        # self.channels = json.loads(Data.get("channels"))
+        self.channels = json.loads(Data.get("channels"))
         self.disconnecting = []
         self.storage = Data.read("NossiBot.storage") or dict()
         self.shutdownflag = pathlib.Path("~/shutdown_nossibot")
@@ -33,13 +34,11 @@ class NossiCog(commands.Cog, name="NossiBot"):
 
     @commands.group()
     async def nossi(self, ctx: commands.Context):
-        """ currently disabled """
-        pass
-        """self.channels[ctx.message.channel.id] = (
+        self.channels[ctx.message.channel.id] = (
             ctx.channel.name
             if hasattr(ctx.channel, "name")
             else discordname(ctx.message.author)
-        )"""
+        )
         pass
 
     @commands.is_owner()
