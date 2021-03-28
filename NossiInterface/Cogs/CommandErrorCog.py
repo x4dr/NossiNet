@@ -20,8 +20,6 @@ class CommandErrorCog(commands.Cog):
     async def on_command_error(
         self, ctx: commands.Context, error: commands.CommandError
     ):
-        if not allowed(ctx):
-            return
         # return if there is an error handler already
         if hasattr(ctx.command, "on_error") or (
             ctx.cog
@@ -40,6 +38,17 @@ class CommandErrorCog(commands.Cog):
             return
 
         msg, ctx.comment = extract_comment(ctx.message.content)
+        if ctx.message.nonce == "recursed":
+            return False
+        for pref in {"NossiBot "}:
+            msg: Message = copy(ctx.message)
+            msg.content = pref + ctx.message.content
+            msg.nonce = "recursed"
+            await self.client.process_commands(msg)
+
+        if not allowed(ctx):
+            return
+
         if len(" ".join(msg)) <= 30 and not " ".join(msg).startswith("?"):
             await rollhandle(
                 " ".join(msg),
@@ -49,14 +58,6 @@ class CommandErrorCog(commands.Cog):
                 ctx.message.add_reaction,
                 self.client.cogs.get("NossiBot", None).storage,
             )
-
-        if ctx.message.nonce == "recursed":
-            return False
-        for pref in {"NossiBot "}:
-            msg: Message = copy(ctx.message)
-            msg.content = pref + ctx.message.content
-            msg.nonce = "recursed"
-            await self.client.process_commands(msg)
 
         try:
             raise error
