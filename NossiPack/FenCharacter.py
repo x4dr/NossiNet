@@ -48,7 +48,7 @@ class FenCharacter:
         self._xp_cache = {}
         self.errors = []
 
-    def stat_definitions(self):
+    def stat_definitions(self) -> dict:
         """
         :return: simplified dictionary of stats and their values
         """

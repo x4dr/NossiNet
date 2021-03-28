@@ -35,7 +35,7 @@ class CommandErrorCog(commands.Cog):
             return
 
         msg, ctx.comment = extract_comment(ctx.message.content)
-        if len(msg) <= 30 and not msg.startswith("?"):
+        if len(" ".join(msg)) <= 30 and not " ".join(msg).startswith("?"):
             await rollhandle(
                 " ".join(msg),
                 ctx.comment,

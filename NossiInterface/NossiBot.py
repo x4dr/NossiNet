@@ -55,11 +55,12 @@ async def cogreload():
 
 @client.check_once
 def allowed(ctx: Context):
-    nc = client.get_cog("NossiCog")
+    nc = client.get_cog("NossiBot")
     return (
         isinstance(ctx.channel, discord.channel.DMChannel)
         or client.user.mention in ctx.message.mentions
-        or (nc and ctx.message.channel in nc.allowed_channels)
+        or ctx.message.content.strip().startswith("NossiBot")
+        or (nc and ctx.message.channel.id in nc.allowed_channels)
     )
 
 

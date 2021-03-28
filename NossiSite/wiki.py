@@ -779,7 +779,11 @@ def get_fen_char(c: str) -> Union[FenCharacter, None]:
 
 
 def load_user_char_stats(user):
-    return load_user_char(user).stat_definitions()
+    char = load_user_char(user)
+    if char:
+        return char.stat_definitions()
+    else:
+        return {}
 
 
 def load_user_char(user):
