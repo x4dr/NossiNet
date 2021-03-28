@@ -5,11 +5,14 @@ from discord import Message
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound
 
+from NossiInterface.NossiBot import allowed
 from NossiInterface.RollInterface import rollhandle
 from NossiInterface.Tools import extract_comment
 
 
 class CommandErrorCog(commands.Cog):
+    client: commands.Bot
+
     def __init__(self, client):
         self.client = client
 
@@ -17,6 +20,8 @@ class CommandErrorCog(commands.Cog):
     async def on_command_error(
         self, ctx: commands.Context, error: commands.CommandError
     ):
+        if not allowed(ctx):
+            return
         # return if there is an error handler already
         if hasattr(ctx.command, "on_error") or (
             ctx.cog
@@ -47,7 +52,7 @@ class CommandErrorCog(commands.Cog):
 
         if ctx.message.nonce == "recursed":
             return False
-        for pref in {"nossi "}:
+        for pref in {"NossiBot "}:
             msg: Message = copy(ctx.message)
             msg.content = pref + ctx.message.content
             msg.nonce = "recursed"
