@@ -1,7 +1,6 @@
 from copy import copy
 
 import requests
-from discord import Message
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound
 
@@ -38,20 +37,23 @@ class CommandErrorCog(commands.Cog):
             return
 
         msg, ctx.comment = extract_comment(ctx.message.content)
-        if ctx.message.nonce == "recursed":
+        if ctx.message.nonce == "recursed" or ctx.message.content.startswith(
+            "NossiBot "
+        ):
             return False
         for pref in {"NossiBot "}:
-            msg: Message = copy(ctx.message)
-            msg.content = pref + ctx.message.content
-            msg.nonce = "recursed"
-            await self.client.process_commands(msg)
+            ctx.message.content = pref + ctx.message.content
+            ctx.message.nonce = "recursed"
+            await self.client.invoke(ctx)
 
         if not allowed(ctx):
             return
 
-        if len(" ".join(msg)) <= 30 and not " ".join(msg).startswith("?"):
+        msg = " ".join(msg)
+
+        if len(msg) <= 30 and not msg.startswith("?"):
             await rollhandle(
-                " ".join(msg),
+                msg,
                 ctx.comment,
                 ctx.author,
                 ctx.send,
