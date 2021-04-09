@@ -39,7 +39,7 @@ class CommandErrorCog(commands.Cog):
         if ctx.message.nonce == "recursed" or msg[0] in prefixes:
             return False
         for pref in prefixes:
-            ctx.message.content = pref + " " + msg
+            ctx.message.content = pref + " " + " ".join(msg)
             ctx.message.nonce = "recursed"
             await self.client.invoke(ctx)
 
