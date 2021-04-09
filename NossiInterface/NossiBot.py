@@ -53,17 +53,15 @@ async def cogreload():
         client.load_extension(f"Cogs.{cog}Cog")
 
 
-@client.check_once
-def allowed(ctx: Context):
+def allowed(msg: discord.Message):
     nc = client.get_cog("NossiBot")
-    return (
-        isinstance(ctx.channel, discord.channel.DMChannel)
-        or (
-            client.user.mention in ctx.message.mentions if client.user else False
-        )  # TODO
-        or ctx.message.content.strip().startswith("NossiBot")
-        or (nc and ctx.message.channel.id in nc.allowed_channels)
-    )
+    dmchannel = isinstance(msg.channel, discord.channel.DMChannel)
+    mentioned = client.user.mention in msg.mentions if client.user else False
+    adressed = msg.content.strip().startswith("NossiBot")
+    allowed_in_channel = nc and msg.channel.id in nc.allowed_channels
+    if not nc:
+        (await client.application_info()).owner.send("NossiCog not loaded!")
+    return dmchannel or mentioned or adressed or allowed_in_channel
 
 
 @client.event
@@ -75,9 +73,9 @@ async def on_ready():
     print("------")
     p = discord.Permissions(117824)
     print(discord.utils.oauth_url(client.user.id, p))
-    info = await client.application_info()
-    await info.owner.send("I Live!")
-    client.owner = info.owner
+    await (await client.application_info()).owner.send(
+        "I Live! My Cogs are:" + str(list(client.cogs.keys()))
+    )
 
 
 @client.event
@@ -91,8 +89,7 @@ async def on_disconnect():
 @client.event
 async def on_resume():
     print("Resumed...")
-    info = await client.application_info()
-    await info.owner.send("I have Resumed")
+    await (await client.application_info()).owner.send("I have Resumed")
 
 
 @client.event
@@ -109,13 +106,15 @@ async def on_message_delete(message: discord.Message):
 
 
 @client.before_invoke
-async def test_before(ctx: Context):
+async def setupctx(ctx: Context):
     ctx.send = get_remembering_send(ctx.message)
 
 
 @client.event
 async def on_message(message):
     if message.author == client.user:
+        return
+    if not allowed(message):
         return
     errreport = message.content.startswith("?")
     if errreport:

@@ -4,7 +4,6 @@ import requests
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound
 
-from NossiInterface.NossiBot import allowed
 from NossiInterface.RollInterface import rollhandle
 from NossiInterface.Tools import extract_comment
 
@@ -35,19 +34,14 @@ class CommandErrorCog(commands.Cog):
                 msg.content = m
                 await self.client.process_commands(msg)
             return
-
+        prefixes = {"NossiBot"}  # Cogs to route to by default
         msg, ctx.comment = extract_comment(ctx.message.content)
-        if ctx.message.nonce == "recursed" or ctx.message.content.startswith(
-            "NossiBot "
-        ):
+        if ctx.message.nonce == "recursed" or msg.split(" ")[0] in prefixes:
             return False
-        for pref in {"NossiBot "}:
-            ctx.message.content = pref + ctx.message.content
+        for pref in prefixes:
+            ctx.message.content = pref + " " + msg
             ctx.message.nonce = "recursed"
             await self.client.invoke(ctx)
-
-        if not allowed(ctx):
-            return
 
         msg = " ".join(msg)
 
@@ -66,7 +60,7 @@ class CommandErrorCog(commands.Cog):
         except requests.exceptions.ConnectionError:
             await ctx.send("Connection failed.")
         except CommandNotFound:
-            if ctx.message.content.startswith("?"):
+            if hasattr(ctx, "errreport") and ctx.errreport:
                 await ctx.send("Not found")
             # silently ignore
 
