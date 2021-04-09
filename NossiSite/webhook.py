@@ -21,7 +21,7 @@ def register(app=None):
         if app.config.get("TRAVIS"):
             return
         if req["repository"]["name"] == "NossiNet":
-            exit(0)
+            exit(4)
         else:
             print("got request from:", req["repository"]["name"])
 
@@ -118,6 +118,7 @@ def register(app=None):
             and json_data["state"] == "passed"
             and json_data["branch"] == "master"
         ):
-            exit(0)
             print("restart triggered by travis")
+            exit(4)
+
         return {"status": "received"}
