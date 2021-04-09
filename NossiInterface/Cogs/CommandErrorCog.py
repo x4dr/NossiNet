@@ -36,7 +36,7 @@ class CommandErrorCog(commands.Cog):
             return
         prefixes = {"NossiBot"}  # Cogs to route to by default
         msg, ctx.comment = extract_comment(ctx.message.content)
-        if ctx.message.nonce == "recursed" or msg.split(" ")[0] in prefixes:
+        if ctx.message.nonce == "recursed" or msg[0] in prefixes:
             return False
         for pref in prefixes:
             ctx.message.content = pref + " " + msg
