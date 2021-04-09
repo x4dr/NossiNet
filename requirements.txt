@@ -33,7 +33,6 @@ python-socketio==5.1.0
 requests==2.25.1
 six==1.15.0
 urllib3==1.26.4
-webencodings==0.5.1
 Werkzeug==1.0.1
 setuptools==56.0.0
 ply==3.11

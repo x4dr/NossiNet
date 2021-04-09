@@ -44,7 +44,6 @@ setuptools.setup(
         "requests",
         "six",
         "urllib3",
-        "webencodings",
         "Werkzeug",
     ],
     classifiers=[

@@ -53,7 +53,7 @@ async def cogreload():
         client.load_extension(f"Cogs.{cog}Cog")
 
 
-def allowed(msg: discord.Message):
+async def allowed(msg: discord.Message):
     nc = client.get_cog("NossiBot")
     dmchannel = isinstance(msg.channel, discord.channel.DMChannel)
     mentioned = client.user.mention in msg.mentions if client.user else False
@@ -114,7 +114,7 @@ async def setupctx(ctx: Context):
 async def on_message(message):
     if message.author == client.user:
         return
-    if not allowed(message):
+    if not await allowed(message):
         return
     errreport = message.content.startswith("?")
     if errreport:
