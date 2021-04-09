@@ -42,7 +42,7 @@ class NossiCog(commands.Cog, name="NossiBot"):
         await self.client.close()
 
     @commands.is_owner()
-    @nossi.command("JOIN ME")
+    @nossi.command("JOIN")
     async def joinme(self, ctx):
         vc: discord.VoiceChannel = ctx.author.voice.channel
         connection = await vc.connect()
