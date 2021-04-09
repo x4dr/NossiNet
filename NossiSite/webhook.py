@@ -1,9 +1,6 @@
 import base64
 import json
 import logging
-import subprocess
-import time
-from threading import Thread
 from urllib.parse import parse_qs
 
 from OpenSSL.crypto import Error as SignatureError
@@ -12,23 +9,6 @@ from flask import request, abort
 from github_webhook import Webhook
 
 from NossiSite.base import app as defaultapp
-
-
-def check_and_restart(commit):
-    # skipcq: BAN-B607, BAN-B603
-    res = subprocess.run(["nossilint", commit], capture_output=True, encoding="utf-8")
-    result = res.stdout
-    if result.strip():
-        print("update lint result ", result)
-        print("new version didnt pass lint")
-        raise Exception("Didnt pass lint!")
-    print("update lint successfull")
-    time.sleep(1)
-    print("new version checks out. restarting...")
-    # skipcq: BAN-B607, BAN-B603
-    subprocess.run(["nossirestart", commit])
-
-    print("we should have never gotten here")
 
 
 def register(app=None):
@@ -41,8 +21,7 @@ def register(app=None):
         if app.config.get("TRAVIS"):
             return
         if req["repository"]["name"] == "NossiNet":
-            Thread(target=check_and_restart, args=(req["after"],)).start()
-            print("handled github webhook")
+            exit(0)
         else:
             print("got request from:", req["repository"]["name"])
 
@@ -138,7 +117,6 @@ def register(app=None):
             and json_data["state"] == "passed"
             and json_data["branch"] == "master"
         ):
-            # skipcq: BAN-B607, BAN-B603
-            subprocess.run(["nossirestart", json_data["commit"]])
+            exit(0)
             print("restart triggered by travis")
         return {"status": "received"}
