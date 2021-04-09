@@ -61,7 +61,10 @@ def register(app=None):
             pkey_public_key = load_publickey(FILETYPE_PEM, pkey)
             certificate = X509()
             certificate.set_pubkey(pkey_public_key)
-            verify(certificate, sig, payload, str("sha1"))
+            print("cert", certificate)
+            print("sig", sig)
+            print("payload", payload)
+            verify(certificate, sig, payload, "sha1")
 
         def _get_signature():
             """
@@ -106,7 +109,7 @@ def register(app=None):
             check_authorized(signature, public_keys[0], json_payload)
         except SignatureError:
             try:
-                check_authorized(signature, public_keys[0], json_payload)
+                check_authorized(signature, public_keys[1], json_payload)
             except SignatureError:
                 logger.error(f"Unauthorized request by {request.headers['X-Real-Ip']}")
                 return abort(400)
