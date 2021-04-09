@@ -61,8 +61,8 @@ def register(app=None):
             pkey_public_key = load_publickey(FILETYPE_PEM, pkey)
             certificate = X509()
             certificate.set_pubkey(pkey_public_key)
-            print("cert", certificate)
-            print("sig", sig)
+            print("pubkey", pkey_public_key)
+            print("sig", sig.hex())
             print("payload", payload)
             verify(certificate, sig, payload, "sha1")
 
@@ -76,9 +76,7 @@ def register(app=None):
         signature = _get_signature()
         body = request.get_data()
         qs = parse_qs(body.decode())
-        print("QS", qs)
         json_payload = qs["payload"][0]
-        print("PAYLOAD:", json_payload)
         try:
             public_keys = _get_travis_public_keys()
         except requests.Timeout:
