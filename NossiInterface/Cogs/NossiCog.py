@@ -24,6 +24,7 @@ class NossiCog(commands.Cog, name="NossiBot"):
     @tasks.loop(seconds=5)
     async def tasks(self):
         while self.disconnecting:
+            print("disconecting voice")
             await self.disconnecting.pop().disconnect()
         if self.shutdownflag.exists():
             self.shutdownflag.unlink()
@@ -44,8 +45,9 @@ class NossiCog(commands.Cog, name="NossiBot"):
     @commands.is_owner()
     @nossi.command("JOIN")
     async def joinme(self, ctx):
-        vc: discord.VoiceChannel = ctx.author.voice.channel
-        connection = await vc.connect()
+        vc = ctx.author.voice.channel
+        connection: discord.VoiceClient = await vc.connect()
+        print("Voice Connection:", connection.is_connected())
         connection.play(
             # discord.FFmpegOpusAudio("default", before_options="-f pulse"),
             # contents of pacatffmpeg
@@ -58,6 +60,7 @@ class NossiCog(commands.Cog, name="NossiBot"):
             ),
             after=lambda e: self.disconnecting.append(connection),
         )
+        print("voice done")
 
     @commands.is_owner()
     @nossi.command("LEAVE")
