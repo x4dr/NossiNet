@@ -14,7 +14,7 @@ certifi==2020.12.5
 chardet==3.0.4
 Click==7.1.2
 dnspython==1.16.0
-eventlet==0.30.1
+eventlet==0.31.0
 Flask==1.1.2
 Flask-SocketIO==5.0.1
 github-webhook==1.0.4
