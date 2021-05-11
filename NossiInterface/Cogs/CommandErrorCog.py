@@ -2,7 +2,7 @@ from copy import copy
 
 import requests
 from discord.ext import commands
-from discord.ext.commands import CommandNotFound
+from discord.ext.commands import CommandNotFound, Group
 
 from NossiInterface.RollInterface import rollhandle
 from NossiInterface.Tools import extract_comment
@@ -19,6 +19,7 @@ class CommandErrorCog(commands.Cog):
         self, ctx: commands.Context, error: commands.CommandError
     ):
         # return if there is an error handler already
+        # noinspection PyProtectedMember
         if hasattr(ctx.command, "on_error") or (
             ctx.cog
             and ctx.cog._get_overridden_method(ctx.cog.cog_command_error) is not None
@@ -34,14 +35,15 @@ class CommandErrorCog(commands.Cog):
                 msg.content = m
                 await self.client.process_commands(msg)
             return
-        prefixes = {"NossiBot"}  # Cogs to route to by default
+        auto_cmd = {"NossiBot"}  # Cogs to route to by default
         msg, ctx.comment = extract_comment(ctx.message.content)
-        if ctx.message.nonce == "recursed" or msg[0] in prefixes:
+        if ctx.message.nonce == "recursed" or msg[0] in auto_cmd:
             return False
-        for pref in prefixes:
-            ctx.message.content = pref + " " + " ".join(msg)
-            ctx.message.nonce = "recursed"
-            await self.client.invoke(ctx)
+        for pref in auto_cmd:
+            if msg:
+                command: Group = self.client.all_commands[pref].get_command(msg[0])
+                if command:
+                    return await command.invoke(ctx)
 
         msg = " ".join(msg)
 
