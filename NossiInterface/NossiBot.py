@@ -5,7 +5,6 @@ from logging import warning
 import discord
 import requests
 from discord.ext import commands
-from discord.ext.commands import Context
 
 from NossiInterface.Cogs.NossiCog import NossiCog
 from NossiInterface.Tools import (
@@ -82,7 +81,7 @@ async def on_ready():
 async def on_disconnect():
     print(
         f"Disconnected at {time.time()}, accessibility of google:",
-        requests.get("http://www.google.com").status_code,
+        requests.get("https://www.google.com").status_code,
     )
 
 
@@ -105,11 +104,6 @@ async def on_message_delete(message: discord.Message):
     await delete_replies(message)
 
 
-@client.before_invoke
-async def setupctx(ctx: Context):
-    ctx.send = get_remembering_send(ctx.message)
-
-
 @client.event
 async def on_message(message):
     if message.author == client.user:
@@ -127,6 +121,7 @@ async def on_message(message):
     message.content = await handle_defines(msg, message, nc.storage, nc.persist)
     ctx = await client.get_context(message)
     ctx.errreport = errreport
+    ctx.send = get_remembering_send(message)
     await client.invoke(ctx)
 
 
