@@ -32,7 +32,9 @@ class RemindCog(commands.Cog, name="Remind"):
 
         while repeat:
             repeat = False  # probably wont pull reminders more than once
-            nr = next_reminders()
+            nr = list(next_reminders())
+            print("looking at reminders at:", [x[2] for x in nr])
+            print("now is", time.time())
             for r in nr:  # pull the next relevant reminders
                 delta = r[2] - time.time()
                 if delta > 60:
