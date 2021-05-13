@@ -45,6 +45,7 @@ class RemindCog(commands.Cog, name="Remind"):
                     )  # since reminders are in order we consume them in order
                     channel: TextChannel = self.client.get_channel(r[1])
                     if not channel:
+                        print("no connection, no reminder")
                         break  # not connected, try later
                     await channel.send(r[3])
                     delreminder(r[0])

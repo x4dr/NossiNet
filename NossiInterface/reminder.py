@@ -54,7 +54,7 @@ reminddb = setup_db()
 def next_reminders():
     cur = reminddb.cursor()
     return cur.execute(
-        "SELECT * FROM reminders ORDER BY executiondate DESC LIMIT 3"
+        "SELECT * FROM reminders ORDER BY executiondate LIMIT 3"
     ).fetchall()
 
 
