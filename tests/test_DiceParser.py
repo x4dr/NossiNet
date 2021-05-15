@@ -159,7 +159,9 @@ class TestDiceParser(TestCase):
     def test_whitespacing(self):
         p = DiceParser()
         p.defines = {"b": "3", "a": "2"}  # no defaults
-        r = p.do_roll("a,b@5d10", 0)
+        r = p.do_roll(" a   ,   b   @   5  d    10", 0)
+        self.assertEqual("2,3@", r.returnfun)
+        self.assertEqual("2,3@5d10", r.name)
         self.assertIn(r.result, range(2, 20))
 
     def test_recursion(self):

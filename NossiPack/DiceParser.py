@@ -163,7 +163,7 @@ class DiceParser:
     @staticmethod
     @regexrouter.register(re.compile(r"^(?P<returnfun>(-?\d+(\s*,\s*)?)+\s*@)"))
     def extract_selectors(matches):
-        return matches
+        return {"returnfun": matches["returnfun"].replace(" ", "")}
 
     @staticmethod
     @regexrouter.register(re.compile(r"(?<=[0-9 -])d\s*(?P<sides>[0-9]{1,5})"))
@@ -185,7 +185,7 @@ class DiceParser:
         return {"sort": bool(matches.get("sort", ""))}
 
     @staticmethod
-    @regexrouter.register(re.compile(r"^(.*@)?(?P<amount>-?(\d+))(?!.*@)"))
+    @regexrouter.register(re.compile(r"^(.*@)?(?P<amount>\s*-?\s*(\d+))(?!.*@)"))
     def extract_core(matches):
         return {"amount": int(matches["amount"].replace(" ", ""))}
 
