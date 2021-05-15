@@ -2,10 +2,10 @@ import pathlib
 import re
 import sqlite3
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, tzinfo
 from typing import List, Tuple
-
 import discord
+from dateutil.tz import gettz
 from pytz import reference
 
 last = {}
@@ -35,16 +35,18 @@ seconds = r"(?P<seconds>\d+)\s*(s(ec(onds?))?)"
 
 def setup_db():
     path = pathlib.Path(__file__).parent / "remind.db"
-    preexisting = path.exists()
     con = sqlite3.connect(path)
-    if not preexisting:
-        con.execute(
-            "CREATE TABLE IF NOT EXISTS reminders ("
-            "id integer PRIMARY KEY,"
-            "channel int NOT NULL,"
-            "executiondate DATE,"
-            "message TEXT);"
-        )
+    con.executescript(
+        "CREATE TABLE IF NOT EXISTS reminders ("
+        "id integer PRIMARY KEY,"
+        "channel int NOT NULL,"
+        "executiondate DATE,"
+        "message TEXT);"
+        "CREATE TABLE IF NOT EXISTS tz ("
+        "id integer PRIMARY KEY,"
+        "user int NOT NULL UNIQUE,"
+        "tzname TEXT);"
+    )
     return con
 
 
@@ -67,7 +69,26 @@ def save_reminder(date, channel, message):
     reminddb.commit()
 
 
-def extract_time_delta(inp: str):
+def set_user_tz(user: int, tzname: str):
+    cur = reminddb.cursor()
+    if not gettz(tzname):
+        raise ValueError("Not a valid tz!")
+    cur.execute(
+        "INSERT OR REPLACE INTO tz(user,tzname) VALUES (?,?)",
+        (user, tzname),
+    )
+    reminddb.commit()
+
+
+def get_user_tz(user: int) -> tzinfo:
+    cur = reminddb.cursor()
+    tzname = cur.execute("SELECT tzname FROM tz WHERE user = ?", (user,)).fetchone()
+    if tzname:
+        return gettz(tzname[0])
+    raise KeyError("no tz!")
+
+
+def extract_time_delta(inp: str, userid: int):
     inp = inp.strip()
     if inp.startswith("in") or any(x in inp[:8] for x in "dhms"):
         inp = inp[2:].strip() if inp.startswith("in") else inp
@@ -96,9 +117,11 @@ def extract_time_delta(inp: str):
         inp = inp.removeprefix("at").removeprefix("on")
     date = re.match(r"^(?P<complete>[0-9.: -]*)", inp)
     msg = inp[len(date.group("complete")) :]
+    tz = get_user_tz(userid)
     for fmt in date_formats:
         try:
             d = datetime.strptime(date.group("complete").strip(), fmt)
+            d = d.replace(tzinfo=tz)
             if d.year == 1900:
                 d = d.combine(datetime.now().date(), d.time())
                 if d < datetime.now():
@@ -122,7 +145,8 @@ def newreminder(message: discord.Message, msg: str):
         mention = message.author.mention + " "
     else:
         mention = ""
-    relatime, msg = extract_time_delta(msg)
+    relatime, msg = extract_time_delta(msg, message.author.id)
+
     msg = msg.removeprefix("that").strip()
     if msg.lower().startswith("i "):
         msg = "You" + msg[1:]

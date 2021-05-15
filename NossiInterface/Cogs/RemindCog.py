@@ -1,7 +1,7 @@
 import asyncio
 import datetime
+import re
 import time
-from typing import re
 
 from discord import TextChannel
 from discord.ext import commands, tasks
@@ -14,6 +14,7 @@ from NossiInterface.reminder import (
     newreminder,
     listreminder,
     next_reminders,
+    set_user_tz,
 )
 
 
@@ -48,11 +49,29 @@ class RemindCog(commands.Cog, name="Remind"):
             else:  # if we consume all within a minute, we need to pull more
                 repeat = bool(nr)  # but only if there were reminders
 
+    @commands.command()
+    async def tzset(self, ctx: commands.Context, tz=None):
+        if not tz:
+            return await ctx.message.add_reaction("❓")
+        try:
+            set_user_tz(ctx.author.id, tz)
+            return await ctx.message.add_reaction("👍")
+        except ValueError:
+            await ctx.send(
+                ctx.author.mention
+                + " Not a Valid TimeZone. Try Europe/Berlin or look up your IANA tzinfo online."
+            )
+
     @commands.group("remind", case_insensitive=True, invoke_without_command=True)
     async def remind(self, ctx: commands.Context, *msg):
-        newdate = newreminder(ctx.message, " ".join(msg))
-        await ctx.send("will remind on " + newdate.isoformat())
-        return await self.reminding()
+        try:
+            newdate = newreminder(ctx.message, " ".join(msg))
+            await ctx.send("will remind on " + newdate.isoformat())
+            return await self.reminding()
+        except KeyError:
+            await ctx.send(
+                "No timezone configured, please use the command tzset with your timezone."
+            )
 
     @remind.command("del")
     async def remind_del(self, ctx, *msg):
