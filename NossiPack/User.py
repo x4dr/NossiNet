@@ -291,6 +291,14 @@ class Config:
         db.commit()
         # else it does not exist
 
+    @staticmethod
+    def users_with_option_value(option, value, db=None):
+        db = db or User.connect_db()
+        return db.execute(
+            "SELECT user FROM configs WHERE option LIKE :option AND value LIKE :value;",
+            dict(option=option, value=value),
+        ).fetchall()
+
 
 class Userlist:
     userlist: List[User]

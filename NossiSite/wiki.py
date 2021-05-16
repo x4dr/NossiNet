@@ -16,7 +16,7 @@ from Fantasy.Armor import Armor
 from Fantasy.Item import Item
 from NossiPack.FenCharacter import FenCharacter
 from NossiPack.MDPack import traverse_md, split_md, extract_tables, search_tables
-from NossiPack.User import User
+from NossiPack.User import User, Config
 from NossiPack.fengraph import weapondata, armordata
 from NossiPack.krypta import DescriptiveError, calculate
 from NossiSite.AfterResponse import AfterResponse
@@ -247,7 +247,7 @@ def register(app=None):
                     line = f"{'      '.join(', '.join(str(y) for y in x) for x in v)}"
                     f.write(f" {k: <4}: {line} \n")
             return "Reload please", 200, {"Content-Type": "text/plain; charset=utf-8"}
-        except:
+        except Exception:
             with open(p, "w") as f:
                 f.write("an error has previously occured and this request is blocked")
                 return (
@@ -304,7 +304,7 @@ def register(app=None):
         if isinstance(weapon, tuple):
             return weapon
         if format_txt:
-            return format_weapon(weapon)
+            return weapon  # format_weapon(weapon)
         return weapon
 
     def format_weapon(weapon_tab):
@@ -335,18 +335,32 @@ def register(app=None):
                 if e
             ]
 
-            print(a)
-
-            res: str = wikiload(x["context"])[2]
+            orig_res: str = wikiload(x["context"])[2]
+            res = orig_res[:]
             for seek in a[:-1]:
                 res = traverse_md(res, seek)
             found = traverse_md(res, a[-1])
+            if not res or (
+                not found and orig_res == res
+            ):  # searching by headline did not work
+                res: str = wikiload(x["context"])[2]
+                pos = res.find(a[0])
+                end = res[pos:].find("#")
+                return {"data": res[max(0, pos - 50) : pos + end]}
             if not found:
                 found = search_tables(res, a[-1], 1)
+
             return {"data": found}
         x = request.form
-        context = x["context"]
-        if User(session.get("user")).config("character_sheet", "") == context:
+
+        context = x.get("context", None)
+        wiki = not context
+        context = context or x.get("wiki", None)
+
+        sheet_owner = Config.users_with_option_value("character_sheet", context)
+        if sheet_owner:
+            sheet_owner = sheet_owner[0][0]
+        if (not sheet_owner) or session.get("user") == sheet_owner:
             old = x["original"].replace("\r\n", "\n")
             new = x["new"].replace("\r\n", "\n")
             title, tags, body = wikiload(context)
@@ -360,7 +374,10 @@ def register(app=None):
             wikisave(context, session.get("user"), title, tags, body)
         else:
             flash("Unauthorized, so ... no.", "error")
-        return redirect(url_for("fensheet", c=context))
+        if not wiki:
+            return redirect(url_for("fensheet", c=context))
+        else:
+            return redirect(url_for("wikipage", page=context))
 
     @app.route("/q/<a>")
     @app.route("/q/<a>/raw")

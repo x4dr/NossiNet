@@ -16,7 +16,7 @@ key = ""
 try:
     with open(os.path.join(os.path.expanduser("~"), "key"), "r") as keyfile:
         key = keyfile.read()
-except:
+except FileNotFoundError:
     with open(os.path.join(os.path.expanduser("~"), "key"), "w") as keyfile:
         key = "".join(random.SystemRandom().choice(string.hexdigits) for _ in range(48))
         keyfile.write(key)

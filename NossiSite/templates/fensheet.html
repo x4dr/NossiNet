@@ -1,79 +1,15 @@
 {%- extends "layout.html" -%}
 {% block head %}
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="sheet.css") }}">
-    <script>
-        window.addEventListener("load", () => {
-                {% if owner %}
-                    {% for err in character.errors %}
-                        alert("Error in Fensheet. Please Fix because some features rely on correct formatting.\n"+`{{err|safe}}`)
-                    {% endfor %}
-                {% endif %}
-                const textdiv = document.getElementById("text");
-                const editfield = document.getElementById("editfield");
-                const closebutton = document.getElementById("closebutton");
-                const overlay = document.getElementById("overlay");
-                const olddata = document.getElementById("original");
-                let lock = false;
-                const get_edit_content =
-                    (cat,sec,it, ref) => {
-                        return async () => {
-                            if (lock) return;
-                            lock = true
-                            const response = await fetch("{{url_for("live_edit")}}", {
-                                method: 'POST',
-                                body: JSON.stringify({"context": "{{ context }}", "cat": cat, "sec": sec, "it":it}),
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                }
-                            });
-
-                            let reply;
-                            try {
-                                editfield.className="editfield"
-                                reply = await response.json(); //extract JSON from the http response
-                                editfield.classList.add("activeedit");
-                            }
-                            catch (e) {
-                                reply = {"data":""}
-                                alert("Internal Server Error!")
-                            }
-                            lock = false;
-                            if (reply["data"].length<1){
-                                ref.className= ref.className.replace("editeable","failed")
-                                ref.onclick=()=>{};
-                                editfield.className="editfield"
-                            }
-                            else {
-                                textdiv.value = reply["data"];
-                                olddata.value = reply["data"];
-                                textdiv.focus();
-                                textdiv.click();
-                                document.body.style.overflow="hidden"
-                                overlay.style.visibility = "visible";
-                            }
-                        };
-                    }
-
-                closebutton.onclick = () => {
-                    document.body.style.overflow="auto"
-                    editfield.className="editfield"
-                    textdiv.value = ""
-                    olddata.value = ""
-                    overlay.style.visibility="hidden";
-                }
-
-                const anchors = document.getElementsByClassName('editeable');
-                for (let i = 0; i < anchors.length; i++) {
-                    let anchor = anchors[i];
-                    const {category, section, item} = anchor.dataset;
-                    anchor.onclick = get_edit_content(category,
-                        section, item, anchor)
-                }
-
-            }
-        );
-
-    </script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="live_edit.css") }}">
+    <script src="{{ url_for('static', filename="live_edit.js") }}"></script>
+        {% if owner %}
+            {% for err in character.errors %}
+        <script>
+        alert("Error in Fensheet. Please Fix because some features rely on correct formatting.\n"+`{{err|safe}}`)
+        </script>
+            {% endfor %}
+        {% endif %}
 {% endblock %}
 {%- macro dots(val,max=5) -%}
     {%- if val is not defined -%}
@@ -185,6 +121,8 @@
 {%- block body -%}
     {% if owner %}<a href="{{ url_for("editwiki", x=owner) }}"><input type="button" class="leeet" value="Edit"></a><br/>
     {% endif %}
+    <div style="visibility: hidden" id="context_element">{{ context }}</div>
+
     <div class="flexwrapper">
         {%- for key,val in character.Character.items() -%}
             <div class="infobox box{% if owner %} editeable{% endif %}" data-category="{{ key|urlencode }}">
