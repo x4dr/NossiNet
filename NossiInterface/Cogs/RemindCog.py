@@ -22,14 +22,10 @@ class RemindCog(commands.Cog, name="Remind"):
     def __init__(self, client):
         self.client: Bot = client
         self.reminding.start()
-        self.last_remind = 0
 
     @tasks.loop(minutes=1)
     async def reminding(self):
         repeat = True
-        if time.time() - self.last_remind < 60:
-            return
-        self.last_remind = time.time()
         while repeat:
             repeat = False  # probably wont pull reminders more than once
             nr = list(next_reminders())
@@ -65,9 +61,8 @@ class RemindCog(commands.Cog, name="Remind"):
     @commands.group("remind", case_insensitive=True, invoke_without_command=True)
     async def remind(self, ctx: commands.Context, *msg):
         try:
-            newdate = newreminder(ctx.message, " ".join(msg))
+            newdate = newreminder(ctx.message, " ".join(msg), ctx.author.id)
             await ctx.send("will remind on " + newdate.isoformat())
-            return await self.reminding()
         except KeyError:
             await ctx.send(
                 "No timezone configured, please use the command tzset with your timezone."

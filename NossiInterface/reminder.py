@@ -4,7 +4,9 @@ import sqlite3
 import time
 from datetime import datetime, timedelta, tzinfo
 from typing import List, Tuple
+
 import discord
+import pytz
 from dateutil.tz import gettz
 from pytz import reference
 
@@ -121,11 +123,12 @@ def extract_time_delta(inp: str, userid: int):
     for fmt in date_formats:
         try:
             d = datetime.strptime(date.group("complete").strip(), fmt)
-            d = d.replace(tzinfo=tz)
             if d.year == 1900:
                 d = d.combine(datetime.now().date(), d.time())
                 if d < datetime.now():
                     d += timedelta(days=1)
+            d = d.replace(tzinfo=tz)
+            d = d.astimezone(pytz.utc)
             return (
                 d.timestamp() - time.time(),
                 msg,
@@ -138,7 +141,7 @@ def extract_time_delta(inp: str, userid: int):
         raise ValueError("unrecognizeable format:" + inp)
 
 
-def newreminder(message: discord.Message, msg: str):
+def newreminder(message: discord.Message, msg: str, userid: int):
     msg = msg.strip()
     if msg.startswith("me "):
         msg = msg[3:]
@@ -152,7 +155,8 @@ def newreminder(message: discord.Message, msg: str):
         msg = "You" + msg[1:]
     date = time.time() + relatime
     save_reminder(date, message.channel.id, mention + msg)
-    return datetime.fromtimestamp(int(date), reference.LocalTimezone())
+    tz = get_user_tz(userid)
+    return datetime.fromtimestamp(int(date), tz if tz else reference.LocalTimezone())
 
 
 def delreminder(reminder_id):
