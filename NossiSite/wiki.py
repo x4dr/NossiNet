@@ -324,7 +324,7 @@ def register(app=None):
     @app.route("/live_edit", methods=["POST"])
     def live_edit():
         x = request.get_json()
-        if x:
+        if x:  # json was transmitted
             a = [
                 e
                 for e in [
@@ -335,22 +335,20 @@ def register(app=None):
                 if e
             ]
 
-            orig_res: str = wikiload(x["context"])[2]
-            res = orig_res[:]
+            res: str = wikiload(x["context"])[2]
+            if m := re.match(r"perc(0\.?\d*|1)", a[0]):  # percentage request
+                ratio = float(m.group(1))
+                pos = int(len(res) * ratio)
+                return {"data": res[max(0, pos - 200) : pos + 500]}
             for seek in a[:-1]:
                 res = traverse_md(res, seek)
             found = traverse_md(res, a[-1])
-            if not res or (
-                not found and orig_res == res
-            ):  # searching by headline did not work
-                res: str = wikiload(x["context"])[2]
-                pos = res.find(a[0])
-                end = res[pos:].find("#")
-                return {"data": res[max(0, pos - 50) : pos + end]}
+
             if not found:
                 found = search_tables(res, a[-1], 1)
 
             return {"data": found}
+        # else, form was transmitted
         x = request.form
 
         context = x.get("context", None)

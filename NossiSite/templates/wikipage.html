@@ -5,9 +5,17 @@
     <script>
         window.addEventListener("click", function(e) {
             const x = e.clientX, y = e.clientY, mouselement = document.elementFromPoint(x, y);
-            if (document.getElementById("wikibody").contains(mouselement)){
-                mouselement.dataset["category"] = mouselement.innerText.substr(0,40);
-                mouselement.onclick = get_edit_content("{{wiki}}", mouselement)
+            if (mouselement.classList.contains("category"))
+                return;
+            const wikibody = document.getElementById("wikibody");
+            const toc = wikibody.querySelector(".toc").innerText;
+            const fulltext = wikibody.innerText.substr(toc?toc.length:0)
+            if (mouselement === wikibody) return;
+            const ratio = fulltext.indexOf(mouselement.innerText)/fulltext.length
+
+            if (wikibody.contains(mouselement)){
+                mouselement.dataset["category"] ="perc"+ratio;
+                mouselement.ondblclick = get_edit_content("{{wiki}}", mouselement);
             }
 
         });
