@@ -50,8 +50,8 @@ class TestDiceParser(TestCase):
             ("6=", 6, "id"),
             ("6l", 2, "min"),
             ("6~", None, "none"),
-            ("1,2@6", 5, "1 , 2@"),
-            ("6,2@6", 10, "6 , 2@"),
+            ("1,2@6", 5, "1,2@"),
+            ("6,2@6", 10, "6,2@"),
         ]:
             d = DiceParser({"returnfun": "sum"}).do_roll(roll)
             d.r = [2, 3, 4, 5, 6, 7]
@@ -63,6 +63,8 @@ class TestDiceParser(TestCase):
         self.assertIn(self.p.do_roll("4(3) d1g").result, range(1, 70))
 
     def test_altrolls(self):
+        self.p.defines["sides"] = 1
+        self.p.do_roll("1(2g)g")
         self.p.do_roll("1(2g)(3(4g)g)g")
         for r in self.p.rolllogs:
             self.assertIn("==>", r.roll_v())
@@ -154,7 +156,12 @@ class TestDiceParser(TestCase):
         p = DiceParser()
         p.defines = {"a": "b c D", "b": "e f", "c": "3", "D": "1", "e": "9", "f": "10"}
         r = p.resolveroll("a d1g", 0)
-        self.assertEqual(r.code, "23 d 1 g")
+        self.assertEqual(r.code, "23 d1g")
+
+    def test_parenthesis_resolution(self):
+        p = DiceParser()
+        r = p.do_roll("(10=)*4+10=")
+        self.assertEqual(r.result, 50)
 
     def test_whitespacing(self):
         p = DiceParser()

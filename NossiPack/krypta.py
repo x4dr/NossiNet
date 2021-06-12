@@ -16,6 +16,16 @@ class DescriptiveError(Exception):
     pass
 
 
+def tuple_overlap(a, b) -> bool:
+    a, b = sorted(a), sorted(b)
+    return (
+        b[0] <= a[0] <= b[1]
+        or b[0] <= a[1] <= b[1]
+        or a[0] <= b[0] <= a[1]
+        or a[0] <= b[1] <= a[1]
+    )
+
+
 def terminate_thread(thread: threading.Thread):
     """Terminates a python thread from another thread.
 

@@ -1,6 +1,5 @@
 import re
 import traceback
-import warnings
 from typing import List, Union, Dict
 
 import numexpr
@@ -11,7 +10,7 @@ from NossiPack.RegexRouter import (
     DuplicateKeyException,
     PartialMatchException,
 )
-from NossiPack.krypta import DescriptiveError
+from NossiPack.krypta import DescriptiveError, tuple_overlap
 
 
 class DiceCodeError(Exception):
@@ -23,11 +22,17 @@ class MessageReturn(Exception):
 
 
 class Node:
+    special = (
+        ["+", "*", "* *", ",", "-", "/", "/ /"],
+        ["~", "="],
+        ["h", "l", "g", "d", "e", "f"],
+    )
+
     def __init__(self, roll: str, depth):
         self.do = False
         self.code = str(roll)
         self.depth = depth
-        self.dependent = {}
+        self.dependent: dict[tuple, Node] = {}
         if self.depth > 100:
             raise DescriptiveError("recursion depth exceeded")
         self.buildroll()
@@ -37,7 +42,7 @@ class Node:
         self.buildroll()
 
     def buildroll(self):
-        self.code = self.calc(self.code.replace("()", ""))
+        self.code = self.code.replace("()", "")
         unparsed = self.code
         while unparsed:
             next_pos = unparsed.find("(")
@@ -46,88 +51,43 @@ class Node:
             unparsed = unparsed[next_pos:]
             paren = fullparenthesis(unparsed)
             if paren:
-                self.dependent["(" + paren + ")"] = self.dependent.get(
-                    "(" + paren + ")", []
-                ) + [Node(paren, self.depth + 1)]
-                self.dependent["(" + paren + ")"][-1].do = True
+                pos = self.code.find(paren)
+                key = ((pos - 1, pos + len(paren) + 1), "(" + paren + ")")
+                self.dependent[key] = Node(paren, self.depth + 1)
+
+                self.dependent[key].do = True
             unparsed = unparsed[len(paren) + 2 :]
+        if not self.dependent:
+            self.code = self.calc(self.code)
 
     def calculate(self):
         self.code = Node.calc(self.code)
 
     @staticmethod
-    def calc(message, a=0):
-        special = (
-            ["+", "*", "* *", ",", "-", "/", "/ /"],
-            ["~", "="],
-            ["h", "l", "g", "d", "e", "f"],
-        )
-
-        # ** and // are with space since they will be escaped with spaces first
-
-        def b(m):
-            o = ""
-
-            try:
-                operations, always, functions = special
-                for o in operations:
-                    m = re.sub(
-                        r"\b" + re.escape(o) + r"\b", " " + o.replace(" ", "") + " ", m
-                    )
-                for al in always:
-                    m = re.sub(al, " " + al + " ", m)
-                for f in functions:
-                    m = re.sub(
-                        r"((?<=\d)|\b)" + re.escape(f) + r"((?=\d)|\b)",
-                        " " + f + " ",
-                        m,
-                    )
-            except:
-                print(o + "ERROR" + m)
-                raise
-            return m
-
+    def calc(to_calculate):
         def ub(m):
             while "  " in m:
                 m = m.replace("  ", " ")
             return m
 
-        if isinstance(message, str):
-            message = re.sub(r" +", " ", b(message))
-            parts = message.split(" ")
-        elif isinstance(message, list):
-            parts = message
-            message = " ".join(message)
+        if isinstance(to_calculate, str):
+            to_calculate = to_calculate.strip()
+        elif isinstance(to_calculate, list):
+            to_calculate = " ".join(to_calculate)
         else:
-            raise TypeError("parameter was not str or list", message)
-        i = len(parts)
-        oldmessage = message
-        while i > a:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                try:
-                    try:
-                        part = "+".join(parts[a:i])
-                        replace = " ".join(parts[a:i])
-                        message = message.replace(
-                            replace, str(numexpr.evaluate(part, local_dict={}))
-                        )
-                    except:
-                        part = " ".join(parts[a:i])
-                        message = message.replace(
-                            part, str(numexpr.evaluate(part, local_dict={}))
-                        )
-                    break
-                except (SyntaxError, KeyError, TypeError, AttributeError):
-                    i -= 1
+            raise TypeError("parameter was not str or list", to_calculate)
 
-        message = re.sub(r" +", " ", b(message))
-        if oldmessage != message:
-            message = Node.calc(message)  # recursive
-        else:
-            if a < len(parts):  # stop recursion
-                message = Node.calc(message, a + 1)
-        return ub(message).strip()
+        to_calculate.strip()
+        to_calculate = re.sub(r"(?<=\d)\s+(?=\d)", "+", to_calculate)
+        to_calculate = re.sub(
+            r"(\s*\d*\s*[-*+/]*\s*(\d+)\b)+",
+            lambda x: " "
+            + str(numexpr.evaluate(x.group().strip(), local_dict={}))
+            + " ",
+            to_calculate,
+        )
+
+        return ub(to_calculate).strip()
 
     @property
     def is_leaf(self):
@@ -292,18 +252,38 @@ class DiceParser:
         if change or depth < 1:
             roll.rebuild()
             self.resolvedefines(roll)
-        for k, vs in roll.dependent.items():
-            for v in vs:
-                if v is None:
-                    toreplace = ""
-                elif isinstance(v, Node):
-                    if not v.do:
-                        toreplace = " " + str(self.resolveroll(v, depth + 1).code) + " "
-                    else:
-                        toreplace = " " + str(self.do_roll(v).result or 0) + " "
+        while roll.dependent:
+            k = list(roll.dependent.keys())[0]  # get any dependent
+            v = roll.dependent.pop(k)
+            if v is None:
+                toreplace = ""
+            elif isinstance(v, Node):
+                if not v.do:
+                    toreplace = " " + str(self.resolveroll(v, depth + 1).code) + " "
                 else:
-                    toreplace = str(v)
-                roll.code = roll.code.replace(k, toreplace, 1)
+                    toreplace = " " + str(self.do_roll(v).result or 0) + " "
+            else:
+                toreplace = str(v)
+            pos, key = k
+            if roll.code[pos[0] : pos[1]] != key:
+                raise Exception(
+                    f"Offset Calculation Failed! {roll.code}@{pos} \n{key}:{roll.code[pos[0]:pos[1]]}"
+                )
+            else:
+                roll.code = roll.code[: pos[0]] + toreplace + roll.code[pos[1] :]
+                for d in list(roll.dependent.keys()):
+                    a, b = d[0]
+                    changed = False
+                    if a > pos[0]:
+                        a -= len(key) - len(toreplace)
+                        changed = True
+                    if b > pos[0]:
+                        b -= len(key) - len(toreplace)
+                        changed = True
+                    if changed:
+                        node = roll.dependent.pop(d)
+                        roll.dependent[((a, b), d[1])] = node
+
         roll.calculate()
         return roll
 
@@ -409,7 +389,7 @@ class DiceParser:
                 for d in trigger.split(";"):
                     self.defines[d.split(":")[0].strip()] = d.split(":")[1].strip()
                     return ""  # defines updated
-            except:
+            except Exception:
                 raise DescriptiveError(
                     "Values malformed. Expected: "
                     '"&values key:value; key:value; key:value&"'
@@ -427,7 +407,7 @@ class DiceParser:
                     " "
                 )  # space delimited
                 return ""  # no substitution to be made
-            except:
+            except Exception:
                 raise DescriptiveError(
                     'Parameter malformed. Expected: "&param key1 key2 key3& [...] '
                     'value1 value2 value3"'
@@ -495,13 +475,19 @@ class DiceParser:
             for k, v in self.defines.items():
                 if k in used:
                     continue
-                if re.match(r".*\b" + re.escape(k) + r"\b", roll.code):
-                    roll.dependent[k] = []
-                    for _ in range(roll.code.count(k)):
-                        new = Node(v, roll.depth + 1)
-                        self.resolvedefines(new, used + [k])
-                        new.do = False
-                        roll.dependent[k].append(new)
+                matches = re.finditer(r"\b" + re.escape(k) + r"\b", roll.code)
+                for match in matches:
+                    key = (match.span(), k)
+                    skip = False
+                    for other in roll.dependent.keys():
+                        if tuple_overlap(other[0], key[0]):
+                            skip = True  # this is in another define
+                    if skip:
+                        continue
+                    new = Node(v, roll.depth + 1)
+                    self.resolvedefines(new, used + [k])
+                    new.do = False
+                    roll.dependent[key] = new
 
             else:
                 break
@@ -531,10 +517,8 @@ def fullparenthesis(
             not (opening == closing and (begun is None))
             and (text[i : i + len(closing)] == closing)
             and (
-                (
-                    (i == 0 or (not text[i - 1].isalnum()))
-                    and not (text + " " * len(closing) * 2)[i + len(closing)].isalnum()
-                )
+                (i == 0 or (not text[i - 1].isalnum()))
+                and not (text + " " * len(closing) * 2)[i + len(closing)].isalnum()
                 or len(closing) == 1
             )
         ):

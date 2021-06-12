@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import Data
 from NossiInterface.Tools import splitpara, replacedefines
-from NossiInterface.reminder import extract_time_delta
+from NossiInterface.reminder import extract_time_delta, set_user_tz
 from NossiPack.krypta import connect_db
 from NossiSite import wiki
 from NossiSite.wiki import get_fen_char
@@ -58,12 +58,13 @@ class TestInterface(TestCase):
         self.assertEqual(test[test["a"]], "3")
 
     def test_timeparse(self):
-        self.assertEqual(extract_time_delta("in 3:45:12 test"), (13512, "test"))
-        self.assertEqual(extract_time_delta("in 45:12 test"), (162720, "test"))
-        self.assertEqual(extract_time_delta("in 45m12 test"), (2712, "test"))
-        self.assertEqual(extract_time_delta("in 1d6h test"), (108000, "test"))
-        self.assertEqual(extract_time_delta("in 1:6:0:0 test"), (108000, "test"))
-        self.assertEqual(extract_time_delta("3h45m12 test"), (13512, "test"))
-        self.assertEqual(extract_time_delta("12s"), (12, ""))
-        self.assertEqual(extract_time_delta("12"), (12 * 60, ""))
-        self.assertLess(extract_time_delta("at 22:31:00 test")[0], 24 * 60 * 60)
+        set_user_tz(0, "UTC")
+        self.assertEqual(extract_time_delta("in 3:45:12 test", 0), (13512, "test"))
+        self.assertEqual(extract_time_delta("in 45:12 test", 0), (162720, "test"))
+        self.assertEqual(extract_time_delta("in 45m12 test", 0), (2712, "test"))
+        self.assertEqual(extract_time_delta("in 1d6h test", 0), (108000, "test"))
+        self.assertEqual(extract_time_delta("in 1:6:0:0 test", 0), (108000, "test"))
+        self.assertEqual(extract_time_delta("3h45m12 test", 0), (13512, "test"))
+        self.assertEqual(extract_time_delta("12s", 0), (12, ""))
+        self.assertEqual(extract_time_delta("12", 0), (12 * 60, ""))
+        self.assertLess(extract_time_delta("at 22:31:00 test", 0)[0], 24 * 60 * 60)
