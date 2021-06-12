@@ -236,6 +236,11 @@ class DiceParser:
         return d
 
     def resolveroll(self, roll: Union[Node, str], depth) -> Node:
+        """
+        :param roll:  strings will automatically be made into rollNodes, if applicable
+        :param depth: anti-infinite-recursion
+        :return: Node with dependents populated, resolved and the code changed to reflect
+        """
         if isinstance(roll, str):
             oldroll = roll[:]
             try:
@@ -267,22 +272,23 @@ class DiceParser:
             pos, key = k
             if roll.code[pos[0] : pos[1]] != key:
                 raise Exception(
-                    f"Offset Calculation Failed! {roll.code}@{pos} \n{key}:{roll.code[pos[0]:pos[1]]}"
+                    f"Offset Calculation Failed! {roll.code}@{pos} \n"
+                    f"{key}:{roll.code[pos[0]:pos[1]]}"
                 )
-            else:
-                roll.code = roll.code[: pos[0]] + toreplace + roll.code[pos[1] :]
-                for d in list(roll.dependent.keys()):
-                    a, b = d[0]
-                    changed = False
-                    if a > pos[0]:
-                        a -= len(key) - len(toreplace)
-                        changed = True
-                    if b > pos[0]:
-                        b -= len(key) - len(toreplace)
-                        changed = True
-                    if changed:
-                        node = roll.dependent.pop(d)
-                        roll.dependent[((a, b), d[1])] = node
+
+            roll.code = roll.code[: pos[0]] + toreplace + roll.code[pos[1] :]
+            for d in list(roll.dependent.keys()):
+                a, b = d[0]
+                changed = False
+                if a > pos[0]:
+                    a -= len(key) - len(toreplace)
+                    changed = True
+                if b > pos[0]:
+                    b -= len(key) - len(toreplace)
+                    changed = True
+                if changed:
+                    node = roll.dependent.pop(d)
+                    roll.dependent[((a, b), d[1])] = node
 
         roll.calculate()
         return roll

@@ -16,7 +16,10 @@ class DescriptiveError(Exception):
     pass
 
 
-def tuple_overlap(a, b) -> bool:
+def tuple_overlap(a: tuple, b: tuple) -> bool:
+    """
+    checks if the first two elements of the tuples overlap on the numberline/other ordering
+    """
     a, b = sorted(a), sorted(b)
     return (
         b[0] <= a[0] <= b[1]
