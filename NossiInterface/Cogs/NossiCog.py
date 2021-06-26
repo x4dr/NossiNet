@@ -9,10 +9,10 @@ from NossiInterface.Tools import discordname
 
 class NossiCog(commands.Cog, name="NossiBot"):
     def __init__(self, client):
-        self.client = client
-        self.disconnecting = []
+        self.client: discord.client = client
         self.storage = Data.read("NossiBot.storage") or dict()
         self.shutdownflag = pathlib.Path("~/shutdown_nossibot")
+        self.tasks.start()
 
     @property
     def allowed_channels(self):
@@ -23,9 +23,9 @@ class NossiCog(commands.Cog, name="NossiBot"):
 
     @tasks.loop(seconds=5)
     async def tasks(self):
-        while self.disconnecting:
-            print("disconecting voice")
-            await self.disconnecting.pop().disconnect()
+        for c in self.client.voice_clients:
+            if not c.is_playing():
+                await c.disconnect()
         if self.shutdownflag.exists():
             self.shutdownflag.unlink()
             await self.client.owner.send("I got Killed")
@@ -58,14 +58,45 @@ class NossiCog(commands.Cog, name="NossiBot"):
                 pathlib.Path("~/soundpipe").expanduser(),
                 before_options="-f s32le -ac 2 -ar 48000",
             ),
-            after=lambda e: self.disconnecting.append(connection),
+            after=lambda e: print(
+                "disconnected with " + (f"{e}" if e else "no errors.")
+            ),
         )
-        print("voice done")
+
+    @nossi.command("SYNC")
+    async def sync(self, ctx):
+        vc = ctx.author.voice.channel
+        for c in self.client.voice_clients:
+            if vc == c.channel:
+                connection = c
+                break
+        else:
+            return
+        r = discord.FFmpegPCMAudio(
+            pathlib.Path("~/soundpipe").expanduser(),
+            before_options="-f s32le -ac 2 -ar 48000",
+        )
+
+        connection.stop()
+        connection.play(
+            r,
+            after=lambda e: print(
+                "disconnected with " + (f"{e}" if e else "no errors.")
+            ),
+        )
+        connection.resume()
 
     @commands.is_owner()
     @nossi.command("LEAVE")
     async def leave(self, ctx):
-        self.disconnecting += self.client.voice_clients
+        vc = ctx.author.voice.channel
+        for c in self.client.voice_clients:
+            if vc == c.channel:
+                connection = c
+                break
+        else:
+            return
+        await connection.disconnect()
         await ctx.message.add_reaction("🔇")
 
     @nossi.command("i")
