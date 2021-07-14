@@ -43,8 +43,9 @@ def extract_comment(msg):
 def mentionreplacer(client):
     def replace(m: re.Match):
         u: discord.User = client.get_user(int(m.group(1)))
-        print(u.name)
-        return "@" + u.name
+        if u is None:
+            print("couldn't find user for id ", m.group(1))
+        return "@" + (u.name if u else m.group(1))
 
     return replace
 
