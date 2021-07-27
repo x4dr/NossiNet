@@ -14,7 +14,8 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
     {%- if session.light or light is defined -%}
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='stylelight.css') }}">
-    {%- endif -%}
+    {%- endif %}
+    <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='workregister.js') }}"></script>
     <script type="text/javascript" charset="utf-8">
       window.addEventListener("load", () => {
         const hiders = document.getElementsByClassName('hider');

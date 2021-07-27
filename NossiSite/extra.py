@@ -1,4 +1,5 @@
 import random
+import time
 
 from flask import (
     request,
@@ -44,6 +45,10 @@ def register(app=None):
                 + ", I can not let you do that."
             )
         return redirect(url_for("charsheet"))
+
+    @app.route("/timetest")
+    def timetest():
+        return str(time.time())
 
     @app.route("/boardgame<int:size>_<seed>.json")
     @app.route("/boardgame<int:size>_.json")
