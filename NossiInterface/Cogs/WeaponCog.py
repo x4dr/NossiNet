@@ -23,9 +23,7 @@ class WeaponCog(commands.Cog, name="Weapons"):
 
     def make_request(self, msg):
         return requests.get(
-            self.client.nossiUrl
-            + "/".join(quote(x.strip()) for x in msg.split(":", 2))
-            + "/txt"
+            self.client.nossiUrl + "/".join(quote(x.strip()) for x in msg.split(":", 2))
         )
 
     @staticmethod
