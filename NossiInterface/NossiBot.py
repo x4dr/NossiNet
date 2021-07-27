@@ -46,10 +46,11 @@ async def cogreload():
         "Wiki",
     ]
     for cog in cogs_to_load:
-        loaded = client.extensions.get(cog + "Cog", None)
+        cogname = f"Cogs.{cog}Cog"
+        loaded = client.extensions.get(cogname, None)
         if loaded:
-            client.unload_extension(f"Cogs.{cog}Cog")
-        client.load_extension(f"Cogs.{cog}Cog")
+            client.unload_extension(cogname)
+        client.load_extension(cogname)
 
 
 async def allowed(msg: discord.Message):
