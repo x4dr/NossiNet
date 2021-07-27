@@ -2,18 +2,33 @@ import random
 import re
 import string
 import urllib.parse
+from pathlib import Path
 
 import markdown
-from flask import request, session, redirect, url_for, render_template, flash
+from flask import (
+    request,
+    session,
+    redirect,
+    url_for,
+    render_template,
+    flash,
+    Flask,
+    send_from_directory,
+)
 from markupsafe import Markup
 
 from NossiPack.krypta import DescriptiveError, connect_db
 from NossiSite.base import app as defaultapp, log
 
 
-def register(app=None):
+def register(app: Flask = None):
     if app is None:
         app = defaultapp
+
+    @app.after_request
+    def add_header(response):
+        response.cache_control.max_age = 5
+        return response
 
     @app.template_filter("quoted")
     def quoted(s):
@@ -42,7 +57,7 @@ def register(app=None):
                     )
                 )
                 return str(n).split("\n")
-            except:
+            except Exception:
                 return "ERRR"
         raise DescriptiveError("Templating error: \n" + str(s) + "\ndoes not belong")
 
@@ -83,6 +98,9 @@ def register(app=None):
 
     @app.errorhandler(404)
     def page_not_found(e):
+        p = request.path[1:]
+        if (Path("NossiSite") / "static" / p).exists():
+            return send_from_directory("static", p)
         if e:
             print("404:", request.url)
         return render_template("404.html"), 404
