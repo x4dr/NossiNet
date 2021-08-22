@@ -64,8 +64,10 @@ class RemindCog(commands.Cog, name="Remind"):
             newdate = newreminder(ctx.message, " ".join(msg), ctx.author.id)
             await ctx.send("will remind on " + newdate.isoformat())
         except KeyError:
+            await set_user_tz(ctx.author.id, "Europe/Berlin")
             await ctx.send(
-                "No timezone configured, please use the command tzset with your timezone."
+                "No timezone configured, automatically set to Europe/Berlin.\n"
+                "Please use the command tzset with your timezone if you want to change it."
             )
 
     @remind.command("del")
