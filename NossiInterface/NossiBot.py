@@ -1,9 +1,10 @@
+import datetime
 import os
-import time
 from logging import warning
 
 import discord
 import requests
+from dateutil.tz import tzlocal
 from discord.ext import commands
 
 from NossiInterface.Cogs.NossiCog import NossiCog
@@ -81,7 +82,7 @@ async def on_ready():
 @client.event
 async def on_disconnect():
     print(
-        f"Disconnected at {time.time()}, accessibility of google:",
+        f"Disconnected at {datetime.datetime.now(tzlocal())}, accessibility of google:",
         requests.get("https://www.google.com").status_code,
     )
 

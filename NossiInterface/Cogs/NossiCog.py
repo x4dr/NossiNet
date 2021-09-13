@@ -113,10 +113,10 @@ class NossiCog(commands.Cog, name="NossiBot"):
         )
         await ctx.message.add_reaction("\N{THUMBS UP SIGN}")
         self.persist()
-        await self.whoami(ctx)
+        await self.whoami(ctx, "am", "i")
 
     @nossi.command("who")
-    async def whoami(self, am, i, ctx):
+    async def whoami(self, ctx, am, i):
         if not ((am == "am") and (i == "i")):
             raise commands.CommandNotFound(f'Command "who {am} {i}" is not found')
         try:
