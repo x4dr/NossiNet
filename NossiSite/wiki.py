@@ -361,15 +361,19 @@ def register(app=None):
         if (not sheet_owner) or session.get("user") == sheet_owner:
             old = x["original"].replace("\r\n", "\n")
             new = x["new"].replace("\r\n", "\n")
-            title, tags, body = wikiload(context)
-            body = body.replace("\r\n", "\n")
-            if old not in body:
-                if old[:-1] in body:
-                    old = old[:-1]
-                else:
-                    raise Exception(old, "not in", body)
-            body = body.replace(old, new, 1)
-            wikisave(context, session.get("user"), title, tags, body)
+            if not old == new:
+                log.info("livereplacing " + context)
+                title, tags, body = wikiload(context)
+                body = body.replace("\r\n", "\n")
+                if old not in body:
+                    if old[:-1] in body:
+                        old = old[:-1]
+                    else:
+                        log.error("live replace didn't match " + context)
+                body = body.replace(old, new, 1)
+                wikisave(context, session.get("user"), title, tags, body)
+            else:
+                log.info("rejected empty replace " + context)
         else:
             flash("Unauthorized, so ... no.", "error")
         if not wiki:
