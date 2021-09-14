@@ -309,6 +309,7 @@ async def replacedefines(msg, message, persist):
 def who_am_i(persist):
     whoami = persist.get("NossiAccount", None)
     if whoami is None:
+        print(f"whoami failed for {persist} ")
         return None
     checkagainst = Config.load(whoami, "discord")
     discord_acc = persist.get("DiscordAccount", None)

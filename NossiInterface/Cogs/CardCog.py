@@ -1,7 +1,7 @@
 from discord.ext import commands
 
 import Data
-from NossiInterface.Tools import who_am_i, split_send, spellhandle
+from NossiInterface.Tools import who_am_i, split_send, spellhandle, discordname
 from NossiPack.Cards import Cards
 from NossiPack.krypta import DescriptiveError
 
@@ -36,7 +36,7 @@ class CardCog(commands.Cog, name="Cards"):
     async def cards_setup(self, ctx):
         nc = self.client.cogs.get("NossiBot")
 
-        ctx.whoami = who_am_i(nc.storage)
+        ctx.whoami = who_am_i(nc.storage.get(discordname(ctx.author), {}))
         if not ctx.whoami:
             return await ctx.send(
                 ctx.message.author.mention + " Could not ascertain Identity!"
