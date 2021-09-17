@@ -10,7 +10,9 @@ class CardCog(commands.Cog, name="Cards"):
     def __init__(self, client):
         self.client = client
 
-    def form(self, inp):
+    def form(self, inp) -> str:
+        if inp is None:
+            return ""
         if isinstance(inp, dict):
             outp = ""
             for k, j in inp.items():
@@ -18,19 +20,16 @@ class CardCog(commands.Cog, name="Cards"):
             return outp
         elif isinstance(inp, list):
             return ", ".join(inp)
+        elif isinstance(inp, set):
+            return ", ".join(sorted(list(inp)))
         elif isinstance(inp, str):
             return inp
         else:
-            DescriptiveError("HUH?")
+            raise DescriptiveError("HUH?")
 
-    @commands.group("cards", invoke_without_command=True)
-    async def cards(self, ctx, cmd):
-
-        infos = ctx.deck.renderlong
-        if cmd in infos:
-            await ctx.send(ctx.author.mention + " " + self.form(infos[cmd]))
-        else:
-            await ctx.send_help("cards")
+    @commands.group("cards")
+    async def cards(self, ctx):
+        pass
 
     @cards.before_invoke
     async def cards_setup(self, ctx):
@@ -53,12 +52,39 @@ class CardCog(commands.Cog, name="Cards"):
 
     @cards.command("draw")
     async def draw(self, ctx, *par):
+        """moves cards (a number for random, or a set of specific cards separated by space) from deck to hand"""
         await ctx.send(
-            ctx.mention + " " + self.form(ctx.deck.elongate(ctx.deck.draw(par)))
+            ctx.author.mention + " " + self.form(ctx.deck.elongate(ctx.deck.draw(par)))
         )
+
+    @cards.command("hand")
+    async def hand(self, ctx):
+        """shows hand"""
+        await ctx.send(ctx.author.mention + " " + self.form(ctx.deck.Hand))
+
+    @cards.command("pile")
+    async def pile(self, ctx):
+        """shows discord pile"""
+        await ctx.send(ctx.author.mention + " " + self.form(ctx.deck.Pile))
+
+    @cards.command("deck")
+    async def deck(self, ctx):
+        """shows deck"""
+        await ctx.send(ctx.author.mention + " " + self.form(ctx.deck.Deck))
+
+    @cards.command("removed")
+    async def removed(self, ctx):
+        """shows removed cards"""
+        await ctx.send(ctx.author.mention + " " + self.form(ctx.deck.Removed))
+
+    @cards.command("notes")
+    async def notes(self, ctx):
+        """shows notes"""
+        await ctx.send(ctx.author.mention + " " + self.form(ctx.deck.Notes))
 
     @cards.command("spend")
     async def spend(self, ctx, *par):
+        """moves the specified cards (or number for random) from hand to the discard pile"""
         ctx.deck.spend(par)
         await ctx.message.add_reaction("\N{THUMBS UP SIGN}")
 

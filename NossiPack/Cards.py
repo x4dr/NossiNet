@@ -117,7 +117,7 @@ class Cards:
                 else:
                     out[k] = self.elongate(j)
             return out
-        if isinstance(inp, list):
+        if isinstance(inp, list) or isinstance(inp, set):
             return [self.elongate(x) for x in inp]
         if isinstance(inp, str):
             if len(inp) > 2:
@@ -177,10 +177,10 @@ class Cards:
     def remove(self, toremove: str):
         try:
             return self.move(self.Hand, self.Removed, toremove, 2)
-        except:
+        except Exception:
             try:
                 return self.move(self.Deck, self.Removed, toremove, 1)
-            except:
+            except Exception:
                 return self.move(self.Pile, self.Removed, toremove, 1)
 
     def dedicate(self, todedicate, purpose):
