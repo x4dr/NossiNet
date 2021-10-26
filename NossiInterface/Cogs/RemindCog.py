@@ -29,14 +29,17 @@ class RemindCog(commands.Cog, name="Remind"):
         while repeat:
             repeat = False  # probably wont pull reminders more than once
             nr = list(next_reminders())
+            if nr:
+                print("reminding", nr)
             for r in nr:  # pull the next relevant reminders
                 delta = r[2] - time.time()
+                print(f"{delta=}")
                 if delta > 60:
-                    break  # nothing within a minute, we will be called again before its time
+                    break  # nothing within a minute, we will be called again before it is time
                 else:
-                    await asyncio.sleep(
-                        delta
-                    )  # since reminders are in order we consume them in order
+                    print("reminding", delta, r)
+                    await asyncio.sleep(delta)
+                    # since reminders are in order we consume them in order
                     channel: TextChannel = self.client.get_channel(r[1])
                     if not channel:
                         break  # not connected, try later
@@ -64,7 +67,7 @@ class RemindCog(commands.Cog, name="Remind"):
             newdate = newreminder(ctx.message, " ".join(msg), ctx.author.id)
             await ctx.send("will remind on " + newdate.isoformat())
         except KeyError:
-            await set_user_tz(ctx.author.id, "Europe/Berlin")
+            set_user_tz(ctx.author.id, "Europe/Berlin")
             await ctx.send(
                 "No timezone configured, automatically set to Europe/Berlin.\n"
                 "Please use the command tzset with your timezone if you want to change it."
