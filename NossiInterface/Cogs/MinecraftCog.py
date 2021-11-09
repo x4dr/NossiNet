@@ -8,8 +8,8 @@ class MinecraftCog(commands.Cog, name="Minecraft"):
     def __init__(self, client):
         self.client = client
 
-    @commands.group("mc", case_insensitive=True, invoke_without_command=True)
-    async def mc(self):
+    @commands.group("mc", case_insensitive=True)
+    async def mc(self, ctx):
         pass
 
     @mc.command("up")
