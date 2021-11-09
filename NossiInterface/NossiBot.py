@@ -45,6 +45,7 @@ async def cogreload():
         "State",
         "Weapon",
         "Wiki",
+        "Minecraft",
     ]
     for cog in cogs_to_load:
         cogname = f"Cogs.{cog}Cog"
