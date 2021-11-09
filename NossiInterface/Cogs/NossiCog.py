@@ -131,6 +131,7 @@ class NossiCog(commands.Cog, name="NossiBot"):
     @nossi.command("BANISH")
     async def banish(self, ctx):
         self.storage["allowed_rooms"].remove(ctx.message.channel.id)
+        self.persist()
         await ctx.send("I will no longer listen here.")
 
     @commands.guild_only()
@@ -139,6 +140,7 @@ class NossiCog(commands.Cog, name="NossiBot"):
         self.storage["allowed_rooms"] = {ctx.message.channel.id} | self.storage.get(
             "allowed_rooms", set()
         )
+        self.persist()
         await ctx.send(
             "I have been invoked and shall do my duties here until BANISHed."
         )
