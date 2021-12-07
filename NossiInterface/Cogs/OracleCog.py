@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 
 import discord
@@ -7,6 +8,8 @@ from discord.ext.commands import Greedy
 from NossiInterface.RollInterface import timeout
 from NossiInterface.Tools import extract_comment
 from NossiPack.fengraph import chances, versus, montecarlo
+
+logger = logging.getLogger(__name__)
 
 
 class OracleCog(commands.Cog, name="Oracle"):
@@ -75,7 +78,7 @@ class OracleCog(commands.Cog, name="Oracle"):
                 )
         else:
             n, avg, dev = i
-            print(n)
+            logger.info(n)
             await sentmessage.edit(
                 content=(
                     ctx.author.mention
@@ -130,7 +133,7 @@ class OracleCog(commands.Cog, name="Oracle"):
 
     @oraclehandle.error
     async def handle_error(self, ctx, e):
-        print("exception during oracle", e)
+        logger.exception("exception during oracle", e)
 
         if hasattr(ctx, "sentmessage") and ctx.sentmessage:
             await ctx.sentmessage.edit(content=ctx.author.mention + " ERROR")

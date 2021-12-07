@@ -1,5 +1,5 @@
+import logging
 import re
-import traceback
 from typing import List, Union, Dict
 
 import numexpr
@@ -11,6 +11,8 @@ from NossiPack.RegexRouter import (
     PartialMatchException,
 )
 from NossiPack.krypta import DescriptiveError, tuple_overlap
+
+logger = logging.getLogger(__name__)
 
 
 class DiceCodeError(Exception):
@@ -249,7 +251,7 @@ class DiceParser:
             except MessageReturn:
                 raise
             except Exception as e:
-                print("pretrigger exc", e.args[0])
+                logger.exception("pretrigger exc", e)
                 roll = Node(oldroll, depth)
             res = self.resolveroll(roll, depth)
             return res
@@ -333,12 +335,12 @@ class DiceParser:
             self.triggers["project"] = (i, current, goal, log)
             return str(i)
         except TypeError as e:
-            print(e, e.__class__, e.args, traceback.format_exc())
+            logger.exception(e)
             raise DescriptiveError(roll + " does not have a result")  # probably
         except DescriptiveError:
             raise
         except Exception as e:
-            print(e, e.__class__, e.args, traceback.format_exc())
+            logger.exception(e)
             raise DescriptiveError(
                 "project parameters: roll, current, goal [, adversity]\n"
                 f"not fullfilled by {roll}, {current}, {goal}"
@@ -351,10 +353,10 @@ class DiceParser:
         :return: what to replace the trigger with, once resolved
         """
         if triggername == "limitbreak":
-            print("RIGHTS:", self.rights)
+            logger.info(f"RIGHTS: {self.rights}")
             if "Administrator" in self.rights:
                 self.triggers[triggername] = True
-                print("LIMITBREAK")
+                logger.critical("LIMITBREAK")
             else:
                 self.triggers["rightsviolation"] = True
             return ""

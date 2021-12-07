@@ -1,8 +1,11 @@
+import logging
 import random
 from typing import Union, List
 from warnings import warn
 
 from NossiPack.krypta import DescriptiveError
+
+logger = logging.getLogger(__name__)
 
 
 def str_to_slice(inp):
@@ -69,7 +72,7 @@ class Dice:
         except KeyError as e:
             raise DescriptiveError("Missing Parameter: " + str(e.args[0]))
         except Exception as e:
-            print("exception during die creation:", e.args, e.__traceback__.tb_lineno)
+            logger.exception("exception during die creation", e)
             raise
 
     def resonance(self, resonator: int):

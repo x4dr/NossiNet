@@ -1,4 +1,5 @@
 import ctypes
+import logging
 import os
 import random
 import sqlite3
@@ -10,6 +11,8 @@ from pathlib import Path
 import numexpr
 
 import Data
+
+logger = logging.getLogger(__name__)
 
 
 class DescriptiveError(Exception):
@@ -49,7 +52,7 @@ def terminate_thread(thread: threading.Thread):
 
 
 def init_db():
-    print("initializing DB")
+    logger.info("initializing DB")
     with closing(connect_db("initialization")) as db:
         db.cursor().executescript(Data.getschema())
         db.commit()
@@ -100,7 +103,7 @@ def connect_db(source) -> sqlite3.Connection:
         return db
     dbpath = Data.DATABASE
     if source != "before request":
-        print("connecting to", dbpath, "from", source)
+        logger.info(f"connecting to {dbpath} from {source}")
     if not Path(dbpath).exists():
         Path(dbpath).touch()
         init_db()

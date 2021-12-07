@@ -1,8 +1,11 @@
+import logging
 from urllib.parse import quote
 import requests
 from discord.ext import commands
 from NossiInterface.RollInterface import chunk_reply
 from NossiInterface.Tools import extract_comment
+
+logger = logging.getLogger(__name__)
 
 
 class WeaponCog(commands.Cog, name="Weapons"):
@@ -39,13 +42,13 @@ class WeaponCog(commands.Cog, name="Weapons"):
                     ctx.send, ctx.author.mention + ctx.comment + "\n", content
                 )
         elif reply.status_code == 404:
-            print(msg, "not found")
+            logger.info(f"{msg}, not found")
             await ctx.send(
                 ctx.author.mention + "\n" + msg.replace(":", r"\:") + " Not Found"
             )
         else:
             await ctx.message.react("😕")
-            print("failed request:", reply.status_code, reply.url)
+            logger.error(f"failed request:  {reply.status_code}, {reply.url}")
 
 
 def setup(client: commands.Bot):

@@ -1,3 +1,4 @@
+import logging
 import random
 import re
 import time
@@ -11,6 +12,8 @@ from NossiPack.DiceParser import fullparenthesis, DiceParser
 from NossiPack.User import Config
 from NossiPack.krypta import DescriptiveError
 from NossiSite.wiki import load_user_char_stats, load_user_char, spells
+
+logger = logging.getLogger(__name__)
 
 statcache = {}
 sent_messages = {}
@@ -44,7 +47,7 @@ def mentionreplacer(client):
     def replace(m: re.Match):
         u: discord.User = client.get_user(int(m.group(1)))
         if u is None:
-            print("couldn't find user for id ", m.group(1))
+            logger.error(f"couldn't find user for id { m.group(1)}")
         return "@" + (u.name if u else m.group(1))
 
     return replace
@@ -85,7 +88,7 @@ async def split_send(send, lines, i=0):
             i += 1
             replypart = ""
         else:
-            print("aborting sending: unexpected state", i, lines)
+            logger.error(f"aborting sending: unexpected state {i}, {lines}")
             break
 
 
@@ -309,7 +312,7 @@ async def replacedefines(msg, message, persist):
 def who_am_i(persist):
     whoami = persist.get("NossiAccount", None)
     if whoami is None:
-        print(f"whoami failed for {persist} ")
+        logger.error(f"whoami failed for {persist} ")
         return None
     checkagainst = Config.load(whoami, "discord")
     discord_acc = persist.get("DiscordAccount", None)
@@ -347,7 +350,7 @@ async def handle_defines(msg, message, persist, save):
     try:
         persist[author]["defines"]
     except KeyError:
-        print("User", author, "not found, regenerating")
+        logger.info(f"User {author} not found, regenerating")
         persist[author] = {"defines": {}}
         change = True
 

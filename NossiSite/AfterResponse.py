@@ -1,6 +1,9 @@
+import logging
 import traceback
 
 from werkzeug.wsgi import ClosingIterator
+
+logger = logging.getLogger(__name__)
 
 
 class AfterResponse:
@@ -24,7 +27,8 @@ class AfterResponse:
         for fn in self.callbacks:
             try:
                 fn()
-            except Exception:
+            except Exception as e:
+                logger.exception(e)
                 traceback.print_exc()
 
 

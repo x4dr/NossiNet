@@ -1,4 +1,5 @@
 import datetime
+import logging.config
 import os
 from logging import warning
 
@@ -7,12 +8,16 @@ import requests
 from dateutil.tz import tzlocal
 from discord.ext import commands
 
+import Data
 from NossiInterface.Cogs.NossiCog import NossiCog
 from NossiInterface.Tools import (
     get_remembering_send,
     delete_replies,
     handle_defines,
 )
+
+logging.config.fileConfig(Data.handle("logging_config_NossiBot.conf"))
+logger = logging.getLogger(__name__)
 
 # Change only the no_category default string
 help_command = commands.DefaultHelpCommand(no_category="Commands")
@@ -27,7 +32,7 @@ client = commands.Bot(
 with open(os.path.expanduser("~/token.discord"), "r") as tokenfile:
     TOKEN = tokenfile.read().strip()
 
-print("initializing NossiBot...")
+logger.info("initializing NossiBot...")
 
 client.nossiUrl = "http://127.0.0.1:5000/"
 
@@ -41,7 +46,6 @@ async def cogreload():
         "Remind",
         "Oracle",
         "Card",
-        "Dice",
         "State",
         "Weapon",
         "Wiki",
@@ -68,13 +72,13 @@ async def allowed(msg: discord.Message):
 
 @client.event
 async def on_ready():
-    print("Logged in as")
-    print("Name:", client.user.name)
-    print("ID:", client.user.id)
+    logger.info("Logged in as")
+    logger.info(f"Name: {client.user.name}")
+    logger.info(f"ID:{client.user.id}")
     await cogreload()
-    print("------")
+    logger.info("------")
     p = discord.Permissions(117824)
-    print(discord.utils.oauth_url(client.user.id, p))
+    logger.info(discord.utils.oauth_url(client.user.id, p))
     await (await client.application_info()).owner.send(
         "I Live! My Cogs are:" + str(list(client.cogs.keys()))
     )
@@ -82,15 +86,15 @@ async def on_ready():
 
 @client.event
 async def on_disconnect():
-    print(
-        f"Disconnected at {datetime.datetime.now(tzlocal())}, accessibility of google:",
-        requests.get("https://www.google.com").status_code,
+    logger.warning(
+        f"Disconnected at {datetime.datetime.now(tzlocal())}, accessibility of google:"
+        f"{requests.get('https://www.google.com').status_code}"
     )
 
 
 @client.event
 async def on_resume():
-    print("Resumed...")
+    logger.info("Resumed...")
     await (await client.application_info()).owner.send("I have Resumed")
 
 
@@ -130,4 +134,4 @@ async def on_message(message):
 
 if __name__ == "__main__":
     client.run(TOKEN)
-    print("Done.")
+    logger.info("Done.")
