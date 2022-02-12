@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import logging
 import re
 import time
 
@@ -17,6 +18,8 @@ from NossiInterface.reminder import (
     set_user_tz,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class RemindCog(commands.Cog, name="Remind"):
     def __init__(self, client):
@@ -30,14 +33,14 @@ class RemindCog(commands.Cog, name="Remind"):
             repeat = False  # probably wont pull reminders more than once
             nr = list(next_reminders())
             if nr:
-                print("reminding", nr)
+                logger.info(f"reminding {nr}")
             for r in nr:  # pull the next relevant reminders
                 delta = r[2] - time.time()
-                print(f"{delta=}")
+                logger.info(f"{delta=}")
                 if delta > 60:
                     break  # nothing within a minute, we will be called again before it is time
                 else:
-                    print("reminding", delta, r)
+                    logger.info(f"reminding {delta}, {r}")
                     await asyncio.sleep(delta)
                     # since reminders are in order we consume them in order
                     channel: TextChannel = self.client.get_channel(r[1])

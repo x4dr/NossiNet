@@ -28,7 +28,6 @@ wikistamp = [0.0]
 wikitags = {}
 chara_objects = {}
 page_cache = {}
-sheet_cache = {}
 
 bleach.ALLOWED_TAGS += [
     "br",
@@ -186,11 +185,6 @@ def register(app=None):
         un = session.get("user", "")
         try:
             time0 = time.time()
-            sheet_cache[un] = sheet_cache.get(un, {})
-            cached = sheet_cache[un].get(c, None)
-            if cached:
-                return cached + f"<!---load: {time.time() - time0}--->"
-
             char = get_fen_char(c)  # get cached
             if char is None:
                 return redirect(url_for("tagsearch", tag="character"))
@@ -208,7 +202,6 @@ def register(app=None):
                 else "",
             )
             time2 = time.time()
-            sheet_cache[un][c] = body
             return body + f"<!---load: {time1 - time0} render: {time2 - time1}--->"
         except DescriptiveError as e:
             flash("Error with character sheet:\n" + e.args[0])
@@ -236,7 +229,7 @@ def register(app=None):
                 while i == 0 or not all(
                     all(int(x) >= 5 for x in y if x) for y in res[-1][1]
                 ):
-                    r = FenCharacter.cost_calc(str(i), costs, penalty, width)
+                    r = FenCharacter.cost_calc_old(str(i), costs, penalty, width)
                     log.debug(f"Fencalc {i} {res}")
                     if i == 0 or r != res[-1][1]:
                         res.append([str(i), r])
@@ -263,7 +256,9 @@ def register(app=None):
         return (
             "\n".join(
                 ", ".join(str(y) for y in line)
-                for line in FenCharacter.cost_calc(inputstring, costs, penalty, width)
+                for line in FenCharacter.cost_calc_old(
+                    inputstring, costs, penalty, width
+                )
             ),
             200,
             {"Content-Type": "text/plain; charset=utf-8"},
@@ -701,7 +696,6 @@ def fill_infolets(body, context):
 def wikiload(page: Union[str, Path]) -> Tuple[str, List[str], str]:
     """
     loads page from wiki
-
     :param page: name of page
     :return: title, tags, body
     """
@@ -745,14 +739,15 @@ def wikisave(page, author, title, tags, body):
     with (wikipath / "control").open("r") as f:
         print((wikipath / "control").as_posix() + "control", ":", f.read())
     os.system(os.path.expanduser("~/") + "bin/wikiupdate & ")
+    cacheclear(page)
+
+
+def cacheclear(page):
     wikitags.clear()  # triggers reparsing after request
     if page in chara_objects:
         del chara_objects[page]
     if page in page_cache:
         del page_cache[page]
-    for subcache in sheet_cache.values():
-        if page in subcache:
-            del subcache[page]
 
 
 def wikindex() -> List[Path]:
@@ -769,11 +764,9 @@ def gettags():
 
 
 def updatewikitags():
-    print(
-        "it has been "
-        + str(time.time() - wikistamp[0])
-        + " seconds since the last wiki indexing"
-    )
+    dt = time.time() - wikistamp[0]
+    dt = "a while" if dt > 6e4 else str(dt)
+    print(f"it has been {dt} seconds since the last wiki indexing")
     wikistamp[0] = time.time()
     for m in wikindex():
         wikitags[m.stem] = wikiload(m)[1]
@@ -788,8 +781,6 @@ def get_fen_char(c: str) -> Union[FenCharacter, None]:
     try:
         page = wikiload(c)
         char = FenCharacter.from_md(bleach.clean(page[2]))
-        if "character" not in page[1]:
-            char.errors.append("character is not tagged as character")
         chara_objects[c] = char
         chara_objects["last"] = char
         return char

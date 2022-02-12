@@ -17,7 +17,7 @@ class TestIndependency(TestCase):
         fileblacklist = ["setup.py"]
         patternblacklist = [r".*/\.?venv/.*"]
         cls.modules = []
-        candidates = list(Path.cwd().glob("../**/*.py"))
+        candidates = list(Path(__file__).parent.glob("../**/*.py"))
         candidates = [
             x.relative_to(Path.cwd()) for x in candidates if x.name not in fileblacklist
         ]

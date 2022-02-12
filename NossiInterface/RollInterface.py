@@ -1,9 +1,12 @@
 import asyncio
+import logging
 from concurrent.futures.thread import ThreadPoolExecutor
 
 from NossiPack.Dice import Dice
 from NossiPack.DiceParser import DiceParser, DiceCodeError, MessageReturn
 from NossiPack.krypta import terminate_thread
+
+logger = logging.getLogger(__name__)
 
 numemoji = ("1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟")
 numemoji_2 = ("❗", "‼️", "\U0001F386")
@@ -125,7 +128,7 @@ async def process_roll(r: Dice, p: DiceParser, msg: str, comment, send, author):
     try:
         await get_reply(author, comment, msg, send, reply, r)
     except Exception as e:
-        print(f"Exception during sending: {str(e)}\n")
+        logger.exception("Exception during sending", e)
         raise
     finally:
         p.lp = None  # discontinue the chain or it would lead to memoryleak
@@ -142,7 +145,7 @@ async def timeout(func, arg, time_out=1):
         for t in ex._threads:  # Quite impolite form of killing that thread,
             # but otherwise it keeps running
             terminate_thread(t)
-            print(f"terminated: {arg}")
+            logger.warning(f"terminated: {arg}")
         raise
 
 
@@ -160,14 +163,14 @@ async def rollhandle(msg, comment, author, send, react, persist):
         await react("\U000023F0")
     except ValueError as e:
         if not any(x in msg for x in "\"'"):
-            print(f"not quotes {msg}" + "\n" + "\n".join(e.args))
+            logger.error(f"not quotes {msg}" + "\n" + "\n".join(e.args))
             raise
         await react("🙃")
     except MessageReturn as e:
         await send(author.mention + " " + str(e.args[0]))
     except Exception as e:
         ermsg = f"big oof during rolling {msg}" + "\n" + "\n".join(e.args)
-        print(ermsg)
+        logger.exception(ermsg, e)
         if errreport:  # query for error
             await author.send(ermsg[:2000])
         else:

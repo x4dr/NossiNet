@@ -1,9 +1,12 @@
 import html
+import logging
 import re
 from decimal import Decimal, ROUND_HALF_UP
 
 from Fantasy.Item import Item, fendeconvert, fenconvert
 from NossiPack.krypta import calculate
+
+logger = logging.getLogger(__name__)
 
 modregex = re.compile(  # to be applied to the attributes of the same name
     r"^(?P<name>N\s*(.*))|"
@@ -71,9 +74,9 @@ class Armor(Item):
                             self, k, calculate(match[k][1:], par=str(getattr(self, k)))
                         )
             else:
-                print("SHORTHAND", self.shorthand)
+                logger.debug(f"SHORTHAND {self.shorthand}")
                 shorthand = self.shorthand.get(mod.lower(), None)
-                print("SHORTHAND", self.shorthand, mod, shorthand)
+                logger.debug(f"SHORTHAND {self.shorthand}, {mod}, {shorthand}")
                 if shorthand and shorthand not in self.used:
                     self.used.append(shorthand)
                     self.apply_mods(shorthand)

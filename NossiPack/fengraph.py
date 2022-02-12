@@ -100,7 +100,7 @@ def supply_graphdata():
         modifiers = {}
         try:
             lines = Data.get("5d10r0vr0_ordered_data")
-        except:
+        except Exception:
             generate(0, 0)
             lines = Data.get("5d10r0vr0_ordered_data")
 
@@ -249,7 +249,7 @@ def helper(f, integratedsum, q, lastquant):
         try:
             result = quad(f, lastquant, x, limit=200)
             return result[0] - integratedsum * q
-        except:
+        except Exception:
             print("errvals:", q, lastquant, x)
             raise
 

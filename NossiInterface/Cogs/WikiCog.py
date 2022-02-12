@@ -1,3 +1,4 @@
+import logging
 from urllib.parse import quote
 
 import requests
@@ -5,6 +6,8 @@ from discord.ext import commands
 
 from NossiInterface.RollInterface import chunk_reply
 from NossiInterface.Tools import extract_comment
+
+logger = logging.getLogger(__name__)
 
 
 class WikiCog(commands.Cog, name="Wiki"):
@@ -46,11 +49,11 @@ class WikiCog(commands.Cog, name="Wiki"):
                 await chunk_reply(ctx.send, ctx.author.mention + ctx.comment, content)
             return
         elif reply.status_code == 404:
-            print(msg, "not found")
+            logger.error(f"{msg} not found")
             await ctx.send(
                 ctx.author.mention + "\n" + msg.replace(":", r"\:") + " Not Found"
             )
-        print("failed request:", reply.status_code, reply.url)
+        logger.error(f"failed request: {reply.status_code}, {reply.url}")
 
 
 def setup(client: commands.Bot):

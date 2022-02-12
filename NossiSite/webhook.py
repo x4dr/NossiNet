@@ -1,6 +1,10 @@
+import logging
+
 from github_webhook import Webhook
 
 from NossiSite.base import app as defaultapp
+
+logger = logging.getLogger(__name__)
 
 
 def register(app=None):
@@ -13,4 +17,4 @@ def register(app=None):
         if req["repository"]["name"] == "NossiNet":
             exit(4)
         else:
-            print("got request from:", req["repository"]["name"])
+            logger.error(f"got unexpected request from: {req['repository']['name']}")

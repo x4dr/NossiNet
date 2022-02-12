@@ -63,9 +63,10 @@ class TestViews(NossiTestCase):
             FenCharacter.cost_calc("3,2,4"),
             FenCharacter.cost_calc("4,4,5"),
         ]
-        self.assertEqual([0, 110, 320], sut)
+        self.assertEqual([0, 16, 24], sut)
         self.assertEqual(
-            [[3, 3, 2], [4, 3, 1], [5, 1, 1], [4, 2, 2]], FenCharacter.cost_calc("100")
+            [(4, 4, 1), (4, 3, 2), (5, 3, 1), (5, 2, 2), (3, 3, 3)],
+            FenCharacter.cost_calc("17"),
         )
 
     def test_fenconvert(self):

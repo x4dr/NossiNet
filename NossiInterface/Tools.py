@@ -1,4 +1,4 @@
-import random
+import logging
 import re
 import time
 
@@ -7,10 +7,12 @@ from discord import Message
 
 import Data
 from NossiPack.Cards import Cards
-from NossiPack.DiceParser import fullparenthesis, DiceParser
+from NossiPack.DiceParser import fullparenthesis
 from NossiPack.User import Config
 from NossiPack.krypta import DescriptiveError
 from NossiSite.wiki import load_user_char_stats, load_user_char, spells
+
+logger = logging.getLogger(__name__)
 
 statcache = {}
 sent_messages = {}
@@ -44,7 +46,7 @@ def mentionreplacer(client):
     def replace(m: re.Match):
         u: discord.User = client.get_user(int(m.group(1)))
         if u is None:
-            print("couldn't find user for id ", m.group(1))
+            logger.error(f"couldn't find user for id { m.group(1)}")
         return "@" + (u.name if u else m.group(1))
 
     return replace
@@ -85,7 +87,7 @@ async def split_send(send, lines, i=0):
             i += 1
             replypart = ""
         else:
-            print("aborting sending: unexpected state", i, lines)
+            logger.error(f"aborting sending: unexpected state {i}, {lines}")
             break
 
 
@@ -309,7 +311,7 @@ async def replacedefines(msg, message, persist):
 def who_am_i(persist):
     whoami = persist.get("NossiAccount", None)
     if whoami is None:
-        print(f"whoami failed for {persist} ")
+        logger.error(f"whoami failed for {persist} ")
         return None
     checkagainst = Config.load(whoami, "discord")
     discord_acc = persist.get("DiscordAccount", None)
@@ -347,11 +349,11 @@ async def handle_defines(msg, message, persist, save):
     try:
         persist[author]["defines"]
     except KeyError:
-        print("User", author, "not found, regenerating")
+        logger.info(f"User {author} not found, regenerating")
         persist[author] = {"defines": {}}
         change = True
 
-    cachetimeout = 0 if msg.startswith("?") else 3600
+    cachetimeout = 0 if msg.startswith("?") else 600
     pers = persist[author]
 
     if msg.startswith("def "):
@@ -399,131 +401,3 @@ def dict_path(path, d):
         else:
             res.append((path + "." + k, v))
     return res
-
-
-def healing(
-    method: str, conroll: str, whoami: str, persist: dict, tries=7, med=None, start=None
-) -> str:
-    log = ""
-    healing_thresh = [7, 9, 11, 13, 16, 19]
-    p = DiceParser(persist.get("defines", {}))
-    wounds = load_user_char(whoami).wounds()
-    if method not in ["human", "aurian", "mykian", "argyrian"]:
-        raise DescriptiveError(f"{method} is not an accepted way of healing")
-
-    wounds = {k: [int(y) for y in v.split(":")[:3]] for k, v in wounds.items()}
-    i = 0
-    argyrianhealing = 0
-    while i < tries:
-        i += 1
-        healing_bonus = start
-        for wound in wounds:
-            log += ":".join(wound) + " worsens by its inflammation!\n"
-            wound[0] += wound[2]
-        if med:
-            r = p.do_roll(med)
-            healing_bonus = r.result
-            log += f"medical roll {r.name}: {r.r} => {healing_bonus} =>"
-            healing_bonus = sum(1 if x <= healing_bonus else 0 for x in healing_thresh)
-            if r.result < 5:
-                healing_bonus = r.result - 5
-            log += f" {healing_bonus} =>"
-            if start:
-                healing_bonus += start
-                log += f" +{start} = {healing_bonus}"
-            else:
-                start += 1
-                log += " starting treatment"
-            log += "\n"
-        if method == "argyrian":
-            r = p.do_roll(conroll + "R" + healing_bonus)
-            argyrianhealing += r.result
-            log += f"healing with {r.name}: {r.r} takes argyrian healing to {argyrianhealing} =>"
-            while True:
-                sel = sorted(
-                    [x for x in wounds if x[1] <= argyrianhealing],
-                    key=lambda x: x[0] - 100 * x[2],
-                )
-                if not sel:
-                    log = log[:-2]
-                    break
-                wound = sel[0]
-                if wound[2]:
-                    log += f"lowering inflammation of {':'.join(wound)}, "
-                    wound[2] -= 1
-                    argyrianhealing -= 2
-                else:
-                    log += f"healing {':'.join(wound)}, "
-                    wound[0] -= 1
-                    argyrianhealing -= wound[1]
-
-            if not wounds:
-                log += " done with healing"
-                argyrianhealing = 0
-            else:
-                log += "\n"
-
-        if method in ["human", "aurian"]:
-            r = p.do_roll(conroll + "R" + healing_bonus)
-            log += f"healing with {r.name}: {r.r} => {r.result}"
-            res = p.resonances([r])
-            ones = [x for x, y in res[0] if y][0]
-            tens = [x for x, y in res[9] if y][0]
-            if ones >= 1:
-                log += f" F1A{ones} Resonance! \n"
-                mods = [0, 0, 1]
-                target = [random.randint(0, len(wounds))]
-                if ones >= 2:
-                    mods = [0, 1, 1]
-                if ones >= 3:
-                    target = range(len(wounds))
-                if ones == 4:
-                    mods = [2, 1, 1]
-                for t in target:
-                    wound = wounds[t]
-                    log += ":".join(wound) + " increased by " + ":".join(mods) + "\n"
-                    wounds[t] = [
-                        wound[wound_i] + mods[wound_i] for wound_i in range(len(wound))
-                    ]
-            if tens >= 1:
-                log += f" F10A{tens} Resonance! \n"
-                mods = [0, 1, 1]
-                target = [random.randint(0, len(wounds))]
-                if tens >= 2:
-                    mods = [1, 0, 100]
-                if tens >= 3:
-                    target = range(len(wounds))
-                if tens == 4:
-                    biggest = sorted(wounds, key=lambda x: x[0])
-                    log += ":".join(biggest) + " halved!\n"
-                    biggest[0] //= 2
-                for t in target:
-                    wound = wounds[t]
-                    log += ":".join(wound) + " decreased by " + ":".join(mods) + "\n"
-                    wounds[t] = [
-                        max(wound[wound_i] - mods[wound_i], 0)
-                        for wound_i in range(len(wound))
-                    ]
-
-            if method == "human":
-                healed = False
-                log += "healing "
-                for x in wounds:
-                    log += ":".join(x) + ", "
-                    if x[1] <= r.result:
-                        x[0] -= 1
-                        healed = True
-                if healed:
-                    log = log[:-2]
-                else:
-                    log += "nothing"
-                log += "\n"
-            if method == "aurian":
-                w = sorted([x for x in wounds if x[1] <= r.result], key=lambda x: x[0])
-                if w:
-                    log += "healing" + ":".join(w[0]) + "\n"
-                    w[0][0] -= 1
-                else:
-                    log += "healing nothing\n"
-
-    raise Exception("unfinished")

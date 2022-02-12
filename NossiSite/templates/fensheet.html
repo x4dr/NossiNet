@@ -5,9 +5,10 @@
     <script src="{{ url_for('static', filename="live_edit.js") }}"></script>
         {% if owner %}
             {% for err in character.errors %}
-        <script>
-        alert("Error in Fensheet. Please Fix because some features rely on correct formatting.\n"+`{{err|safe}}`)
-        </script>
+
+Error in Fensheet. Please Fix because some features rely on correct formatting.
+{{err|safe}}
+
             {% endfor %}
         {% endif %}
 {% endblock %}
@@ -83,9 +84,9 @@
             inputstring=cost) }} ">{{ cost }}</a><span class="tooltiptext">Options<br/>{% for l in
                     character.cost_calc(cost)
                 %}{% for b in l %}{{ b }}{% if not loop.last %},{% endif %}{% endfor %}<br/> {% endfor %}{% else %}<a href="{{
-                url_for('fen_calc', inputstring=cost, costs='30,80,140,210,300',penalty='0,0,0,0,0',width=character.magicwidth(name))|urldecode
+                url_for('fen_calc', inputstring=cost)|urldecode
                 }}">{{ cost }}</a><span class="tooltiptext">{% for l in
-                    character.cost_calc(cost,'30, 80, 140, 210, 300','', width=character.magicwidth(name))
+                    character.cost_calc(cost)
                 %}{{ l }}<br/> {% endfor %}{% endif %}</span></div><div class="span-0"></div>
 
         {%- if cat is mapping  -%}

@@ -1,4 +1,6 @@
+import logging
 import pathlib
+import time
 
 import discord
 from discord.ext import commands, tasks
@@ -6,11 +8,14 @@ from discord.ext import commands, tasks
 import Data
 from NossiInterface.Tools import discordname
 
+logger = logging.getLogger(__name__)
+
 
 class NossiCog(commands.Cog, name="NossiBot"):
     def __init__(self, client):
         self.client: discord.client = client
         self.storage = Data.read("NossiBot.storage") or dict()
+        self.storage_age = time.time()
         self.shutdownflag = pathlib.Path("~/shutdown_nossibot")
         self.tasks.start()
 
@@ -30,6 +35,8 @@ class NossiCog(commands.Cog, name="NossiBot"):
             self.shutdownflag.unlink()
             await self.client.owner.send("I got Killed")
             self.client.close()
+        if time.time() - self.storage_age > 30:
+            Data.read("NossiBot.storage") or dict()
 
     @commands.group(name="NossiBot")
     async def nossi(self, ctx: commands.Context):
@@ -47,7 +54,7 @@ class NossiCog(commands.Cog, name="NossiBot"):
     async def joinme(self, ctx):
         vc = ctx.author.voice.channel
         connection: discord.VoiceClient = await vc.connect()
-        print("Voice Connection:", connection.is_connected())
+        logger.info(f"Voice Connection: { connection.is_connected()}")
         connection.play(
             # discord.FFmpegOpusAudio("default", before_options="-f pulse"),
             # contents of pacatffmpeg
@@ -58,7 +65,7 @@ class NossiCog(commands.Cog, name="NossiBot"):
                 pathlib.Path("~/soundpipe").expanduser(),
                 before_options="-f s32le -ac 2 -ar 48000",
             ),
-            after=lambda e: print(
+            after=lambda e: logger.info(
                 "disconnected with " + (f"{e}" if e else "no errors.")
             ),
         )
@@ -80,7 +87,7 @@ class NossiCog(commands.Cog, name="NossiBot"):
         connection.stop()
         connection.play(
             r,
-            after=lambda e: print(
+            after=lambda e: logger.info(
                 "disconnected with " + (f"{e}" if e else "no errors.")
             ),
         )

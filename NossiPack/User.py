@@ -106,7 +106,8 @@ class User:
 
     def configs(
         self,
-    ) -> Dict[str, str]:  # central place to store default values for users
+    ) -> Dict[str, str]:
+        # central place to store default values for users
         res = {
             "discord": "not set",
             "fensheet_dots": "1",
