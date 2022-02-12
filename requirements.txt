@@ -8,7 +8,7 @@ matplotlib==3.3.4
 pandas==1.4.1
 dateparser==1.0.0
 discord.py==1.7.3
-scipy==1.6.0
+scipy==1.8.0
 bleach==3.3.0
 chardet==3.0.4
 Click==8.0.1
