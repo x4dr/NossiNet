@@ -109,7 +109,7 @@ class FenCharacter:
             attributes = inp
             if all(a < 2 for a in attributes):
                 return 0
-            return sum(attributes) * 2 + 4
+            return (sum(attributes) - 3) * 2 + 4
 
         if len(inp) != 1:
             return 0
@@ -120,7 +120,9 @@ class FenCharacter:
             for x in itertools.product(range(1, 6), repeat=int(width))
         )
         valid = [
-            attributes for attributes in allconf if (sum(attributes) - 3) <= (xp - 4)
+            attributes
+            for attributes in allconf
+            if (sum(attributes) - 3) * 2 <= (xp - 4)
         ]
         validsums = [sum(x) for x in valid]
         maxsum = max(validsums) if validsums else 0

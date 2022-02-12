@@ -1,5 +1,6 @@
 import logging
 import pathlib
+import time
 
 import discord
 from discord.ext import commands, tasks
@@ -14,6 +15,7 @@ class NossiCog(commands.Cog, name="NossiBot"):
     def __init__(self, client):
         self.client: discord.client = client
         self.storage = Data.read("NossiBot.storage") or dict()
+        self.storage_age = time.time()
         self.shutdownflag = pathlib.Path("~/shutdown_nossibot")
         self.tasks.start()
 
@@ -33,6 +35,8 @@ class NossiCog(commands.Cog, name="NossiBot"):
             self.shutdownflag.unlink()
             await self.client.owner.send("I got Killed")
             self.client.close()
+        if time.time() - self.storage_age > 30:
+            Data.read("NossiBot.storage") or dict()
 
     @commands.group(name="NossiBot")
     async def nossi(self, ctx: commands.Context):
