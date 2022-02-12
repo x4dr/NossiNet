@@ -13,8 +13,8 @@ bleach==3.3.0
 certifi==2021.5.30
 chardet==3.0.4
 Click==8.0.1
-dnspython==1.16.0
-eventlet==0.31.0
+dnspython==2.2.0
+eventlet==0.33.0
 Flask==2.0.1
 Flask-SocketIO==5.1.0
 github-webhook==1.0.4

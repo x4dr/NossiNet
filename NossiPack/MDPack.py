@@ -255,5 +255,6 @@ def total_table(table_input, flash):
                 table_input[-1][i + 1] = fendeconvert(t[0], t[1])
     except:
         flash(
-            "tabletotal failed for " + "\n".join("\t".join(row) for row in table_input)
+            "tabletotal failed for '"
+            + ("\n".join("\t".join(row) for row in table_input).strip() + "'")
         )

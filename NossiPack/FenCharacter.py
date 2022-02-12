@@ -97,12 +97,41 @@ class FenCharacter:
         return sum(internal_costs[a - 1] if a > 0 else 0 for a in att) + pen
 
     @staticmethod
-    def cost_calc(inputstring, costs=None, penalty=None, width=3):
+    def cost_calc(inputstring, width=3):
         """
-        returns fp cost of attributes if given a , separated list of attributes
-        if given a single integer (or a integer representing string) it will output possible
-        attribute distributions for those costs and penalties
+        :param inputstring: either ',' separated list of attributes or total skills
+        :param width: amount of attributes
+        :return: list -> int, int -> list of lists
+        """
+        inp = [int(x or 0) for x in str(inputstring).split(",")]
 
+        if len(inp) == width:
+            attributes = inp
+            if all(a < 2 for a in attributes):
+                return 0
+            return sum(attributes) * 2 + 4
+
+        if len(inp) != 1:
+            return 0
+
+        xp = inp[0]
+        allconf = set(
+            tuple(sorted(x, reverse=True))
+            for x in itertools.product(range(1, 6), repeat=int(width))
+        )
+        valid = [
+            attributes for attributes in allconf if (sum(attributes) - 3) <= (xp - 4)
+        ]
+        validsums = [sum(x) for x in valid]
+        maxsum = max(validsums) if validsums else 0
+        return [attributes for attributes in allconf if sum(attributes) == maxsum]
+
+    @staticmethod
+    def cost_calc_old(inputstring, costs=None, penalty=None, width=3):
+        """
+        returns fp cost of attributes if given a ',' separated list of attributes
+        if given a single integer (or an integer representing string) it will output possible
+        attribute distributions for those costs and penalties
         :param inputstring:  or output of points
         :param costs: absolute cost for each level
         :param penalty: point costs for all attributes beyond the first to reach that level
@@ -155,6 +184,25 @@ class FenCharacter:
         return len(f)
 
     def points(self, name) -> int:
+        """
+        total fp for a given category.
+        members with a _ prefix are treated differently, according to their type
+        :param name: the CATEGORY name to calculate
+        :return: number of FP (full for the already skilled ones and partial for those written down in the xp table)
+        """
+        res = 0
+        c = self.Categories[name]
+        f = {}
+        for k in c.keys():
+            if k.lower() in self.fullpoint_sections:
+                f.update(c[k])
+            if any("_" in x for x in c[k].values()):
+                return self.points_old(name)
+        for k, v in f.items():
+            res += int(v)
+        return res
+
+    def points_old(self, name) -> int:
         """
         total fp for a given category.
         members with a _ prefix are treated differently, according to their type
