@@ -103,7 +103,7 @@ class VampireCharacter:
         u = self.unify()
         for i, a in enumerate(sorted(list(u.keys()))):
             try:
-                result += int(u[a]) * 5 ** i
+                result += int(u[a]) * 5**i
             except:
                 raise Exception("could not add up", a)
         print("checksum", result)

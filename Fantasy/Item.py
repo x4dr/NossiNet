@@ -103,8 +103,8 @@ class Item:
         return Item(self.name, self.weight, self.price, self.count)
 
 
-weights = {"g": 1, "kg": 10 ** 3, "t": 10 ** 6}
-currencies = {"k": 1, "s": 10 ** 2, "a": 10 ** 4}
+weights = {"g": 1, "kg": 10**3, "t": 10**6}
+currencies = {"k": 1, "s": 10**2, "a": 10**4}
 
 
 def tryfloatdefault(inp, default=0):
@@ -159,7 +159,7 @@ def fendeconvert(val: float, conv: str) -> str:
     :param val: base unit for a category of units
     :param conv: category name
     """
-    conversions = {"weight": (10 ** 3, weights), "money": (10 ** 2, currencies)}.get(
+    conversions = {"weight": (10**3, weights), "money": (10**2, currencies)}.get(
         conv, None
     )
     sign = 1 if val >= 0 else -1
