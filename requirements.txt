@@ -32,3 +32,4 @@ Werkzeug==2.0.1
 setuptools==57.0.0
 pytz==2021.1
 python-dateutil==2.8.2
+aiohttp>=3.8.0 # not directly required, pinned by Snyk to avoid a vulnerability
