@@ -4,7 +4,15 @@ from unittest import mock
 from flask import url_for
 from gamepack.FenCharacter import FenCharacter
 from gamepack.Item import fenconvert, fendeconvert
-from gamepack.MDPack import split_row, table, split_md, search_tables, table_add, table_remove, table_edit
+from gamepack.MDPack import (
+    split_row,
+    table,
+    split_md,
+    search_tables,
+    table_add,
+    table_remove,
+    table_edit,
+)
 
 import Data
 
