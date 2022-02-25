@@ -2,8 +2,9 @@ import asyncio
 import logging
 from concurrent.futures.thread import ThreadPoolExecutor
 
-from NossiPack.Dice import Dice
-from NossiPack.DiceParser import DiceParser, DiceCodeError, MessageReturn
+from gamepack.Dice import Dice
+from gamepack.DiceParser import DiceParser, DiceCodeError, MessageReturn
+
 from NossiPack.krypta import terminate_thread
 
 logger = logging.getLogger(__name__)

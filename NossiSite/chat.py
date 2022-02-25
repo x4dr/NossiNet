@@ -2,10 +2,10 @@ import time
 
 from flask import render_template, session, request, flash, url_for, redirect
 from flask_socketio import emit, join_room, leave_room, disconnect
+from gamepack.DiceParser import DiceParser
 
 from Data import getlocale_data
 from NossiPack.Chatrooms import Chatroom
-from NossiPack.DiceParser import DiceParser
 from NossiPack.User import Userlist
 from NossiPack.VampireCharacter import VampireCharacter
 from NossiPack.krypta import connect_db
@@ -133,7 +133,7 @@ def register(app=None, socketio=None):
             try:
                 workdef.pop(message[8:])
                 echo("Entry " + message[8:] + " cleared.")
-            except:
+            except Exception:
                 echo("Entry " + message[8:] + " not found.")
         elif message[:5] == "=show":
             echodict(workdef)
@@ -298,7 +298,7 @@ def register(app=None, socketio=None):
             echo(message, ": /")
             try:
                 width = str(int(message.split(" ")[1])) + "em"
-            except:
+            except Exception:
                 width = "90%"
             emit("Message", {"data": "\nadjusting width...\n"})
             emit(
@@ -312,7 +312,7 @@ def register(app=None, socketio=None):
             echo(message, ": /")
             try:
                 height = str(int(message.split(" ")[1])) + "em"
-            except:
+            except Exception:
                 height = "35em"
             emit("Message", {"data": "\nadjusting height...\n"})
             emit(
@@ -327,7 +327,7 @@ def register(app=None, socketio=None):
         elif message.split(" ")[0] == "join":
             try:
                 room = message.split(" ")[1]
-            except:
+            except Exception:
                 emit("Message", {"data": "join where?"})
                 emit("SetCmd", {"data": "/join "})
                 room = None
@@ -361,7 +361,7 @@ def register(app=None, socketio=None):
             echo(message, ": /")
             try:
                 room = message.split(" ")[1]
-            except:
+            except Exception:
                 room = session["activeroom"].name
             emit("Message", {"data": "unsubscribing from " + room + "..."})
             left = False
@@ -389,7 +389,7 @@ def register(app=None, socketio=None):
             echo(message, ": /")
             try:
                 recipient = message.split(" ")[1]
-            except:
+            except Exception:
                 emit("Message", {"data": "message who?"})
                 recipient = None
             recipient_message = " ".join(message.split(" ")[2:])
@@ -558,7 +558,7 @@ def register(app=None, socketio=None):
                     (x for i, x in u.loadoldsheets().items() if i != u.sheetid),
                     key=lambda x: x.timestamp,
                 )
-            except:
+            except Exception:
                 old = None
             formdata = {}
             for f in message["data"]:
@@ -604,7 +604,7 @@ def register(app=None, socketio=None):
             session["roomlist"] = session.get("roomlist", []) + [mailbox, roomlist[0]]
             try:
                 prevmode = session["chatmode"]
-            except:
+            except Exception:
                 prevmode = "talk"
             session["chatmode"] = prevmode
             session["activeroom"] = roomlist[0]

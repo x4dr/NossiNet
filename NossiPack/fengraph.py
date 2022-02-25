@@ -10,11 +10,11 @@ from typing import Dict, List, Union
 
 import numpy
 import requests
+from gamepack.Armor import Armor
+from gamepack.DiceParser import DiceParser
 
 import Data
 from Data import append, get, handle
-from Fantasy.Armor import Armor
-from NossiPack.DiceParser import DiceParser
 from NossiPack.generate_dmgmods import generate, tuplecombos
 
 try:

@@ -10,12 +10,12 @@ from typing import Tuple, List, Union
 import bleach
 import markdown
 from flask import render_template, request, redirect, url_for, session, flash, abort
+from gamepack.Armor import Armor
+from gamepack.FenCharacter import FenCharacter
+from gamepack.Item import Item
+from gamepack.MDPack import traverse_md, search_tables, extract_tables, split_md
 from markupsafe import Markup
 
-from Fantasy.Armor import Armor
-from Fantasy.Item import Item
-from NossiPack.FenCharacter import FenCharacter
-from NossiPack.MDPack import traverse_md, split_md, extract_tables, search_tables
 from NossiPack.User import User, Config
 from NossiPack.fengraph import weapondata, armordata
 from NossiPack.krypta import DescriptiveError, calculate

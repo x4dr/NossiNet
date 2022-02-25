@@ -7,16 +7,13 @@ import threading
 from contextlib import closing
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
+from gamepack.Dice import DescriptiveError
 
 import numexpr
 
 import Data
 
 logger = logging.getLogger(__name__)
-
-
-class DescriptiveError(Exception):
-    pass
 
 
 def tuple_overlap(a: tuple, b: tuple) -> bool:

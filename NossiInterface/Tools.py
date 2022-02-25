@@ -7,7 +7,7 @@ from discord import Message
 
 import Data
 from NossiPack.Cards import Cards
-from NossiPack.DiceParser import fullparenthesis
+from gamepack.DiceParser import fullparenthesis
 from NossiPack.User import Config
 from NossiPack.krypta import DescriptiveError
 from NossiSite.wiki import load_user_char_stats, load_user_char, spells

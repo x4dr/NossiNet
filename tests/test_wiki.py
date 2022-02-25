@@ -2,19 +2,12 @@ from pathlib import Path
 from unittest import mock
 
 from flask import url_for
+from gamepack.FenCharacter import FenCharacter
+from gamepack.Item import fenconvert, fendeconvert
+from gamepack.MDPack import split_row, table, split_md, search_tables, table_add, table_remove, table_edit
 
 import Data
-from Fantasy.Item import fenconvert, fendeconvert
-from NossiPack.FenCharacter import FenCharacter
-from NossiPack.MDPack import (
-    table,
-    split_row,
-    split_md,
-    search_tables,
-    table_remove,
-    table_add,
-    table_edit,
-)
+
 from NossiPack.fengraph import armordata
 from NossiSite import helpers
 from NossiSite.wiki import wikisave, fill_infolets
