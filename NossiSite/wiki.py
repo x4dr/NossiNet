@@ -765,8 +765,8 @@ def gettags():
 
 def updatewikitags():
     dt = time.time() - wikistamp[0]
-    dt = "a while" if dt > 6e4 else str(dt)
-    print(f"it has been {dt} seconds since the last wiki indexing")
+    dt = "a while" if dt > 6e4 else (str(dt)+"seconds")
+    print(f"it has been {dt} since the last wiki indexing")
     wikistamp[0] = time.time()
     for m in wikindex():
         wikitags[m.stem] = wikiload(m)[1]
