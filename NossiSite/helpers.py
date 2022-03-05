@@ -50,6 +50,7 @@ def register(app: Flask = None):
         if isinstance(s, str):
             return Markup(markdown.markdown(s, extensions=["tables", "toc", "nl2br"]))
         if isinstance(s, list):
+            # noinspection PyBroadException
             try:
                 n = Markup(
                     markdown.markdown(
@@ -112,6 +113,7 @@ def register(app: Flask = None):
 
 def srs(w=8):
     """
+    generates a "unique" id for use in templating
     :param w: width of result
     :return: short random string
     """

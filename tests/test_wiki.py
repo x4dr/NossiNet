@@ -32,7 +32,7 @@ class TestViews(NossiTestCase):
     def test_index(self):
         self.addCleanup(lambda x: Path(x).unlink(), Data.DATABASE)
         with self.register_login() as c:
-            print(c.get(url_for("wiki_index")))
+            print(c.get_str(url_for("wiki_index")))
 
     def test_ewparsing(self):
         wikisave(
@@ -47,7 +47,7 @@ class TestViews(NossiTestCase):
         app = self.create_app()
         helpers.register(app)
         c = app.test_client()
-        c.get("/ewsheet/test")
+        c.get_str("/ewsheet/test")
         self.create_app()
 
     def test_xp_parsing(self):

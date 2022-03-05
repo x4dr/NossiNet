@@ -325,7 +325,7 @@ class VampireCharacter:
             elif a in b:
                 c = 5
             xpdiff += self.calc_cost(
-                self.disciplines[a], old.disciplines.get(a, 0), c, 10
+                self.disciplines[a], old.disciplines.get_str(a, 0), c, 10
             )
 
         xpdiff += self.calc_cost(
@@ -795,8 +795,8 @@ class VampireCharacter:
                 self.disciplines[d] += 1
             else:
                 d = random.choice(alldis)
-                if self.disciplines.get(d, 0) < 5:
-                    self.disciplines[d] = self.disciplines.get(d, 0) + 1
+                if self.disciplines.get_str(d, 0) < 5:
+                    self.disciplines[d] = self.disciplines.get_str(d, 0) + 1
                 else:
                     self.disciplines["DUDE LIKE SO MANY"] = 5
                     self.meta["Gear"] += "\n[overflowed Discipline point]"

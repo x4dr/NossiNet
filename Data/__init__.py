@@ -6,13 +6,13 @@ import pickle
 DATABASE = "./NN.db"
 
 
-def get(res):
+def get_str(res):
     with importlib.resources.open_text("Data", pathlib.Path(res)) as data:
         return data.read()
 
 
 def get_roll_freq_dict(mod):
-    lines = get(f"roll_frequencies_{mod}.csv")
+    lines = get_str(f"roll_frequencies_{mod}.csv")
     return {
         tuple(x[:5]): int(x[5])
         for x in [[int(z) for z in y.split(",")] for y in lines.splitlines()]
@@ -34,7 +34,7 @@ def check(res):
     try:
         with importlib.resources.path("Data", pathlib.Path(res)) as path:
             return path.as_posix()
-    except:
+    except FileNotFoundError:
         return ""
 
 
@@ -43,25 +43,25 @@ def append(res, d):
         data.write(d)
 
 
-def set(res, d):
+def set_str(res, d):
     with open(handle(res), "w") as data:
         data.write(d)
 
 
 def getlocale_data():
-    return json.loads(get("EN.json"))
+    return json.loads(get_str("EN.json"))
 
 
 def getschema():
-    return get("schema.sql")
+    return get_str("schema.sql")
 
 
 def getnossihelp():
-    return get("nossibot.help")
+    return get_str("nossibot.help")
 
 
 def getcardhelp():
-    return get("cards.help")
+    return get_str("cards.help")
 
 
 def write(name, obj):

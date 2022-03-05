@@ -164,7 +164,7 @@ async def spellhandle(deck: Cards, whoami, par, send):
     spellbook = {}
     existing = {}
     power = deck.scorehand()
-    spelltexts = load_user_char(whoami).Meta.get("Zauber", ("", {}))[1]
+    spelltexts = load_user_char(whoami).Meta.get_str("Zauber", ("", {}))[1]
     if not spelltexts:
         await send("No spells found")
     for spelltext in spelltexts.values():
@@ -173,19 +173,19 @@ async def spellhandle(deck: Cards, whoami, par, send):
             school = m[0]
             spell = m[1].split(":")[-1]
             spellbook[school] = spellbook.get(school, spells(school))
-            existing[school + ":" + spell] = spellbook[school].get(
+            existing[school + ":" + spell] = spellbook[school].get_str(
                 spell.lower(), {"Name": spell, "Error": "?"}
             )
 
     if par == "all":
         res = "All Spells:\n"
         for spec, spelldict in existing.items():
-            if not spelldict.get("Name", None):
+            if not spelldict.get_str("Name", None):
                 continue
             sr = ", ".join(
                 [
                     f"{v} {k}".strip()
-                    for k, v in spelldict.get("Effektive Kosten", {}).items()
+                    for k, v in spelldict.get_str("Effektive Kosten", {}).items()
                 ]
             )
             res += f"specific:{str(spec)+':-': <45}  {sr}\n"
@@ -193,15 +193,15 @@ async def spellhandle(deck: Cards, whoami, par, send):
     elif par == "":
         res = "Available Spells:\n"
         for spec, spelldict in existing.items():
-            if not spelldict.get("Name", None):
+            if not spelldict.get_str("Name", None):
                 continue
-            spelltime = spelldict.get("Zauberzeit", "0").strip()
+            spelltime = spelldict.get_str("Zauberzeit", "0").strip()
             if "Runde" in spelltime or spelltime == "0":
-                if satisfy(power, spelldict.get("Effektive Kosten")):
+                if satisfy(power, spelldict.get_str("Effektive Kosten")):
                     sr = ", ".join(
                         [
                             (str(v) + " " + k).strip()
-                            for k, v in spelldict.get("Effektive Kosten", {}).items()
+                            for k, v in spelldict.get_str("Effektive Kosten", {}).items()
                         ]
                     )
                     res += (
@@ -221,7 +221,7 @@ def satisfy(source, reqs):
         if not req:
             if sum(source.values()) < val:
                 return False
-        elif source.get(req.lower(), 0) < val:
+        elif source.get_str(req.lower(), 0) < val:
             return False
 
     else:
@@ -253,7 +253,7 @@ async def define(msg, message, persist):
         persist["mutated"] = True
         await message.add_reaction("\N{THUMBS UP SIGN}")
         return None
-    if persist[author]["defines"].get(msg, None) is not None:
+    if persist[author]["defines"].get_str(msg, None) is not None:
         await message.author.send(persist[author]["defines"][msg])
     else:
         await message.add_reaction("\N{THUMBS DOWN SIGN}")
@@ -309,12 +309,12 @@ async def replacedefines(msg, message, persist):
 
 
 def who_am_i(persist):
-    whoami = persist.get("NossiAccount", None)
+    whoami = persist.get_str("NossiAccount", None)
     if whoami is None:
         logger.error(f"whoami failed for {persist} ")
         return None
     checkagainst = Config.load(whoami, "discord")
-    discord_acc = persist.get("DiscordAccount", None)
+    discord_acc = persist.get_str("DiscordAccount", None)
     if discord_acc is None:  # should have been set up at the same time
         persist["NossiAccount"] = "?"  # force resetup
         raise DescriptiveError(
@@ -331,8 +331,8 @@ async def handle_defines(msg, message, persist, save):
     """
     processes defines and mutates the message accordingly.
     msg:
-        "def a = b" defines a to resolve to b
-        "def a" retrieves the definition of a
+        "def a = b" defines 'a' to resolve to 'b'
+        "def a" retrieves the definition of 'a'
         "def =?" retrieves all definitions
         "undef <r>" removes all definitions for keys matching the regex
         (` will be stripped, and might be necessary to send through discord)

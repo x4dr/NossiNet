@@ -872,7 +872,7 @@ def spells(page):
                         raise DescriptiveError(
                             f"spell {r['Name']} has format issues in {part}"
                         )
-                    ek[m.group(2)] = ek.get(m.group(2), 0) + int(m.group(1))
+                    ek[m.group(2)] = ek.get_str(m.group(2), 0) + int(m.group(1))
                 r["Effektive Kosten"] = ek
     return result
 

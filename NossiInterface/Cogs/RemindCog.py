@@ -30,7 +30,7 @@ class RemindCog(commands.Cog, name="Remind"):
     async def reminding(self):
         repeat = True
         while repeat:
-            repeat = False  # probably wont pull reminders more than once
+            repeat = False  # probably won't pull reminders more than once
             nr = list(next_reminders())
             if nr:
                 logger.info(f"reminding {nr}")

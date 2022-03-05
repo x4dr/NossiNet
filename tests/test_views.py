@@ -15,7 +15,7 @@ class TestViews(NossiTestCase):
         self.addCleanup(lambda x: Path(x).unlink(), Data.DATABASE)
         # test response of login
         c = self.app.test_client()
-        c.get("/login")
+        c.get_str("/login")
         self.assert_template_used("login.html")
         # test response of register page
         c.post("/login", data=self.logindata, follow_redirects=True)
@@ -28,14 +28,14 @@ class TestViews(NossiTestCase):
     def test_version(self):
         self.addCleanup(self.delete, Data.DATABASE)
         c = self.app.test_client()
-        self.assert200(c.get(url_for("getversion")))
+        self.assert200(c.get_str(url_for("getversion")))
 
     @mock.patch.object(Data, "DATABASE", "entries.db")
     def test_entries(self):
         self.addCleanup(self.delete, Data.DATABASE)
         c = self.app.test_client()
         try:
-            c.get(url_for("editentries"))
+            c.get_str(url_for("editentries"))
         except Exception as e:
             self.assertEqual(e.args[0], "REDIR")
             self.assertEqual(
@@ -43,7 +43,7 @@ class TestViews(NossiTestCase):
                 redirect(url_for("login", r=url_for("editentries")[1:])).get_data(),
             )
         with self.register_login() as c:
-            c.get(url_for("editentries"))
+            c.get_str(url_for("editentries"))
             self.assertTemplateUsed("show_entries.html")
             self.assertRaises(
                 werkzeug.exceptions.BadRequestKeyError, c.post, url_for("editentries")
@@ -70,12 +70,12 @@ class TestViews(NossiTestCase):
             self.assert200(
                 c.post(url_for("editentries"), data=form, follow_redirects=True)
             )
-            rv = c.get(url_for("show_entries"))
+            rv = c.get_str(url_for("show_entries"))
             self.assertIn(b"xxyxz", rv.data)
             self.assertNotIn(b"testpost", rv.data)
             c.post(url_for("update_filter"), data={"tags": "testtag", "token": token})
             self.assertEqual(flask.session.get("tags", None), "testtag")
-            rv = c.get(url_for("show_entries"))
+            rv = c.get_str(url_for("show_entries"))
             self.assertIn(b"testpost", rv.data)
             self.assertNotIn(b"xxyxz", rv.data)
 

@@ -41,9 +41,9 @@
                 return e.which !== 13;
             });
 
-            var namespace = '/character';
+            const namespace = '/character';
 
-            var socket = io.connect('https://' + document.domain + ':' + location.port + namespace);
+            const socket = io.connect('https://' + document.domain + ':' + location.port + namespace);
 
 
             socket.on('connect', function () {
@@ -51,26 +51,20 @@
             });
 
             socket.on('DotUpdate', function(msg){
-                var a = msg.data.split("§");
-                var arr =a[0].split("&");
-                for (var i = 0; i < arr.length; i++) {
-                    var btn = document.getElementById(arr[i]);
+                const a = msg.data.split("§");
+                const arr =a[0].split("&");
+                for (let i = 0; i < arr.length; i++) {
+                    const btn = document.getElementById(arr[i]);
                     btn.checked=true;}
             });
 
-            $('form#spendable').submit(function () {
+            $('form#spendable').onsubmit = function() {
                 setTimeout(function(){
-                    var message_data = $('form#spendable').serialize();
+                    let message_data = $('form#spendable').serialize();
                     socket.emit('NoteDots', {data: message_data});
                 }, 100); //to wait for the dot to be saved
-
-
-
                 return false;
-            })
-
-
-
+            }
         });
 
         function resetDot(el){
@@ -91,7 +85,7 @@
 {% block body %}
 
 
-    <table width="100%" class="leet dividedtable" border="1">
+    <table class="leet dividedtable">
         <tr>
             <td colspan="6" style="text-align: center; font-size: 1.5em" class="leeet">
                 {%- if character.Meta.Name -%}
@@ -125,7 +119,7 @@
         </tr>
     </table>
     <br>
-    <table width="100%">
+    <table>
         <tr>
             <td colspan="6" style="text-align: center;" class="leeet">Attributes</td>
         </tr>
@@ -135,10 +129,10 @@
             <td colspan="2" style="text-align: center; width: 33%;" class="leet">Mental</td>
         </tr>
     </table>
-    <table width="100%">
+    <table>
         <tr>
             <td style="text-align: right; ">Strength:</td>
-            <td style="text-align: Left; ">{{ dots(character.Attributes.Strength,5) }}</t
+            <td style="text-align: Left; ">{{ dots(character.Attributes.Strength,5) }}</td>
 d>
             <td style="text-align: right; ">Charisma:</td>
             <td style="text-align: Left; ">{{ dots(character.Attributes.Charisma) }}</td>
@@ -163,7 +157,7 @@ d>
         </tr>
     </table>
     <br>
-    <table width="100%">
+    <table>
         <tr>
             <td colspan="6" style="text-align: center;" class="leeet">Abilities</td>
         </tr>
@@ -173,7 +167,7 @@ d>
             <td colspan="2" style="text-align: center; width: 33%;" class="leet">Knowledges</td>
         </tr>
     </table>
-    <table width="100%">
+    <table>
         <tr>
             <td style="text-align: right; ">Alertness:</td>
             <td style="text-align: Left; ">{{ dots(character.Abilities.Talents.Alertness) }}</td>
@@ -265,7 +259,7 @@ d>
 
         </tr>
     </table>
-    <table width="100%">
+    <table>
         <tr>
             <td colspan="6" style="text-align: center;" class="leeet">Advantages</td>
         </tr>
@@ -299,7 +293,7 @@ d>
 
     </table>
     <form id="spendable"  name="spendable">
-        <table width="100%">
+        <table>
             <tr>
 
                 <td colspan="2" style="text-align: center; width: 33%;" class="leeet">Merits/Flaws</td>
@@ -314,7 +308,7 @@ d>
 
             </tr>
             <tr>
-                <td colspan="2" align="center" style="font-weight: bolder;
+                <td colspan="2" style="font-weight: bolder; align-self: center;
          letter-spacing: 3px">{{ dots(character.Special.Humanity,10) }}</td>
             </tr>
             <tr>
@@ -330,7 +324,7 @@ d>
 
             </tr>
             <tr>
-                <td colspan="2" align="center" style="font-weight: bolder;
+                <td colspan="2" style="font-weight: bolder; align-self: center;
          letter-spacing: 3px">{{ chooser("Willpower", character.Special.Willpower,character.Special.Willmax) }}</td>
 
             </tr>
@@ -345,7 +339,7 @@ d>
                 <td colspan="2">&nbsp</td>
             </tr>
             <tr>
-                <td colspan="2" align="center" style="font-weight: bolder;
+                <td colspan="2" style="font-weight: bolder; align-self: center;
          letter-spacing: 3px">{{ chooser("Bloodpool", character.Special.Bloodpool,character.Special.Bloodmax) }}</td>
 
             </tr>

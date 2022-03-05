@@ -1,14 +1,10 @@
 blinker==1.4
 flask-testing==0.8.1
-pyopenssl==20.0.1
+pyopenssl==22.0.0
 coverage==6.3.2
 pre-commit==2.17.0
-pydealer==1.4.0
-matplotlib==3.3.4
-pandas==1.4.1
 dateparser==1.1.0
 discord.py==1.7.3
-scipy==1.8.0
 bleach==4.1.0
 dnspython==2.2.0
 eventlet==0.33.0
@@ -16,7 +12,7 @@ Flask==2.0.3
 Flask-SocketIO==5.1.1
 github-webhook==1.0.4
 greenlet==1.1.2
-idna==2.9
+idna==3.3
 itsdangerous==2.1.0
 Jinja2==3.0.3
 Markdown==3.3.6

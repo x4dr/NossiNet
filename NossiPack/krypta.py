@@ -30,8 +30,8 @@ def tuple_overlap(a: tuple, b: tuple) -> bool:
 
 
 def terminate_thread(thread: threading.Thread):
-    """Terminates a python thread from another thread.
-
+    """
+    Terminates a python thread from another thread
     :param thread: a threading.Thread instance
     """
     if not thread.is_alive():

@@ -33,9 +33,9 @@ class CardCog(commands.Cog, name="Cards"):
 
     @cards.before_invoke
     async def cards_setup(self, ctx):
-        nc = self.client.cogs.get("NossiBot")
+        nc = self.client.cogs.get_str("NossiBot")
 
-        ctx.whoami = who_am_i(nc.storage.get(discordname(ctx.author), {}))
+        ctx.whoami = who_am_i(nc.storage.get_str(discordname(ctx.author), {}))
         if not ctx.whoami:
             return await ctx.send(
                 ctx.message.author.mention + " Could not ascertain Identity!"

@@ -53,7 +53,7 @@ async def cogreload():
     ]
     for cog in cogs_to_load:
         cogname = f"Cogs.{cog}Cog"
-        loaded = client.extensions.get(cogname, None)
+        loaded = client.extensions.get_str(cogname, None)
         if loaded:
             client.unload_extension(cogname)
         client.load_extension(cogname)
@@ -121,7 +121,7 @@ async def on_message(message):
     if errreport:
         message.content = message.content[1:]
 
-    nc: NossiCog = client.cogs.get("NossiBot")
+    nc: NossiCog = client.cogs.get_str("NossiBot")
     if not nc:
         warning("no NossiCog!")
     msg: str = message.content.strip("` ")

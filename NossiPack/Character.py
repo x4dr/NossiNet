@@ -314,7 +314,7 @@ class Character:
             elif a in b:
                 c = 5
             xpdiff += self.calc_cost(
-                self.disciplines[a], old.disciplines.get(a, 0), c, 10
+                self.disciplines[a], old.disciplines.get_str(a, 0), c, 10
             )
 
         xpdiff += self.calc_cost(

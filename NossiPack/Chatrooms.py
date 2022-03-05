@@ -12,7 +12,7 @@ from NossiPack.krypta import DescriptiveError, connect_db
 def echo(message):
     try:
         emit("Message", {"data": session["user"] + message})
-    except:
+    except Exception:
         pass
 
 
@@ -56,7 +56,7 @@ class Chatroom:
             emit(
                 "Message", {"data": time.strftime("%H:%M") + " " + line}, room=self.name
             )
-        except:
+        except Exception:
             print(
                 "Message",
                 {"data": time.strftime("%H:%M") + " " + line},

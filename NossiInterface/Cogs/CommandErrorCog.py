@@ -54,7 +54,7 @@ class CommandErrorCog(commands.Cog):
                 ctx.author,
                 ctx.send,
                 ctx.message.add_reaction,
-                self.client.cogs.get("NossiBot", None).storage,
+                self.client.cogs.get_str("NossiBot", None).storage,
             )
 
         try:

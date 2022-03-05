@@ -91,7 +91,7 @@ def register(app=None):
             )
         entries = [
             e for e in entries if e.get("author", "none")[0].isupper()
-        ]  # dont send out lowercase authors ("deleted")
+        ]  # don't send out lowercase authors ("deleted")
 
         return render_template("show_entries.html", entries=entries)
 
@@ -324,7 +324,7 @@ def register(app=None):
         u = ul.loaduserbyname(session.get("user"))
         try:
             sheetnum = int(x)
-        except:
+        except Exception:
             flash(f"LOL NOPE {x} is not a sheet number")
             return redirect(url_for("menu_oldsheets"))
         sheet = u.loadsheet(sheetnum)
@@ -674,7 +674,7 @@ def register(app=None):
                             flash("Wrong password!")
                     else:
                         flash("You are not " + username)
-                except:
+                except Exception:
                     flash("You seem to not exist. Huh...")
                     return render_template("resetpassword.html")
         ul.saveuserlist()
@@ -699,7 +699,7 @@ def register(app=None):
                         raise Exception()
                     flash("Deduct successfull")
                     ul.saveuserlist()
-                except:
+                except Exception:
                     error = (
                         'Error deducting "'
                         + request.form.get("amount", "nothing")

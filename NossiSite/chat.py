@@ -178,19 +178,19 @@ def register(app=None, socketio=None):
         else:
             deliver(message, "'S " + verb + ": ")
 
-        if parser.triggers.get("order", None):
+        if parser.triggers.get_str("order", None):
             roll.r = sorted(roll.r)
 
         if parser:
-            if not parser.triggers.get("suppress", None):
-                start = -parser.triggers.get("cutoff", 20)
+            if not parser.triggers.get_str("suppress", None):
+                start = -parser.triggers.get_str("cutoff", 20)
                 end = -1 if roll is not None else len(parser.altrolls) + 1
                 for r in parser.rolllogs[start:end]:
                     if r:
-                        if parser.triggers.get("verbose", None):
+                        if parser.triggers.get_str("verbose", None):
                             printroll(r, testing=testing)
                         else:
-                            if len(r.r) > parser.triggers.get("cutoff", 20):
+                            if len(r.r) > parser.triggers.get_str("cutoff", 20):
                                 deliver(
                                     str(r.roll_wodsuccesses()),
                                     "'S SUBROLL: ["
@@ -205,13 +205,13 @@ def register(app=None, socketio=None):
                                     + ": ",
                                 )
 
-            if parser.triggers.get("project", None):
-                times, current, goal, projectlog = parser.triggers.get("project", None)
+            if parser.triggers.get_str("project", None):
+                times, current, goal, projectlog = parser.triggers.get_str("project", None)
                 for i in [x for x in projectlog.split("\n") if x][
-                    -parser.triggers.get("cutoff", 20) :
+                    -parser.triggers.get_str("cutoff", 20) :
                 ]:
                     deliver(i, "'S PROJECT: ")
-                    time.sleep(float(parser.triggers.get("speed", 0.5)))
+                    time.sleep(float(parser.triggers.get_str("speed", 0.5)))
                 time.sleep(1)
                 deliver(
                     str(times)
@@ -222,7 +222,7 @@ def register(app=None, socketio=None):
                     + ".",
                     "'S ATTEMPT TOOK ",
                 )
-            if roll.log and parser.triggers.get("verbose", None):
+            if roll.log and parser.triggers.get_str("verbose", None):
                 deliver(roll.log, ":\n")
         if not roll:
             return
@@ -236,9 +236,9 @@ def register(app=None, socketio=None):
             deliver("", " ROLLS, exploding on " + str(roll.explodeon) + "+: \n")
             for i in roll.roll_vv().split("\n"):
                 deliver(i, " ROLL: ")
-                time.sleep(float(parser.triggers.get("speed", 0.5)))
+                time.sleep(float(parser.triggers.get_str("speed", 0.5)))
         elif len(roll.r) > (
-            parser.triggers.get("cutoff", 20) if parser is not None else 20
+            parser.triggers.get_str("cutoff", 20) if parser is not None else 20
         ):
             deliver(
                 str(roll.roll_wodsuccesses()),
