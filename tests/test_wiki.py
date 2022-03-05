@@ -16,7 +16,7 @@ from gamepack.MDPack import (
 
 import Data
 
-from NossiPack.fengraph import armordata
+from gamepack.fengraph import armordata
 from NossiSite import helpers
 from NossiSite.wiki import wikisave, fill_infolets
 from tests.NossiTestCase import NossiTestCase

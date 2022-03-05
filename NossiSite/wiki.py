@@ -17,7 +17,7 @@ from gamepack.MDPack import traverse_md, search_tables, extract_tables, split_md
 from markupsafe import Markup
 
 from NossiPack.User import User, Config
-from NossiPack.fengraph import weapondata, armordata
+from gamepack.fengraph import weapondata, armordata, supply_graphdata
 from NossiPack.krypta import DescriptiveError, calculate
 from NossiSite.AfterResponse import AfterResponse
 from NossiSite.base import app as defaultapp, log
@@ -175,9 +175,7 @@ def register(app=None):
 
     @app.route("/fenweapongraph")
     def graphtest():
-        from NossiPack import fengraph
-
-        fengraph.supply_graphdata()
+        supply_graphdata()
         return render_template("graphs.html")
 
     @app.route("/fensheet/<c>")
