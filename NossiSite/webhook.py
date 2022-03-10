@@ -1,4 +1,5 @@
 import logging
+import os
 
 from github_webhook import Webhook
 
@@ -14,7 +15,8 @@ def register(app=None):
 
     @ghwh.hook()
     def on_push(req):
-        if req["repository"]["name"] == "NossiNet":
-            exit(4)
+        repo = req["repository"]["name"]
+        if repo in ["NossiNet", "Okysa", "Gamepack"]:
+            os.system(f"redeploy {repo}")
         else:
             logger.error(f"got unexpected request from: {req['repository']['name']}")
