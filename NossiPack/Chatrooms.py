@@ -5,8 +5,9 @@ from typing import List, Tuple, Union
 
 from flask import session
 from flask_socketio import emit
+from gamepack.Dice import DescriptiveError
 
-from NossiPack.krypta import DescriptiveError, connect_db
+from Data import connect_db
 
 
 def echo(message):

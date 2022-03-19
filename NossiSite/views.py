@@ -4,11 +4,12 @@ import time
 
 import bleach
 from flask import abort, session, render_template, request, flash, redirect, url_for
+from gamepack.Dice import DescriptiveError
 from werkzeug.security import gen_salt, generate_password_hash
 
+from Data import connect_db
 from NossiPack.User import Userlist, User, Config
 from NossiPack.VampireCharacter import VampireCharacter
-from NossiPack.krypta import DescriptiveError, connect_db
 from NossiSite.base import app as defaultapp, log
 from NossiSite.helpers import (
     checktoken,

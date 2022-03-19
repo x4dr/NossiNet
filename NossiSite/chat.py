@@ -4,11 +4,10 @@ from flask import render_template, session, request, flash, url_for, redirect
 from flask_socketio import emit, join_room, leave_room, disconnect
 from gamepack.DiceParser import DiceParser
 
-from Data import getlocale_data
+from Data import getlocale_data, connect_db
 from NossiPack.Chatrooms import Chatroom
 from NossiPack.User import Userlist
 from NossiPack.VampireCharacter import VampireCharacter
-from NossiPack.krypta import connect_db
 from NossiSite.base import app as defaultapp, socketio as defaultsocketio, log
 
 

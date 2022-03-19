@@ -17,7 +17,8 @@ from flask import (
 )
 from markupsafe import Markup
 
-from NossiPack.krypta import DescriptiveError, connect_db
+from Data import connect_db
+from NossiPack.krypta import DescriptiveError
 from NossiSite.base import app as defaultapp, log
 
 

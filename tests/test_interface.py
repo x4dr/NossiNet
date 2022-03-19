@@ -6,7 +6,6 @@ from unittest.mock import Mock
 import Data
 from NossiInterface.Tools import splitpara, replacedefines
 from NossiInterface.reminder import extract_time_delta, set_user_tz
-from NossiPack.krypta import connect_db
 from NossiSite import wiki
 from NossiSite.wiki import get_fen_char
 
@@ -50,7 +49,7 @@ class TestInterface(TestCase):
     @mock.patch.object(wiki, "chara_objects", {})
     def test_loadchara(self):
         self.addCleanup(lambda x: Path(x).unlink(), Data.DATABASE)
-        c = connect_db("Testing...")
+        c = Data.connect_db("Testing...")
         c.execute('INSERT INTO users VALUES ("test","__",0,"",0)')
         c.execute('INSERT INTO configs VALUES ("test","discord", "test#1234")')
         c.execute('INSERT INTO configs VALUES ("test","character_sheet", "test")')

@@ -9,7 +9,7 @@ from NossiPack.VampireCharacter import VampireCharacter
 
 __author__ = "maric"
 
-from NossiPack.krypta import connect_db as condb
+from Data import connect_db as condb
 from NossiSite.base import log
 
 
