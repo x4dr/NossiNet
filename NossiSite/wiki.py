@@ -316,8 +316,7 @@ def register(app=None):
 
     @app.route("/live_edit", methods=["POST"])
     def live_edit():
-        x = request.get_json()
-        if x:  # json was transmitted
+        if request.is_json and (x := request.get_json()):
             a = [
                 e
                 for e in [
@@ -343,7 +342,6 @@ def register(app=None):
             return {"data": found}
         # else, form was transmitted
         x = request.form
-
         context = x.get("context", None)
         wiki = not context
         context = context or x.get("wiki", None)
@@ -763,7 +761,7 @@ def gettags():
 
 def updatewikitags():
     dt = time.time() - wikistamp[0]
-    dt = "a while" if dt > 6e4 else (str(dt)+"seconds")
+    dt = "a while" if dt > 6e4 else (str(dt) + "seconds")
     print(f"it has been {dt} since the last wiki indexing")
     wikistamp[0] = time.time()
     for m in wikindex():
