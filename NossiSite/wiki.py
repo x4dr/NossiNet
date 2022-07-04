@@ -314,6 +314,35 @@ def register(app=None):
             )
         return result
 
+    @app.route("/search/<key>", methods=["GET"])
+    def searchwiki(key: str):
+        pre = 30
+        pos = 30
+        length = len(key)
+
+        key = key.lower()
+        if not key.strip():
+            return []
+        matches = []
+        for w in wikindex():
+            title, tags, body = wikiload(w)
+            w = w.stem
+            if key in title.lower():
+                matches.append((w, title, "title"))
+            for tag in tags:
+                if key in tag.lower():
+                    matches.append((w, title, f"tag: {tag}"))
+            p = 0
+            while body[p:]:
+                m = body[p:].lower().find(key)
+                if m == -1:
+                    break
+                matches.append((w, title, f"{body[p+m-pre:p+m+pos+length]}"))
+                p += m +1
+        return render_template(
+            "search_results.html", results=matches, start=pre, end=pre + length
+        )
+
     @app.route("/live_edit", methods=["POST"])
     def live_edit():
         if request.is_json and (x := request.get_json()):

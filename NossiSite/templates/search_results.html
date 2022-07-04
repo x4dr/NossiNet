@@ -18,24 +18,25 @@
      }
 </script>
     <h1> Entries </h1>
-    <form id="searchform">
+     <form id="searchform">
         <input type="search" id="searchterm" class="leet" oninput="change_action()">
         <input type="button" id="searchbutton" value="search" class="leet">
     </form>
+    <div><p>This search yielded {{ results | length }} results.</p></div>
     <table><thead>
     <tr>
         <td>Site</td>
-        <td>| Tags</td>
+        <td>| Match</td>
     </tr>
     </thead>
         <tbody>
         <tr>
-            {% for m in entries %}
+            {% for m in results %}
                 <td>
-                    <a href="{{ url_for("wikipage", page=m) }}"> {{ m }}</a> </td><td> |
-                {% for x in tags[m] %}
-                    <a href="{{ url_for("tagsearch", tag=x) }}">{{ x }}</a> |
-                {% endfor %} </td></tr>
+                    <a href="{{ url_for("wikipage", page=m[0]) }}"> {{ m[1] or "__" }}</a> </td><td> |
+                {{- m[2][:start] }}<a href="{{ url_for("wikipage", page=m[0]) }}">
+                    {{- m[2][start:end] }}</a>
+                {{- m[2][end:] }}</td></tr>
                 <tr>
             {% endfor %}
             </tr>
