@@ -27,4 +27,5 @@ setuptools==63.1.0
 pytz==2022.1
 python-dateutil==2.8.2
 pydealer==1.4.0
+black==22.6.0
 git+https://github.com/x4dr/GamePack.git@master#egg=gamepack
