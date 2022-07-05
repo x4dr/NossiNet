@@ -35,7 +35,6 @@ class NossiTestCase(TestCase):
         app.config.from_mapping(
             SECRET_KEY="dev",
         )
-        print(self.countTestCases())
         return app
 
     @staticmethod

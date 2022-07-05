@@ -338,7 +338,7 @@ def register(app=None):
                 if m == -1:
                     break
                 matches.append((w, title, f"{body[p+m-pre:p+m+pos+length]}"))
-                p += m +1
+                p += m + 1
         return render_template(
             "search_results.html", results=matches, start=pre, end=pre + length
         )

@@ -360,7 +360,6 @@ def register(app=None):
         sheet = u.getsheet().getdictrepr()
         print("sheet", sheet)
         if sheet["Type"] == "OWOD":
-            print(sheet)
             return render_template(
                 "vampsheet_editor.html",
                 character=sheet,
