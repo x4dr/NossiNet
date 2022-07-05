@@ -205,7 +205,9 @@ def register(app=None, socketio=None):
                                 )
 
             if parser.triggers.get_str("project", None):
-                times, current, goal, projectlog = parser.triggers.get_str("project", None)
+                times, current, goal, projectlog = parser.triggers.get_str(
+                    "project", None
+                )
                 for i in [x for x in projectlog.split("\n") if x][
                     -parser.triggers.get_str("cutoff", 20) :
                 ]:

@@ -201,7 +201,9 @@ async def spellhandle(deck: Cards, whoami, par, send):
                     sr = ", ".join(
                         [
                             (str(v) + " " + k).strip()
-                            for k, v in spelldict.get_str("Effektive Kosten", {}).items()
+                            for k, v in spelldict.get_str(
+                                "Effektive Kosten", {}
+                            ).items()
                         ]
                     )
                     res += (
