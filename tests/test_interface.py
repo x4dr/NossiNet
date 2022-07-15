@@ -54,7 +54,7 @@ class TestInterface(TestCase):
         c.execute('INSERT INTO configs VALUES ("test","discord", "test#1234")')
         c.execute('INSERT INTO configs VALUES ("test","character_sheet", "test")')
         test = get_fen_char("test").stat_definitions()
-        self.assertEqual(test[test["a"]], "3")
+        self.assertEqual(test["a"], "3")
 
     def test_timeparse(self):
         set_user_tz(0, "UTC")
