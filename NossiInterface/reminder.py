@@ -127,7 +127,7 @@ def extract_time_delta(inp: str, userid: int):
                 d = d.combine(datetime.now().date(), d.time())
                 if d < datetime.now():
                     d += timedelta(days=1)
-            #d = d.replace(tzinfo=tz)
+            # d = d.replace(tzinfo=tz)
             now = datetime.now(tz)
             return (
                 d.timestamp() - now.timestamp(),

@@ -261,7 +261,7 @@ class Config:
         res = [x[0] for x in res if x[0].strip()]
         if len(res) != len(set(res)):
             db.rollback()
-            raise Exception("Violated Unique character sheet constraint!")
+            raise ("every charactersheet can only be chosen once!")
 
     @staticmethod
     def save(user, option, value, db=None):

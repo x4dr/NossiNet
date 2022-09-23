@@ -842,13 +842,12 @@ def refresh_cache(page=""):
             for x in traverse_md(wikiload("shorthand")[2], "armor").splitlines()[3:]
         ]
     }
+    item_cache_candidate = [
+        Item.process_table(x, lambda x: log.info("Prices Processing: " + str(x)))[0]
+        for x in extract_tables(split_md(wikiload("prices")[2]))[2]
+    ]
     Item.item_cache = {
-        y.name: y
-        for processed_table in [
-            Item.process_table(x, lambda x: log.info("Prices Processing: " + str(x)))
-            for x in extract_tables(split_md(wikiload("prices")[2]))[2]
-        ]
-        for y in processed_table
+        y.name: y for processed_table in item_cache_candidate for y in processed_table
     }
     Item.item_cache.update(
         {
