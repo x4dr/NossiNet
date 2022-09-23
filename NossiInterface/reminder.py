@@ -6,9 +6,7 @@ from datetime import datetime, timedelta, tzinfo
 from typing import List, Tuple
 
 import discord
-import pytz
 from dateutil.tz import gettz
-from pytz import reference
 
 last = {}
 delete = []
@@ -156,7 +154,7 @@ def newreminder(message: discord.Message, msg: str, userid: int):
     date = time.time() + relatime
     save_reminder(date, message.channel.id, mention + msg)
     tz = get_user_tz(userid)
-    return datetime.fromtimestamp(int(date), tz if tz else reference.LocalTimezone())
+    return datetime.fromtimestamp(int(date), tz)
 
 
 def delreminder(reminder_id):
