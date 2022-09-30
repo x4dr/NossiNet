@@ -6,22 +6,17 @@
     <a href="{{ url_for("wiki_index") }}"><h1>Wiki-Index</h1></a>
 {% endblock %}
 {% block body %}
-<script>
-     function goto (link){
-         return function () {
-             window.location.href = link;
-         }
-     }
-    function change_action() {
-      document.getElementById("searchbutton").onclick = goto("{{ url_for("searchwiki",key="") }}"
-          +encodeURIComponent(document.getElementById("searchterm").value));
-     }
-</script>
+    <script>
+        function searchgo(){
+            alert("go to {{ url_for("searchwiki",key="") }}" + encodeURIComponent(document.getElementById("searchterm").value))
+            window.location.href = "{{ url_for("searchwiki",key="") }}" + encodeURIComponent(document.getElementById("searchterm").value);
+            return false;
+        }
+    </script>
     <h1> Entries </h1>
-    <form id="searchform">
-        <input type="search" id="searchterm" class="leet" oninput="change_action()">
-        <input type="button" id="searchbutton" value="search" class="leet">
-    </form>
+
+    <input type="search" id="searchterm" class="leet", onsubmit="searchgo()">
+    <input type="submit" id="searchbutton" value="search" class="leet" onclick="searchgo()">
     <table><thead>
     <tr>
         <td>Site</td>
