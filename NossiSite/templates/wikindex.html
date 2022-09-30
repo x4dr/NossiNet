@@ -8,7 +8,6 @@
 {% block body %}
     <script>
         function searchgo(){
-            alert("go to {{ url_for("searchwiki",key="") }}" + encodeURIComponent(document.getElementById("searchterm").value))
             window.location.href = "{{ url_for("searchwiki",key="") }}" + encodeURIComponent(document.getElementById("searchterm").value);
             return false;
         }
