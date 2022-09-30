@@ -50,7 +50,8 @@ class TestViews(NossiTestCase):
                 werkzeug.exceptions.BadRequestKeyError, c.post, url_for("editentries")
             )
 
-            token = flask.session.get("print")  # does not return the sessionprint anymore
+            token = flask.session.get("print")
+            # does not return the sessionprint anymore
             if not token :
                 return "currently not testable"
             form = {
