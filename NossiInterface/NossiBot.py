@@ -41,7 +41,6 @@ if not discord:
 
     client.nossiUrl = "http://127.0.0.1:5000/"
 
-
     @commands.is_owner()
     @commands.command("cogreload")
     async def cogreload():
@@ -63,7 +62,6 @@ if not discord:
                 client.unload_extension(cogname)
             client.load_extension(cogname)
 
-
     async def allowed(msg: discord.Message):
         nc = client.get_cog("NossiBot")
         dmchannel = isinstance(msg.channel, discord.channel.DMChannel)
@@ -73,7 +71,6 @@ if not discord:
         if not nc:
             (await client.application_info()).owner.send("NossiCog not loaded!")
         return dmchannel or mentioned or adressed or allowed_in_channel
-
 
     @client.event
     async def on_ready():
@@ -88,7 +85,6 @@ if not discord:
             "I Live! My Cogs are:" + str(list(client.cogs.keys()))
         )
 
-
     @client.event
     async def on_disconnect():
         logger.warning(
@@ -96,12 +92,10 @@ if not discord:
             f"{requests.get('https://www.google.com').status_code}"
         )
 
-
     @client.event
     async def on_resume():
         logger.info("Resumed...")
         await (await client.application_info()).owner.send("I have Resumed")
-
 
     @client.event
     async def on_raw_message_edit(payload: discord.RawMessageUpdateEvent):
@@ -110,11 +104,9 @@ if not discord:
         if message is not None:
             await on_message(message)
 
-
     @client.event
     async def on_message_delete(message: discord.Message):
         await delete_replies(message)
-
 
     @client.event
     async def on_message(message):
@@ -135,7 +127,6 @@ if not discord:
         ctx.errreport = errreport
         ctx.send = get_remembering_send(message)
         await client.invoke(ctx)
-
 
     if __name__ == "__main__":
         client.run(TOKEN)

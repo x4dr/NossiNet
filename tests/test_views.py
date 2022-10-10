@@ -52,7 +52,7 @@ class TestViews(NossiTestCase):
 
             token = flask.session.get("print")
             # does not return the sessionprint anymore
-            if not token :
+            if not token:
                 return "currently not testable"
             form = {
                 "id": "new",
