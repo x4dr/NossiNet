@@ -104,7 +104,7 @@ class VampireCharacter:
         for i, a in enumerate(sorted(list(u.keys()))):
             try:
                 result += int(u[a]) * 5**i
-            except:
+            except Exception:
                 raise Exception("could not add up", a)
         print("checksum", result)
         return result
@@ -347,7 +347,7 @@ class VampireCharacter:
                 special[i] = int(
                     self.special[i]
                 )  # legacy ... rework might be as easy as removing this
-            except:
+            except Exception:
                 pass  # sort all numeric values into special
 
         return [
@@ -377,7 +377,7 @@ class VampireCharacter:
             )
             try:
                 return value.search(dalines).group(1)
-            except:
+            except Exception:
                 return None
 
         def getval(name):
@@ -388,7 +388,7 @@ class VampireCharacter:
             )
             try:
                 return value.search(dalines).group().count("checked")
-            except:
+            except Exception:
                 log.info(f"VampireCharacter_fromdalines:not found in sheet:{name}!")
                 return 0
 
@@ -422,13 +422,13 @@ class VampireCharacter:
 
         try:
             number = int(number)
-        except:
+        except Exception:
             try:
-                number = int(re.search(r"[^0-9]*(.*)", number).group(1))
-            except:
+                number = int(re.search(r"\D*(.*)", number).group(1))
+            except Exception:
                 return False
 
-        response = request.urlopen("http://sheetgen.dalines.net/sheet/" + str(number))
+        response = request.urlopen("https://sheetgen.dalines.net/sheet/" + str(number))
         dalines = response.read().decode()
 
         for a in self.meta.keys():
@@ -449,14 +449,14 @@ class VampireCharacter:
         for a in self.attributes.keys():
             try:
                 self.attributes[a] = getval(a)
-            except:
+            except Exception:
                 self.attributes[a] = 0
 
         for b in self.abilities.keys():
             for a in self.abilities[b].keys():
                 try:
                     self.abilities[b][a] = getval(a)
-                except:
+                except Exception:
                     self.abilities[b][a] = 0
         merits, humanity, willpower = getmthmwp()
         self.meta["Merits"] = merits
@@ -510,7 +510,7 @@ class VampireCharacter:
                 ):  # no empty submits
                     try:
                         preval = self.backgrounds[value]
-                    except:
+                    except Exception:
                         preval = 0
                     try:
                         self.backgrounds[value] = preval + int(
@@ -548,7 +548,7 @@ class VampireCharacter:
                 ):  # no empty submits
                     try:
                         preval = self.disciplines[value]
-                    except:
+                    except Exception:
                         preval = 0
                     try:
                         self.disciplines[value] = preval + int(
@@ -557,7 +557,7 @@ class VampireCharacter:
                                 + re.match(r"discipline_name_(.*)", field).group(1)
                             ]
                         )
-                    except:
+                    except Exception:
                         self.disciplines[value] = 0
                 continue
             if "virtue_name_" in field:
@@ -571,7 +571,7 @@ class VampireCharacter:
                                 + re.match(r"virtue_name_(.*)", field).group(1)
                             ]
                         )
-                    except:
+                    except Exception:
                         self.virtues[value] = 0
                 continue
             if "discipline_value_" in field:
@@ -653,7 +653,7 @@ class VampireCharacter:
                 self.special["Bloodpool"] -= amount
                 if self.special["Bloodpool"] > self.special["Bloodmax"]:
                     self.special["Bloodpool"] = self.special["Bloodmax"]
-            except:
+            except Exception:
                 raise Exception("Invalid Blood value: " + trigger)
         if "§will_" in trigger:
             try:
@@ -661,7 +661,7 @@ class VampireCharacter:
                 self.special["Willpower"] -= amount
                 if self.special["Willpower"] > self.special["Willmax"]:
                     self.special["Willpower"] = self.special["Willmax"]
-            except:
+            except Exception:
                 raise Exception("Invalid Will value: " + trigger)
 
         if "§damage_" in trigger:
@@ -690,7 +690,7 @@ class VampireCharacter:
                 else:
                     amount = int(trigger.replace("§heal_", "").strip())
                     self.applydamage(-amount)
-            except:
+            except Exception:
                 raise Exception("Invalid healing: " + trigger)
 
     def getdictrepr(self):
@@ -735,12 +735,12 @@ class VampireCharacter:
         try:
             self.virtues["SelfControl"] = self.virtues["Self Control"]
             self.virtues.pop("Self Control", None)
-        except:
+        except Exception:
             pass  # already was converted
         # Fix: adding special partialheal
         try:
             self.special["Partialheal"] = self.special["Partialheal"]
-        except:
+        except Exception:
             self.special["Partialheal"] = 0
 
     def combine_bgvdscp(self):
@@ -755,31 +755,31 @@ class VampireCharacter:
             combined.append({})
             try:
                 combined[i]["Background"] = list(self.backgrounds.keys())[i]
-            except:
+            except Exception:
                 combined[i]["Background"] = ""
             try:
                 combined[i]["Background_Value"] = self.backgrounds[
                     list(self.backgrounds.keys())[i]
                 ]
-            except:
+            except Exception:
                 combined[i]["Background_Value"] = 0
             try:
                 combined[i]["Discipline"] = list(self.disciplines.keys())[i]
-            except:
+            except Exception:
                 combined[i]["Discipline"] = ""
             try:
                 combined[i]["Discipline_Value"] = self.disciplines[
                     list(self.disciplines.keys())[i]
                 ]
-            except:
+            except Exception:
                 combined[i]["Discipline_Value"] = 0
             try:
                 combined[i]["Virtue"] = list(self.virtues.keys())[i]
-            except:
+            except Exception:
                 combined[i]["Virtue"] = ""
             try:
                 combined[i]["Virtue_Value"] = self.virtues[list(self.virtues.keys())[i]]
-            except:
+            except Exception:
                 combined[i]["Virtue_Value"] = 0
 
         return combined
@@ -828,7 +828,7 @@ class VampireCharacter:
             return attribute
 
         response = request.urlopen(
-            "http://www.behindthename.com/random/random.php?number=2&gender=both&"
+            "https://www.behindthename.com/random/random.php?number=2&gender=both&"
             "surname=&randomsurname=yes&all=no&usage_ger=1&usage_myth=1&usage_anci=1&"
             "usage_bibl=1&usage_hist=1&usage_lite=1&usage_theo=1&usage_goth=1&"
             "usage_fntsy=1"
@@ -863,7 +863,7 @@ class VampireCharacter:
             char.meta["Name"] = html.unescape(
                 result.group(1) + " " + result.group(2) + " " + result.group(3)
             )
-        except:
+        except Exception:
             char.name = "choose a name!"
         return char
 

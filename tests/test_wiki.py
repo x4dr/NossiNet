@@ -7,11 +7,10 @@ from gamepack.Item import fenconvert, fendeconvert
 from gamepack.MDPack import (
     split_row,
     table,
-    split_md,
     search_tables,
     table_add,
     table_remove,
-    table_edit,
+    table_edit, MDObj,
 )
 
 import Data
@@ -107,7 +106,7 @@ class TestViews(NossiTestCase):
                     "next heading": ("                    direct text\n", {}),
                 },
             ),
-            split_md(
+            MDObj.from_md(
                 """ abctext
                     # first heading
                     ## first subhead
@@ -118,7 +117,7 @@ class TestViews(NossiTestCase):
                     ## second subhead
                     moretext
                     # next heading
-                    direct text"""
+                    direct text""", extract_tables=False
             ),
         )
 

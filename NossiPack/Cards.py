@@ -2,8 +2,9 @@ import ast
 import random
 from typing import Dict, Set, List
 
+from gamepack.Dice import DescriptiveError
+
 from NossiPack.User import Config
-from NossiPack.krypta import DescriptiveError
 
 
 class Cards:

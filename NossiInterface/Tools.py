@@ -4,12 +4,12 @@ import time
 
 import discord
 from discord import Message
+from gamepack.Dice import DescriptiveError
 
 import Data
 from NossiPack.Cards import Cards
 from gamepack.DiceParser import fullparenthesis
 from NossiPack.User import Config
-from NossiPack.krypta import DescriptiveError
 from NossiSite.wiki import load_user_char_stats, load_user_char, spells
 
 logger = logging.getLogger(__name__)

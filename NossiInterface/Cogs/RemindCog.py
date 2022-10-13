@@ -7,7 +7,6 @@ import time
 from discord import TextChannel
 from discord.ext import commands, tasks
 from discord.ext.commands import Bot
-from pytz import reference
 
 from NossiInterface.Tools import mentionreplacer
 from NossiInterface.reminder import (
@@ -85,7 +84,7 @@ class RemindCog(commands.Cog, name="Remind"):
     async def remind_list(self, ctx):
         toshow = ""
         for r in listreminder(ctx.message):
-            toshow += f"{datetime.datetime.fromtimestamp(int(r[2]), reference.LocalTimezone())}: {r[3]}\n"
+            toshow += f"{datetime.datetime.fromtimestamp(int(r[2]), datetime.timezone.utc)}: {r[3]}\n"
 
         toshow = re.sub(r"<@!?(.*?)>", mentionreplacer(self.client), toshow)
         await ctx.channel.send("Reminders:\n" + toshow)

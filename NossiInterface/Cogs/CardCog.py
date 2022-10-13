@@ -1,9 +1,9 @@
 from discord.ext import commands
+from gamepack.Dice import DescriptiveError
 
 import Data
 from NossiInterface.Tools import who_am_i, split_send, spellhandle, discordname
 from NossiPack.Cards import Cards
-from NossiPack.krypta import DescriptiveError
 
 
 class CardCog(commands.Cog, name="Cards"):

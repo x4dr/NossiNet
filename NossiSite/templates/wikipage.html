@@ -9,7 +9,7 @@
                 return;
             const wikibody = document.getElementById("wikibody");
             const toc = wikibody.querySelector(".toc").innerText;
-            const fulltext = wikibody.innerText.substr(toc?toc.length:0)
+            const fulltext = wikibody.innerText.substring(toc?toc.length:0)
             if (mouselement === wikibody) return;
             const ratio = fulltext.indexOf(mouselement.innerText)/fulltext.length
 

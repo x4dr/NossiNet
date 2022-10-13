@@ -261,7 +261,7 @@ class Config:
         res = [x[0] for x in res if x[0].strip()]
         if len(res) != len(set(res)):
             db.rollback()
-            raise ("every charactersheet can only be chosen once!")
+            raise "every charactersheet can only be chosen once!"
 
     @staticmethod
     def save(user, option, value, db=None):

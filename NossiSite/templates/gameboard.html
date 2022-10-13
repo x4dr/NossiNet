@@ -10,7 +10,7 @@
 <div style="width: 100%; height: 100%;" class="menutext">some menus might be here?</div>
 <script>
     function fpik(x,y, ofs, pos, color ,inp){
-        var f = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        let f = document.createElementNS("http://www.w3.org/2000/svg", "text");
         f.setAttribute("x",x+ofs*0.35 *((pos%2)*2 -1));
         f.setAttribute("y",y+ofs*0.4 *((pos-2)>0?1:-1)+ofs*0.2);
         f.setAttribute("fill", color);
@@ -20,31 +20,31 @@
         return f
     }
     function hexPoints(x, y, radius) {
-        var points = [];
-        for (var theta = 0; theta < Math.PI * 2; theta += Math.PI / 3) {
-            var pointX, pointY;
+        let points = [];
+        for (let theta = 0; theta < Math.PI * 2; theta += Math.PI / 3) {
+            let pointX, pointY;
             pointX = x + radius * Math.sin(theta);
             pointY = y + radius * Math.cos(theta);
             points.push(pointX + ',' + pointY);
         }
         return points.join(' ');
     }
-    var x, y, row, col;
-    var svg = document.getElementById('s');
-    var radius = 30;
+    let x, y, row, col;
+    let svg = document.getElementById('s');
+    let radius = 30;
     $.getJSON('{{ url_for("boardgamemap",size=size,seed=seed) }}', function(data) {
         //data is the JSON string
 
-        var board = data["board"];
+        let board = data["board"];
         for (row = 0; row < {{ size }}; row += 1) {
-            var boardrow = board[row];
+            let boardrow = board[row];
             for (col = 0; col < {{ size }}; col += 1) {
-                var cell= boardrow[col];
-                var offset = (Math.sqrt(3) * radius) / 2;
+                let cell= boardrow[col];
+                let offset = (Math.sqrt(3) * radius) / 2;
                 x = 40 + offset * col * 2;
                 y = 40 + offset * row * Math.sqrt(3);
                 if (row % 2 !== 0) x += offset;
-                var polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+                let polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
                 //polygon.style.stroke = '#00f700';
                 polygon.style.strokeWidth = '4px';
                 if (row !== cell["x"]){
@@ -60,8 +60,8 @@
                 polygon.addEventListener('click', function (event) {
                     event.target.style.boxShadow = '0 0 5px blue inset';
 
-                    var x=event.target.getAttribute("x");
-                    var y=event.target.getAttribute("y");
+                    let x=event.target.getAttribute("x");
+                    let y=event.target.getAttribute("y");
                     alert(x+" "+y);
                 }, false);
                 svg.appendChild(polygon);

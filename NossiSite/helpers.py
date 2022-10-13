@@ -15,10 +15,10 @@ from flask import (
     Flask,
     send_from_directory,
 )
+from gamepack.Dice import DescriptiveError
 from markupsafe import Markup
 
 from Data import connect_db
-from NossiPack.krypta import DescriptiveError
 from NossiSite.base import app as defaultapp, log
 
 

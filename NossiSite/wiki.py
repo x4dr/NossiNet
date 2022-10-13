@@ -10,15 +10,15 @@ from typing import Tuple, List, Union
 import bleach
 import markdown
 from flask import render_template, request, redirect, url_for, session, flash, abort
-from gamepack.Armor import Armor
+from gamepack.Armor import Armor, calculate
+from gamepack.Dice import DescriptiveError
 from gamepack.FenCharacter import FenCharacter
 from gamepack.Item import Item
-from gamepack.MDPack import traverse_md, search_tables, extract_tables, split_md
+from gamepack.MDPack import traverse_md, search_tables, MDObj
 from markupsafe import Markup
 
 from NossiPack.User import User, Config
 from gamepack.fengraph import weapondata, armordata, supply_graphdata
-from NossiPack.krypta import DescriptiveError, calculate
 from NossiSite.AfterResponse import AfterResponse
 from NossiSite.base import app as defaultapp, log
 from NossiSite.helpers import checktoken, checklogin, srs
@@ -706,7 +706,7 @@ hiddeninfos = re.compile(
 infos = re.compile(r"\[\[(?P<cmd>specific|q):(?P<ref>(-:)?[\S ]+)]]", re.IGNORECASE)
 links = re.compile(r"\[(.+?)]\((?P<ref>.+?)\)")
 headers = re.compile(
-    r"<(?P<h>h[0-9]*)\b(?P<extra>[^>]*)>(?P<content>.*?)</(?P=h)\b[^>]*>",
+    r"<(?P<h>h\d*)\b(?P<extra>[^>]*)>(?P<content>.*?)</(?P=h)\b[^>]*>",
     re.IGNORECASE | re.DOTALL,
 )
 
@@ -844,7 +844,7 @@ def refresh_cache(page=""):
     }
     item_cache_candidate = [
         Item.process_table(x, lambda x: log.info("Prices Processing: " + str(x)))[0]
-        for x in extract_tables(split_md(wikiload("prices")[2]))[2]
+        for x in MDObj.from_md(wikiload("prices")[2]).tables
     ]
     Item.item_cache = {
         y.name: y for processed_table in item_cache_candidate for y in processed_table
@@ -854,7 +854,7 @@ def refresh_cache(page=""):
             y.name: y
             for processed_table in [
                 Item.process_table(x, lambda x: log.info("Items Processing: " + str(x)))
-                for x in extract_tables(split_md(wikiload("items")[2]))[2]
+                for x in MDObj.from_md(wikiload("items")[2]).tables
             ]
             for y in processed_table
         }

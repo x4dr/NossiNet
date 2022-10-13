@@ -1,8 +1,8 @@
 from discord.ext import commands
+from gamepack.Dice import DescriptiveError
 
 from NossiInterface.Tools import who_am_i, discordname
 from NossiPack.User import Config
-from NossiPack.krypta import DescriptiveError
 from NossiSite.wiki import transitions
 
 

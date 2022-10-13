@@ -10,11 +10,11 @@ from flask import (
     Response,
     render_template,
 )
+from gamepack.Dice import DescriptiveError
 
 from NossiPack.Cards import Cards
 from NossiPack.User import Userlist
 from NossiPack.VampireCharacter import VampireCharacter
-from NossiPack.krypta import DescriptiveError
 from NossiSite.base import app as defaultapp, log
 from NossiSite.helpers import checklogin
 

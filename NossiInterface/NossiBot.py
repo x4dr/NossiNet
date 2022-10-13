@@ -59,8 +59,8 @@ if not discord:
             cogname = f"Cogs.{cog}Cog"
             loaded = client.extensions.get_str(cogname, None)
             if loaded:
-                client.unload_extension(cogname)
-            client.load_extension(cogname)
+                await client.unload_extension(cogname)
+            await client.load_extension(cogname)
 
     async def allowed(msg: discord.Message):
         nc = client.get_cog("NossiBot")
@@ -69,7 +69,7 @@ if not discord:
         adressed = msg.content.strip().startswith("NossiBot")
         allowed_in_channel = nc and msg.channel.id in nc.allowed_channels
         if not nc:
-            (await client.application_info()).owner.send("NossiCog not loaded!")
+            await (await client.application_info()).owner.send("NossiCog not loaded!")
         return dmchannel or mentioned or adressed or allowed_in_channel
 
     @client.event

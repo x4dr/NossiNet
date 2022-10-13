@@ -2,10 +2,6 @@ import ctypes
 import logging
 import random
 import threading
-from decimal import ROUND_HALF_UP, Decimal
-
-import numexpr
-from gamepack.Dice import DescriptiveError
 
 logger = logging.getLogger(__name__)
 
@@ -27,34 +23,6 @@ def terminate_thread(thread: threading.Thread):
         # and you should call it again with exc=NULL to revert the effect"""
         ctypes.pythonapi.PyThreadState_SetAsyncExc(thread.ident, None)
         raise SystemError("PyThreadState_SetAsyncExc failed")
-
-
-def calculate(calc, par=None):
-    loose_par = [0]  # last pop ends the loop
-    if par is None:
-        par = {}
-    else:
-        loose_par += [x for x in par.split(",") if ":" not in x]
-        par = {
-            x.upper(): y
-            for x, y in [pair.split(":") for pair in par.split(",") if ":" in pair]
-        }
-    for k, v in par.items():
-        calc = calc.replace(k, v)
-    calc = calc.strip()
-    missing = None
-    res = 0
-    while len(loose_par) > 0:
-        try:
-            res = numexpr.evaluate(calc, local_dict=par, truediv=True).item()
-            missing = None  # success
-            break
-        except KeyError as e:
-            missing = e
-            par[e.args[0]] = float(loose_par.pop())  # try autofilling
-    if missing:
-        raise DescriptiveError("Parameter " + missing.args[0] + " is missing!")
-    return Decimal(res).quantize(1, ROUND_HALF_UP)
 
 
 def d10(amt, diff, ones=True):  # faster than the Dice
