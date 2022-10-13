@@ -97,12 +97,12 @@
     </div>
 {%- endmacro -%}
 {% macro treepart(tree, depth, name) %}
-    {{ infolet(tree[0]) |safe}}
+    {{ infolet(tree.plaintext) |safe}}
 
-    {% for table in tree[2] -%}
+    {% for table in tree.tables -%}
         {{- tablematrix(table, name) }}
     {% endfor %}
-    {% for child, content in tree[1].items() %}
+    {% for child, content in tree.children.items() %}
         {% set s=srs() %}
         <h{{ depth }} class="hider" data-for="{{ s }}">{{ child }}</h{{ depth }}>
         <div id="{{ s }}" class="hiding {% if owner %}editeable{% endif %}" data-category="{{ name|urlencode }}"
