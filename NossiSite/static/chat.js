@@ -6,7 +6,7 @@ $(document).ready(function(){
     let ringoverwrite = false;
     socket.on('Message', function(msg) {
         let box = $('#chatbox');
-        box.append('<br>' + $('<div/>').text(msg.data).html());
+        box.append('<br>' + $('<div></div>').text(msg.data).html());
         box.scrollTop(box[0].scrollHeight);
         if (ring){
             bell.play().then(r => r)

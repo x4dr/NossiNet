@@ -4,11 +4,12 @@ import time
 
 import bleach
 from flask import abort, session, render_template, request, flash, redirect, url_for
+from gamepack.Dice import DescriptiveError
 from werkzeug.security import gen_salt, generate_password_hash
 
+from Data import connect_db
 from NossiPack.User import Userlist, User, Config
 from NossiPack.VampireCharacter import VampireCharacter
-from NossiPack.krypta import DescriptiveError, connect_db
 from NossiSite.base import app as defaultapp, log
 from NossiSite.helpers import (
     checktoken,
@@ -91,7 +92,7 @@ def register(app=None):
             )
         entries = [
             e for e in entries if e.get("author", "none")[0].isupper()
-        ]  # dont send out lowercase authors ("deleted")
+        ]  # don't send out lowercase authors ("deleted")
 
         return render_template("show_entries.html", entries=entries)
 
@@ -324,7 +325,7 @@ def register(app=None):
         u = ul.loaduserbyname(session.get("user"))
         try:
             sheetnum = int(x)
-        except:
+        except Exception:
             flash(f"LOL NOPE {x} is not a sheet number")
             return redirect(url_for("menu_oldsheets"))
         sheet = u.loadsheet(sheetnum)
@@ -359,7 +360,6 @@ def register(app=None):
         sheet = u.getsheet().getdictrepr()
         print("sheet", sheet)
         if sheet["Type"] == "OWOD":
-            print(sheet)
             return render_template(
                 "vampsheet_editor.html",
                 character=sheet,
@@ -674,7 +674,7 @@ def register(app=None):
                             flash("Wrong password!")
                     else:
                         flash("You are not " + username)
-                except:
+                except Exception:
                     flash("You seem to not exist. Huh...")
                     return render_template("resetpassword.html")
         ul.saveuserlist()
@@ -699,7 +699,7 @@ def register(app=None):
                         raise Exception()
                     flash("Deduct successfull")
                     ul.saveuserlist()
-                except:
+                except Exception:
                     error = (
                         'Error deducting "'
                         + request.form.get("amount", "nothing")

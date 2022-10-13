@@ -19,7 +19,7 @@
     {% if content.direct  %}
         <td>{{ content.direct }}</td>
     {% elif content.body or content.header %}
-        <td>{{ lay(content, depth+1)}}</td>
+        <td>{{ lay(content, depth + 1 )}}</td>
     {% else %}
         {% for line in content.lines %}
             <tr>
@@ -35,7 +35,7 @@
     {% if content.direct  %}
         <td>{{ content.direct }}</td>
     {% elif content.body %}
-        <td>{{ lay(content, depth+1)}}</td>
+        <td>{{ lay(content, depth + 1)}}</td>
     {% else %}
         {% for line in content.lines %}
             <tr>
@@ -51,7 +51,8 @@
     {% endif %}
 {% endmacro %}
 
-<style type="text/css">
+<!--suppress CssUnusedSymbol -->
+<style>
     @page {
         size: 21cm 29.7cm;
         margin: 6mm 8mm 6mm 8mm;

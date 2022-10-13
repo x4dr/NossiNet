@@ -6,9 +6,7 @@ from datetime import datetime, timedelta, tzinfo
 from typing import List, Tuple
 
 import discord
-import pytz
 from dateutil.tz import gettz
-from pytz import reference
 
 last = {}
 delete = []
@@ -117,7 +115,7 @@ def extract_time_delta(inp: str, userid: int):
             return d * 24 * 3600 + h * 3600 + m * 60 + s, msg
     else:
         inp = inp.removeprefix("at").removeprefix("on")
-    date = re.match(r"^(?P<complete>[0-9.: -]*)", inp)
+    date = re.match(r"^(?P<complete>[\d.: -]*)", inp)
     msg = inp[len(date.group("complete")) :]
     tz = get_user_tz(userid)
     for fmt in date_formats:
@@ -127,10 +125,10 @@ def extract_time_delta(inp: str, userid: int):
                 d = d.combine(datetime.now().date(), d.time())
                 if d < datetime.now():
                     d += timedelta(days=1)
-            d = d.replace(tzinfo=tz)
-            d = d.astimezone(pytz.utc)
+            # d = d.replace(tzinfo=tz)
+            now = datetime.now(tz)
             return (
-                d.timestamp() - time.time(),
+                d.timestamp() - now.timestamp(),
                 msg,
             )
         except Exception:
@@ -156,7 +154,7 @@ def newreminder(message: discord.Message, msg: str, userid: int):
     date = time.time() + relatime
     save_reminder(date, message.channel.id, mention + msg)
     tz = get_user_tz(userid)
-    return datetime.fromtimestamp(int(date), tz if tz else reference.LocalTimezone())
+    return datetime.fromtimestamp(int(date), tz)
 
 
 def delreminder(reminder_id):

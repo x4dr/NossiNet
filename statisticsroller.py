@@ -7,9 +7,9 @@ from math import ceil
 from typing import Tuple
 
 import pydealer
+from gamepack.DiceParser import DiceParser
 
-from NossiPack.DiceParser import DiceParser
-from NossiPack.fengraph import plot
+from gamepack.fengraph import plot
 from NossiPack.krypta import d10
 
 

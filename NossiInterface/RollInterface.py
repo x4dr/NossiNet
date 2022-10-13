@@ -2,8 +2,9 @@ import asyncio
 import logging
 from concurrent.futures.thread import ThreadPoolExecutor
 
-from NossiPack.Dice import Dice
-from NossiPack.DiceParser import DiceParser, DiceCodeError, MessageReturn
+from gamepack.Dice import Dice
+from gamepack.DiceParser import DiceParser, DiceCodeError, MessageReturn
+
 from NossiPack.krypta import terminate_thread
 
 logger = logging.getLogger(__name__)
@@ -32,33 +33,21 @@ def prepare(msg: str, author, persist):
     lp = lastparse.get(author, None)
     if all(x == "+" for x in msg):
         msg = nm
-    persist[str(author)] = persist.get(str(author), {})
-    p = DiceParser(persist[str(author)].get("defines", {}), lr, lp)
+    persist[str(author)] = persist.get_str(str(author), {})
+    p = DiceParser(persist[str(author)].get_str("defines", {}), lr, lp)
     lastparse[author] = p
     return msg, p, errreport
 
 
-def get_verbosity(verbose):
-    if verbose:
-
-        def v(self):
-            return self.roll_vv(verbose)
-
-        verbose = v
-    else:
-        verbose = Dice.roll_v
-    return verbose
-
-
-def construct_multiroll_reply(p: DiceParser, verbose):
-    v = get_verbosity(verbose)
+def construct_multiroll_reply(p: DiceParser):
+    v = Dice.roll_v
     return "\n".join(x.name + ": " + v(x) for x in p.rolllogs if v(x)) + "\n"
 
 
 def construct_shortened_multiroll_reply(p: DiceParser, verbose):
     last = ""
     reply = ""
-    v = get_verbosity(verbose)
+    v = Dice.roll_v
     for x in p.rolllogs:
         if not x.roll_v():
             continue  # skip empty rolls
@@ -116,9 +105,9 @@ async def get_reply(author, comment, msg, send, reply, r):
 
 
 async def process_roll(r: Dice, p: DiceParser, msg: str, comment, send, author):
-    verbose = p.triggers.get("verbose", None)
+    verbose = p.triggers.get_str("verbose", None)
     if isinstance(p.rolllogs, list) and len(p.rolllogs) > 1:
-        reply = construct_multiroll_reply(p, verbose)
+        reply = construct_multiroll_reply(p)
 
         if len(reply) > 1950:
             reply = construct_shortened_multiroll_reply(p, verbose)

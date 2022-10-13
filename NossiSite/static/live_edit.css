@@ -7,12 +7,6 @@
     z-index: 1;
 }
 
-.failed {
-    box-shadow: inset 0 500px 100px 0 rgba(250, 0, 0, 0.9);
-    transition: 10s;
-    flex: 0 1 0;
-}
-
 #text {
     overflow: scroll;
 }
@@ -53,15 +47,6 @@
     transition: 0.5s;
 }
 
-.activeedit {
-    width: 90%;
-    left: 5%;
-    top: 2%;
-    height: 80%;
-    z-index: 3;
-    transition: 0.5s;
-    visibility: visible;
-}
 .bottombutton{
     bottom: 5px;
     position: absolute;
@@ -77,4 +62,20 @@
 #editform{
     width: 100%;
     height:100%;
+}
+
+.activeedit {
+    width: 90%;
+    left: 5%;
+    top: 2%;
+    height: 80%;
+    z-index: 3;
+    transition: 0.5s;
+    visibility: visible;
+}
+
+.failed {
+    box-shadow: inset 0 500px 100px 0 rgba(250, 0, 0, 0.9);
+    transition: 10s;
+    flex: 0 1 0;
 }

@@ -4,9 +4,11 @@
     {{ description }}
     <form action="{{ url_for('config', x=config) }}" method=post>
         <dl>
-            <input type="hidden" name="token" value="{{ token }}"/>
-            <dd><input class=leet type=text name="configuration" value="{{ curval }}">
-            <input class=leet type=submit value=Save>
+            <dt><input type="hidden" name="token" value="{{ token }}"/>
+            <dd><label>config
+                <input class=leet type=text name="configuration" value="{{ curval }}">
+            </label>
+                <input class=leet type=submit value=Save>
         </dl>
     </form>
     <form action="{{ url_for('config', x=config) }}" method=post>

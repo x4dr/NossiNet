@@ -18,7 +18,7 @@ if __name__ == "__main__":
     test = False
     try:
         port = int(sys.argv[1])
-    except:
+    except Exception:
         port = 5000
     socketio.run(app, "0.0.0.0", debug=True, port=port)
 

@@ -1,8 +1,8 @@
 from discord.ext import commands
+from gamepack.Dice import DescriptiveError
 
 from NossiInterface.Tools import who_am_i, discordname
 from NossiPack.User import Config
-from NossiPack.krypta import DescriptiveError
 from NossiSite.wiki import transitions
 
 
@@ -54,8 +54,10 @@ class StateCog(commands.Cog, name="State"):
 
     @state.before_invoke
     async def state_setup(self, ctx):
-        nc = self.client.cogs.get("NossiBot")
-        ctx.whoami = ctx.whoami = who_am_i(nc.storage.get(discordname(ctx.author), {}))
+        nc = self.client.cogs.get_str("NossiBot")
+        ctx.whoami = ctx.whoami = who_am_i(
+            nc.storage.get_str(discordname(ctx.author), {})
+        )
         if not ctx.whoami:
             return await ctx.send(
                 ctx.message.author.mention + " Could not ascertain Identity!"

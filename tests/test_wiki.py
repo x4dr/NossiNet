@@ -2,20 +2,19 @@ from pathlib import Path
 from unittest import mock
 
 from flask import url_for
-
-import Data
-from Fantasy.Item import fenconvert, fendeconvert
-from NossiPack.FenCharacter import FenCharacter
-from NossiPack.MDPack import (
-    table,
+from gamepack.FenCharacter import FenCharacter
+from gamepack.Item import fenconvert, fendeconvert
+from gamepack.MDPack import (
     split_row,
-    split_md,
+    table,
     search_tables,
-    table_remove,
     table_add,
+    table_remove,
     table_edit,
 )
-from NossiPack.fengraph import armordata
+from gamepack.fengraph import armordata
+
+import Data
 from NossiSite import helpers
 from NossiSite.wiki import wikisave, fill_infolets
 from tests.NossiTestCase import NossiTestCase
@@ -86,39 +85,6 @@ class TestViews(NossiTestCase):
         self.assertEqual(
             [["a", "b"], ["1", "2"], ["extra", ""]],
             table("|a|b|cut\n|-|-\n1|2\nextra\n"),
-        )
-
-    def test_split_md(self):
-        self.assertEqual(
-            (
-                " abctext\n",
-                {
-                    "first heading": (
-                        "",
-                        {
-                            "first subhead": (
-                                "                    first subhead text\n                    with multiple lines\n",
-                                {"subsub": ("                    subsub text\n", {})},
-                            ),
-                            "second subhead": ("                    moretext\n", {}),
-                        },
-                    ),
-                    "next heading": ("                    direct text\n", {}),
-                },
-            ),
-            split_md(
-                """ abctext
-                    # first heading
-                    ## first subhead
-                    first subhead text
-                    with multiple lines
-                    ### subsub
-                    subsub text
-                    ## second subhead
-                    moretext
-                    # next heading
-                    direct text"""
-            ),
         )
 
     def test_armor(self):

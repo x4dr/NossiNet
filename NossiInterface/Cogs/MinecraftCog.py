@@ -15,10 +15,10 @@ class MinecraftCog(commands.Cog, name="Minecraft"):
     @mc.command("up")
     async def start_mc(self, ctx):
         try:
-            usrs = Data.get("mc_powerusers").splitlines(keepends=False)
+            usrs = Data.get_str("mc_powerusers").splitlines(keepends=False)
         except FileNotFoundError:
             usrs = []
-            Data.set("mc_powerusers", "")
+            Data.set_str("mc_powerusers", "")
         if str(ctx.author.id) not in usrs:
             await ctx.message.add_reaction("👎")
             return
@@ -31,9 +31,9 @@ class MinecraftCog(commands.Cog, name="Minecraft"):
 
         ids = {str(x.id) for x in ctx.message.mentions}
         try:
-            usrs = set(Data.get("mc_powerusers").splitlines(keepends=False))
+            usrs = set(Data.get_str("mc_powerusers").splitlines(keepends=False))
         except FileNotFoundError:
-            Data.set("mc_powerusers", "")
+            Data.set_str("mc_powerusers", "")
             usrs = set()
         if "remove" in msg:
             for i in ids:
@@ -42,7 +42,7 @@ class MinecraftCog(commands.Cog, name="Minecraft"):
         else:
             usrs.update(ids)
             await ctx.message.add_reaction("👍")
-        Data.set("mc_powerusers", "\n".join(usrs))
+        Data.set_str("mc_powerusers", "\n".join(usrs))
 
 
 def setup(client: commands.Bot):

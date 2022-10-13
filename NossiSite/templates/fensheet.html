@@ -6,8 +6,8 @@
         {% if owner %}
             {% for err in character.errors %}
 
-Error in Fensheet. Please Fix because some features rely on correct formatting.
-{{err|safe}}
+<!-- Error in Fensheet. Please Fix because some features rely on correct formatting. -->
+<!-- {{err|safe}} -->
 
             {% endfor %}
         {% endif %}
@@ -69,7 +69,7 @@ Error in Fensheet. Please Fix because some features rely on correct formatting.
                         dots(vv|remove_leading_underscore|int, userconf["fensheet_dot_max"]|int(5))
                         if userconf["fensheet_dots"]|int(0) else vv }}
                 {%- else -%}{{ vv }}{%- endif -%}{% if
-                            k.lower() in character.doublepoint_sections+character.fullpoint_sections
+                            k.lower() in character.fullpoint_sections
                         %} <span class="tooltip tooltiptext">+ {{ character.get_xp_for(vk) }} FP</span>{%- endif -%}
                 </div>
             {%- endfor -%}

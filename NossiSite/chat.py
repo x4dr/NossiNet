@@ -2,13 +2,12 @@ import time
 
 from flask import render_template, session, request, flash, url_for, redirect
 from flask_socketio import emit, join_room, leave_room, disconnect
+from gamepack.DiceParser import DiceParser
 
-from Data import getlocale_data
+from Data import getlocale_data, connect_db
 from NossiPack.Chatrooms import Chatroom
-from NossiPack.DiceParser import DiceParser
 from NossiPack.User import Userlist
 from NossiPack.VampireCharacter import VampireCharacter
-from NossiPack.krypta import connect_db
 from NossiSite.base import app as defaultapp, socketio as defaultsocketio, log
 
 
@@ -133,7 +132,7 @@ def register(app=None, socketio=None):
             try:
                 workdef.pop(message[8:])
                 echo("Entry " + message[8:] + " cleared.")
-            except:
+            except Exception:
                 echo("Entry " + message[8:] + " not found.")
         elif message[:5] == "=show":
             echodict(workdef)
@@ -178,19 +177,19 @@ def register(app=None, socketio=None):
         else:
             deliver(message, "'S " + verb + ": ")
 
-        if parser.triggers.get("order", None):
+        if parser.triggers.get_str("order", None):
             roll.r = sorted(roll.r)
 
         if parser:
-            if not parser.triggers.get("suppress", None):
-                start = -parser.triggers.get("cutoff", 20)
+            if not parser.triggers.get_str("suppress", None):
+                start = -parser.triggers.get_str("cutoff", 20)
                 end = -1 if roll is not None else len(parser.altrolls) + 1
                 for r in parser.rolllogs[start:end]:
                     if r:
-                        if parser.triggers.get("verbose", None):
+                        if parser.triggers.get_str("verbose", None):
                             printroll(r, testing=testing)
                         else:
-                            if len(r.r) > parser.triggers.get("cutoff", 20):
+                            if len(r.r) > parser.triggers.get_str("cutoff", 20):
                                 deliver(
                                     str(r.roll_wodsuccesses()),
                                     "'S SUBROLL: ["
@@ -205,13 +204,15 @@ def register(app=None, socketio=None):
                                     + ": ",
                                 )
 
-            if parser.triggers.get("project", None):
-                times, current, goal, projectlog = parser.triggers.get("project", None)
+            if parser.triggers.get_str("project", None):
+                times, current, goal, projectlog = parser.triggers.get_str(
+                    "project", None
+                )
                 for i in [x for x in projectlog.split("\n") if x][
-                    -parser.triggers.get("cutoff", 20) :
+                    -parser.triggers.get_str("cutoff", 20) :
                 ]:
                     deliver(i, "'S PROJECT: ")
-                    time.sleep(float(parser.triggers.get("speed", 0.5)))
+                    time.sleep(float(parser.triggers.get_str("speed", 0.5)))
                 time.sleep(1)
                 deliver(
                     str(times)
@@ -222,7 +223,7 @@ def register(app=None, socketio=None):
                     + ".",
                     "'S ATTEMPT TOOK ",
                 )
-            if roll.log and parser.triggers.get("verbose", None):
+            if roll.log and parser.triggers.get_str("verbose", None):
                 deliver(roll.log, ":\n")
         if not roll:
             return
@@ -236,9 +237,9 @@ def register(app=None, socketio=None):
             deliver("", " ROLLS, exploding on " + str(roll.explodeon) + "+: \n")
             for i in roll.roll_vv().split("\n"):
                 deliver(i, " ROLL: ")
-                time.sleep(float(parser.triggers.get("speed", 0.5)))
+                time.sleep(float(parser.triggers.get_str("speed", 0.5)))
         elif len(roll.r) > (
-            parser.triggers.get("cutoff", 20) if parser is not None else 20
+            parser.triggers.get_str("cutoff", 20) if parser is not None else 20
         ):
             deliver(
                 str(roll.roll_wodsuccesses()),
@@ -298,7 +299,7 @@ def register(app=None, socketio=None):
             echo(message, ": /")
             try:
                 width = str(int(message.split(" ")[1])) + "em"
-            except:
+            except Exception:
                 width = "90%"
             emit("Message", {"data": "\nadjusting width...\n"})
             emit(
@@ -312,7 +313,7 @@ def register(app=None, socketio=None):
             echo(message, ": /")
             try:
                 height = str(int(message.split(" ")[1])) + "em"
-            except:
+            except Exception:
                 height = "35em"
             emit("Message", {"data": "\nadjusting height...\n"})
             emit(
@@ -327,7 +328,7 @@ def register(app=None, socketio=None):
         elif message.split(" ")[0] == "join":
             try:
                 room = message.split(" ")[1]
-            except:
+            except Exception:
                 emit("Message", {"data": "join where?"})
                 emit("SetCmd", {"data": "/join "})
                 room = None
@@ -361,7 +362,7 @@ def register(app=None, socketio=None):
             echo(message, ": /")
             try:
                 room = message.split(" ")[1]
-            except:
+            except Exception:
                 room = session["activeroom"].name
             emit("Message", {"data": "unsubscribing from " + room + "..."})
             left = False
@@ -389,7 +390,7 @@ def register(app=None, socketio=None):
             echo(message, ": /")
             try:
                 recipient = message.split(" ")[1]
-            except:
+            except Exception:
                 emit("Message", {"data": "message who?"})
                 recipient = None
             recipient_message = " ".join(message.split(" ")[2:])
@@ -558,7 +559,7 @@ def register(app=None, socketio=None):
                     (x for i, x in u.loadoldsheets().items() if i != u.sheetid),
                     key=lambda x: x.timestamp,
                 )
-            except:
+            except Exception:
                 old = None
             formdata = {}
             for f in message["data"]:
@@ -604,7 +605,7 @@ def register(app=None, socketio=None):
             session["roomlist"] = session.get("roomlist", []) + [mailbox, roomlist[0]]
             try:
                 prevmode = session["chatmode"]
-            except:
+            except Exception:
                 prevmode = "talk"
             session["chatmode"] = prevmode
             session["activeroom"] = roomlist[0]

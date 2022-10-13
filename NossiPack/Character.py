@@ -6,9 +6,10 @@ import time
 from random import Random
 from urllib import request
 
+from gamepack.Dice import DescriptiveError
+
 from Data import getlocale_data
 from NossiPack.VampireCharacter import intdef
-from NossiPack.krypta import DescriptiveError
 
 logger = logging.getLogger(__name__)
 __author__ = "maric"
@@ -314,7 +315,7 @@ class Character:
             elif a in b:
                 c = 5
             xpdiff += self.calc_cost(
-                self.disciplines[a], old.disciplines.get(a, 0), c, 10
+                self.disciplines[a], old.disciplines.get_str(a, 0), c, 10
             )
 
         xpdiff += self.calc_cost(
@@ -415,7 +416,7 @@ class Character:
             number = int(number)
         except Exception:
             try:
-                number = int(re.search(r"[^0-9]*(.*)", number).group(1))
+                number = int(re.search(r"\D*(.*)", number).group(1))
             except Exception:
                 return False
 

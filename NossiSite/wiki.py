@@ -10,15 +10,15 @@ from typing import Tuple, List, Union
 import bleach
 import markdown
 from flask import render_template, request, redirect, url_for, session, flash, abort
+from gamepack.Armor import Armor, calculate
+from gamepack.Dice import DescriptiveError
+from gamepack.FenCharacter import FenCharacter
+from gamepack.Item import Item
+from gamepack.MDPack import traverse_md, search_tables, MDObj
 from markupsafe import Markup
 
-from Fantasy.Armor import Armor
-from Fantasy.Item import Item
-from NossiPack.FenCharacter import FenCharacter
-from NossiPack.MDPack import traverse_md, split_md, extract_tables, search_tables
 from NossiPack.User import User, Config
-from NossiPack.fengraph import weapondata, armordata
-from NossiPack.krypta import DescriptiveError, calculate
+from gamepack.fengraph import weapondata, armordata, supply_graphdata
 from NossiSite.AfterResponse import AfterResponse
 from NossiSite.base import app as defaultapp, log
 from NossiSite.helpers import checktoken, checklogin, srs
@@ -175,9 +175,7 @@ def register(app=None):
 
     @app.route("/fenweapongraph")
     def graphtest():
-        from NossiPack import fengraph
-
-        fengraph.supply_graphdata()
+        supply_graphdata()
         return render_template("graphs.html")
 
     @app.route("/fensheet/<c>")
@@ -316,10 +314,38 @@ def register(app=None):
             )
         return result
 
+    @app.route("/search/<key>", methods=["GET"])
+    def searchwiki(key: str):
+        pre = 30
+        pos = 30
+        length = len(key)
+
+        key = key.lower()
+        if not key.strip():
+            return []
+        matches = []
+        for w in wikindex():
+            title, tags, body = wikiload(w)
+            w = w.stem
+            if key in title.lower():
+                matches.append((w, title, "title"))
+            for tag in tags:
+                if key in tag.lower():
+                    matches.append((w, title, f"tag: {tag}"))
+            p = 0
+            while body[p:]:
+                m = body[p:].lower().find(key)
+                if m == -1:
+                    break
+                matches.append((w, title, f"{body[p+m-pre:p+m+pos+length]}"))
+                p += m + 1
+        return render_template(
+            "search_results.html", results=matches, start=pre, end=pre + length
+        )
+
     @app.route("/live_edit", methods=["POST"])
     def live_edit():
-        x = request.get_json()
-        if x:  # json was transmitted
+        if request.is_json and (x := request.get_json()):
             a = [
                 e
                 for e in [
@@ -345,7 +371,6 @@ def register(app=None):
             return {"data": found}
         # else, form was transmitted
         x = request.form
-
         context = x.get("context", None)
         wiki = not context
         context = context or x.get("wiki", None)
@@ -681,7 +706,7 @@ hiddeninfos = re.compile(
 infos = re.compile(r"\[\[(?P<cmd>specific|q):(?P<ref>(-:)?[\S ]+)]]", re.IGNORECASE)
 links = re.compile(r"\[(.+?)]\((?P<ref>.+?)\)")
 headers = re.compile(
-    r"<(?P<h>h[0-9]*)\b(?P<extra>[^>]*)>(?P<content>.*?)</(?P=h)\b[^>]*>",
+    r"<(?P<h>h\d*)\b(?P<extra>[^>]*)>(?P<content>.*?)</(?P=h)\b[^>]*>",
     re.IGNORECASE | re.DOTALL,
 )
 
@@ -765,8 +790,8 @@ def gettags():
 
 def updatewikitags():
     dt = time.time() - wikistamp[0]
-    dt = "a while" if dt > 6e4 else str(dt)
-    print(f"it has been {dt} seconds since the last wiki indexing")
+    dt = "a while" if dt > 6e4 else (str(dt) + "seconds")
+    print(f"it has been {dt} since the last wiki indexing")
     wikistamp[0] = time.time()
     for m in wikindex():
         wikitags[m.stem] = wikiload(m)[1]
@@ -817,20 +842,19 @@ def refresh_cache(page=""):
             for x in traverse_md(wikiload("shorthand")[2], "armor").splitlines()[3:]
         ]
     }
+    item_cache_candidate = [
+        Item.process_table(x, lambda x: log.info("Prices Processing: " + str(x)))[0]
+        for x in MDObj.from_md(wikiload("prices")[2]).tables
+    ]
     Item.item_cache = {
-        y.name: y
-        for processed_table in [
-            Item.process_table(x, lambda x: log.info("Prices Processing: " + str(x)))
-            for x in extract_tables(split_md(wikiload("prices")[2]))[2]
-        ]
-        for y in processed_table
+        y.name: y for processed_table in item_cache_candidate for y in processed_table
     }
     Item.item_cache.update(
         {
             y.name: y
             for processed_table in [
                 Item.process_table(x, lambda x: log.info("Items Processing: " + str(x)))
-                for x in extract_tables(split_md(wikiload("items")[2]))[2]
+                for x in MDObj.from_md(wikiload("items")[2]).tables
             ]
             for y in processed_table
         }
@@ -874,7 +898,7 @@ def spells(page):
                         raise DescriptiveError(
                             f"spell {r['Name']} has format issues in {part}"
                         )
-                    ek[m.group(2)] = ek.get(m.group(2), 0) + int(m.group(1))
+                    ek[m.group(2)] = ek.get_str(m.group(2), 0) + int(m.group(1))
                 r["Effektive Kosten"] = ek
     return result
 

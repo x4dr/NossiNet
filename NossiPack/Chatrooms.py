@@ -5,14 +5,15 @@ from typing import List, Tuple, Union
 
 from flask import session
 from flask_socketio import emit
+from gamepack.Dice import DescriptiveError
 
-from NossiPack.krypta import DescriptiveError, connect_db
+from Data import connect_db
 
 
 def echo(message):
     try:
         emit("Message", {"data": session["user"] + message})
-    except:
+    except Exception:
         pass
 
 
@@ -56,7 +57,7 @@ class Chatroom:
             emit(
                 "Message", {"data": time.strftime("%H:%M") + " " + line}, room=self.name
             )
-        except:
+        except Exception:
             print(
                 "Message",
                 {"data": time.strftime("%H:%M") + " " + line},

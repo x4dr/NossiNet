@@ -7,7 +7,7 @@ from discord.ext.commands import Greedy
 
 from NossiInterface.RollInterface import timeout
 from NossiInterface.Tools import extract_comment
-from NossiPack.fengraph import chances, versus, montecarlo
+from gamepack.fengraph import chances, versus, montecarlo
 
 logger = logging.getLogger(__name__)
 

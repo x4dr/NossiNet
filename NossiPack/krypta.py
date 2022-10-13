@@ -1,40 +1,14 @@
 import ctypes
 import logging
-import os
 import random
-import sqlite3
 import threading
-from contextlib import closing
-from decimal import ROUND_HALF_UP, Decimal
-from pathlib import Path
-
-import numexpr
-
-import Data
 
 logger = logging.getLogger(__name__)
 
 
-class DescriptiveError(Exception):
-    pass
-
-
-def tuple_overlap(a: tuple, b: tuple) -> bool:
-    """
-    checks if the first two elements of the tuples overlap on the numberline/other ordering
-    """
-    a, b = sorted(a), sorted(b)
-    return (
-        b[0] <= a[0] <= b[1]
-        or b[0] <= a[1] <= b[1]
-        or a[0] <= b[0] <= a[1]
-        or a[0] <= b[1] <= a[1]
-    )
-
-
 def terminate_thread(thread: threading.Thread):
-    """Terminates a python thread from another thread.
-
+    """
+    Terminates a python thread from another thread
     :param thread: a threading.Thread instance
     """
     if not thread.is_alive():
@@ -49,112 +23,6 @@ def terminate_thread(thread: threading.Thread):
         # and you should call it again with exc=NULL to revert the effect"""
         ctypes.pythonapi.PyThreadState_SetAsyncExc(thread.ident, None)
         raise SystemError("PyThreadState_SetAsyncExc failed")
-
-
-def init_db():
-    logger.info("initializing DB")
-    with closing(connect_db("initialization")) as db:
-        db.cursor().executescript(Data.getschema())
-        db.commit()
-
-
-def calculate(calc, par=None):
-    loose_par = [0]  # last pop ends the loop
-    if par is None:
-        par = {}
-    else:
-        loose_par += [x for x in par.split(",") if ":" not in x]
-        par = {
-            x.upper(): y
-            for x, y in [pair.split(":") for pair in par.split(",") if ":" in pair]
-        }
-    for k, v in par.items():
-        calc = calc.replace(k, v)
-    calc = calc.strip()
-    missing = None
-    res = 0
-    while len(loose_par) > 0:
-        try:
-            res = numexpr.evaluate(calc, local_dict=par, truediv=True).item()
-            missing = None  # success
-            break
-        except KeyError as e:
-            missing = e
-            par[e.args[0]] = float(loose_par.pop())  # try autofilling
-    if missing:
-        raise DescriptiveError("Parameter " + missing.args[0] + " is missing!")
-    return Decimal(res).quantize(1, ROUND_HALF_UP)
-
-
-g = {}  # module level caching
-
-
-def close_db():
-    db = g.get("db", None)
-    if db:
-        db.close()
-        g["db"] = None
-
-
-def connect_db(source) -> sqlite3.Connection:
-    """db connection singleton"""
-    db = g.get("db", None)
-    if db:
-        return db
-    dbpath = Data.DATABASE
-    if source != "before request":
-        logger.info(f"connecting to {dbpath} from {source}")
-    if not Path(dbpath).exists():
-        Path(dbpath).touch()
-        init_db()
-    g["db"] = sqlite3.connect(dbpath)
-    return g["db"]
-
-
-def write_nonblocking(path, data):
-    path = Path(path)
-    if path.is_dir():
-        path = path / "_"
-    i = 0
-    while (path.with_suffix(f".{i}")).exists():
-        i += 1
-    with path.with_suffix(f".{i}").open(mode="x") as x:
-        x.write(data + "\n")
-        x.write("DONE")  # mark file as ready
-
-
-def read_nonblocking(path):
-    path = Path(path)
-    if path.is_dir():
-        path = path / "_"
-    result = []
-    file: Path
-    for file in sorted(path.parent.glob(str(path.stem) + "*")):
-        with file.open(mode="r") as f:
-            lines = f.readlines()
-            if lines[-1] != "DONE":
-                break  # file not read yet or fragmented
-            result += lines[:-1]
-        os.remove(str(file.absolute()))
-    return result
-
-
-def is_int(s: str) -> bool:
-    try:
-        int(s)
-        return True
-    except ValueError:
-        return False
-
-
-def sumdict(inp):
-    result = 0
-    try:
-        for e in inp.keys():
-            result += int(inp[e])
-    except Exception:
-        result = sum(inp)
-    return result
 
 
 def d10(amt, diff, ones=True):  # faster than the Dice
@@ -173,7 +41,3 @@ def d10(amt, diff, ones=True):  # faster than the Dice
             return 0
         return 0 - anti
     return succ
-
-
-def split_at(a, x):
-    return a[:x], a[x:]

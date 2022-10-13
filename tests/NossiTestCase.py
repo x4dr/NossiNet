@@ -3,7 +3,7 @@ from pathlib import Path
 from flask import Flask, url_for
 from flask_testing import TestCase
 
-from NossiPack.krypta import close_db
+from Data import close_db
 from NossiSite import views, wiki, extra, webhook, helpers
 
 
@@ -35,7 +35,6 @@ class NossiTestCase(TestCase):
         app.config.from_mapping(
             SECRET_KEY="dev",
         )
-        print(self.countTestCases())
         return app
 
     @staticmethod

@@ -41,7 +41,7 @@ window.addEventListener("load", () => {
                         olddata.value = reply["data"];
                         textdiv.focus();
                         textdiv.click();
-                        document.body.style.overflow="hidden"
+                        //document.body.style.overflow="hidden"
                         overlay.style.visibility = "visible";
                     }
                 };

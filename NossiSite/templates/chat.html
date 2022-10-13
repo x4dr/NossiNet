@@ -3,17 +3,15 @@
     <!--suppress , JSUnresolvedVariable, JSUnresolvedFunction -->
     <script type="text/javascript" charset="utf-8">
         window.onload=function() {
-            var script = document.createElement('script');
+            const script = document.createElement('script');
             script.src = '/static/chat.js';
             script.type = 'text/javascript';
-            var head = document.getElementsByTagName("head")[0];
+            const head = document.getElementsByTagName("head")[0];
             head.appendChild(script);
         }
     </script>
 {% endblock %}
 {% block body %}
-
-
     <div id="wrapper">
         <div id="inner" style="width: 100%;">
             <div id="healthbar" class="healthbar"></div><div
@@ -29,8 +27,9 @@
             <div class="formline">
                 <input class="leet" name="submitmsg" type="submit"  id="submitmsg"
                        value="Send" style="float: right; width:  10%" />
-                <span><input class="leet" type="text" name="message_data" id="message_data"
-                             placeholder="Message" autocomplete="off" style="width: 88%"></span>
+                <span><label for="message_data"></label>
+                    <input class="leet" type="text" name="message_data" id="message_data"
+                    placeholder="Message" autocomplete="off" style="width: 88%"></span>
             </div>
         </form>
     </div>
