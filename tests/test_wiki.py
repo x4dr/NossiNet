@@ -10,12 +10,11 @@ from gamepack.MDPack import (
     search_tables,
     table_add,
     table_remove,
-    table_edit, MDObj,
+    table_edit,
 )
+from gamepack.fengraph import armordata
 
 import Data
-
-from gamepack.fengraph import armordata
 from NossiSite import helpers
 from NossiSite.wiki import wikisave, fill_infolets
 from tests.NossiTestCase import NossiTestCase
@@ -86,39 +85,6 @@ class TestViews(NossiTestCase):
         self.assertEqual(
             [["a", "b"], ["1", "2"], ["extra", ""]],
             table("|a|b|cut\n|-|-\n1|2\nextra\n"),
-        )
-
-    def test_split_md(self):
-        self.assertEqual(
-            (
-                " abctext\n",
-                {
-                    "first heading": (
-                        "",
-                        {
-                            "first subhead": (
-                                "                    first subhead text\n                    with multiple lines\n",
-                                {"subsub": ("                    subsub text\n", {})},
-                            ),
-                            "second subhead": ("                    moretext\n", {}),
-                        },
-                    ),
-                    "next heading": ("                    direct text\n", {}),
-                },
-            ),
-            MDObj.from_md(
-                """ abctext
-                    # first heading
-                    ## first subhead
-                    first subhead text
-                    with multiple lines
-                    ### subsub
-                    subsub text
-                    ## second subhead
-                    moretext
-                    # next heading
-                    direct text""", extract_tables=False
-            ),
         )
 
     def test_armor(self):
