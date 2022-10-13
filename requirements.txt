@@ -25,6 +25,8 @@ Werkzeug==2.2.2
 setuptools==65.3.0
 pytz==2022.2.1
 python-dateutil==2.8.2
+aiohttp>=3.8.0 # not directly required, pinned by Snyk to avoid a vulnerability
 pydealer==1.4.0
 black==22.8.0
 git+https://github.com/x4dr/GamePack.git@master#egg=gamepack
+
