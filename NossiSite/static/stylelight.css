@@ -1,6 +1,5 @@
 html * {
     color: #333;
-    background: #ffffff;
 }
 
 body {
@@ -91,3 +90,48 @@ input[type="text"], textarea {
     background: #cccccc;
     width: 100%
 }
+
+
+.alternate:nth-child(4n) {
+    content: "";
+    background: #f0f0ff;
+}
+.alternate:nth-child(4n-1) {
+    content: "";
+    width: 110%;
+    background: #f0f0ff;
+}
+
+.category:nth-child(even){
+    background: #f3fff3;
+}
+.category:nth-child(odd){
+    background: #fff3ff;
+}
+
+.heading {
+    font-size: 24px;
+    border: 1px solid #003700;
+    text-align: center;
+    background-color: #e6f2b6;
+}
+
+.subheading {
+    font-size: 20px;
+    border: 1px solid #002700;
+    text-align: center;
+    background-color: #eefee8;
+}
+
+.tablebody:nth-child(even) {background-color: #d0f8d0}
+
+img {
+    width: 200px;
+    transition: 0.5s;
+}
+
+img:hover{
+    width: 100%;
+    transition: 0.5s;
+}
+

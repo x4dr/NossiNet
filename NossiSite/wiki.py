@@ -194,6 +194,9 @@ def register(app=None):
                 context=c,
                 userconf=u,
                 infolet=infolet_filler(c),
+                md=lambda x: markdown.markdown(
+                    x, extensions=["tables", "nl2br"]
+                ),
                 extract=infolet_extractor,
                 owner=u.get("character_sheet", None)
                 if u.get("character_sheet", None) == c

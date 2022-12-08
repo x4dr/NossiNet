@@ -3,14 +3,14 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="sheet.css") }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="live_edit.css") }}">
     <script src="{{ url_for('static', filename="live_edit.js") }}"></script>
-        {% if owner %}
-            {% for err in character.errors %}
+    {% if owner %}
+        {% for err in character.errors %}
 
-<!-- Error in Fensheet. Please Fix because some features rely on correct formatting. -->
-<!-- {{err|safe}} -->
+            <!-- Error in Fensheet. Please Fix because some features rely on correct formatting. -->
+            <!-- {{err|safe}} -->
 
-            {% endfor %}
-        {% endif %}
+        {% endfor %}
+    {% endif %}
 {% endblock %}
 {%- macro dots(val,max=5) -%}
     {%- if val is not defined -%}
@@ -34,11 +34,11 @@
             {% set outer_loop = loop %}
             {% for subline in line -%}
                 <td
-                {%- if loop.first -%}
-                    {%- set k = subline -%}
-                {%- else %} {% if owner %}class="editeable" data-category="{{ cat|urlencode }}"
-                    data-section="{{ extract(k)|urlencode }}"{% endif %}
-                {%- endif -%}
+                        {%- if loop.first -%}
+                            {%- set k = subline -%}
+                        {%- else %} {% if owner %}class="editeable" data-category="{{ cat|urlencode }}"
+                                    data-section="{{ extract(k)|urlencode }}"{% endif %}
+                        {%- endif -%}
                 >{{ infolet(subline) | safe }}</td>
             {% endfor -%}
         </tr>
@@ -59,18 +59,19 @@
                 {{- k -}}
             </div>
             <div class="span-0"></div>
+            {% set notfirstsection = loop.index0 %}
             {%- for vk,vv in v.items() -%}
                 <div data-category="{{ name|urlencode }}" data-section="{{ k[:30]|urlencode -}}
                         " data-item="{{vk}}" class="alternate
                         {%- if owner %} editeable{% endif -%}"
-                >{{ infolet(vk | remove_leading_underscore) | safe }}</div>
+                >&nbsp;{{ infolet(vk | remove_leading_underscore) | safe }}</div>
                 <div class="alternate tooltip" style="text-align: right">{%- if vv|remove_leading_underscore|int(-1) != -1
                             and (userconf["fensheet_dot_max"] |int) >= vv|remove_leading_underscore|int -%}{{
-                        dots(vv|remove_leading_underscore|int, userconf["fensheet_dot_max"]|int(5))
+                        dots(vv|remove_leading_underscore|int, userconf["fensheet_dot_max"]|int(5) if notfirstsection else 5)
                         if userconf["fensheet_dots"]|int(0) else vv }}
                 {%- else -%}{{ vv }}{%- endif -%}{% if
                             k.lower() in character.fullpoint_sections
-                        %} <span class="tooltip tooltiptext">+ {{ character.get_xp_for(vk) }} FP</span>{%- endif -%}
+                        %}<span class="tooltip tooltiptext">+ {{ character.get_xp_for(vk) }} FP</span>{%- endif -%}&nbsp;
                 </div>
             {%- endfor -%}
         {% else %}
@@ -80,24 +81,22 @@
 {% endmacro %}
 {%- macro catformat(cat, name, cost) -%}
     <div class="gridwrapper category">
-        <div data-category="{{ name|urlencode }}"  class="tooltip heading span-2{% if owner %} editeable{% endif %}">{{ name }} {% if name!='Magie' %}<a href="{{url_for('fen_calc',
-            inputstring=cost) }} ">{{ cost }}</a><span class="tooltiptext">Options<br/>{% for l in
+        <div data-category="{{ name|urlencode }}"  class="tooltip heading span-2{% if owner %} editeable{% endif %}">{{ name }}
+            <a href="{{url_for('fen_calc',inputstring=cost) }} "><span class="tooltiptext">Options<br/>for {{ cost }}<br/>{% for l in
                     character.cost_calc(cost)
-                %}{% for b in l %}{{ b }}{% if not loop.last %},{% endif %}{% endfor %}<br/> {% endfor %}{% else %}<a href="{{
-                url_for('fen_calc', inputstring=cost)|urldecode
-                }}">{{ cost }}</a><span class="tooltiptext">{% for l in
-                    character.cost_calc(cost)
-                %}{{ l }}<br/> {% endfor %}{% endif %}</span></div><div class="span-0"></div>
-
+                    %}{% for b in l %}{{ b }}{% if not loop.last %},{% endif %}{% endfor %}<br/> {% endfor %} </span></a>
+        </div>
         {%- if cat is mapping  -%}
-            {{ sectionformat(cat,name) }}
+            <div class="statblock">
+                {{ sectionformat(cat,name) }}
+            </div>
         {% else %}
             Error: {{ cat }} is no dict
         {% endif %}
     </div>
 {%- endmacro -%}
 {% macro treepart(tree, depth, name) %}
-    {{ infolet(tree.plaintext) |safe}}
+    {{ md(infolet(tree.plaintext)) | safe}}
 
     {% for table in tree.tables -%}
         {{- tablematrix(table, name) }}
@@ -148,7 +147,7 @@
 
         <h2 class="hider" data-for="{{ r }}">{{ key }}<span
                 {%- if owner %} class="editeable" data-category="{{ key }}"{% endif -%}
-                >&nbsp</span></h2>
+        >&nbsp</span></h2>
 
         <div id="{{ r }}" class="hiding">
             {{ treepart(data,3, key) }}

@@ -13,7 +13,7 @@ body {
     overflow-x: auto;
 }
 
-a, h1, h2 { color: #00f700; }
+a, h1, h2 { color: #00c700; }
 
 h1 { border-bottom: 2px solid #000000; }
 h2 { font-size: 2em; }
@@ -25,6 +25,17 @@ h3 { color: #00d710; }
 h4 { color: #10b720; }
 h5 { color: #209730; }
 h6 { color: #307740; }
+
+img {
+    width: 200px;
+    transition: 0.5s;
+}
+
+img:hover{
+    width: 100%;
+    transition: 0.5s;
+}
+
 
 hr {
     border: 0;
@@ -38,7 +49,7 @@ hr {
     border: 3px solid #00f700;
     padding: 0.8em;
     background: #010101;
-    color: #00f700;
+    color: #00e700;
 }
 
 .leet {
@@ -75,10 +86,6 @@ hr {
     display: inline-block;
 }
 
-
-.tooltip {
-}
-
 .tooltip .tooltiptext {
     visibility: hidden;
     background-color: black;
@@ -88,7 +95,8 @@ hr {
     color: #4f4;
     text-align: center;
     position: absolute;
-    transform: translateX(-50%);
+    transform: translateX(-100%) translateY(-100%);
+
     z-index: 1;
     white-space: nowrap;
 }
@@ -349,3 +357,38 @@ input[type='radio'] + label {
 input[type='radio']:checked + label {
     background: url(radio.png) left center no-repeat;
 }
+
+.tablebody:nth-child(even) {background-color: #081008}
+
+.alternate:nth-child(4n) {
+    content: "";
+    background: #000008;
+}
+.alternate:nth-child(4n-1) {
+    content: "";
+    width: 110%;
+    background: #000008;
+}
+
+.category:nth-child(even){
+    background: #000c0f;
+}
+.category:nth-child(odd){
+    background: #000f0c;
+}
+
+
+.heading {
+    font-size: 24px;
+    border: 1px solid #003700;
+    text-align: center;
+    background-color: #06110c;
+}
+
+.subheading {
+    font-size: 20px;
+    border: 1px solid #002700;
+    text-align: center;
+    background-color: #002008;
+}
+
