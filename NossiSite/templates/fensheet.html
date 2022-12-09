@@ -65,13 +65,19 @@
                         " data-item="{{vk}}" class="alternate
                         {%- if owner %} editeable{% endif -%}"
                 >&nbsp;{{ infolet(vk | remove_leading_underscore) | safe }}</div>
-                <div class="alternate tooltip" style="text-align: right">{%- if vv|remove_leading_underscore|int(-1) != -1
-                            and (userconf["fensheet_dot_max"] |int) >= vv|remove_leading_underscore|int -%}{{
-                        dots(vv|remove_leading_underscore|int, userconf["fensheet_dot_max"]|int(5) if notfirstsection else 5)
-                        if userconf["fensheet_dots"]|int(0) else vv }}
-                {%- else -%}{{ vv }}{%- endif -%}{% if
+                <div class="alternate tooltip" style="text-align: right">
+                    {%- if
+                    not notfirstsection
+                    or (vv|remove_leading_underscore|int(-1) != -1
+                    and (userconf["fensheet_dot_max"] |int) >= vv|remove_leading_underscore|int) -%}
+                        {{- dots(vv|remove_leading_underscore|int, userconf["fensheet_dot_max"]|int(5)
+                            if notfirstsection else 5)
+                            if userconf["fensheet_dots"]|int(0) else vv }}
+                        {%- else -%}{{ vv }}
+                    {%- endif -%}
+                    {%- if
                             k.lower() in character.fullpoint_sections
-                        %}<span class="tooltip tooltiptext">+ {{ character.get_xp_for(vk) }} FP</span>{%- endif -%}&nbsp;
+                            %}<span class="tooltip tooltiptext">+ {{ character.get_xp_for(vk) }} FP</span>{%- endif -%}&nbsp;
                 </div>
             {%- endfor -%}
         {% else %}
