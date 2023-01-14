@@ -3,7 +3,7 @@ flask-testing==0.8.1
 pyopenssl==22.0.0
 coverage==6.4.4
 pre-commit==2.20.0
-dateparser==1.1.1
+dateparser==1.1.6
 bleach==5.0.1
 dnspython==2.2.1
 eventlet==0.33.1
