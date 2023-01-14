@@ -23,8 +23,6 @@ h3 {
     border: 1px solid #000000;
     margin: 1px;
         }
-.chr_background{}
-.chr_discipline{}
 
 input[type="text"], textarea {
     background-color: #ffffff;
@@ -134,4 +132,3 @@ img:hover{
     width: 100%;
     transition: 0.5s;
 }
-
