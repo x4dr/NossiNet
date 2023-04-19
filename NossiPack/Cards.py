@@ -34,10 +34,10 @@ class Cards:
     }
 
     def __init__(self, hand, deck, pile, removed, notes, longform=None):
-        self.Hand = set(x for x in hand.split(" ") if x)
-        self.Deck = set(x for x in deck.split(" ") if x)
-        self.Pile = set(x for x in pile.split(" ") if x)
-        self.Removed = set(x for x in removed.split(" ") if x)
+        self.Hand = {x for x in hand.split(" ") if x}
+        self.Deck = {x for x in deck.split(" ") if x}
+        self.Pile = {x for x in pile.split(" ") if x}
+        self.Removed = {x for x in removed.split(" ") if x}
         self.Notes = ast.literal_eval(notes)
         self.Longform = (
             ast.literal_eval(longform)
@@ -202,7 +202,7 @@ class Cards:
             if m:
                 messages.append(m)
                 del self.Notes[f]
-        return set(x for x in messages if x)
+        return {x for x in messages if x}
 
     @classmethod
     def cardvalue(cls, offs=1):
