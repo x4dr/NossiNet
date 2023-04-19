@@ -76,9 +76,8 @@ def run_duel(a, b, c=None, d=None, duration=60):
         if lp1 < lp2:
             successes[1] += 1
 
-        if i % 10 == 0:
-            if time.time() - time1 >= duration:
-                break
+        if i % 10 == 0 and time.time() - time1 >= duration:
+            break
     print(f"rolling {a},{b} against {c},{d} for {time.time() - time1} seconds")
     print(sum(successes.values()))
     return plot(dict(successes))
@@ -113,9 +112,8 @@ def run():
     while True:
         i += 1
         successes[roller(amount, difficulty)] += 1
-        if i % 10000 == 0:
-            if time.time() - time1 >= duration:
-                break
+        if i % 10000 == 0 and time.time() - time1 >= duration:
+            break
     print(
         "rolling %d dice against %d for %.1f seconds" % (amount, difficulty, duration)
     )
@@ -246,10 +244,12 @@ def bowdpstest(bowmana_rate, draw, aim, fire, quickdraw, quickaim, quickfire):
                 if state >= len(transitions) - 1:
                     damage += 1
                     state = 0
-                if quickperks[state - 1]:
-                    if bowmana >= transitions[state - 1]:
-                        bowmana -= transitions[state]
-                        continue  # getto goto what is wrong with me
+                if (
+                    quickperks[state - 1]
+                    and bowmana >= transitions[state - 1]
+                ):
+                    bowmana -= transitions[state]
+                    continue  # getto goto what is wrong with me
             break
     return damage
 
@@ -300,9 +300,8 @@ def batch(duration, func, params):
     while True:
         i += 1
         res[func(*params)] += 1
-        if i % 10 == 0:
-            if time.time() - time1 >= duration:
-                break
+        if i % 10 == 0 and time.time() - time1 >= duration:
+            break
     print(
         f"rolling dice for {time.time() - time1} seconds yielded {sum(res.values())} results"
     )

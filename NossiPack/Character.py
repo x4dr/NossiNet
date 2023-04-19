@@ -575,10 +575,9 @@ class Character:
                 continue
             if "virtue_value_" in field:
                 continue
-            if field in self.special.keys():
-                if value is not None:
-                    self.special[field] = intdef(value)
-                    continue
+            if field in self.special.keys() and value is not None:
+                self.special[field] = intdef(value)
+                continue
             if "newsheet" not in field:
                 logger.error(f"error inserting a key! {field} : {value}")
 

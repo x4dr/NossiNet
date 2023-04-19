@@ -74,10 +74,12 @@ def register(app: Flask = None):
     @app.teardown_request
     def teardown_request(exception: Exception):
         # close_db() currently disabled(letting the connection live as long as the worker)
-        if exception:
-            if exception.args and exception.args[0] == "REDIR":
-                return exception.args[1]
-            # log.exception("exception caught by teardown:", exception)
+        if (
+            exception
+            and exception.args
+            and exception.args[0] == "REDIR"
+        ):
+            return exception.args[1]
         return None
 
     @app.context_processor
