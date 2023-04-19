@@ -111,7 +111,7 @@ class Cards:
         if isinstance(inp, dict):
             out = {}
             for k, j in list(inp.items()):
-                new = self.Longform.get(k, None)
+                new = self.Longform.get(k)
                 if new is not None:
                     out[new] = self.elongate(j)
                     del inp[k]
@@ -123,10 +123,8 @@ class Cards:
         if isinstance(inp, str):
             if len(inp) > 2:
                 raise DescriptiveError(f"{inp} is not in shortform!")
-            res = (self.Longform.get(inp[0], None) or inp[0]) + (
-                " " + (self.Longform.get(inp[1], None) or inp[1])
-                if len(inp) > 1
-                else ""
+            res = (self.Longform.get(inp[0]) or inp[0]) + (
+                " " + (self.Longform.get(inp[1]) or inp[1]) if len(inp) > 1 else ""
             )
             return res
 
