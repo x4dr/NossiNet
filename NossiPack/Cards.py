@@ -152,7 +152,6 @@ class Cards:
                     if p in source:
                         moved.add(p)
                     else:
-
                         raise DescriptiveError(
                             f"{p} not found in {source if len(source) else 'empty collection'}."
                         )
