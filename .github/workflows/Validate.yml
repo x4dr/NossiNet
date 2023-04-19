@@ -28,6 +28,7 @@ jobs:
           pip install coverage
           coverage run --source . --omit "*venv/*" -m unittest discover --verbose tests
           coverage report -m -i --fail-under=80 --skip-covered --skip-empty | tee report.txt
+          coverage xml
       - name: Upload Coverage Report
         uses: actions/upload-artifact@v3
         with:
@@ -47,6 +48,12 @@ jobs:
         uses: coverallsapp/github-action@v2
         with:
           parallel-finished: true
+      - name: deepsource
+        run: |
+          curl https://deepsource.io/cli | sh
+          ./bin/deepsource report --analyzer test-coverage --key python --value-file ./coverage.xml
+
+
 
   Lint:
     name: Pre-Commit Hooks that should have been run by committer
