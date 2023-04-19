@@ -3,13 +3,13 @@ import random
 import sys
 import time
 from itertools import combinations
+
+from gamepack.fasthelpers import plot
 from math import ceil
 from typing import Tuple
 
-import pydealer
 from gamepack.DiceParser import DiceParser
 
-from gamepack.fengraph import plot
 from NossiPack.krypta import d10
 
 
@@ -138,65 +138,6 @@ def get_multiples(xs):
     return m
 
 
-def process_hand(stack: pydealer.Stack):
-    transl = {"D": "Order", "C": "Matter", "H": "Energy", "S": "Entropy"}
-    result = {"Order": [], "Matter": [], "Energy": [], "Entropy": []}
-    for c in stack:
-        result[transl[c.abbrev[-1]]].append(
-            11
-            if (c.abbrev[:-1] == "A")
-            else (int(c.abbrev[:-1]) if c.abbrev[:-1].isdigit() else 10)
-        )
-
-    return result
-
-
-spells = {
-    "Bend": {"Order": "3+", "Matter": "4+", "Energy": "0", "Entropy": "3+"},
-    "Morph": {"Order": "9+", "Matter": "9+", "Energy": "0", "Entropy": "0"},
-    "Calcify": {"Order": "0", "Matter": "4+", "Energy": "4+", "Entropy": "0"},
-    "Calcination": {"Order": "0", "Matter": "0", "Energy": "10", "Entropy": "11+"},
-    "Solution": {"Order": "10", "Matter": "7", "Energy": "0", "Entropy": "0+"},
-    "Separation": {"Order": "9", "Matter": "0+", "Energy": "1+", "Entropy": "6"},
-    "Conjunction": {"Order": "9", "Matter": "0+", "Energy": "1+", "Entropy": "6"},
-    "Putrefaction": {"Order": "0", "Matter": "14+", "Energy": "14+", "Entropy": "0"},
-    "Sublimation": {"Order": "0", "Matter": "9+", "Energy": "0+", "Entropy": "12"},
-    "Multiplication": {"Order": "10", "Matter": "0", "Energy": "0", "Entropy": "10"},
-    "Buoyancy": {"Order": "0", "Matter": "5+", "Energy": "10+", "Entropy": "0"},
-    "Knallpulver": {"Order": "9+", "Matter": "0", "Energy": "0", "Entropy": "9"},
-    "Schreipulver": {"Order": "0", "Matter": "9+", "Energy": "0", "Entropy": "9"},
-    "Griffpulver": {"Order": "11", "Matter": "16+", "Energy": "0", "Entropy": "0"},
-    "Atemmaske": {"Order": "11", "Matter": "0", "Energy": "0", "Entropy": "8+"},
-    "Leuchtpulver": {"Order": "0", "Matter": "11", "Energy": "16+", "Entropy": "0"},
-    "Schnellfackel": {"Order": "0", "Matter": "0", "Energy": "1+", "Entropy": "1+"},
-    "Durstsand": {"Order": "17", "Matter": "10+", "Energy": "0", "Entropy": "0"},
-    "Feuersee": {"Order": "0", "Matter": "0", "Energy": "5+", "Entropy": "5+"},
-    "Pandemonium": {
-        "Order": "0",
-        "Matter": "0",
-        "Energy": "0",
-        "Entropy": "11",
-        "Any": "20",
-    },
-    "Statische Entladung": {
-        "Order": "5+",
-        "Matter": "0",
-        "Energy": "5+",
-        "Entropy": "0",
-    },
-    "Ordnen": {"Order": "5+", "Matter": "0", "Energy": "0", "Entropy": "0"},
-    "Gefrieren": {"Order": "3+", "Matter": "3+", "Energy": "0", "Entropy": "0"},
-    "Magnetisieren": {"Order": "3+", "Matter": "0", "Energy": "3+", "Entropy": "0"},
-    "Essenz des Glücks": {"Order": "3+", "Matter": "0", "Energy": "0", "Entropy": "3+"},
-    "Härten": {"Order": "0", "Matter": "5+", "Energy": "0", "Entropy": "0"},
-    "Beschleunigen": {"Order": "0", "Matter": "3+", "Energy": "3+", "Entropy": "0"},
-    "Verfall": {"Order": "0", "Matter": "3+", "Energy": "0", "Entropy": "3+"},
-    "Statischer Schlag": {"Order": "0", "Matter": "0", "Energy": "5+", "Entropy": "0"},
-    "Destabilisieren": {"Order": "0", "Matter": "0", "Energy": "3+", "Entropy": "3+"},
-    "Änderung": {"Order": "0", "Matter": "0", "Energy": "0", "Entropy": "5+"},
-}
-
-
 def subsetsum(items, target):
     for length in range(1, len(items)):
         for subset in combinations(items, length):
@@ -211,78 +152,6 @@ def subsetsumany(items, target):
             if sum(subset) >= target:
                 return subset
     return []
-
-
-def spell_run():
-    repeats = 20000
-    total = 0
-    casted_spells = {x: 0 for x in spells}
-
-    used_mana = {"Order": 0, "Matter": 0, "Energy": 0, "Entropy": 0, "Any": 0}
-
-    for repeat in range(repeats):
-        deck = pydealer.Deck()
-        deck.shuffle()
-        hand = deck.deal(6)
-        hand = process_hand(hand)
-        casted = 0
-        # hand = {"Order": [9, 5], "Matter": [2], "Energy": [], "Entropy": [10, 11]}
-
-        if 1000 * repeat / repeats % 10 == 0:
-            print(int(100 * repeat / repeats), "%")
-        # print("O {} M {} E {} N {}".
-        # format(hand["Order"], hand["Matter"], hand["Energy"], hand["Entropy"]))
-        for sname, sp in spells.items():
-            casteable = True
-            for x, xi in sp.items():  # Order, Matter, Energy, Entropy
-                code = xi
-                if code == "0":
-                    continue
-                if code[-1] == "+":
-                    if x == "Any":
-                        if int(code[:-1]) > sum(hand.values()):
-                            casteable = False
-                            break
-                    else:
-                        ssum = subsetsumany(hand[x], int(code[:-1]))
-                        if not ssum:
-                            casteable = False
-                            break
-                        else:
-                            used_mana[x] += sum(ssum)
-                else:
-                    if x == "Any":
-                        ssum = subsetsum(
-                            [
-                                a
-                                for magictype, contained in hand.items()
-                                for a in contained
-                            ],
-                            int(code),
-                        )
-                        if not ssum:
-                            casteable = False
-                            break
-                        else:
-                            used_mana[x] += int(code)
-
-                    else:
-                        ssum = subsetsum(hand[x], int(code))
-                        if not ssum:
-                            casteable = False
-                            break
-                        else:
-                            used_mana[x] += int(code)
-            if casteable:
-                casted += 1
-                casted_spells[sname] += 1
-        total += casted
-        # print()
-
-    print(total / repeats)
-    for x in sorted(casted_spells.items(), key=lambda k: k[1]):
-        print("{:<20} {:>5.1f}%".format(x[0], 100 * casted_spells[x[0]] / repeats))
-    print({k: 100 * v / sum(used_mana.values()) for k, v in used_mana.items()})
 
 
 def crafting(
@@ -459,13 +328,3 @@ def comboresearch(
     if not experimentfirst:
         discoveries = experiments(maxtime, stats, discoveries)
     return discoveries
-
-
-if __name__ == "__main__":
-    # studies(-1, True, ("1", "1"), 0, 6, -5)
-    batch(10, comboresearch, (1, 520, 0, ("3", "4"), 1, 0, 0, 0))
-    # batch(0, comboresearch, (0, 0, 0, ("2", "3"), 1, 0, 30, 0))
-    import matplotlib.pyplot as plt
-
-    plt.plot(exp_t)
-    plt.show()

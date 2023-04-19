@@ -1,4 +1,3 @@
-import html
 import os
 import re
 import time
@@ -10,7 +9,6 @@ from typing import Tuple, List, Union
 import bleach
 import markdown
 from flask import render_template, request, redirect, url_for, session, flash, abort
-from gamepack.Armor import Armor, calculate
 from gamepack.Dice import DescriptiveError
 from gamepack.FenCharacter import FenCharacter
 from gamepack.Item import Item
@@ -18,7 +16,7 @@ from gamepack.MDPack import traverse_md, search_tables, MDObj
 from markupsafe import Markup
 
 from NossiPack.User import User, Config
-from gamepack.fengraph import weapondata, armordata, supply_graphdata
+from NossiSite import ALLOWED_TAGS
 from NossiSite.AfterResponse import AfterResponse
 from NossiSite.base import app as defaultapp, log
 from NossiSite.helpers import checktoken, checklogin, srs
@@ -29,28 +27,7 @@ wikitags = {}
 chara_objects = {}
 page_cache = {}
 
-bleach.ALLOWED_TAGS += [
-    "br",
-    "u",
-    "p",
-    "pre",
-    "table",
-    "th",
-    "tr",
-    "td",
-    "tbody",
-    "thead",
-    "tfoot",
-    "h1",
-    "h2",
-    "h3",
-    "h4",
-    "h5",
-    "h6",
-    "div",
-    "hr",
-    "img",
-]
+bleach.ALLOWED_TAGS = ALLOWED_TAGS
 
 bleach.ALLOWED_ATTRIBUTES.update(
     {
@@ -173,11 +150,6 @@ def register(app=None):
             return redirect(url_for("wikipage", page=request.form.get("wiki", None)))
         return abort(405)
 
-    @app.route("/fenweapongraph")
-    def graphtest():
-        supply_graphdata()
-        return render_template("graphs.html")
-
     @app.route("/fensheet/<c>")
     def fensheet(c):
         un = session.get("user", "")
@@ -211,6 +183,7 @@ def register(app=None):
     @app.route("/costcalc/all")
     def ddos(costs="0, 15, 35, 60, 100", penalty="0, 0, 0, 50, 100", width=3):
         p = Path(costs + "-" + penalty + ".result")
+        # noinspection PyBroadException
         try:
             if p.exists():
                 with open(p, "r") as f:
@@ -228,7 +201,7 @@ def register(app=None):
                 while i == 0 or not all(
                     all(int(x) >= 5 for x in y if x) for y in res[-1][1]
                 ):
-                    r = FenCharacter.cost_calc_old(str(i), costs, penalty, width)
+                    r = FenCharacter.cost_calc(str(i), width)
                     log.debug(f"Fencalc {i} {res}")
                     if i == 0 or r != res[-1][1]:
                         res.append([str(i), r])
@@ -248,72 +221,17 @@ def register(app=None):
                     {"Content-Type": "text/plain; charset=utf-8"},
                 )
 
-    @app.route("/costcalc/<inputstring>/<costs>/<penalty>/<width>")
-    @app.route("/costcalc/<inputstring>/<costs>/<penalty>")
+    @app.route("/costcalc/<inputstring>/<width>")
     @app.route("/costcalc/<inputstring>")
-    def fen_calc(inputstring: str, costs=None, penalty=None, width=3):
+    def fen_calc(inputstring: str, width=3):
         return (
             "\n".join(
                 ", ".join(str(y) for y in line)
-                for line in FenCharacter.cost_calc_old(
-                    inputstring, costs, penalty, width
-                )
+                for line in FenCharacter.cost_calc(inputstring, width)
             ),
             200,
             {"Content-Type": "text/plain; charset=utf-8"},
         )
-
-    @app.route("/armor/<a>")
-    @app.route("/armor/<a>/<mods>")
-    @app.route("/armor/<a>/json")
-    @app.route("/armor/<a>/<mods>/json")
-    @app.route("/armor/<a>/<mods>/txt")
-    @app.route("/armor/<a>/txt")
-    def show_armortable(a, mods=""):
-        format_json = request.url.endswith("/json")
-        a = a.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
-        try:
-            armor = get_armor(a, mods)
-        except Exception as e:
-            return (
-                '<div style="color: red"> ArmorCode Invalid: '
-                + " ".join(str(html.escape(x)) for x in e.args)
-                + " </div>"
-            )
-        if format_json:
-            return {armor.name: armor.format(",", "").split(",")[1:]}
-        return str(armor)
-
-    @app.route("/weapon/<w>")
-    @app.route("/weapon/<w>/<mods>")
-    @app.route("/weapon/<w>/json")
-    @app.route("/weapon/<w>/<mods>/json")
-    @app.route("/weapon/<w>/<mods>/txt")
-    @app.route("/weapon/<w>/txt")
-    def show_weapontable(w, mods=""):
-        format_json = request.url.endswith("/json")
-        format_txt = request.url.endswith("/txt")
-        w = w.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
-        weapon = weapontable(w, mods, format_json or format_txt)
-        if isinstance(weapon, tuple):
-            return weapon
-        if format_txt:
-            return weapon  # format_weapon(weapon)
-        return weapon
-
-    def format_weapon(weapon_tab):
-        result = f"{'Wert': <11}" + "".join(f"{x: <4}" for x in range(1, 11)) + "\n"
-        for key, weapon in weapon_tab.items():
-            weapon = [
-                x if (len(x) > 1 and x[1] > 0) else ([x[0]] if x[0] else "")
-                for x in weapon
-            ]
-            result += (
-                f"{key: <10} "
-                + "".join(f"{';'.join(str(y) for y in x): <4}" for x in weapon[1:-1])
-                + "\n"
-            )
-        return result
 
     @app.route("/search/<key>", methods=["GET"])
     def searchwiki(key: str):
@@ -429,37 +347,6 @@ def register(app=None):
             )
         return article
 
-    @app.route("/magicalweapon/<w>")
-    @app.route("/magicalweapon/<w>/<par>")
-    @app.route("/magicalweapon/<w>/json")
-    @app.route("/magicalweapon/<w>/<par>/json")
-    @app.route("/magicalweapon/<w>/<par>/txt")
-    @app.route("/magicalweapon/<w>/txt")
-    def magicweapons(w, par=None):
-        format_json = request.url.endswith("/json")
-        format_txt = request.url.endswith("/txt")
-        try:
-            w = w.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
-            code = wikiload("magicalweapons")[-1].upper()
-            if w.upper() in code:
-                code = code[code.find(w.upper()) :]  # find the right headline
-                code = code[code.find("\n") + 1 :]  # skip over the newline
-                code = code[: code.find("\n")]  # code should be on the next line
-            else:
-                return w + "not found", 404
-
-            weapon = magicalweapontable(code, par, format_json or format_txt)
-            if format_txt:
-                return format_weapon(weapon)
-        except Exception as e:
-            if format_txt:
-                return " ".join(e.args)
-            if format_json:
-                return {"error": e}
-            raise
-
-        return weapon
-
     def infolet_filler(context):
         def wrap(s):
             return fill_infolets(str(s), context)
@@ -483,36 +370,6 @@ def weaponadd(weapon_damage_array, b, ind=0):
     return c
 
 
-def magicalweapontable(code: str, par=None, as_json=False):
-    calc = re.compile(r"<(?P<x>.*?)>")
-    code = code.strip()
-    for match in calc.findall(code):
-        code = code.replace(f"<{match}>", str(calculate(match, par)))
-    code = re.sub(r"^CODE\s+", "", code)
-    step = code.split(":")
-    if step[0].strip() == "WEAPON":
-        return weapontable(step[1], step[2], as_json)
-    raise DescriptiveError("Dont know what do do with \n" + code)
-
-
-def process_mods(mods: str):
-    mods = html.unescape(mods)
-    context = get_fen_char("last")
-    if context:
-        for k, v in context.stat_definitions().items():
-            mods = mods.replace(k, v)
-    calc = re.compile(r"<(?P<x>.*?)>")
-    mods = mods.strip()
-    for match in calc.findall(mods):
-        if not match:
-            continue
-        try:
-            mods = mods.replace(f"<{match}>", str(calculate(match)))
-        except SyntaxError:
-            raise DescriptiveError(f"{mods} is not correct!")
-    return mods
-
-
 def lowercase_access(d, k):
     data = {k.lower(): v for k, v in d.items()}
     res = data.get(k.lower(), None)
@@ -521,92 +378,6 @@ def lowercase_access(d, k):
             k.lower() + " does not exist in " + " ".join(data.keys())
         )
     return res
-
-
-def get_armor(a, mods="") -> Union[Armor, None]:
-    armor: Armor = lowercase_access(armordata(), a)
-    if armor is None:
-        return None
-    mods = process_mods(mods)
-    armor.apply_mods(mods)
-    return armor
-
-
-def weapontable(w, mods="", as_json=False):
-    try:
-        mods = process_mods(mods)
-        weapon = lowercase_access(weapondata(), w)
-        for mod in mods.split(","):
-            mod = mod.strip()
-            if not mod:
-                continue
-            modregex = re.compile(
-                r"^(?P<direction>[LR])\s*(?P<sharp>X?)\s*(?P<amount>-?\d+)\s*(?P<apply>[HSCB]+)$"
-            )
-            match = modregex.match(mod)
-            if not match:
-                raise DescriptiveError(
-                    "Modifier Code " + mod + " does not match the format!"
-                )
-            match = match.groupdict()
-            if match["direction"] == "L":
-                direction = -1
-                pos = 10
-            elif match["direction"] == "R":
-                direction = 1
-                pos = 1
-            else:
-                continue
-            sharp = 1 if match.get("sharp", None) else 0
-            amount = int(match["amount"])
-            apply = match["apply"]
-            addition = [0] * 12
-            inc = 1 if amount > 0 else -1
-            while amount != 0:
-                amount -= inc
-                addition[pos] += inc
-                pos += direction
-                pos = 10 if pos == 0 else (1 if pos == 11 else pos)
-
-            for a in apply:
-                if a == "H":
-                    weapon["Hacken"] = weaponadd(weapon["Hacken"], addition, sharp)
-                if a == "S":
-                    weapon["Stechen"] = weaponadd(weapon["Stechen"], addition, sharp)
-                if a == "C":
-                    weapon["Schneiden"] = weaponadd(
-                        weapon["Schneiden"], addition, sharp
-                    )
-                if a == "B":
-                    weapon["Schlagen"] = weaponadd(weapon["Schlagen"], addition, sharp)
-
-        for k in list(weapon.keys()):
-            if sum(sum(x for x in dmg) for dmg in weapon[k]) == 0:
-                weapon.pop(k)
-        if as_json:
-            return weapon
-        return markdown.markdown(
-            render_template("weapontable.html", data=weapon), extensions=["tables"]
-        )
-    except Exception as e:
-        return (
-            (
-                '<div style="color: red"> WeaponCode Invalid: '
-                + " ".join(str(html.escape(x)) for x in e.args)
-                + " </div>"
-            ),
-            404,
-        )
-
-
-def get_table(match: re.Match):
-    kind = match.group("kind").lower().strip()
-    if kind == "weapon":
-        return weapontable(match.group("ref"), match.group("mod"))
-    elif kind == "armor":
-        return str(get_armor(match.group("ref"), match.group("mod")))
-    else:
-        return "Unknown infolet: " + kind
 
 
 def get_info(info_context):
@@ -715,7 +486,6 @@ headers = re.compile(
 def fill_infolets(body, context):
     body = links.sub(r'<a href="/wiki/\g<2>"> \g<1> </a>', body)
     body = infos.sub(get_info(context), hiddeninfos.sub(hide(get_info(context)), body))
-    body = table.sub(get_table, hiddentable.sub(hide(get_table), body))
     return headers.sub(headerfix, body)
 
 
@@ -836,13 +606,6 @@ def refresh_cache(page=""):
             del chara_objects[key]
     for key in list(page_cache.keys()):
         del page_cache[key]
-    Armor.shorthand = {
-        y[0].lower().strip(): y[1]
-        for y in [
-            x.strip(" |").split("|")
-            for x in traverse_md(wikiload("shorthand")[2], "armor").splitlines()[3:]
-        ]
-    }
     item_cache_candidate = [
         Item.process_table(x, lambda x: log.info("Prices Processing: " + str(x)))[0]
         for x in MDObj.from_md(wikiload("prices")[2]).tables

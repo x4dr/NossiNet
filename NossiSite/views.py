@@ -10,31 +10,14 @@ from werkzeug.security import gen_salt, generate_password_hash
 from Data import connect_db
 from NossiPack.User import Userlist, User, Config
 from NossiPack.VampireCharacter import VampireCharacter
+from NossiSite import ALLOWED_TAGS
 from NossiSite.base import app as defaultapp, log
 from NossiSite.helpers import (
     checktoken,
     checklogin,
 )
 
-bleach.ALLOWED_TAGS += [
-    "br",
-    "u",
-    "p",
-    "table",
-    "th",
-    "tr",
-    "td",
-    "tbody",
-    "thead",
-    "tfoot",
-    "h2",
-    "h3",
-    "h4",
-    "h5",
-    "h6",
-    "div",
-    "hr",
-]
+bleach.ALLOWED_TAGS = ALLOWED_TAGS
 
 
 def register(app=None):

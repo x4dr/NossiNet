@@ -4,10 +4,11 @@ from typing import Optional
 import discord
 from discord.ext import commands
 from discord.ext.commands import Greedy
+from gamepack.fasthelpers import montecarlo
 
 from NossiInterface.RollInterface import timeout
 from NossiInterface.Tools import extract_comment
-from gamepack.fengraph import chances, versus, montecarlo
+from gamepack.fengraph import chances, versus
 
 logger = logging.getLogger(__name__)
 

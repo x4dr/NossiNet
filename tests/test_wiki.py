@@ -10,10 +10,8 @@ from gamepack.MDPack import (
     search_tables,
     table_add,
     table_remove,
-    table_edit,
+    table_row_edit,
 )
-from gamepack.fengraph import armordata
-
 import Data
 from NossiSite import helpers
 from NossiSite.wiki import wikisave, fill_infolets
@@ -87,34 +85,16 @@ class TestViews(NossiTestCase):
             table("|a|b|cut\n|-|-\n1|2\nextra\n"),
         )
 
-    def test_armor(self):
-        d = armordata()
-        for a in d.values():
-            n = a.name
-            a.apply_mods(
-                "N <> of Resilience, P x+2,S x+1, Wx/2, K x *1.1, R 100 * (x/100) **2"
-            )
-            self.assertTrue(a.name.endswith("Resilience") and a.name.startswith(n))
-        a = list(d.values())[0]
-        n = a.name
-        a.apply_mods("N<>a")
-        a.apply_mods("Nb<>")
-        self.assertEqual(a.name, f"b{n}a")
-
     def test_infolets(self):
         sut = fill_infolets("[[specific:healing:heilung:aurier:resonanzen:-]]", "test")
         self.assertIn("Wunde", sut)
-
-    def test_wounds(self):
-        sut = FenCharacter.from_md("#Character\n##Wounds\nQuelle|Code\n-|-\ntest|2:3:1")
-        sut.wounds()
 
     def test_tablesrearch(self):
         sut = "##somestuff\n|a|b|\n|-|-|\n|x|1|\ny|2\n"
         self.assertEqual(search_tables(sut, "y", 0), "y|2\n")
         sut = table_add(sut, "z", "3")
         sut = table_remove(sut, "y")
-        self.assertEqual(search_tables(sut, "z", 0), "|z|3|\n")
+        self.assertEqual(search_tables(sut, "z", 0), "| z | 3 |\n")
         self.assertEqual(search_tables(sut, "y", 0), "")
-        sut = table_edit(sut, "z", "whoop")
+        sut = table_row_edit(sut, "z", "whoop")
         self.assertEqual(search_tables(sut, "z", 0), "| z | whoop |\n")
