@@ -21,7 +21,7 @@ def init_db():
 
 def connect_db(source) -> sqlite3.Connection:
     """db connection singleton"""
-    db = g.get("db", None)
+    db = g.get("db")
     if db:
         return db
     dbpath = DATABASE
@@ -35,7 +35,7 @@ def connect_db(source) -> sqlite3.Connection:
 
 
 def close_db():
-    db = g.get("db", None)
+    db = g.get("db")
     if db:
         db.close()
         g["db"] = None
