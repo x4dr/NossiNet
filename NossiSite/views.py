@@ -220,11 +220,10 @@ def register(app=None):
         name = name.upper()
         ul = Userlist()
         u = ul.loaduserbyname(name)
-        if u:
-            if u.sheetpublic or session.get("admin", False):
-                return render_template(
-                    "vampsheet.html", character=u.getsheet().getdictrepr(), own=False
-                )
+        if u and u.sheetpublic or session.get("admin", False):
+            return render_template(
+                "vampsheet.html", character=u.getsheet().getdictrepr(), own=False
+            )
         flash("you do not have permission to see this")
         return render_template(
             "vampsheet.html", character=VampireCharacter().getdictrepr(), own=False
@@ -411,37 +410,36 @@ def register(app=None):
         keyprovided = session.get("amount") is not None
         if not keyprovided:
             keyprovided = None
-        if request.method == "POST":
-            if checktoken():
+        if request.method == "POST" and checktoken():
+            try:
+                amount = int(request.form["amount"])
+                if amount > 0:
+                    key = int(time.time())
+                    key = generate_password_hash(str(key))
+                    log.info(
+                        f"REQUEST BY {u.username} FOR {amount} CREDITS. KEY: {key}."
+                    )
+                    session["key"] = key[-10:]
+                    session["amount"] = amount
+                    keyprovided = True
+                else:
+                    error = "need positive amount"
+            except Exception:
                 try:
-                    amount = int(request.form["amount"])
-                    if amount > 0:
-                        key = int(time.time())
-                        key = generate_password_hash(str(key))
-                        log.info(
-                            f"REQUEST BY {u.username} FOR {amount} CREDITS. KEY: {key}."
+                    key = request.form["key"][-10:]
+                    if key == session.pop("key"):
+                        flash(
+                            "Transfer of "
+                            + str(session.get("amount"))
+                            + " Credits was successfull!"
                         )
-                        session["key"] = key[-10:]
-                        session["amount"] = amount
-                        keyprovided = True
+                        u.funds += int(session.pop("amount"))
                     else:
-                        error = "need positive amount"
+                        error = "wrong key, transaction invalidated."
+                        session.pop("amount")
+                        session.pop("key")
                 except Exception:
-                    try:
-                        key = request.form["key"][-10:]
-                        if key == session.pop("key"):
-                            flash(
-                                "Transfer of "
-                                + str(session.get("amount"))
-                                + " Credits was successfull!"
-                            )
-                            u.funds += int(session.pop("amount"))
-                        else:
-                            error = "wrong key, transaction invalidated."
-                            session.pop("amount")
-                            session.pop("key")
-                    except Exception:
-                        error = "invalid transaction"
+                    error = "invalid transaction"
 
         ul.saveuserlist()
 
@@ -641,25 +639,24 @@ def register(app=None):
         checklogin()
         ul = Userlist()
         u = ul.loaduserbyname(session.get("user"))
-        if request.method == "POST":
-            if checktoken():
-                try:
-                    username = request.form["username"].strip().upper()
-                    password = request.form["password"]
-                    newpassword = request.form["newpassword"]
-                    if session.get("admin", False):
-                        u = ul.loaduserbyname(username)
-                    if u.username == username:
-                        if u.check_password(password) or session.get("admin", False):
-                            u.set_password(newpassword)
-                            flash("Password change successfull!")
-                        else:
-                            flash("Wrong password!")
+        if request.method == "POST" and checktoken():
+            try:
+                username = request.form["username"].strip().upper()
+                password = request.form["password"]
+                newpassword = request.form["newpassword"]
+                if session.get("admin", False):
+                    u = ul.loaduserbyname(username)
+                if u.username == username:
+                    if u.check_password(password) or session.get("admin", False):
+                        u.set_password(newpassword)
+                        flash("Password change successfull!")
                     else:
-                        flash("You are not " + username)
-                except Exception:
-                    flash("You seem to not exist. Huh...")
-                    return render_template("resetpassword.html")
+                        flash("Wrong password!")
+                else:
+                    flash("You are not " + username)
+            except Exception:
+                flash("You seem to not exist. Huh...")
+                return render_template("resetpassword.html")
         ul.saveuserlist()
 
         return render_template("resetpassword.html")
@@ -670,24 +667,23 @@ def register(app=None):
         ul = Userlist()
         u = ul.loaduserbyname(session.get("user"))
         error = None
-        if request.method == "POST":
-            if checktoken():
-                try:
-                    amount = int(request.form["amount"])
+        if request.method == "POST" and checktoken():
+            try:
+                amount = int(request.form["amount"])
 
-                    u.funds += -amount
-                    log.info(f"DEDUCT BY {session.get('user')}: {amount}")
-                    if u.funds < 0:
-                        flash("not enough funds")
-                        raise Exception()
-                    flash("Deduct successfull")
-                    ul.saveuserlist()
-                except Exception:
-                    error = (
-                        'Error deducting "'
-                        + request.form.get("amount", "nothing")
-                        + '".'
-                    )
+                u.funds += -amount
+                log.info(f"DEDUCT BY {session.get('user')}: {amount}")
+                if u.funds < 0:
+                    flash("not enough funds")
+                    raise Exception()
+                flash("Deduct successfull")
+                ul.saveuserlist()
+            except Exception:
+                error = (
+                    'Error deducting "'
+                    + request.form.get("amount", "nothing")
+                    + '".'
+                )
 
         return render_template("payout.html", user=u, error=error)
 
