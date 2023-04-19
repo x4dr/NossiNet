@@ -136,10 +136,7 @@ def register(app=None):
             except FileNotFoundError:
                 flash("entry " + str(x) + " not found.")
         if request.method == "POST":
-            if (
-                checktoken()
-                and request.form.get("wiki", None) is not None
-            ):
+            if checktoken() and request.form.get("wiki", None) is not None:
                 log.info(f"saving wiki file {request.form['wiki']}")
                 wikisave(
                     x,

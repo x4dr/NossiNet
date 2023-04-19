@@ -244,10 +244,7 @@ def bowdpstest(bowmana_rate, draw, aim, fire, quickdraw, quickaim, quickfire):
                 if state >= len(transitions) - 1:
                     damage += 1
                     state = 0
-                if (
-                    quickperks[state - 1]
-                    and bowmana >= transitions[state - 1]
-                ):
+                if quickperks[state - 1] and bowmana >= transitions[state - 1]:
                     bowmana -= transitions[state]
                     continue  # getto goto what is wrong with me
             break
