@@ -125,7 +125,6 @@ def register(app=None, socketio=None):
         u = ul.loaduserbyname(user)
         workdef = u.defines
         if message[:6] == "=clear":
-
             workdef = {}
             echo("Definitions reset.")
         elif message[:7] == "=delete":
@@ -611,7 +610,6 @@ def register(app=None, socketio=None):
             session["activeroom"] = roomlist[0]
             log.info(f"user {session['user']} connecting")
             if roomlist[0].userjoin(session["user"]):
-
                 join_room(roomlist[0].name)
             else:
                 emit("nooope")

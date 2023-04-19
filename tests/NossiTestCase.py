@@ -43,7 +43,6 @@ class NossiTestCase(TestCase):
             Path(x).unlink()
 
     def register(self):
-
         # register with mock
         return self.app.test_client().post(
             url_for("register_user"), data=self.logindata, follow_redirects=True
