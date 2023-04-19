@@ -13,18 +13,17 @@ class TestIndependency(TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        Path("~/token.discord").expanduser().touch()
         fileblacklist = ["setup.py"]
         patternblacklist = [r".*/\.?venv/.*"]
         cls.modules = []
-        candidates = list(Path(__file__).parent.glob("../**/*.py"))
-        candidates = [
-            x.relative_to(Path.cwd()) for x in candidates if x.name not in fileblacklist
-        ]
+        candidates = list(Path(__file__).parent.glob("../NossiPack/**/*.py"))
+        candidates += list(Path(__file__).parent.glob("../NossiSite/**/*.py"))
+        candidates += list(Path(__file__).parent.glob("../NossiInterface/**/*.py"))
+        candidates = [x.absolute() for x in candidates if x.name not in fileblacklist]
         for pattern in patternblacklist:
             for m in candidates:
                 if not re.match(pattern, m.as_posix()):
-                    cls.modules.append(m)
+                    cls.modules.append(m.absolute())
 
     @mock.patch.object(
         requests, "get", Mock(return_value=Mock(status_code=200, id="hi"))
