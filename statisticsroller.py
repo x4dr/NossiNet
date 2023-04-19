@@ -10,8 +10,6 @@ from typing import Tuple
 
 from gamepack.DiceParser import DiceParser
 
-from NossiPack.krypta import d10
-
 
 def selector(sel, addon=""):
     sel = [str(x) for x in sel]
@@ -328,3 +326,21 @@ def comboresearch(
     if not experimentfirst:
         discoveries = experiments(maxtime, stats, discoveries)
     return discoveries
+
+
+def d10(amt, diff, ones=True):  # faster than the Dice
+    succ = 0
+    anti = 0
+    for _ in range(amt):
+        x = random.randint(1, 10)
+        if x >= diff:
+            succ += 1
+        if ones and x == 1:
+            anti += 1
+    if anti > 0:
+        if succ > anti:
+            return succ - anti
+        if succ > 0:
+            return 0
+        return 0 - anti
+    return succ

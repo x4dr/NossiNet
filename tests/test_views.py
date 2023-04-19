@@ -2,9 +2,9 @@ from pathlib import Path
 from unittest import mock
 
 import flask
-import werkzeug
 from flask import url_for, redirect
 from flask.testing import FlaskClient
+from werkzeug.exceptions import BadRequestKeyError
 
 import Data
 from tests.NossiTestCase import NossiTestCase
@@ -46,9 +46,7 @@ class TestViews(NossiTestCase):
         with self.register_login() as c:
             c.get(url_for("editentries"))
             self.assertTemplateUsed("show_entries.html")
-            self.assertRaises(
-                werkzeug.exceptions.BadRequestKeyError, c.post, url_for("editentries")
-            )
+            self.assertRaises(BadRequestKeyError, c.post, url_for("editentries"))
 
             token = flask.session.get("print")
             # does not return the sessionprint anymore
