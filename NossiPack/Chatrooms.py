@@ -49,7 +49,7 @@ class Chatroom:
         )
 
     def addline(self, line, supresssave=False):
-        if not session["user"] in self.presentusers.keys():
+        if not session["user"] in self.presentusers:
             raise DescriptiveError(
                 "You got disconnected, because you left this room or were inactive."
             )
@@ -72,14 +72,14 @@ class Chatroom:
             re.match(r"(.*)_.*", self.name).group(1) == session.get("user")
         ):
             return False
-        if user in self.presentusers.keys():
+        if user in self.presentusers:
             return False
         self.presentusers[user] = time.time()
         self.addline(user + " joined the room!")
         return True
 
     def userleave(self, user):
-        if user in self.presentusers.keys():
+        if user in self.presentusers:
             self.presentusers.pop(user)
             self.addline(user + " left the room!")
             return True
