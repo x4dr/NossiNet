@@ -1,5 +1,6 @@
 import logging
 import os
+import shlex
 
 from github_webhook import Webhook
 
@@ -17,6 +18,6 @@ def register(app=None):
     def on_push(req):
         repo = req["repository"]["name"]
         if repo in ["NossiNet", "Okysa", "Gamepack"]:
-            os.system(f"redeploy {repo}")
+            os.system(f"redeploy {shlex.quote(repo)}")
         else:
             logger.error(f"got unexpected request from: {req['repository']['name']}")

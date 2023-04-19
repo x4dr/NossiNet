@@ -20,6 +20,6 @@ if __name__ == "__main__":
         port = int(sys.argv[1])
     except Exception:
         port = 5000
-    socketio.run(app, "0.0.0.0", debug=True, port=port)
+    socketio.run(app, "127.0.0.1", debug=True, port=port)
 
     logging.warning("Nosferatu net closing")

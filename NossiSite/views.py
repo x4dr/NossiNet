@@ -32,6 +32,7 @@ def register(app=None):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             encoding="utf-8",
+            check=True,
         )
         result = res.stdout
         return result, 200, {"Content-Type": "text/plain; charset=utf-8"}
@@ -362,21 +363,21 @@ def register(app=None):
             for row in cur.fetchall():  # SHOULD only run once
                 entry = dict(author=row[0], title=row[1], text=row[2], id=row[3])
             if (not session.get("admin")) and (
-                entry.get("author").upper() != session.get("user")
+                entry.get("author", "").upper() != session.get("user")
             ):
                 flash("This is not your Post!")
             else:
-                if entry.get("author")[0].islower():
+                if entry.get("author", "A")[0].islower():
                     db.execute(
                         "UPDATE entries SET author = ? WHERE id = ?",
-                        [entry.get("author").upper(), entry.get("id")],
+                        [entry.get("author", "").upper(), entry.get("id")],
                     )
                     flash('Entry: "' + entry.get("title") + '" has been restored.')
 
                 else:
                     db.execute(
                         "UPDATE entries SET author = ? WHERE id = ?",
-                        [entry.get("author").lower(), entry.get("id")],
+                        [entry.get("author", "").lower(), entry.get("id")],
                     )
                     flash('Entry: "' + entry.get("title") + '" has been deleted.')
                 db.commit()
@@ -525,8 +526,8 @@ def register(app=None):
             db = connect_db("mapdata")
             # get messages for this user if looking at own page
             cur = db.execute(
-                "SELECT author,recipient,title,text,value,lock, id FROM messages "
-                "WHERE ? IN (recipient, author) " + " ORDER BY id DESC",
+                "SELECT author, recipient, title, text, value, lock, id FROM messages "
+                "WHERE ? IN (recipient, author) ORDER BY id DESC",
                 (session.get("user"),),
             )
             for row in cur.fetchall():
@@ -573,7 +574,7 @@ def register(app=None):
             checklogin()
             db = connect_db("mapdata")
             db.execute(
-                "INSERT INTO messages (author,recipient,title,text,value,lock)"
+                "INSERT INTO messages (author, recipient, title, text, value, lock)"
                 " VALUES (?, ?, ?, ?, ?, ?)",  # 6
                 [
                     session.get("user"),  # 1 -author
