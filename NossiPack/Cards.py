@@ -124,9 +124,7 @@ class Cards:
             if len(inp) > 2:
                 raise DescriptiveError(f"{inp} is not in shortform!")
             res = (self.Longform.get(inp[0]) or inp[0]) + (
-                " " + (self.Longform.get(inp[1]) or inp[1])
-                if len(inp) > 1
-                else ""
+                " " + (self.Longform.get(inp[1]) or inp[1]) if len(inp) > 1 else ""
             )
             return res
 
