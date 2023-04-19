@@ -118,7 +118,7 @@ class Cards:
                 else:
                     out[k] = self.elongate(j)
             return out
-        if isinstance(inp, list) or isinstance(inp, set):
+        if isinstance(inp, (list, set)):
             return [self.elongate(x) for x in inp]
         if isinstance(inp, str):
             if len(inp) > 2:
