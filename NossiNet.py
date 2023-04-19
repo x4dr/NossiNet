@@ -8,7 +8,7 @@ logging.config.fileConfig(Data.handle("logging_config.conf"))
 # register the endpoints
 views.register(app)
 chat.register(app, socketio)
-wiki.register(app),
+wiki.register(app)
 extra.register(app)
 webhook.register(app)
 helpers.register(app)

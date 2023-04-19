@@ -114,9 +114,7 @@ def run():
         successes[roller(amount, difficulty)] += 1
         if i % 10000 == 0 and time.time() - time1 >= duration:
             break
-    print(
-        "rolling %d dice against %d for %.1f seconds" % (amount, difficulty, duration)
-    )
+    print(f"rolling {amount:d} dice against {difficulty:d} for {duration:.1f} seconds")
     plot(dict(successes))
 
 
@@ -244,10 +242,7 @@ def bowdpstest(bowmana_rate, draw, aim, fire, quickdraw, quickaim, quickfire):
                 if state >= len(transitions) - 1:
                     damage += 1
                     state = 0
-                if (
-                    quickperks[state - 1]
-                    and bowmana >= transitions[state - 1]
-                ):
+                if quickperks[state - 1] and bowmana >= transitions[state - 1]:
                     bowmana -= transitions[state]
                     continue  # getto goto what is wrong with me
             break

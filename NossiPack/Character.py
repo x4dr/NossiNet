@@ -149,7 +149,7 @@ class Character:
 
     def validate_char(self, extra=False):
         def need(name, number):
-            return name + " still needs %d points allocated. \n" % abs(int(number))
+            return name + f" still needs {abs(int(number)):d} points allocated. \n"
 
         freebs = 15
         comment = ""
@@ -264,9 +264,9 @@ class Character:
                 - wil * 1
             )
             if freebs < 0:
-                comment = "You have spend %d Freebies too many!\n " % -freebs
+                comment = f"You have spend {-freebs:d} Freebies too many!\n "
             if freebs > 0:
-                comment = "You have %d Freebies left!\n" % freebs
+                comment = f"You have {freebs:d} Freebies left!\n"
             if freebs == 0 and extra:
                 comment = "This character is a valid starting character.\n"
             if freebs < 15 and extra:
@@ -322,10 +322,7 @@ class Character:
             self.special["Willmax"], old.special["Willmax"], 1, 1000
         )
         if extra:
-            result = "To upgrade the sheet from %s to this one would cost %d XP." % (
-                old.timestamp,
-                xpdiff,
-            )
+            result = f"To upgrade the sheet from {old.timestamp} to this one would cost {xpdiff:d} XP."
         else:
             result = xpdiff
         return result

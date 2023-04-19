@@ -136,10 +136,7 @@ def register(app=None):
             except FileNotFoundError:
                 flash("entry " + str(x) + " not found.")
         if request.method == "POST":
-            if (
-                checktoken()
-                and request.form.get("wiki", None) is not None
-            ):
+            if checktoken() and request.form.get("wiki", None) is not None:
                 log.info(f"saving wiki file {request.form['wiki']}")
                 wikisave(
                     x,
@@ -655,7 +652,7 @@ def spells(page):
 
     for r in result.values():
         for k, v in list(r.items()):
-            if k == "Dedikation" or k == "Zauberkosten":
+            if k in ("Dedikation", "Zauberkosten"):
                 ek = r.get("Effektive Kosten", {})
                 for part in v.split(","):
                     part = part.strip().lower()

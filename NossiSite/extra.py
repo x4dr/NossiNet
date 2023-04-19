@@ -105,10 +105,9 @@ def register(app=None):
                 yield ("," if not first else "") + "["
                 resetfirst()
                 for y in range(size):
-                    yield ("" if notfirst() else ",") + '{ "x":%d, "y":%d, ' % (
-                        x,
-                        y,
-                    ) + ",".join(
+                    yield (
+                        "" if notfirst() else ","
+                    ) + f'{{ "x":{x:d}, "y":{y:d}, ' + ",".join(
                         cell(
                             # x, y
                         )

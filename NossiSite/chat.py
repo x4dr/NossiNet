@@ -29,7 +29,7 @@ def register(app=None, socketio=None):
             )
         elif session["activeroom"] not in session["roomlist"]:
             emit("Status", {"status": "Currently not in any room."})
-        elif session["activeroom"].name not in [x for x in userlist.values()]:
+        elif session["activeroom"].name not in userlist.values():
             emit(
                 "Status",
                 {
@@ -101,7 +101,7 @@ def register(app=None, socketio=None):
         a = list(output_dict.keys())
         a.sort()
         for i in a:
-            echo(("%s" % i).ljust(15) + " : " + str(output_dict[i]), "", err=True)
+            echo(f"{i}".ljust(15) + " : " + str(output_dict[i]), "", err=True)
 
     def trigger(triggers, user=None):
         if not user:
@@ -150,7 +150,7 @@ def register(app=None, socketio=None):
             workdef[parts[0].strip()] = "".join(
                 parts[1:]
             ).strip()  # stripping to get whitespace out of the equation
-            echo("defined %s as %s" % (parts[0], workdef[parts[0].strip()]))
+            echo(f"defined {parts[0]} as {workdef[parts[0].strip()]}")
         elif ("=" in message) and (message != "="):
             echo("No valid config command: " + message)
         u.defines = workdef
