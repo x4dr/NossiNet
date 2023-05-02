@@ -681,9 +681,7 @@ def register(app=None):
                 ul.saveuserlist()
             except Exception:
                 error = (
-                    'Error deducting "'
-                    + request.form.get("amount", "nothing")
-                    + '".'
+                    'Error deducting "' + request.form.get("amount", "nothing") + '".'
                 )
 
         return render_template("payout.html", user=u, error=error)
