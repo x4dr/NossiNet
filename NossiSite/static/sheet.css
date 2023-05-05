@@ -57,6 +57,7 @@ html {
 .statblock {
     display: grid;
     grid-gap: 5px;
+    margin-bottom: 10px;
 }
 
 .span-2 {
