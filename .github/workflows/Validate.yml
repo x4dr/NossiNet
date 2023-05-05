@@ -39,19 +39,6 @@ jobs:
         with:
           flag-name: run-linux-py311
           parallel: true
-  finish:
-    needs: test
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Coveralls Finished
-        uses: coverallsapp/github-action@v2
-        with:
-          parallel-finished: true
-      - name: deepsource
-        run: |
-          curl https://deepsource.io/cli | sh
-          ./bin/deepsource report --analyzer test-coverage --key python --value-file ./coverage.xml
 
 
 
