@@ -71,18 +71,6 @@ def register(app: Flask = None):
     def before_request():
         connect_db("before request")
 
-    @app.teardown_request
-    def teardown_request(exception: Exception):
-        # close_db() currently disabled(letting the connection live as long as the worker)
-        if exception and exception.args and exception.args[0] == "REDIR":
-            return exception.args[1]
-        return None
-
-    @app.context_processor
-    def gettoken():
-        gentoken()
-        return dict(token=session.get("print", None))
-
     @app.errorhandler(Exception)
     def internal_error(error: Exception):
         if error.args and error.args[0] == "REDIR":
@@ -119,25 +107,7 @@ def srs(w=8):
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=w))
 
 
-def generate_token():
-    if not session["logged_in"]:
-        raise DescriptiveError("Not Logged in.")
-    return session["print"]  # only one token per session for now.
-
-
-def gentoken():
-    return session.get("print", None)
-
-
 def checklogin():
     if not session.get("logged_in"):
         flash("You are not logged in!")
-        raise Exception("REDIR", redirect(url_for("login", r=request.path[1:])))
-
-
-def checktoken():
-    if request.form.get("token", "None") != session.get("print", None):
-        flash("invalid token!")
-        session["retrieve"] = request.form
-        return False
-    return True
+        raise Exception("REDIR", redirect(url_for("views.login", r=request.path[1:])))

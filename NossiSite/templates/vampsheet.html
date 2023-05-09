@@ -1,7 +1,7 @@
 <!--suppress JSUnresolvedVariable, JSUnresolvedFunction -->
 {% extends "layout.html" %}
 {% macro dots(val,max=5) -%}
-    {% if val is not defined%}
+    {% if val is not defined %}
         {% set val = 0 %}
     {% endif %}
     {% for i in range(val) -%}
@@ -17,7 +17,7 @@
     <input type="radio" name="{{ name }}" id="{{ name }}_0" style="display: none" value="0">
     {% for count in range(1,max + 1) -%}{%- if loop.index0 > 1 and loop.index0 % 10 == 0 -%}
         <br>{%- endif -%}<input
-            style="width: 10px"  type="radio" name="{{ name }}"
+            style="width: 10px" type="radio" name="{{ name }}"
             value="{{ count|string }}" id="{{ name }}_{{ count|string }}"{% if value == count -%}
             checked {%- endif %} xmlns="http://www.w3.org/1999/html"><label onmousedown="resetDot(this)"
                                                                             onclick="return false"
@@ -36,8 +36,8 @@
 
 {% block head %}
     <script>
-        $(document).ready(function() {
-            $('form input').on('keypress', function(e) {
+        $(document).ready(function () {
+            $('form input').on('keypress', function (e) {
                 return e.which !== 13;
             });
 
@@ -50,16 +50,17 @@
                 socket.emit('ClientServerEvent', {data: 'accessing character {{ character.Meta.Name }}'})
             });
 
-            socket.on('DotUpdate', function(msg){
+            socket.on('DotUpdate', function (msg) {
                 const a = msg.data.split("§");
-                const arr =a[0].split("&");
+                const arr = a[0].split("&");
                 for (let i = 0; i < arr.length; i++) {
                     const btn = document.getElementById(arr[i]);
-                    btn.checked=true;}
+                    btn.checked = true;
+                }
             });
 
-            $('form#spendable').onsubmit = function() {
-                setTimeout(function(){
+            $('form#spendable').onsubmit = function () {
+                setTimeout(function () {
                     let message_data = $('form#spendable').serialize();
                     socket.emit('NoteDots', {data: message_data});
                 }, 100); //to wait for the dot to be saved
@@ -67,12 +68,12 @@
             }
         });
 
-        function resetDot(el){
+        function resetDot(el) {
             el = el.control; //want the actual control of the label
             if ($(el).is(':checked')) {
-                $("#"+el.name+"_0").prop("checked", true);
-            }else {
-                $(("#"+el.id)).prop("checked", true);
+                $("#" + el.name + "_0").prop("checked", true);
+            } else {
+                $(("#" + el.id)).prop("checked", true);
 
             }
             $('form#spendable').submit();
@@ -133,7 +134,7 @@
         <tr>
             <td style="text-align: right; ">Strength:</td>
             <td style="text-align: Left; ">{{ dots(character.Attributes.Strength,5) }}</td>
-d>
+            d>
             <td style="text-align: right; ">Charisma:</td>
             <td style="text-align: Left; ">{{ dots(character.Attributes.Charisma) }}</td>
             <td style="text-align: right; ">Perception:</td>
@@ -292,7 +293,8 @@ d>
         {% endfor %}
 
     </table>
-    <form id="spendable"  name="spendable">
+    <form id="spendable" name="spendable">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <table>
             <tr>
 
@@ -302,9 +304,13 @@ d>
             </tr>
 
             <tr>
-                <td rowspan="999" colspan="2"><pre>{{ character.Meta.Merits }}</pre></td>
+                <td rowspan="999" colspan="2">
+                    <pre>{{ character.Meta.Merits }}</pre>
+                </td>
                 <td colspan="2">&nbsp</td>
-                <td rowspan="999" colspan="2"><pre>{{ character.Meta.Gear }}</pre></td>
+                <td rowspan="999" colspan="2">
+                    <pre>{{ character.Meta.Gear }}</pre>
+                </td>
 
             </tr>
             <tr>
@@ -344,31 +350,36 @@ d>
 
             </tr>
             <tr>
-                <td colspan="2">&nbsp</td  >
+                <td colspan="2">&nbsp</td>
             </tr>
         </table>
     </form>
 
-    <div >
+    <div>
         {% if oldsheet %}
-            <form action="{{ url_for('del_sheet')}}" method="POST" >
+            <form action="{{ url_for("views.del_sheet") }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <input title="sheetnum" hidden name="sheetnum" value="{{ oldsheet }}">
                 <input type="submit" style="float: right" class="leet" value="delete">
             </form>
 
-            <form action="{{ url_for('res_sheet')}}" method="POST" >
+            <form action="{{ url_for("views.res_sheet") }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <input title="sheetnum" hidden name="sheetnum" value="{{ oldsheet }}">
                 <input type="submit" style="float: right" class="leet" value="swap out">
             </form>
         {% elif own %}
-            <form action="{{ url_for('modify_sheet') }}" >
+            <form action="{{ url_for("views.modify_sheet") }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <input type="submit" class="leet bigbtn" value="EDIT">
             </form>
         {% endif %}
     </div><br>
-    <div><pre>{{ character.Meta.Notes }}</pre></div>
+    <div>
+        <pre>{{ character.Meta.Notes }}</pre>
+    </div>
     <br>
-    <a href="{{ url_for('menu_oldsheets') }}">History</a>
+    <a href="{{ url_for("views.menu_oldsheets") }}">History</a>
 
 
 {% endblock %}

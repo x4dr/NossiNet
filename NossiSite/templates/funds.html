@@ -4,16 +4,18 @@
     {% if keyprovided %} {% else %}
         Welcome to NosfertuDeadDropServices! The deal is simple. You put money in a container. You put at
         THE PLACE transmitted to you by a trusted member of the community
-        (<a href="{{ url_for('show_user_profile',username='Maric') }}">MARIC</a>, for example) and NDDS will come pick it
-        up and provide you with a key if what we find is what you said you hid. Then you input the key and receive money.
+        (<a href="{{ url_for("views.show_user_profile',username='Maric") }}">MARIC</a>, for example) and NDDS will come
+        pick it
+        up and provide you with a key if what we find is what you said you hid. Then you input the key and receive
+        money.
     {% endif %}
-    <form action="{{ url_for('add_funds') }}" method=post>
+    <form action="{{ url_for("views.add_funds") }}" method=post>
         <dl>
-            <input type="hidden" name="token" value={{ token }}>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             {% if keyprovided %}
                 <dt><label for="key_input">Key:</label>
                 <dd><input id="key_input" class=leet type=text name=key>
-            {% else %}
+                    {% else %}
                 <dt><label for="amount_input">Amount:</label>
                 <dd><input id="amount_input" class=leet type=number name="amount">
             {% endif %}

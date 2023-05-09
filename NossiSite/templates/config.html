@@ -2,17 +2,18 @@
 {% block body %}
     <h2>{{ heading }}</h2>
     {{ description }}
-    <form action="{{ url_for('config', x=config) }}" method=post>
+    <form action="{{ url_for("views.config", x=config) }}" method=post>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <dl>
-            <dt><input type="hidden" name="token" value="{{ token }}"/>
+            <dt>
             <dd><label>config
                 <input class=leet type=text name="configuration" value="{{ curval }}">
             </label>
                 <input class=leet type=submit value=Save>
         </dl>
     </form>
-    <form action="{{ url_for('config', x=config) }}" method=post>
-        <input type="hidden" name="token" value="{{ token }}"/>
+    <form action="{{ url_for("views.config", x=config) }}" method=post>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <input type="hidden" name="delete" value="true">
         <input class=leet type=submit value=Delete>
     </form>

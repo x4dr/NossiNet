@@ -6,7 +6,8 @@
         IF YOU WANT MORE FEATURES JUST REQUEST THEM AND I WILL TELL YOU IF THEY CAN BE DONE
     </p>
     <h6>Just allocate how many points are to be spent and click le bouton.</h6>
-    <form action="{{ url_for('chargen_menu') }}" method=post>
+    <form action="{{ url_for("extra.chargen_menu") }}" method=post>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <dl>
             <dt><label for=a>Physical Attributes:</label>
             <dd><input class=leet type="number" name=a id=a value="3">

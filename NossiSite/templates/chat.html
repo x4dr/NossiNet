@@ -2,7 +2,7 @@
 {% block head %}
     <!--suppress , JSUnresolvedVariable, JSUnresolvedFunction -->
     <script type="text/javascript" charset="utf-8">
-        window.onload=function() {
+        window.onload = function () {
             const script = document.createElement('script');
             script.src = '/static/chat.js';
             script.type = 'text/javascript';
@@ -10,26 +10,24 @@
             head.appendChild(script);
         }
     </script>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"
+            integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+"
+            crossorigin="anonymous"></script>
 {% endblock %}
 {% block body %}
     <div id="wrapper">
         <div id="inner" style="width: 100%;">
-            <div id="healthbar" class="healthbar"></div><div
-                id="bashbar" class="bashbar"></div><div
-                id="lethalbar" class="lethalbar"></div><div
-                id="aggbar" class="aggbar"></div><div
-                id="bloodbar" class="bloodbar"></div><div
-                id="willbar" class="willbar"></div>
             <div id="chatbox" class="chatbox"></div>
         </div>
         <div id="statusmessage">Waiting for Server connection...</div>
-        <form id="message" name="message" method="POST" action="#">
-            <div class="formline">
-                <input class="leet" name="submitmsg" type="submit"  id="submitmsg"
-                       value="Send" style="float: right; width:  10%" />
-                <span><label for="message_data"></label>
-                    <input class="leet" type="text" name="message_data" id="message_data"
-                    placeholder="Message" autocomplete="off" style="width: 88%"></span>
+        <form id="messageform" name="messageform" action="#">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="formline" style="display: flex; align-items: center">
+                <label for="message_data"></label>
+                <input class="leet" type="text" name="message_data" id="message_data"
+                       placeholder="Message" autocomplete="off" style="flex-grow: 1">
+                <input class="leet" name="submitmsg" type="submit" id="submitmsg"
+                       value="Send" style="width:  auto"/>
             </div>
         </form>
     </div>

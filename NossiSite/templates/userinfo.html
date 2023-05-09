@@ -8,10 +8,10 @@
 {% block body %}
     {% if session.logged_in %}
         {% if session.get('user') != user.username %}
-            <form action="{{ url_for('send_msg', username=user.username) }}" method=post class=add-entry>
+            <form action="{{ url_for("views.send_msg", username=user.username) }}" method=post class=add-entry>
                 <dl>
                     <dt><label for="title_inp">Title:</label>
-                    <input type="hidden" value={{ token }} name="token">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <dd><input class=leet type=text size=30 name="title" id="title_inp" required></dd>
                     <dt><label for="text_inp">Text:</label>
                     <dd><textarea class=leet name="text" rows=5 cols=40, id="text_inp" required></textarea></dd>
@@ -22,26 +22,29 @@
                 </dl>
             </form>
             <br>
-            <a href = "{{ url_for('showsheet', name=user.username) }}">Sheet of {{ user.username }}</a>
+            <a href="{{ url_for("views.showsheet", name=user.username) }}">Sheet of {{ user.username }}</a>
         {% else %}
             <h3>You have {{ user.funds }} Credits.</h3>
-            <h3>Your Discord account is {{ configs.get("discord", "not set") }}. <a href="{{ url_for('config', x="discord") }}"> CHANGE </a></h3>
-            <h3><a href="{{ url_for('add_funds') }}"> BUY CREDITS </a></h3>
-            <h3><a href="{{ url_for('payout') }}"> SELL CREDITS </a></h3>
-            <h3><a href="{{ url_for('editentries', x="all") }}">MAKE OR EDIT POSTS</a></h3>
-            <h3><a href="{{ url_for('resetpassword') }}"> CHANGE PASSWORD </a></h3>
+            <h3>Your Discord account is {{ configs.get("discord", "not set") }}. <a
+                    href="{{ url_for("views.config", x="discord") }}"> CHANGE </a></h3>
+            <h3><a href="{{ url_for("views.add_funds") }}"> BUY CREDITS </a></h3>
+            <h3><a href="{{ url_for("views.payout") }}"> SELL CREDITS </a></h3>
+            <h3><a href="{{ url_for("views.editentries", x="all") }}">MAKE OR EDIT POSTS</a></h3>
+            <h3><a href="{{ url_for("views.resetpassword") }}"> CHANGE PASSWORD </a></h3>
             <h4 class="hider" data-for="config"> Configuration</h4>
             <div id="config">
-                <form action="{{ url_for('config') }}" method=post>
+                <form action="{{ url_for("views.config") }}" method=post>
                     <label>Text:
                         <input class=leeet type="text" name="configuration"/>
                     </label>
                     <input class=leeet type="submit" value="Add New"/>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 </form>
                 {% for a,b in configs.items() %}
-                    <form action="{{ url_for('config') }}" method=post>
-                        <input class=leeet type="hidden" name="configuration" value="{{a}}">
-                        <input class=leeet type="submit" value="{{a}}"> = {{ b }}
+                    <form action="{{ url_for("views.config") }}" method=post>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input class=leeet type="hidden" name="configuration" value="{{ a }}">
+                        <input class=leeet type="submit" value="{{ a }}"> = {{ b }}
                     </form>
                 {% endfor %}
             </div>
@@ -50,9 +53,10 @@
         {% for msg in msgs %}
             <br>__________________________________________________________<br>
             <h2>"{{ msg.title }}" {% if msg.author == user.username %}
-                to <a href="{{ url_for('show_user_profile', username=msg.recipient) }}">{{ msg.recipient }}
+                to <a href="{{ url_for("views.show_user_profile", username=msg.recipient) }}">{{ msg.recipient }}
             {% else %}
-                by <a href="{{ url_for('show_user_profile', username=msg.author) }}">{{ msg.author }} {% endif %}</a>
+                by <a href="{{ url_for("views.show_user_profile", username=msg.author) }}">
+                {{ msg.author }} {% endif %}</a>
             </h2>{{ msg.text|safe }}
             {% if msg.value != 0 %}
                 <br><h3>This message has a price of {{ msg.value }} Credit{% if msg.value!=1 %}s{% endif %}
@@ -60,7 +64,8 @@
 
                 {% if msg.lock %}
                     </h3><br>
-                    <form action="{{ url_for('unlock', ident=msg.id) }}">
+                    <form action="{{ url_for("views.unlock", ident=msg.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <br>
                         <input class=leeet type="submit" value="Unlock (costs {{ msg.value }})">
                     </form>

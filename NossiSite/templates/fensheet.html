@@ -1,8 +1,8 @@
 {%- extends "layout.html" -%}
 {% block head %}
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="sheet.css") }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="live_edit.css") }}">
-    <script src="{{ url_for('static', filename="live_edit.js") }}"></script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="sheet.css") }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="live_edit.css") }}">
+    <script src="{{ url_for("static", filename="live_edit.js") }}"></script>
     {% if owner %}
         {% for err in character.errors %}
 
@@ -88,7 +88,7 @@
 {%- macro catformat(cat, name, cost) -%}
     <div class="gridwrapper category">
         <div data-category="{{ name|urlencode }}"  class="tooltip heading span-2{% if owner %} editeable{% endif %}">{{ name }}
-            <a href="{{url_for('fen_calc',inputstring=cost) }} "><span class="tooltiptext">Options<br/>for {{ cost }}<br/>{% for l in
+            <a href="{{url_for("wiki.fen_calc",inputstring=cost) }} "><span class="tooltiptext">Options<br/>for {{ cost }}<br/>{% for l in
                     character.cost_calc(cost)
                     %}{% for b in l %}{{ b }}{% if not loop.last %},{% endif %}{% endfor %}<br/> {% endfor %} </span></a>
         </div>
@@ -125,7 +125,7 @@
 {%- endblock -%}
 
 {%- block body -%}
-    {% if owner %}<a href="{{ url_for("editwiki", x=owner) }}"><input type="button" class="leeet" value="Edit"></a><br/>
+    {% if owner %}<a href="{{ url_for("wiki.editwiki", x=owner) }}"><input type="button" class="leeet" value="Edit"></a><br/>
     {% endif %}
     <div style="visibility: hidden" id="context_element">{{ context }}</div>
 
@@ -160,10 +160,11 @@
         </div>
     {%- endfor -%}
     <div><button id="TopButton" title="Upwards">Top</button></div>
-    {% if owner %}<a href="{{ url_for("editwiki", x=owner) }}"><input type="button" class="leeet"  value="Edit"></a><br/>
+    {% if owner %}<a href="{{ url_for("wiki.editwiki", x=owner) }}"><input type="button" class="leeet"  value="Edit"></a><br/>
     {% endif %}
     <div id="editfield" class="editfield">
-        <form id="editform" action="{{ url_for("live_edit") }}" method="post">
+        <form id="editform" action="{{ url_for("wiki.live_edit") }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input name="context" type="hidden" value="{{ context }}">
             <input name="original" id="original" type="hidden" value="">
             <label for="text" class="overlay">Text to Change</label><br/><textarea class="message" name="new" id="text"></textarea>

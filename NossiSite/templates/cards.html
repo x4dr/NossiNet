@@ -63,15 +63,16 @@
     <p>If context allows, number of cards can be supplied, otherwise the exact cardnames separated by spaces are needed.</p>
     <p>For dedication, the reason should be supplied after a ":".</p>
     <form id="interactionform" action="javascript:void(0);" method=post>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <label for="action" >Action:</label>
         <select name="action" class ="leeet" id="action">
-            <option value="draw" data-url="{{ url_for('cards', command='draw') }}">Draw</option>
-            <option value="spend" data-url="{{ url_for('cards', command='spend') }}">Spend</option>
-            <option value="returnfun" data-url="{{ url_for('cards', command='return') }}">Return</option>
-            <option value="dedicate" data-url="{{ url_for('cards', command='dedicate') }}">Dedicate</option>
-            <option value="remove" data-url="{{ url_for('cards', command='remove') }}">Remove</option>
-            <option value="free" data-url="{{ url_for('cards', command='free') }}">Free</option>
-            <option value="undedicate" data-url="{{ url_for('cards', command='undedicate') }}">Undedicate</option>
+            <option value="draw" data-url="{{ url_for("extra.cards", command='draw') }}">Draw</option>
+            <option value="spend" data-url="{{ url_for("extra.cards", command='spend') }}">Spend</option>
+            <option value="returnfun" data-url="{{ url_for("extra.cards", command='return') }}">Return</option>
+            <option value="dedicate" data-url="{{ url_for("extra.cards", command='dedicate') }}">Dedicate</option>
+            <option value="remove" data-url="{{ url_for("extra.cards", command='remove') }}">Remove</option>
+            <option value="free" data-url="{{ url_for("extra.cards", command='free') }}">Free</option>
+            <option value="undedicate" data-url="{{ url_for("extra.cards", command='undedicate') }}">Undedicate</option>
         </select>
         <label for="parameter">Parameter</label>
         <input type="text" name="parameter" id="parameter"/>

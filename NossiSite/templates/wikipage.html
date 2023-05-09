@@ -1,20 +1,20 @@
 {% extends "layout.html" %}
 {% block head %}
-    <script src="{{ url_for('static', filename="live_edit.js") }}"></script>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="live_edit.css") }}">
+    <script src="{{ url_for("static", filename="live_edit.js") }}"></script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="live_edit.css") }}">
     <script>
-        window.addEventListener("click", function(e) {
+        window.addEventListener("click", function (e) {
             const x = e.clientX, y = e.clientY, mouselement = document.elementFromPoint(x, y);
             if (mouselement.classList.contains("category"))
                 return;
             const wikibody = document.getElementById("wikibody");
             const toc = wikibody.querySelector(".toc").innerText;
-            const fulltext = wikibody.innerText.substring(toc?toc.length:0)
+            const fulltext = wikibody.innerText.substring(toc ? toc.length : 0)
             if (mouselement === wikibody) return;
-            const ratio = fulltext.indexOf(mouselement.innerText)/fulltext.length
+            const ratio = fulltext.indexOf(mouselement.innerText) / fulltext.length
 
-            if (wikibody.contains(mouselement)){
-                mouselement.dataset["category"] ="perc"+ratio;
+            if (wikibody.contains(mouselement)) {
+                mouselement.dataset["category"] = "perc" + ratio;
                 mouselement.ondblclick = get_edit_content("{{wiki}}", mouselement);
             }
 
@@ -25,33 +25,40 @@
         {{ headstate|safe }}
     {% else %}
     {% endfor %}
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename="wiki.css") }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="wiki.css") }}">
 {% endblock %}
 {% block title %}
     <title xmlns="http://www.w3.org/1999/html">{{ title }}</title>
 {% endblock %}
 {% block pagetitle %}
-    <h1><a href={{ url_for('wiki_index') }}>{{ title }}</a></h1>
+    <h1><a href={{ url_for("wiki.wiki_index") }}>{{ title }}</a></h1>
 {% endblock %}
 
 {% block body %}
-    <a href="{{ url_for("editwiki", x=wiki) }}"><input type="button" class="leeet" style="margin-bottom: 1em" value="Edit"></a><br/>
+    <a href="{{ url_for("wiki.editwiki", x=wiki) }}"><input type="button" class="leeet" style="margin-bottom: 1em"
+
+                                                       value="Edit"></a><br/>
     <div class="wiki editeable" id="wikibody" style="word-wrap:break-word;border:1px solid">{{ body|safe }}
         <br> {#dangerous body has to be cleaned before being sent here#}
     </div>
     <div style="margin: 2em">|
         {% for t in tags %}
-            <a href="{{ url_for('tagsearch', tag = t) }}">{{ t }}</a> |
+            <a href="{{ url_for("wiki.tagsearch", tag = t) }}">{{ t }}</a> |
         {% endfor %}
         <br>
     </div>
-    <a href="{{ url_for("editwiki", x=wiki) }}"><input type="button" class="leeet" style="margin-bottom: 1em" value="Edit"></a><br/>
-    <div><button id="TopButton" title="Upwards">Top</button></div>
+    <a href="{{ url_for("wiki.editwiki", x=wiki) }}"><input type="button" class="leeet" style="margin-bottom: 1em"
+                                                       value="Edit"></a><br/>
+    <div>
+        <button id="TopButton" title="Upwards">Top</button>
+    </div>
     <div id="editfield" class="editfield">
-        <form id="editform" action="{{ url_for("live_edit") }}" method="post">
+        <form id="editform" action="{{ url_for("wiki.live_edit") }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input name="wiki" type="hidden" value="{{ wiki }}">
             <input name="original" id="original" type="hidden" value="">
-            <label for="text" class="overlay">Text to Change</label><br/><textarea class="message" name="new" id="text"></textarea>
+            <label for="text" class="overlay">Text to Change</label><br/><textarea class="message" name="new"
+                                                                                   id="text"></textarea>
             <input type="button" class="leeeet " value="Close" id="closebutton">
             <input type="submit" class="leeeet bottombutton" value="Overwrite">
 
