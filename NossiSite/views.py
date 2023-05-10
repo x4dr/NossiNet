@@ -3,7 +3,6 @@ import subprocess
 import time
 
 import bleach
-
 from flask import (
     abort,
     session,
@@ -15,7 +14,7 @@ from flask import (
     Blueprint,
 )
 from gamepack.Dice import DescriptiveError
-from werkzeug.security import gen_salt, generate_password_hash
+from werkzeug.security import gen_salt
 
 from Data import connect_db
 from NossiPack.User import Userlist, User, Config
@@ -23,7 +22,6 @@ from NossiPack.VampireCharacter import VampireCharacter
 from NossiSite import ALLOWED_TAGS
 from NossiSite.base import log
 from NossiSite.helpers import checklogin
-
 
 bleach.ALLOWED_TAGS = ALLOWED_TAGS
 
@@ -434,7 +432,7 @@ def add_funds():
             amount = int(request.form["amount"])
             if amount > 0:
                 key = int(time.time())
-                key = generate_password_hash(str(key))
+                key = str(hash(str(key)))
                 log.info(f"REQUEST BY {u.username} FOR {amount} CREDITS. KEY: {key}.")
                 session["key"] = key[-10:]
                 session["amount"] = amount
@@ -489,10 +487,8 @@ def register_user():  # this is not clrs secure because it does not need to be
 
 
 @views.route("/login", methods=["GET", "POST"])
-@views.route("/login/<path:r>", methods=["GET", "POST"])
-def login(r=None):
+def login():
     error = None
-    returnto = r
     if request.method == "POST":
         ul = Userlist()
         user = request.form["username"]
@@ -508,11 +504,10 @@ def login(r=None):
             )
             flash("You were logged in")
             log.info(f"logged in as {user}")
-            returnto = request.form.get("returnto", None)
-            if returnto is None:
-                return redirect(url_for("views.show_entries"))
+
+            returnto = session.pop("returnto", None) or url_for("views.show_entries")
             return redirect(returnto)
-    return render_template("login.html", returnto=returnto, error=error)
+    return render_template("login.html", error=error)
 
 
 @views.route("/logout")
@@ -709,7 +704,7 @@ def lightswitch():
         session.pop("light")
     else:
         session["light"] = "ON"
-    return redirect(request.referrer)
+    return redirect("/")
 
 
 @views.route("/favicon.ico")

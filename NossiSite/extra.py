@@ -1,3 +1,4 @@
+import html
 import random
 import time
 
@@ -142,7 +143,9 @@ def cards(command: str = None):
             if command is None:
                 return deck.serialized_parts
         elif request.method == "POST":
-            par = request.get_json()["parameter"]
+            par = html.escape(
+                request.get_json()["parameter"]
+            )  # escape html to prevent XSS
             if command == "draw":
                 return {"result": list(deck.draw(par))}
             elif command == "spend":

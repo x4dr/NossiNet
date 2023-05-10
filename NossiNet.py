@@ -27,6 +27,6 @@ if __name__ == "__main__":
         "127.0.0.1",
         debug=True,
         port=port,
-    )  #
+    )
 
     logging.warning("Nosferatu net closing")

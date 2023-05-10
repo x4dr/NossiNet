@@ -110,4 +110,5 @@ def srs(w=8):
 def checklogin():
     if not session.get("logged_in"):
         flash("You are not logged in!")
-        raise Exception("REDIR", redirect(url_for("views.login", r=request.path[1:])))
+        session["returnto"] = request.url
+        raise Exception("REDIR", redirect(url_for("views.login")))

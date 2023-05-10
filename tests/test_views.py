@@ -41,9 +41,7 @@ class TestViews(NossiTestCase):
             self.assertEqual(e.args[0], "REDIR")
             self.assertEqual(
                 e.args[1].get_data(),
-                redirect(
-                    url_for("views.login", r=url_for("views.editentries")[1:])
-                ).get_data(),
+                redirect(url_for("views.login")).get_data(),
             )
         with self.register_login() as c:
             c.get(url_for("views.editentries"))

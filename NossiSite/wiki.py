@@ -189,6 +189,9 @@ def fensheet(c):
 @views.route("/costcalc/all/<costs>/<penalty>/<width>")
 @views.route("/costcalc/all")
 def ddos(costs="0, 15, 35, 60, 100", penalty="0, 0, 0, 50, 100", width=3):
+    # filter costs and penalty to not include path traversal
+    costs = ",".join(str(int(x)) for x in costs.split(",") if int(x) >= 0)
+    penalty = ",".join(str(int(x)) for x in penalty.split(",") if int(x) >= 0)
     p = Path(costs + "-" + penalty + ".result")
     # noinspection PyBroadException
     try:
