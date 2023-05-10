@@ -5,11 +5,12 @@ import string
 
 from flask import Flask
 from flask_socketio import SocketIO
+from flask_wtf.csrf import CSRFProtect
 
 async_mode = "eventlet"
 
 app = Flask(__name__)
-app.config["TRAVIS"] = True
+CSRFProtect(app)
 i = 0
 
 key = ""
@@ -22,8 +23,10 @@ except FileNotFoundError:
         keyfile.write(key)
 
 SECRET_KEY = key
+SESSION_COOKIE_SECURE = True
 app.config.from_object(__name__)
-socketio = SocketIO(app, async_mode=async_mode)
+socketio = SocketIO(app, async_mode=async_mode, cors_allowed_origins="*")
+socketio.init_app(app, cors_allowed_origins="*")
 log = logging.getLogger("frontend")
 fh = logging.FileHandler("nossilog.log", mode="w")
 fh.setLevel(logging.DEBUG)

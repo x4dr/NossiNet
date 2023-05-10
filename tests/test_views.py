@@ -29,55 +29,50 @@ class TestViews(NossiTestCase):
     def test_version(self):
         self.addCleanup(self.delete, Data.DATABASE)
         c = self.app.test_client()
-        self.assert200(c.get(url_for("getversion")))
+        self.assert200(c.get(url_for("views.getversion")))
 
     @mock.patch.object(Data, "DATABASE", "entries.db")
     def test_entries(self):
         self.addCleanup(self.delete, Data.DATABASE)
         c = self.app.test_client()
         try:
-            c.get(url_for("editentries"))
+            c.get(url_for("views.editentries"))
         except Exception as e:
             self.assertEqual(e.args[0], "REDIR")
             self.assertEqual(
                 e.args[1].get_data(),
-                redirect(url_for("login", r=url_for("editentries")[1:])).get_data(),
+                redirect(url_for("views.login")).get_data(),
             )
         with self.register_login() as c:
-            c.get(url_for("editentries"))
+            c.get(url_for("views.editentries"))
             self.assertTemplateUsed("show_entries.html")
-            self.assertRaises(BadRequestKeyError, c.post, url_for("editentries"))
-
-            token = flask.session.get("print")
+            self.assertRaises(BadRequestKeyError, c.post, url_for("views.editentries"))
             # does not return the sessionprint anymore
-            if not token:
-                return "currently not testable"
+
             form = {
                 "id": "new",
                 "title": "testpost",
                 "text": "nonpublic",
                 "tags": "testtag",
-                "token": token,
             }
             self.assert200(
-                c.post(url_for("editentries"), data=form, follow_redirects=True)
+                c.post(url_for("views.editentries"), data=form, follow_redirects=True)
             )
             form = {
                 "id": "new",
                 "title": "xxyxz",
                 "text": "public",
                 "tags": "",
-                "token": token,
             }
             self.assert200(
-                c.post(url_for("editentries"), data=form, follow_redirects=True)
+                c.post(url_for("views.editentries"), data=form, follow_redirects=True)
             )
-            rv = c.get(url_for("show_entries"))
+            rv = c.get(url_for("views.show_entries"))
             self.assertIn(b"xxyxz", rv.data)
             self.assertNotIn(b"testpost", rv.data)
-            c.post(url_for("update_filter"), data={"tags": "testtag", "token": token})
+            c.post(url_for("views.update_filter"), data={"tags": "testtag"})
             self.assertEqual(flask.session.get("tags", None), "testtag")
-            rv = c.get(url_for("show_entries"))
+            rv = c.get(url_for("views.show_entries"))
             self.assertIn(b"testpost", rv.data)
             self.assertNotIn(b"xxyxz", rv.data)
 

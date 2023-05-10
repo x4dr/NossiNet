@@ -28,7 +28,7 @@ class TestViews(NossiTestCase):
     def test_index(self):
         self.addCleanup(lambda x: Path(x).unlink(), Data.DATABASE)
         with self.register_login() as c:
-            print(c.get(url_for("wiki_index")))
+            print(c.get(url_for("wiki.wiki_index")))
 
     def test_ewparsing(self):
         wikisave(

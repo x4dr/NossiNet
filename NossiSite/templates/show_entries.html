@@ -11,23 +11,23 @@
                 console.log("aborted load of " + entryid)
                 return true
             }
-            let e = await fetch("{{ url_for("get_entry")}}/" + entryid).then(reply => reply.json());
+            let e = await fetch("{{ url_for("views.get_entry")}}/" + entryid).then(reply => reply.json());
             target.innerHTML = e.text;
         }
     </script>
 {% endblock %}
 {%- block metanav -%}
-    <form action="{{ url_for('update_filter') }}" method=post class="add-entry metanav" style="display:inline">
-        <input type="hidden" name="token" value="{{ token }}">
+    <form action="{{ url_for("views.update_filter") }}" method=post class="add-entry metanav" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <label>
             <input class=leet type=text size=30 name=tags value="default">
         </label><input class=leeet type=submit value=search>
     </form>&nbsp
 {%- endblock -%}
 {% block body %}
-    {% if session.logged_in and edit is defined%}
-        <form action="{{ url_for('add_entry') }}" method=post class=add-entry>
-            <input type="hidden" name="token" value="{{ token }}">
+    {% if session.logged_in and edit is defined %}
+        <form action="{{ url_for("views.add_entry") }}" method=post class=add-entry>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input type="hidden" name="id" value="new">
             <dl>
                 <dt>Title:</dt>
@@ -52,22 +52,25 @@
             <li><h2 onclick="getEntryBody('{{ entry.id }}','{{ s }}', this)"
                     data-id="{{ entry.id }}"
                     class="header hider" data-for="{{ s }}">"{{ entry.title }}" by <a
-                    href="{{ url_for('show_user_profile', username=entry.author) }}">{{ entry.author }}</a>
-            </h2><div  id="{{ s }}" class="hiding entry tooltip" style="border:1px solid">
-                <div id="{{ s }}_text" style="word-wrap:break-word"></div>
-                {%- if session.logged_in -%}
-                    <!--logged in: yes-->
-                    {% if entry.own is defined %}
-                        <form class="add-entry">
-                            <button formaction="{{ url_for('editentries',x=entry.id) }}" class="leeet">edit</button>
-                        </form>
-                    {% endif %}
-                    <span class="tooltiptext">Tags: {{ entry.tags }}</span>
+                    href="{{ url_for("views.show_user_profile", username=entry.author) }}">{{ entry.author }}</a>
+            </h2>
+                <div id="{{ s }}" class="hiding entry tooltip" style="border:1px solid">
+                    <div id="{{ s }}_text" style="word-wrap:break-word"></div>
+                    {%- if session.logged_in -%}
+                        <!--logged in: yes-->
+                        {% if entry.own is defined %}
+                            <form class="add-entry">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button formaction="{{ url_for("views.editentries",x=entry.id) }}" class="leeet">edit</button>
+                            </form>
+                        {% endif %}
+                        <span class="tooltiptext">Tags: {{ entry.tags }}</span>
 
-                {%- endif -%}</div> </li>
+                    {%- endif -%}</div>
+            </li>
 
         {% else %}
-            <li><em>Unbelievable.  No entries here so far</em></li>
+            <li><em>Unbelievable. No entries here so far</em></li>
         {% endfor %}
     </ul>
 {% endblock %}

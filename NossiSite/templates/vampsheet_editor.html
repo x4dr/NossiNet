@@ -3,7 +3,7 @@
 {% macro chooser(name, value, max=5) -%}
     {% for count in range(1,max + 1) -%}{%- if loop.index0 > 1 and loop.index0 % 10 == 0 -%}
         <br>{%- endif -%}<input
-            style="width: 10px"  type="radio" name="{{ name }}"
+            style="width: 10px" type="radio" name="{{ name }}"
             value="{{ count|string }}" id="{{ name }}_{{ count|string }}"{% if value == count -%}
             checked {%- endif %} xmlns="http://www.w3.org/1999/html"><label ondblclick="resetDot(this.control)"
                                                                             style="user-select: none;"
@@ -95,7 +95,8 @@
     </datalist>
     <pre id="comments"></pre>
 
-    <form id="sheet" action="{{ url_for('modify_sheet') }}" method="post">
+    <form id="sheet" action="{{ url_for("views.modify_sheet") }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <table style="width: 100%">
             <tr>
                 <td colspan="6" style="text-align: center; font-size: 1.5em" class="leeet">
@@ -109,11 +110,15 @@
                 <td style="text-align: left; "><input title="Nature" style="width: 80%;" class="leet" name="Nature"
                                                       type="text" value="{{ character.Meta.Nature }}"></td>
                 <td style="text-align: right; ">Generation:</td>
-                <td style="text-align: left; "><input title="Generation" disabled style="width: 80%; border: 2px solid #003700;" name="Gen_dud" type="text" value="{{ character.Meta.Generation }}"></td>
+                <td style="text-align: left; "><input title="Generation" disabled
+                                                      style="width: 80%; border: 2px solid #003700;" name="Gen_dud"
+                                                      type="text" value="{{ character.Meta.Generation }}"></td>
             </tr>
             <tr>
                 <td style="text-align: right; ">Player:</td>
-                <td style="text-align: left; "><input title="Player" style="width: 80%;" class="leet" id="Player" name="Player" type="text" value="{{ character.Meta.Player }}"></td>
+                <td style="text-align: left; "><input title="Player" style="width: 80%;" class="leet" id="Player"
+                                                      name="Player" type="text" value="{{ character.Meta.Player }}">
+                </td>
                 <td style="text-align: right; ">Demeanor:</td>
                 <td style="text-align: left; "><input title="Demeanor" style="width: 80%;" class="leet" name="Demeanor"
                                                       type="text" value="{{ character.Meta.Demeanor }}"></td>
@@ -359,7 +364,7 @@
                                                         name="Merits">{{ character.Meta.Merits }}</textarea></td>
 
                 <td>&nbsp</td>
-                <td rowspan="999" colspan="2"><textarea title="Equipment" style="width: 90%; height:90%"  class="leeet"
+                <td rowspan="999" colspan="2"><textarea title="Equipment" style="width: 90%; height:90%" class="leeet"
                                                         name="Gear">{{ character.Meta.Gear }}</textarea></td>
 
             </tr>
@@ -419,7 +424,8 @@
     <table>
         <tr>
             <td>
-                <form action="{{ url_for('setfromsource') }}">
+                <form action="{{ url_for("extra.setfromsource") }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <label for="source_input">Dalines Link</label>
                     <input type="text" name="source" id="source_input" class="leet">
                     <input type="submit" class="leet" value="Load Character from Dalines"><br>(saves the active
@@ -428,6 +434,7 @@
             </td>
             <td>
                 <form id="checkchar" name="checkchar">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <input id="check" type="submit" class="leet bigbtn" value="CHECK">
                 </form>
 

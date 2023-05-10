@@ -16,7 +16,8 @@ window.addEventListener("load", () => {
                         method: 'POST',
                         body: JSON.stringify({"context": con, "cat": category, "sec": section, "it":item}),
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrf_token
                         }
                     });
 

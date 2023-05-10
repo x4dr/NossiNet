@@ -8,7 +8,16 @@ from typing import Tuple, List, Union
 
 import bleach
 import markdown
-from flask import render_template, request, redirect, url_for, session, flash, abort
+from flask import (
+    render_template,
+    request,
+    redirect,
+    url_for,
+    session,
+    flash,
+    abort,
+    Blueprint,
+)
 from gamepack.Dice import DescriptiveError
 from gamepack.FenCharacter import FenCharacter
 from gamepack.Item import Item
@@ -17,9 +26,8 @@ from markupsafe import Markup
 
 from NossiPack.User import User, Config
 from NossiSite import ALLOWED_TAGS
-from NossiSite.AfterResponse import AfterResponse
-from NossiSite.base import app as defaultapp, log
-from NossiSite.helpers import checktoken, checklogin, srs
+from NossiSite.base import log
+from NossiSite.helpers import checklogin, srs
 
 wikipath = Path.home() / "wiki"
 wikistamp = [0.0]
@@ -39,324 +47,330 @@ bleach.ALLOWED_ATTRIBUTES.update(
         "h5": ["id"],
     }
 )
+views = Blueprint("wiki", __name__)
 
 
-def register(app=None):
-    if app is None:
-        app = defaultapp
+@views.after_app_request
+def update(response):
+    if not wikitags.keys():
+        updatewikitags()
+    return response
 
-    AfterResponse(app)
 
-    @app.after_response
-    def update():
-        if not wikitags.keys():
-            updatewikitags()
+@views.route("/index/")
+def wiki_index():
+    r = wikindex()
+    return render_template(
+        "wikindex.html",
+        entries=[x.with_suffix("").as_posix() for x in r],
+        tags=gettags(),
+    )
 
-    @app.route("/index/")
-    def wiki_index():
-        r = wikindex()
-        return render_template(
-            "wikindex.html",
-            entries=[x.with_suffix("").as_posix() for x in r],
-            tags=gettags(),
-        )
 
-    @app.route("/bytag/<tag>")
-    def tagsearch(tag):
-        r = wikindex()
-        t = gettags()
-        r = [x for x in r if tag in t[x.stem]]
-        return render_template(
-            "wikindex.html",
-            entries=[x.with_suffix("").as_posix() for x in r],
-            tags=t,
-        )
+@views.route("/bytag/<tag>")
+def tagsearch(tag):
+    r = wikindex()
+    t = gettags()
+    r = [x for x in r if tag in t[x.stem]]
+    return render_template(
+        "wikindex.html",
+        entries=[x.with_suffix("").as_posix() for x in r],
+        tags=t,
+    )
 
-    @app.route("/wiki", methods=["GET", "POST"])
-    @app.route("/wiki/", methods=["GET", "POST"])
-    @app.route("/wiki/<path:page>", methods=["GET", "POST"])
-    def wikipage(page=None):
-        raw = request.url.endswith("/raw")
-        if raw:
-            page = page[:-4]
+
+@views.route("/wiki", methods=["GET", "POST"])
+@views.route("/wiki/", methods=["GET", "POST"])
+@views.route("/wiki/<path:page>", methods=["GET", "POST"])
+def wikipage(page=None):
+    raw = request.url.endswith("/raw")
+    if raw:
+        page = page[:-4]
+    if page is None:
+        page = request.form.get("n", None)
         if page is None:
-            page = request.form.get("n", None)
-            if page is None:
-                return wiki_index()
-            return redirect(url_for("wikipage", page=page))
-        try:
-            page = page.lower()
-            title, tags, body = wikiload(page)
-        except DescriptiveError as e:
-            if str(e.args[0]) != page + " not found in wiki.":
-                raise
-            if session.get("logged_in"):
-                entry = dict(id=0, text="", tags="", author=session.get("user"))
-                return render_template(
-                    "edit_entry.html", mode="wiki", wiki=page, entry=entry
-                )
-            flash("That page doesn't exist. Log in to create it!")
-            return redirect(url_for("wiki_index"))
-        if not raw:
-            body = bleach.clean(body)
-            body = markdown.markdown(body, extensions=["tables", "toc", "nl2br"])
-            body = fill_infolets(body, page)
+            return wiki_index()
+        return redirect(url_for("wiki.wikipage", page=page))
+    try:
+        page = page.lower()
+        title, tags, body = wikiload(page)
+    except DescriptiveError as e:
+        if str(e.args[0]) != page + " not found in wiki.":
+            raise
+        if session.get("logged_in"):
+            entry = dict(id=0, text="", tags="", author=session.get("user"))
             return render_template(
-                "wikipage.html", title=title, tags=tags, body=body, wiki=page
+                "edit_entry.html", mode="wiki", wiki=page, entry=entry
             )
-        return body, 200, {"Content-Type": "text/plain; charset=utf-8"}
-
-    @app.route("/edit/<path:x>", methods=["GET", "POST"])
-    def editwiki(x=None):
-        checklogin()
-        if request.method == "GET":
-            try:
-                author = ""
-                ident = (x,)
-                retrieve = session.get("retrieve", None)
-                if retrieve:
-                    title = retrieve["title"]
-                    text = retrieve["text"]
-                    tags = retrieve["tags"].split(" ")
-                else:
-                    try:
-                        title, tags, text = wikiload(x)
-                    except DescriptiveError:
-                        return wikipage(x)
-                entry = dict(
-                    author=author,
-                    id=ident,
-                    title=title,
-                    tags=" ".join(tags),
-                    text=text,
-                )
-                return render_template(
-                    "edit_entry.html", mode="wiki", wiki=x, entry=entry
-                )
-            except FileNotFoundError:
-                flash("entry " + str(x) + " not found.")
-        if request.method == "POST":
-            if checktoken() and request.form.get("wiki", None) is not None:
-                log.info(f"saving wiki file {request.form['wiki']}")
-                wikisave(
-                    x,
-                    session.get("user"),
-                    request.form["title"],
-                    request.form["tags"].split(" "),
-                    request.form["text"],
-                )
-                session["retrieve"] = None
-            return redirect(url_for("wikipage", page=request.form.get("wiki", None)))
-        return abort(405)
-
-    @app.route("/fensheet/<c>")
-    def fensheet(c):
-        un = session.get("user", "")
-        try:
-            time0 = time.time()
-            char = get_fen_char(c)  # get cached
-            if char is None:
-                return redirect(url_for("tagsearch", tag="character"))
-            u = User(un).configs()
-            time1 = time.time()
-            body = render_template(
-                "fensheet.html",
-                character=char,
-                context=c,
-                userconf=u,
-                infolet=infolet_filler(c),
-                md=lambda x: markdown.markdown(x, extensions=["tables", "nl2br"]),
-                extract=infolet_extractor,
-                owner=u.get("character_sheet", None)
-                if u.get("character_sheet", None) == c
-                else "",
-            )
-            time2 = time.time()
-            return body + f"<!---load: {time1 - time0} render: {time2 - time1}--->"
-        except DescriptiveError as e:
-            flash("Error with character sheet:\n" + e.args[0])
-            return redirect(url_for("showsheet", name=c))
-
-    @app.route("/costcalc/all/<costs>/<penalty>")
-    @app.route("/costcalc/all/<costs>/<penalty>/<width>")
-    @app.route("/costcalc/all")
-    def ddos(costs="0, 15, 35, 60, 100", penalty="0, 0, 0, 50, 100", width=3):
-        p = Path(costs + "-" + penalty + ".result")
-        # noinspection PyBroadException
-        try:
-            if p.exists():
-                with open(p, "r") as f:
-                    return f.read(), 200, {"Content-Type": "text/plain; charset=utf-8"}
-            start = time.time()
-            if (
-                int(costs.split(",")[-1]) * 3
-                + sum(int(x) for x in penalty.split(",")) * 3
-                > 10000
-            ):
-                raise AttributeError("just too large of a space")
-            with open(p, "w") as f:
-                res = []
-                i = 0
-                while i == 0 or not all(
-                    all(int(x) >= 5 for x in y if x) for y in res[-1][1]
-                ):
-                    r = FenCharacter.cost_calc(str(i), width)
-                    log.debug(f"Fencalc {i} {res}")
-                    if i == 0 or r != res[-1][1]:
-                        res.append([str(i), r])
-                    if time.time() - start > 30:
-                        raise TimeoutError()
-                    i += 1
-                for k, v in res:
-                    line = f"{'      '.join(', '.join(str(y) for y in x) for x in v)}"
-                    f.write(f" {k: <4}: {line} \n")
-            return "Reload please", 200, {"Content-Type": "text/plain; charset=utf-8"}
-        except Exception:
-            with open(p, "w") as f:
-                f.write("an error has previously occured and this request is blocked")
-                return (
-                    "error, this request is now blocked",
-                    200,
-                    {"Content-Type": "text/plain; charset=utf-8"},
-                )
-
-    @app.route("/costcalc/<inputstring>/<width>")
-    @app.route("/costcalc/<inputstring>")
-    def fen_calc(inputstring: str, width=3):
-        return (
-            "\n".join(
-                ", ".join(str(y) for y in line)
-                for line in FenCharacter.cost_calc(inputstring, width)
-            ),
-            200,
-            {"Content-Type": "text/plain; charset=utf-8"},
-        )
-
-    @app.route("/search/<key>", methods=["GET"])
-    def searchwiki(key: str):
-        pre = 30
-        pos = 30
-        length = len(key)
-
-        key = key.lower()
-        if not key.strip():
-            return []
-        matches = []
-        for w in wikindex():
-            title, tags, body = wikiload(w)
-            w = w.stem
-            if key in title.lower():
-                matches.append((w, title, "title"))
-            for tag in tags:
-                if key in tag.lower():
-                    matches.append((w, title, f"tag: {tag}"))
-            p = 0
-            while body[p:]:
-                m = body[p:].lower().find(key)
-                if m == -1:
-                    break
-                matches.append((w, title, f"{body[p+m-pre:p+m+pos+length]}"))
-                p += m + 1
+        flash("That page doesn't exist. Log in to create it!")
+        return redirect(url_for("wiki.wiki_index"))
+    if not raw:
+        body = bleach.clean(body)
+        body = markdown.markdown(body, extensions=["tables", "toc", "nl2br"])
+        body = fill_infolets(body, page)
         return render_template(
-            "search_results.html", results=matches, start=pre, end=pre + length
+            "wikipage.html", title=title, tags=tags, body=body, wiki=page
         )
+    return body, 200, {"Content-Type": "text/plain; charset=utf-8"}
 
-    @app.route("/live_edit", methods=["POST"])
-    def live_edit():
-        if request.is_json and (x := request.get_json()):
-            a = [
-                e
-                for e in [
-                    urllib.parse.unquote(x["cat"]),
-                    urllib.parse.unquote(x.get("sec", "")),
-                    urllib.parse.unquote(x.get("it", "")),
-                ]
-                if e
-            ]
 
-            res: str = wikiload(x["context"])[2]
-            if m := re.match(r"perc(0\.?\d*|1)", a[0]):  # percentage request
-                ratio = float(m.group(1))
-                pos = int(len(res) * ratio)
-                return {"data": res[max(0, pos - 200) : pos + 500]}
-            for seek in a[:-1]:
-                res = traverse_md(res, seek)
-            found = traverse_md(res, a[-1])
-
-            if not found:
-                found = search_tables(res, a[-1], 1)
-
-            return {"data": found}
-        # else, form was transmitted
-        x = request.form
-        context = x.get("context", None)
-        wiki = not context
-        context = context or x.get("wiki", None)
-
-        sheet_owner = Config.users_with_option_value("character_sheet", context)
-        if sheet_owner:
-            sheet_owner = sheet_owner[0][0]
-        if (not sheet_owner) or session.get("user") == sheet_owner:
-            old = x["original"].replace("\r\n", "\n")
-            new = x["new"].replace("\r\n", "\n")
-            if not old == new:
-                log.info("livereplacing " + context)
-                title, tags, body = wikiload(context)
-                body = body.replace("\r\n", "\n")
-                if old not in body:
-                    if old[:-1] in body:
-                        old = old[:-1]
-                    else:
-                        log.error("live replace didn't match " + context)
-                body = body.replace(old, new, 1)
-                wikisave(context, session.get("user"), title, tags, body)
+@views.route("/edit/<path:x>", methods=["GET", "POST"])
+def editwiki(x=None):
+    checklogin()
+    if request.method == "GET":
+        try:
+            author = ""
+            ident = (x,)
+            retrieve = session.get("retrieve", None)
+            if retrieve:
+                title = retrieve["title"]
+                text = retrieve["text"]
+                tags = retrieve["tags"].split(" ")
             else:
-                log.info("rejected empty replace " + context)
-        else:
-            flash("Unauthorized, so ... no.", "error")
-        if not wiki:
-            return redirect(url_for("fensheet", c=context))
-        else:
-            return redirect(url_for("wikipage", page=context))
-
-    @app.route("/q/<a>")
-    @app.route("/q/<a>/raw")
-    @app.route("/specific/<a>")
-    @app.route("/specific/<a>/raw")
-    def specific(a: str, parse_md=None):
-        parse_md = not request.url.endswith("/raw") if parse_md is None else parse_md
-        a = a.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
-        a = a.split(":")
-        if a[-1] == "-":
-            a = a[:-1]
-            hide_headline = 1
-        else:
-            hide_headline = 0
-
-        article: str = wikiload(a[0])[-1]
-        for seek in a[1:]:
-            article = traverse_md(article, seek)
-        if not article:
-            return "not found", 404
-        else:
-            article = article[article.find("\n") * hide_headline :]
-        if parse_md:
-            return Markup(
-                markdown.markdown(article, extensions=["tables", "toc", "nl2br"])
+                try:
+                    title, tags, text = wikiload(x)
+                except DescriptiveError:
+                    return wikipage(x)
+            entry = dict(
+                author=author,
+                id=ident,
+                title=title,
+                tags=" ".join(tags),
+                text=text,
             )
-        return article
+            return render_template("edit_entry.html", mode="wiki", wiki=x, entry=entry)
+        except FileNotFoundError:
+            flash("entry " + str(x) + " not found.")
+    if request.method == "POST":
+        if request.form.get("wiki", None) is not None:
+            log.info(f"saving wiki file {request.form['wiki']}")
+            wikisave(
+                x,
+                session.get("user"),
+                request.form["title"],
+                request.form["tags"].split(" "),
+                request.form["text"],
+            )
+            session["retrieve"] = None
+        return redirect(url_for("wiki.wikipage", page=request.form.get("wiki", None)))
+    return abort(405)
 
-    def infolet_filler(context):
-        def wrap(s):
-            return fill_infolets(str(s), context)
 
-        return wrap
+@views.route("/fensheet/<c>")
+def fensheet(c):
+    un = session.get("user", "")
+    try:
+        time0 = time.time()
+        char = get_fen_char(c)  # get cached
+        if char is None:
+            return redirect(url_for("wiki.tagsearch", tag="character"))
+        u = User(un).configs()
+        time1 = time.time()
+        body = render_template(
+            "fensheet.html",
+            character=char,
+            context=c,
+            userconf=u,
+            infolet=infolet_filler(c),
+            md=lambda x: markdown.markdown(x, extensions=["tables", "nl2br"]),
+            extract=infolet_extractor,
+            owner=u.get("character_sheet", None)
+            if u.get("character_sheet", None) == c
+            else "",
+        )
+        time2 = time.time()
+        return body + f"<!---load: {time1 - time0} render: {time2 - time1}--->"
+    except DescriptiveError as e:
+        flash("Error with character sheet:\n" + e.args[0])
+        return redirect(url_for("views.showsheet", name=c))
 
-    def infolet_extractor(x):
-        m = hiddeninfos.match(str(x))
-        if not m:
-            return str(x)
-        return m.group("name")
+
+@views.route("/costcalc/all/<costs>/<penalty>")
+@views.route("/costcalc/all/<costs>/<penalty>/<width>")
+@views.route("/costcalc/all")
+def ddos(costs="0, 15, 35, 60, 100", penalty="0, 0, 0, 50, 100", width=3):
+    # filter costs and penalty to not include path traversal
+    costs = ",".join(str(int(x)) for x in costs.split(",") if int(x) >= 0)
+    penalty = ",".join(str(int(x)) for x in penalty.split(",") if int(x) >= 0)
+    p = Path(costs + "-" + penalty + ".result")
+    # noinspection PyBroadException
+    try:
+        if p.exists():
+            with open(p, "r") as f:
+                return f.read(), 200, {"Content-Type": "text/plain; charset=utf-8"}
+        start = time.time()
+        if (
+            int(costs.split(",")[-1]) * 3 + sum(int(x) for x in penalty.split(",")) * 3
+            > 10000
+        ):
+            raise AttributeError("just too large of a space")
+        with open(p, "w") as f:
+            res = []
+            i = 0
+            while i == 0 or not all(
+                all(int(x) >= 5 for x in y if x) for y in res[-1][1]
+            ):
+                r = FenCharacter.cost_calc(str(i), width)
+                log.debug(f"Fencalc {i} {res}")
+                if i == 0 or r != res[-1][1]:
+                    res.append([str(i), r])
+                if time.time() - start > 30:
+                    raise TimeoutError()
+                i += 1
+            for k, v in res:
+                line = f"{'      '.join(', '.join(str(y) for y in x) for x in v)}"
+                f.write(f" {k: <4}: {line} \n")
+        return "Reload please", 200, {"Content-Type": "text/plain; charset=utf-8"}
+    except Exception:
+        with open(p, "w") as f:
+            f.write("an error has previously occured and this request is blocked")
+            return (
+                "error, this request is now blocked",
+                200,
+                {"Content-Type": "text/plain; charset=utf-8"},
+            )
+
+
+@views.route("/costcalc/<inputstring>/<width>")
+@views.route("/costcalc/<inputstring>")
+def fen_calc(inputstring: str, width=3):
+    return (
+        "\n".join(
+            ", ".join(str(y) for y in line)
+            for line in FenCharacter.cost_calc(inputstring, width)
+        ),
+        200,
+        {"Content-Type": "text/plain; charset=utf-8"},
+    )
+
+
+@views.route("/search", methods=["GET"])
+def searchwiki():
+    pre = 30
+    pos = 30
+    key = request.args.get("s", "")
+    key = key.lower()
+    if not key.strip():
+        return []
+    matches = []
+    length = len(key)
+    for w in wikindex():
+        title, tags, body = wikiload(w)
+        w = w.stem
+        if key in title.lower():
+            matches.append((w, title, "title"))
+        for tag in tags:
+            if key in tag.lower():
+                matches.append((w, title, f"tag: {tag}"))
+        p = 0
+        while body[p:]:
+            m = body[p:].lower().find(key)
+            if m == -1:
+                break
+            matches.append((w, title, f"{body[max(p+m-pre,0):p+m+pos+length]}"))
+            p += m + 1
+    return render_template(
+        "search_results.html", results=matches, start=pre, end=pre + length
+    )
+
+
+@views.route("/live_edit", methods=["POST"])
+def live_edit():
+    if request.is_json and (x := request.get_json()):
+        a = [
+            e
+            for e in [
+                urllib.parse.unquote(x["cat"]),
+                urllib.parse.unquote(x.get("sec", "")),
+                urllib.parse.unquote(x.get("it", "")),
+            ]
+            if e
+        ]
+
+        res: str = wikiload(x["context"])[2]
+        if m := re.match(r"perc(0\.?\d*|1)", a[0]):  # percentage request
+            ratio = float(m.group(1))
+            pos = int(len(res) * ratio)
+            return {"data": res[max(0, pos - 200) : pos + 500]}
+        for seek in a[:-1]:
+            res = traverse_md(res, seek)
+        found = traverse_md(res, a[-1])
+
+        if not found:
+            found = search_tables(res, a[-1], 1)
+
+        return {"data": found}
+    # else, form was transmitted
+    x = request.form
+    context = x.get("context", None)
+    wiki = not context
+    context = context or x.get("wiki", None)
+
+    sheet_owner = Config.users_with_option_value("character_sheet", context)
+    if sheet_owner:
+        sheet_owner = sheet_owner[0][0]
+    if (not sheet_owner) or session.get("user") == sheet_owner:
+        old = x["original"].replace("\r\n", "\n")
+        new = x["new"].replace("\r\n", "\n")
+        if not old == new:
+            log.info("livereplacing " + context)
+            title, tags, body = wikiload(context)
+            body = body.replace("\r\n", "\n")
+            if old not in body:
+                if old[:-1] in body:
+                    old = old[:-1]
+                else:
+                    log.error("live replace didn't match " + context)
+            body = body.replace(old, new, 1)
+            wikisave(context, session.get("user"), title, tags, body)
+        else:
+            log.info("rejected empty replace " + context)
+    else:
+        flash("Unauthorized, so ... no.", "error")
+    if not wiki:
+        return redirect(url_for("wiki.fensheet", c=context))
+    else:
+        return redirect(url_for("wiki.wikipage", page=context))
+
+
+@views.route("/q/<a>")
+@views.route("/q/<a>/raw")
+@views.route("/specific/<a>")
+@views.route("/specific/<a>/raw")
+def specific(a: str, parse_md=None):
+    parse_md = not request.url.endswith("/raw") if parse_md is None else parse_md
+    a = a.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
+    a = a.split(":")
+    if a[-1] == "-":
+        a = a[:-1]
+        hide_headline = 1
+    else:
+        hide_headline = 0
+
+    article: str = wikiload(a[0])[-1]
+    for seek in a[1:]:
+        article = traverse_md(article, seek)
+    if not article:
+        return "not found", 404
+    else:
+        article = article[article.find("\n") * hide_headline :]
+    if parse_md:
+        return Markup(markdown.markdown(article, extensions=["tables", "toc", "nl2br"]))
+    return article
+
+
+def infolet_filler(context):
+    def wrap(s):
+        return fill_infolets(str(s), context)
+
+    return wrap
+
+
+def infolet_extractor(x):
+    m = hiddeninfos.match(str(x))
+    if not m:
+        return str(x)
+    return m.group("name")
 
 
 def weaponadd(weapon_damage_array, b, ind=0):

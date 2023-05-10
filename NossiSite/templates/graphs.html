@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block body %}
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.bundle.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='graph.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename='graph.css') }}">
     <label class="switch"  onclick="window.dataChart.updatevalues()">
         <input type="checkbox" id="Highest">
         <span class="slider"></span>
@@ -141,7 +141,7 @@ window.dataChart.updatevalues()">
 
 
         window.addEventListener("load", async () => {
-            await fetch("{{url_for('static', filename='graphdata.json')}}").then(r => r.json()).then(json => {
+            await fetch("{{url_for("static", filename='graphdata.json')}}").then(r => r.json()).then(json => {
                 window.values = json;
                 console.log("data received!" + window.values["Hash"]);
                 window.dataChart.updatevalues(true);
@@ -210,7 +210,7 @@ window.dataChart.updatevalues()">
                 });
                 document.addEventListener('keydown', function () {
                     console.log("loading data");
-                    fetch("{{ url_for('static', filename='graphdata.json')}}").then(json => {
+                    fetch("{{ url_for("static", filename='graphdata.json')}}").then(json => {
                         window.values = json;
                         console.log("data received!" + window.values["Hash"]);
                         window.dataChart.updatevalues(true);

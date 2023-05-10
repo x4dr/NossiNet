@@ -11,3 +11,5 @@
 /.coverage
 /*.result
 /*.gz
+/tests/NN.db
+/tests/logs/

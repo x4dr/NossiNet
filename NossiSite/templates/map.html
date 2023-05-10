@@ -80,13 +80,13 @@
             //mapsvg.addEventListener("mouseenter", mapIn);
             //mapsvg.addEventListener("mouseleave", mapOut);
             console.log("adding");
-            $.getJSON("{{ url_for("mapdata") }}",{}).done(function (mapdata) {
+            $.getJSON("{{ url_for("views.mapdata") }}",{}).done(function (mapdata) {
                 let i;
                 const svgDoc = mapsvg.contentDocument;
                 plzs = svgDoc.getElementsByClassName("plz");
                 console.log("plzlength:", plzs.length);
                 console.log("mapdata:", mapdata.keys);
-                console.log("from:", "{{ url_for("mapdata") }}");
+                console.log("from:", "{{ url_for("views.mapdata") }}");
                 for (i = 0; i < plzs.length; i++) {
 
                     const plz = plzs.item(i);

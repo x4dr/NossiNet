@@ -32,7 +32,7 @@
     let x, y, row, col;
     let svg = document.getElementById('s');
     let radius = 30;
-    $.getJSON('{{ url_for("boardgamemap",size=size,seed=seed) }}', function(data) {
+    $.getJSON('{{ url_for("extra.boardgamemap",size=size,seed=seed) }}', function(data) {
         //data is the JSON string
 
         let board = data["board"];

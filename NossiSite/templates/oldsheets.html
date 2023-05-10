@@ -9,7 +9,7 @@
             </tr>
             {% for foo in oldsheets %}
                 <tr>
-                    <td style="text-wrap: avoid"><a href="{{ url_for('showoldsheets', x=foo[0]) }}">{{ foo[2]['Name'] }}
+                    <td style="text-wrap: avoid"><a href="{{ url_for("views.showoldsheets", x=foo[0]) }}">{{ foo[2]['Name'] }}
                         <br/>{{ foo[1] }}</a><br></td>
                     <td style="text-align: right">
                         <div style="text-align: right">
@@ -23,8 +23,8 @@
     {% endif %}
     {%- if summon -%}
         <div>
-            <form action="{{ url_for('claim_sheet') }}" method=post>
-                <input type="hidden" name="token" value="{{ token }}"/>
+            <form action="{{ url_for("views.claim_sheet") }}" method=post>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <label>
                     <input class="leeet" type="text" name="sheetnum" value="{{ summon }}"/>
                 </label>

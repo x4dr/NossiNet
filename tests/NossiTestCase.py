@@ -2,6 +2,7 @@ from pathlib import Path
 
 from flask import Flask, url_for
 from flask_testing import TestCase
+from flask_wtf import CSRFProtect
 
 from Data import close_db
 from NossiSite import views, wiki, extra, webhook, helpers
@@ -20,11 +21,13 @@ class NossiTestCase(TestCase):
     def create_app(self):
         close_db()  # might be open
         app = Flask(__name__)
-        views.register(app)
-        wiki.register(app)
-        extra.register(app)
+        app.register_blueprint(views.views)
+        app.register_blueprint(wiki.views)
+        app.register_blueprint(extra.views)
         webhook.register(app)
         helpers.register(app)
+        CSRFProtect(app)
+        app.config["WTF_CSRF_ENABLED"] = False
         app.url_build_error_handlers.append(lambda a, b, c: "404")
         app.template_folder = "../NossiSite/templates"
         app.config["TESTING"] = True
@@ -45,11 +48,11 @@ class NossiTestCase(TestCase):
     def register(self):
         # register with mock
         return self.app.test_client().post(
-            url_for("register_user"), data=self.logindata, follow_redirects=True
+            url_for("views.register_user"), data=self.logindata, follow_redirects=True
         )
 
     def register_login(self):
         tc = self.app.test_client()
-        tc.post(url_for("register_user"), data=self.logindata)
-        tc.post(url_for("login"), data=self.logindata)
+        tc.post(url_for("views.register_user"), data=self.logindata)
+        tc.post(url_for("views.login"), data=self.logindata)
         return tc
