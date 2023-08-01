@@ -11,6 +11,13 @@
         <label for="searchterm">Search Term</label><input type="text" id="searchterm" name="s" class="leet">
         <input type="submit" id="searchbutton" value="search" class="leet">
     </form>
+    <div style="margin-bottom: 10px;">
+        <h2>Subcategories</h2>
+            {% for m in subdirs %}
+                <a href="{{ url_for("wiki.wiki_index", path=m) }}"> {{ m }}</a> |
+            {% endfor %}
+    </div>
+    <h2>Sites</h2>
     <table>
         <thead>
         <tr>

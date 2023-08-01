@@ -4,7 +4,7 @@ import time
 import urllib.parse
 from pathlib import Path
 from re import Match
-from typing import Tuple, List, Union
+from typing import List, Union
 
 import bleach
 import markdown
@@ -25,6 +25,7 @@ from gamepack.MDPack import traverse_md, search_tables, MDObj
 from markupsafe import Markup
 
 from NossiPack.User import User, Config
+from NossiPack.WikiPage import WikiPage
 from NossiSite import ALLOWED_TAGS
 from NossiSite.base import log
 from NossiSite.helpers import checklogin, srs
@@ -57,12 +58,19 @@ def update(response):
     return response
 
 
+@views.route("/index/<path:dir>")
 @views.route("/index/")
-def wiki_index():
+def wiki_index(path="."):
     r = wikindex()
+    path = Path(path)
     return render_template(
         "wikindex.html",
-        entries=[x.with_suffix("").as_posix() for x in r],
+        subdirs=[
+            x.stem
+            for x in wikipath.iterdir()
+            if x.is_dir() and not x.stem.startswith(".")
+        ],
+        entries=[x.with_suffix("").as_posix() for x in r if x.parent == path],
         tags=gettags(),
     )
 
@@ -91,11 +99,18 @@ def wikipage(page=None):
         if page is None:
             return wiki_index()
         return redirect(url_for("wiki.wikipage", page=page))
+
     try:
         page = page.lower()
-        title, tags, body = wikiload(page)
-    except DescriptiveError as e:
-        if str(e.args[0]) != page + " not found in wiki.":
+        p = wikilocate(page)
+        if p != page:
+            return redirect(url_for("wiki.wikipage", page=p))
+        loaded_page = wikiload(page)
+    except (DescriptiveError, FileNotFoundError) as e:
+        if (
+            isinstance(e, DescriptiveError)
+            and str(e.args[0]) != page + " not found in wiki."
+        ):
             raise
         if session.get("logged_in"):
             entry = dict(id=0, text="", tags="", author=session.get("user"))
@@ -105,51 +120,69 @@ def wikipage(page=None):
         flash("That page doesn't exist. Log in to create it!")
         return redirect(url_for("wiki.wiki_index"))
     if not raw:
-        body = bleach.clean(body)
+        body = bleach.clean(loaded_page.body)
         body = markdown.markdown(body, extensions=["tables", "toc", "nl2br"])
         body = fill_infolets(body, page)
         return render_template(
-            "wikipage.html", title=title, tags=tags, body=body, wiki=page
+            "wikipage.html",
+            title=loaded_page.title,
+            tags=loaded_page.tags,
+            body=body,
+            wiki=page,
         )
-    return body, 200, {"Content-Type": "text/plain; charset=utf-8"}
+    return loaded_page.body, 200, {"Content-Type": "text/plain; charset=utf-8"}
 
 
-@views.route("/edit/<path:x>", methods=["GET", "POST"])
-def editwiki(x=None):
+@views.route("/edit/<path:page>", methods=["GET", "POST"])
+def editwiki(page=None):
+    page = page.lower()
+    p = wikilocate(page)
+    if p != page:
+        return redirect(url_for("wiki.wikipage", page=p))
     checklogin()
     if request.method == "GET":
         try:
             author = ""
-            ident = (x,)
+            ident = (page,)
             retrieve = session.get("retrieve", None)
             if retrieve:
-                title = retrieve["title"]
-                text = retrieve["text"]
-                tags = retrieve["tags"].split(" ")
+                loaded_page = WikiPage(
+                    retrieve["title"], retrieve["tags"].split(" "), retrieve["text"], []
+                )
             else:
                 try:
-                    title, tags, text = wikiload(x)
+                    loaded_page = wikiload(page)
                 except DescriptiveError:
-                    return wikipage(x)
+                    return wikipage(page)
             entry = dict(
                 author=author,
                 id=ident,
-                title=title,
-                tags=" ".join(tags),
-                text=text,
+                title=loaded_page.title,
+                tags=" ".join(loaded_page.tags),
+                text=loaded_page.body,
             )
-            return render_template("edit_entry.html", mode="wiki", wiki=x, entry=entry)
+            return render_template(
+                "edit_entry.html", mode="wiki", wiki=page, entry=entry
+            )
         except FileNotFoundError:
-            flash("entry " + str(x) + " not found.")
+            flash("entry " + str(page) + " not found.")
     if request.method == "POST":
         if request.form.get("wiki", None) is not None:
             log.info(f"saving wiki file {request.form['wiki']}")
+
+            try:
+                meta = wikiload(page).meta
+            except DescriptiveError:
+                meta = []
             wikisave(
-                x,
+                page,
                 session.get("user"),
-                request.form["title"],
-                request.form["tags"].split(" "),
-                request.form["text"],
+                WikiPage(
+                    request.form["title"],
+                    request.form["tags"].split(" "),
+                    request.form["text"],
+                    meta,
+                ),
             )
             session["retrieve"] = None
         return redirect(url_for("wiki.wikipage", page=request.form.get("wiki", None)))
@@ -255,19 +288,25 @@ def searchwiki():
     matches = []
     length = len(key)
     for w in wikindex():
-        title, tags, body = wikiload(w)
+        loaded_page = wikiload(w)
         w = w.stem
-        if key in title.lower():
-            matches.append((w, title, "title"))
-        for tag in tags:
+        if key in loaded_page.title.lower():
+            matches.append((w, loaded_page.title, "title"))
+        for tag in loaded_page.tags:
             if key in tag.lower():
-                matches.append((w, title, f"tag: {tag}"))
+                matches.append((w, loaded_page.title, f"tag: {tag}"))
         p = 0
-        while body[p:]:
-            m = body[p:].lower().find(key)
+        while loaded_page.body[p:]:
+            m = loaded_page.body[p:].lower().find(key)
             if m == -1:
                 break
-            matches.append((w, title, f"{body[max(p+m-pre,0):p+m+pos+length]}"))
+            matches.append(
+                (
+                    w,
+                    loaded_page.title,
+                    f"{loaded_page.body[max(p+m-pre,0):p+m+pos+length]}",
+                )
+            )
             p += m + 1
     return render_template(
         "search_results.html", results=matches, start=pre, end=pre + length
@@ -287,7 +326,7 @@ def live_edit():
             if e
         ]
 
-        res: str = wikiload(x["context"])[2]
+        res: str = wikiload(x["context"]).body
         if m := re.match(r"perc(0\.?\d*|1)", a[0]):  # percentage request
             ratio = float(m.group(1))
             pos = int(len(res) * ratio)
@@ -313,16 +352,17 @@ def live_edit():
         old = x["original"].replace("\r\n", "\n")
         new = x["new"].replace("\r\n", "\n")
         if not old == new:
+            context = wikilocate(context)
             log.info("livereplacing " + context)
-            title, tags, body = wikiload(context)
-            body = body.replace("\r\n", "\n")
-            if old not in body:
-                if old[:-1] in body:
+            page = wikiload(context)
+            page.body = page.body.replace("\r\n", "\n")
+            if old not in page.body:
+                if old[:-1] in page.body:
                     old = old[:-1]
                 else:
                     log.error("live replace didn't match " + context)
-            body = body.replace(old, new, 1)
-            wikisave(context, session.get("user"), title, tags, body)
+            page.body = page.body.replace(old, new, 1)
+            wikisave(context, session.get("user"), page)
         else:
             log.info("rejected empty replace " + context)
     else:
@@ -347,7 +387,7 @@ def specific(a: str, parse_md=None):
     else:
         hide_headline = 0
 
-    article: str = wikiload(a[0])[-1]
+    article: str = wikiload(a[0]).body
     for seek in a[1:]:
         article = traverse_md(article, seek)
     if not article:
@@ -414,7 +454,7 @@ def get_info(info_context):
                         article = recursive_traverse(
                             wikiload(
                                 context_attempt,
-                            )[2],
+                            ).body,
                             a,
                         )
                         if article:
@@ -428,7 +468,7 @@ def get_info(info_context):
                 else:
                     context = info_context
             else:
-                article = recursive_traverse(wikiload(a[0])[2], a)
+                article = recursive_traverse(wikiload(a[0]).body, a)
                 context = a[0]
         except DescriptiveError as e:
             flash(e.args[0])
@@ -502,7 +542,26 @@ def fill_infolets(body, context):
     return headers.sub(headerfix, body)
 
 
-def wikiload(page: Union[str, Path]) -> Tuple[str, List[str], str]:
+def wikilocate(page: [str | Path]) -> str:
+    """
+    finds page in wiki
+    :param page: name of page
+    :return: path to page
+    """
+    if isinstance(page, Path):
+        page = page.stem
+    if page.endswith(".md"):
+        page = page[:-3]
+    p = next(wikipath.rglob(page + ".md"), None)
+    if not p:
+        raise FileNotFoundError()
+    p = p.relative_to(wikipath).as_posix()
+    if p.endswith(".md"):
+        p = p[:-3]
+    return p
+
+
+def wikiload(page: [str | Path]) -> WikiPage:
     """
     loads page from wiki
     :param page: name of page
@@ -512,43 +571,57 @@ def wikiload(page: Union[str, Path]) -> Tuple[str, List[str], str]:
     if res is not None:
         return res
     try:
-        if isinstance(page, str):
-            p = wikipath / (page + ".md")
-        else:
-            p = wikipath / page.with_suffix(".md")
+        p = wikipath / (wikilocate(page) + ".md")
         with p.open() as f:
-            mode = "meta"
+            mode = "init"
             title = ""
             tags = []
             body = ""
+            meta = []
             for line in f.readlines():
+                if mode == "init" and line.strip().startswith("---"):
+                    mode = "preamble"
+                    continue
                 if mode and line.startswith("tags:"):
                     tags += [t for t in line.strip("tags:").strip().split(" ") if t]
                     continue
                 if mode and line.startswith("title:"):
                     title = line.strip("title:").strip()
                     continue
-                if mode and not line.strip():
+                if mode == "meta" and not line.strip():
                     mode = ""
+                    continue
+                if mode == "preamble":
+                    if line.strip().startswith("---"):
+                        mode = ""
+                        continue
+                    meta.append(line.strip())
+                    continue
                 body += line
-            page_cache[page] = title, tags, body
-            return title, tags, body
+            loaded_page = WikiPage(title, tags, body, meta)
+            page_cache[page] = loaded_page
+            return loaded_page
     except FileNotFoundError:
-        raise DescriptiveError(page + " not found in wiki.")
+        raise DescriptiveError(str(page) + " not found in wiki.")
 
 
-def wikisave(page, author, title, tags, body):
-    print(f"saving {page} ...")
-    with (wikipath / (page + ".md")).open("w+") as f:
-        f.write("title: " + title + "  \n")
-        f.write("tags: " + " ".join(tags) + "  \n")
-        f.write(body.replace("\r", ""))
+def wikisave(name: str, author, page):
+    name = wikilocate(name)
+    print(f"saving {name} ...")
+    with (wikipath / (name + ".md")).open("w+") as f:
+        f.write("---\n")
+        f.write("title: " + page.title + "  \n")
+        f.write("tags: " + " ".join(page.tags) + "  \n")
+        for x in page.meta:
+            f.write(x + "\n")
+        f.write("---\n")
+        f.write(page.body.replace("\r", ""))
     with (wikipath / "control").open("a+") as h:
-        h.write(page + " edited by " + author + "\n")
+        h.write(name + " edited by " + author + "\n")
     with (wikipath / "control").open("r") as f:
         print((wikipath / "control").as_posix() + "control", ":", f.read())
     os.system(os.path.expanduser("~/") + "bin/wikiupdate & ")
-    cacheclear(page)
+    cacheclear(name)
 
 
 def cacheclear(page):
@@ -578,7 +651,7 @@ def updatewikitags():
     print(f"it has been {dt} since the last wiki indexing")
     wikistamp[0] = time.time()
     for m in wikindex():
-        wikitags[m.stem] = wikiload(m)[1]
+        wikitags[m.stem] = wikiload(m).tags
     refresh_cache()
     print("index took: " + str(1000 * (time.time() - wikistamp[0])) + " milliseconds")
 
@@ -589,7 +662,7 @@ def get_fen_char(c: str) -> Union[FenCharacter, None]:
         return char
     try:
         page = wikiload(c)
-        char = FenCharacter.from_md(bleach.clean(page[2]))
+        char = FenCharacter.from_md(bleach.clean(page.body))
         chara_objects[c] = char
         chara_objects["last"] = char
         return char
@@ -621,7 +694,7 @@ def refresh_cache(page=""):
         del page_cache[key]
     item_cache_candidate = [
         Item.process_table(x, lambda x: log.info("Prices Processing: " + str(x)))[0]
-        for x in MDObj.from_md(wikiload("prices")[2]).tables
+        for x in MDObj.from_md(wikiload("prices").body).tables
     ]
     Item.item_cache = {
         y.name: y for processed_table in item_cache_candidate for y in processed_table
@@ -631,7 +704,7 @@ def refresh_cache(page=""):
             y.name: y
             for processed_table in [
                 Item.process_table(x, lambda x: log.info("Items Processing: " + str(x)))
-                for x in MDObj.from_md(wikiload("items")[2]).tables
+                for x in MDObj.from_md(wikiload("items").body).tables
             ]
             for y in processed_table
         }
@@ -644,7 +717,7 @@ def refresh_cache(page=""):
 
 def spells(page):
     result = None
-    for spell in traverse_md(wikiload(page)[2], "Zauber").split("###"):
+    for spell in traverse_md(wikiload(page).body, "Zauber").split("###"):
         if result is None:
             result = {}  # skips section before first spell
             continue
@@ -682,7 +755,7 @@ def spells(page):
 
 def transitions(page, current=None):
     result = None
-    for trans in traverse_md(wikiload(page)[2], "Übergänge").split("###"):
+    for trans in traverse_md(wikiload(page).body, "Übergänge").split("###"):
         if result is None:
             result = {}  # skips section before first transition
             continue

@@ -35,7 +35,7 @@
 {% endblock %}
 
 {% block body %}
-    <a href="{{ url_for("wiki.editwiki", x=wiki) }}"><input type="button" class="leeet" style="margin-bottom: 1em"
+    <a href="{{ url_for("wiki.editwiki", page=wiki) }}"><input type="button" class="leeet" style="margin-bottom: 1em"
 
                                                        value="Edit"></a><br/>
     <div class="wiki editeable" id="wikibody" style="word-wrap:break-word;border:1px solid">{{ body|safe }}
@@ -47,7 +47,7 @@
         {% endfor %}
         <br>
     </div>
-    <a href="{{ url_for("wiki.editwiki", x=wiki) }}"><input type="button" class="leeet" style="margin-bottom: 1em"
+    <a href="{{ url_for("wiki.editwiki", page=wiki) }}"><input type="button" class="leeet" style="margin-bottom: 1em"
                                                        value="Edit"></a><br/>
     <div>
         <button id="TopButton" title="Upwards">Top</button>

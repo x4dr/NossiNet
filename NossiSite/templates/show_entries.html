@@ -3,18 +3,7 @@
     {% for headstate in heads %}
         {{ headstate|safe }}
     {% endfor %}
-    <script>
-        async function getEntryBody(entryid, textid, sender) {
-            sender.onclick = null;
-            let target = document.getElementById(textid + "_text");
-            if (target.innerHTML !== "") {
-                console.log("aborted load of " + entryid)
-                return true
-            }
-            let e = await fetch("{{ url_for("views.get_entry")}}/" + entryid).then(reply => reply.json());
-            target.innerHTML = e.text;
-        }
-    </script>
+    <script src="https://unpkg.com/htmx.org@1.9.3" integrity="sha384-lVb3Rd/Ca0AxaoZg5sACe8FJKF0tnUgR2Kd7ehUOG5GCcROv5uBIZsOqovBAcWua" crossorigin="anonymous"></script>
 {% endblock %}
 {%- block metanav -%}
     <form action="{{ url_for("views.update_filter") }}" method=post class="add-entry metanav" style="display:inline">
@@ -49,15 +38,13 @@
     <ul class=entries>
         {% for entry in entries %}
             {% set s = srs() %}
-            <li><h2 onclick="getEntryBody('{{ entry.id }}','{{ s }}', this)"
-                    data-id="{{ entry.id }}"
+            <li><h2 data-id="{{ entry.id }}"
                     class="header hider" data-for="{{ s }}">"{{ entry.title }}" by <a
                     href="{{ url_for("views.show_user_profile", username=entry.author) }}">{{ entry.author }}</a>
             </h2>
-                <div id="{{ s }}" class="hiding entry tooltip" style="border:1px solid">
-                    <div id="{{ s }}_text" style="word-wrap:break-word"></div>
+                <div id="{{ s }}" class="hiding entry tooltip" style="border:1px solid"><div id="{{ s }}_text" style="word-wrap:break-word"
+                    hx-get="{{ url_for("views.entry_text", x=entry.id)}}" hx-trigger="revealed" hx-swap="outerHTML"></div>
                     {%- if session.logged_in -%}
-                        <!--logged in: yes-->
                         {% if entry.own is defined %}
                             <form class="add-entry">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>

@@ -60,6 +60,16 @@ def get_entry(x=None):
     return e
 
 
+@views.route("/entry_text/<x>")
+def entry_text(x):
+    if not x:
+        return {}
+    db = connect_db("entrybyid")
+    e = db.execute("SELECT text FROM entries WHERE id = ?", [x]).fetchone()
+
+    return e[0]
+
+
 @views.route("/")
 def show_entries():
     db = connect_db("main")

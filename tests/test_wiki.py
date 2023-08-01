@@ -13,6 +13,7 @@ from gamepack.MDPack import (
     table_row_edit,
 )
 import Data
+from NossiPack.WikiPage import WikiPage
 from NossiSite import helpers
 from NossiSite.wiki import wikisave, fill_infolets
 from tests.NossiTestCase import NossiTestCase
@@ -34,10 +35,13 @@ class TestViews(NossiTestCase):
         wikisave(
             "unittest",
             "",
-            "",
-            "character",
-            "#Layer1\n##layer2\n###layer3\ntext\n###layer 3 again\n"
-            "more text\n##some more layer 2\n a|b\n--|--\nc|d\n but what about THIS\n###finalthird\nfinal text\n",
+            WikiPage(
+                "unittest",
+                ["character"],
+                "#Layer1\n##layer2\n###layer3\ntext\n###layer 3 again\n"
+                "more text\n##some more layer 2\n a|b\n--|--\nc|d\n but what about THIS\n\n###finalthird\nfinal text\n",
+                [],
+            ),
         )
         self.render_templates = False
         app = self.create_app()

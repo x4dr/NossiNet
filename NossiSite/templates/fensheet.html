@@ -125,7 +125,7 @@
 {%- endblock -%}
 
 {%- block body -%}
-    {% if owner %}<a href="{{ url_for("wiki.editwiki", x=owner) }}"><input type="button" class="leeet" value="Edit"></a><br/>
+    {% if owner %}<a href="{{ url_for("wiki.editwiki", page=owner) }}"><input type="button" class="leeet" value="Edit"></a><br/>
     {% endif %}
     <div style="visibility: hidden" id="context_element">{{ context }}</div>
 
@@ -160,7 +160,7 @@
         </div>
     {%- endfor -%}
     <div><button id="TopButton" title="Upwards">Top</button></div>
-    {% if owner %}<a href="{{ url_for("wiki.editwiki", x=owner) }}"><input type="button" class="leeet"  value="Edit"></a><br/>
+    {% if owner %}<a href="{{ url_for("wiki.editwiki", page=owner) }}"><input type="button" class="leeet"  value="Edit"></a><br/>
     {% endif %}
     <div id="editfield" class="editfield">
         <form id="editform" action="{{ url_for("wiki.live_edit") }}" method="post">

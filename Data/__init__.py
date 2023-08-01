@@ -30,7 +30,7 @@ def connect_db(source) -> sqlite3.Connection:
     if not Path(dbpath).exists():
         Path(dbpath).touch()
         init_db()
-    g["db"] = sqlite3.connect(dbpath)
+    g["db"] = sqlite3.connect(dbpath, check_same_thread=False)
     return g["db"]
 
 
