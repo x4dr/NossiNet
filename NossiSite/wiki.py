@@ -791,7 +791,9 @@ def updatewikicache():
     tags = {}
     links = {}
     for m in wikindex():
-        if m in wikicache["tags"] and m in wikicache["links"]:
+        if m.as_posix() in wikicache.get("tags", "") and m.as_posix() in wikicache.get(
+            "links", ""
+        ):
             continue
         p = wikiload(m)
         canonical_name = m.as_posix().replace(m.name, m.stem)

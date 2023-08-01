@@ -2,6 +2,7 @@ from pathlib import Path
 from unittest import mock
 
 from flask import url_for
+from gamepack.Dice import DescriptiveError
 from gamepack.FenCharacter import FenCharacter
 from gamepack.Item import fenconvert, fendeconvert
 from gamepack.MDPack import (
@@ -32,17 +33,24 @@ class TestViews(NossiTestCase):
             print(c.get(url_for("wiki.wiki_index")))
 
     def test_ewparsing(self):
-        wikisave(
-            "unittest",
-            "",
-            WikiPage(
+        x = None
+        try:
+            wikisave(
                 "unittest",
-                ["character"],
-                "#Layer1\n##layer2\n###layer3\ntext\n###layer 3 again\n"
-                "more text\n##some more layer 2\n a|b\n--|--\nc|d\n but what about THIS\n\n###finalthird\nfinal text\n",
-                [],
-            ),
-        )
+                "",
+                WikiPage(
+                    "unittest",
+                    ["character"],
+                    "#Layer1\n## layer2\n### layer3\ntext\n### layer 3 again\n"
+                    "more text\n## some more layer 2\n a|b\n--|--\nc|d\n but what about THIS\n\n### finalthird\nfinal text\n",
+                    [],
+                    [],
+                ),
+            )
+        except Exception as e:
+            x = e
+        self.assertTrue(isinstance(x, DescriptiveError))
+        self.assertEqual(x.args[0], "wikiupdate failed")
         self.render_templates = False
         app = self.create_app()
         helpers.register(app)
