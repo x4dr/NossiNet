@@ -119,21 +119,29 @@ def adminwiki(page=None):
             stdout=subprocess.PIPE,
         )
         info = (info.stdout or bytes()).decode("utf-8")
-
-        return render_template(
-            "adminwiki.html",
-            page=page,
-            links=getlinks().get(page, []),
-            backlinks=backlinks,
-            wordcount=len(wikiload(page).body.split()),
-            last_edited=info,
-        )
+        try:
+            return render_template(
+                "adminwiki.html",
+                page=page,
+                links=getlinks().get(page, []),
+                backlinks=backlinks,
+                wordcount=len(wikiload(page).body.split()),
+                last_edited=info,
+            )
+        except DescriptiveError as e:
+            flash(" ".join(e.args), "error")
+            return redirect(url_for("wiki.wiki_index"))
     n = None
     if path.exists():
         n = wikipath / request.form["n"]
         if n.is_dir():
             n = n / path.name
         n = n.relative_to(wikipath)
+    for k in wikicache.keys():
+        if path.relative_to(wikipath).as_posix() in k or k in path.relative_to(
+            wikipath
+        ):
+            wikicache["tags"].pop(k)
     if "delete" in request.form:
         n = (wikipath / n).with_suffix(".md")
         if n != path:
@@ -166,7 +174,7 @@ def adminwiki(page=None):
         )
         flash(f"Moved {path.relative_to(wikipath)} to {n}.", "warning")
         updatewikicache()
-        return redirect(url_for("wiki.wikiindex", page=n))
+        return redirect(url_for("wiki.wiki_index", page=n))
     abort(400)
 
 
@@ -760,32 +768,39 @@ def wikindex() -> List[Path]:
 
 
 def gettags():
-    if not wikicache.get("tags", None):
+    if not wikicache.get("tags"):
         updatewikicache()
     return wikicache["tags"]
 
 
 def getlinks():
-    if not wikicache.get("links", None):
+    if not wikicache.get("links"):
         updatewikicache()
     return wikicache["links"]
 
 
 def updatewikicache():
     dt = time.time() - wikistamp[0]
-    dt = "a while" if dt > 6e4 else (str(dt) + "seconds")
-    print(f"it has been {dt} since the last wiki indexing")
+    if dt > 6e4:
+        wikicache.clear()
+        message = "a while"
+    else:
+        message = f"{dt} seconds"
+    print(f"it has been {message} since the last wiki indexing")
     wikistamp[0] = time.time()
     tags = {}
     links = {}
     for m in wikindex():
+        if m in wikicache["tags"] and m in wikicache["links"]:
+            continue
         p = wikiload(m)
-        tags[m.as_posix().replace(m.name, m.stem)] = p.tags
-        links[m.as_posix().replace(m.name, m.stem)] = p.links
+        canonical_name = m.as_posix().replace(m.name, m.stem)
+        tags[canonical_name] = p.tags
+        links[canonical_name] = p.links
     wikicache["tags"] = tags
     wikicache["links"] = links
     refresh_cache()
-    print("index took: " + str(1000 * (time.time() - wikistamp[0])) + " milliseconds")
+    print(f"index took: { str(1000 * (time.time() - wikistamp[0])) } milliseconds")
 
 
 def get_fen_char(c: str) -> Union[FenCharacter, None]:
