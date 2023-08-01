@@ -1,5 +1,5 @@
-import os
 import re
+import subprocess
 import time
 import urllib.parse
 from pathlib import Path
@@ -32,9 +32,10 @@ from NossiSite.helpers import checklogin, srs
 
 wikipath = Path.home() / "wiki"
 wikistamp = [0.0]
-wikitags = {}
+wikicache: dict[str, dict[str, list[str]]] = {"tags": {}, "links": {}}
 chara_objects = {}
 page_cache = {}
+mdlinks = re.compile(r"<a href=\"(.*?)\".*?</a")
 
 bleach.ALLOWED_TAGS = ALLOWED_TAGS
 
@@ -53,38 +54,120 @@ views = Blueprint("wiki", __name__)
 
 @views.after_app_request
 def update(response):
-    if not wikitags.keys():
-        updatewikitags()
+    if not wikicache.keys():
+        updatewikicache()
     return response
 
 
-@views.route("/index/<path:dir>")
+@views.route("/index/<path:path>")
 @views.route("/index/")
 def wiki_index(path="."):
     r = wikindex()
     path = Path(path)
+    if not (wikipath / path).exists() or not (wikipath / path).is_dir():
+        abort(404)
     return render_template(
         "wikindex.html",
-        subdirs=[
-            x.stem
-            for x in wikipath.iterdir()
-            if x.is_dir() and not x.stem.startswith(".")
-        ],
+        current_path=path if path.as_posix() != "." else None,
+        parent=path.parent.as_posix(),
+        subdirs=sorted(
+            [
+                x.stem
+                for x in (wikipath / path).iterdir()
+                if x.is_dir()  # only show directories
+                and not x.stem.startswith(".")  # hide hidden directories
+            ]
+        ),
         entries=[x.with_suffix("").as_posix() for x in r if x.parent == path],
         tags=gettags(),
     )
 
 
+@views.route("/bytag/")
 @views.route("/bytag/<tag>")
-def tagsearch(tag):
+def tagsearch(tag=None):
     r = wikindex()
     t = gettags()
-    r = [x for x in r if tag in t[x.stem]]
+    r = (
+        [x for x in r if tag in t[x.as_posix().replace(x.name, x.stem)]]
+        if tag
+        else [x for x in r if not t[x.as_posix().replace(x.name, x.stem)]]
+    )
     return render_template(
         "wikindex.html",
+        current_path=None,
+        parent=None,
+        subdirs=[],
         entries=[x.with_suffix("").as_posix() for x in r],
         tags=t,
     )
+
+
+@views.route("/wikiadmin/<path:page>", methods=["GET", "POST"])
+def adminwiki(page=None):
+    path: Path = (wikipath / page).with_suffix(".md")
+    if request.method == "GET":
+        backlinks = [
+            k for k, v in getlinks().items() if any(link.startswith(page) for link in v)
+        ]
+        info = subprocess.run(
+            [
+                (Path("~").expanduser() / "bin/wikidata").as_posix(),
+                path.relative_to(wikipath).as_posix(),
+            ],
+            shell=True,
+            stdout=subprocess.PIPE,
+        )
+        info = (info.stdout or bytes()).decode("utf-8")
+
+        return render_template(
+            "adminwiki.html",
+            page=page,
+            links=getlinks().get(page, []),
+            backlinks=backlinks,
+            wordcount=len(wikiload(page).body.split()),
+            last_edited=info,
+        )
+    n = None
+    if path.exists():
+        n = wikipath / request.form["n"]
+        if n.is_dir():
+            n = n / path.name
+        n = n.relative_to(wikipath)
+    if "delete" in request.form:
+        n = (wikipath / n).with_suffix(".md")
+        if n != path:
+            flash("Type in the page name to delete it.", "error")
+            return redirect(url_for("wiki.adminwiki", page=page))
+        with (wikipath / "control").open("a+") as h:
+            h.write(f"{session['user']} deleted {page}.\n")
+        retcode = subprocess.run(
+            [
+                Path("~").expanduser() / "bin/wikimove",
+                path.relative_to(wikipath).as_posix(),
+                (".deleted" / path.relative_to(wikipath)).as_posix(),
+            ],
+        ).returncode
+        if retcode:
+            flash(f"Something went wrong while deleting {page}.", "warning")
+        else:
+            flash(f"Deleted {page}.", "warning")
+        updatewikicache()
+        return redirect(url_for("wiki.wiki_index"))
+    if "move" in request.form:
+        with (wikipath / "control").open("a+") as h:
+            h.write(f"{session['user']} moved {path.relative_to(wikipath)} to {n}.\n")
+        subprocess.run(
+            [
+                Path("~").expanduser() / "bin/wikimove",
+                path.relative_to(wikipath).as_posix(),
+                n.as_posix(),
+            ]
+        )
+        flash(f"Moved {path.relative_to(wikipath)} to {n}.", "warning")
+        updatewikicache()
+        return redirect(url_for("wiki.wikiindex", page=n))
+    abort(400)
 
 
 @views.route("/wiki", methods=["GET", "POST"])
@@ -98,10 +181,15 @@ def wikipage(page=None):
         page = request.form.get("n", None)
         if page is None:
             return wiki_index()
-        return redirect(url_for("wiki.wikipage", page=page))
-
+        if "edit" in request.form:
+            return redirect(url_for("wiki.wikipage", page=page))
+        elif "administrate" in request.form:
+            return redirect(url_for("wiki.adminwiki", page=page))
+        else:
+            abort(400)
     try:
         page = page.lower()
+        page = page.strip(".").replace("/.", "/")  # remove hidden directory-dots
         p = wikilocate(page)
         if p != page:
             return redirect(url_for("wiki.wikipage", page=p))
@@ -118,7 +206,8 @@ def wikipage(page=None):
                 "edit_entry.html", mode="wiki", wiki=page, entry=entry
             )
         flash("That page doesn't exist. Log in to create it!")
-        return redirect(url_for("wiki.wiki_index"))
+        session["returnto"] = request.url
+        return redirect(url_for("views.login"))
     if not raw:
         body = bleach.clean(loaded_page.body)
         body = markdown.markdown(body, extensions=["tables", "toc", "nl2br"])
@@ -135,25 +224,26 @@ def wikipage(page=None):
 
 @views.route("/edit/<path:page>", methods=["GET", "POST"])
 def editwiki(page=None):
+    checklogin()
     page = page.lower()
-    p = wikilocate(page)
+    try:
+        p = wikilocate(page)
+    except FileNotFoundError:
+        # check if the page is eligible for creation
+        if not (wikipath / Path(page).parent).exists():
+            return redirect(url_for("wiki.wikipage", page=Path(page).stem))
+        (wikipath / Path(page)).touch()  # create
+        p = wikilocate(page)
     if p != page:
         return redirect(url_for("wiki.wikipage", page=p))
-    checklogin()
     if request.method == "GET":
         try:
             author = ""
             ident = (page,)
-            retrieve = session.get("retrieve", None)
-            if retrieve:
-                loaded_page = WikiPage(
-                    retrieve["title"], retrieve["tags"].split(" "), retrieve["text"], []
-                )
-            else:
-                try:
-                    loaded_page = wikiload(page)
-                except DescriptiveError:
-                    return wikipage(page)
+            try:
+                loaded_page = wikiload(page)
+            except DescriptiveError:
+                return wikipage(page)
             entry = dict(
                 author=author,
                 id=ident,
@@ -174,6 +264,7 @@ def editwiki(page=None):
                 meta = wikiload(page).meta
             except DescriptiveError:
                 meta = []
+            text_links = mdlinks.findall(markdown.markdown(request.form["text"]))
             wikisave(
                 page,
                 session.get("user"),
@@ -181,10 +272,10 @@ def editwiki(page=None):
                     request.form["title"],
                     request.form["tags"].split(" "),
                     request.form["text"],
+                    text_links,
                     meta,
                 ),
             )
-            session["retrieve"] = None
         return redirect(url_for("wiki.wikipage", page=request.form.get("wiki", None)))
     return abort(405)
 
@@ -529,7 +620,7 @@ hiddeninfos = re.compile(
     r"\[(?P<name>.*?)\[\[(?P<cmd>specific|q):(?P<ref>[\S ]+)]]]", re.IGNORECASE
 )
 infos = re.compile(r"\[\[(?P<cmd>specific|q):(?P<ref>(-:)?[\S ]+)]]", re.IGNORECASE)
-links = re.compile(r"\[(.+?)]\((?P<ref>.+?)\)")
+re_links = re.compile(r"\[(.+?)]\((?P<ref>.+?)\)")
 headers = re.compile(
     r"<(?P<h>h\d*)\b(?P<extra>[^>]*)>(?P<content>.*?)</(?P=h)\b[^>]*>",
     re.IGNORECASE | re.DOTALL,
@@ -537,7 +628,7 @@ headers = re.compile(
 
 
 def fill_infolets(body, context):
-    body = links.sub(r'<a href="/wiki/\g<2>"> \g<1> </a>', body)
+    body = re_links.sub(r'<a href="/wiki/\g<2>"> \g<1> </a>', body)
     body = infos.sub(get_info(context), hiddeninfos.sub(hide(get_info(context)), body))
     return headers.sub(headerfix, body)
 
@@ -552,7 +643,20 @@ def wikilocate(page: [str | Path]) -> str:
         page = page.stem
     if page.endswith(".md"):
         page = page[:-3]
-    p = next(wikipath.rglob(page + ".md"), None)
+    p = (
+        next(
+            (
+                path
+                for path in wikipath.rglob(page + ".md")
+                if not any(
+                    part.startswith(".") for part in path.parts
+                )  # no hidden files
+            ),
+            None,
+        )
+        if "/" not in page
+        else wikipath / (page + ".md")
+    )
     if not p:
         raise FileNotFoundError()
     p = p.relative_to(wikipath).as_posix()
@@ -578,15 +682,22 @@ def wikiload(page: [str | Path]) -> WikiPage:
             tags = []
             body = ""
             meta = []
+            links = []
             for line in f.readlines():
                 if mode == "init" and line.strip().startswith("---"):
                     mode = "preamble"
                     continue
                 if mode and line.startswith("tags:"):
-                    tags += [t for t in line.strip("tags:").strip().split(" ") if t]
+                    tags += [t for t in line[5:].strip().split(" ") if t]
                     continue
                 if mode and line.startswith("title:"):
-                    title = line.strip("title:").strip()
+                    title = line[6:].strip()
+                    continue
+                if mode and line.startswith("outgoing links:"):
+                    links = [
+                        x.strip("' ")
+                        for x in line[len("outgoing links:") :].strip().split("',")
+                    ]
                     continue
                 if mode == "meta" and not line.strip():
                     mode = ""
@@ -598,8 +709,11 @@ def wikiload(page: [str | Path]) -> WikiPage:
                     meta.append(line.strip())
                     continue
                 body += line
-            loaded_page = WikiPage(title, tags, body, meta)
+            loaded_page = WikiPage(
+                title=title, tags=tags, body=body, links=links, meta=meta
+            )
             page_cache[page] = loaded_page
+
             return loaded_page
     except FileNotFoundError:
         raise DescriptiveError(str(page) + " not found in wiki.")
@@ -612,6 +726,7 @@ def wikisave(name: str, author, page):
         f.write("---\n")
         f.write("title: " + page.title + "  \n")
         f.write("tags: " + " ".join(page.tags) + "  \n")
+        f.write("outgoing links: '" + "', '".join(page.links) + "'  \n")
         for x in page.meta:
             f.write(x + "\n")
         f.write("---\n")
@@ -620,12 +735,15 @@ def wikisave(name: str, author, page):
         h.write(name + " edited by " + author + "\n")
     with (wikipath / "control").open("r") as f:
         print((wikipath / "control").as_posix() + "control", ":", f.read())
-    os.system(os.path.expanduser("~/") + "bin/wikiupdate & ")
     cacheclear(name)
+    if subprocess.run(
+        [Path("~").expanduser() / "bin/wikiupdate"], shell=True
+    ).returncode:
+        raise DescriptiveError("wikiupdate failed")
 
 
 def cacheclear(page):
-    wikitags.clear()  # triggers reparsing after request
+    wikicache.clear()  # triggers reparsing after request
     if page in chara_objects:
         del chara_objects[page]
     if page in page_cache:
@@ -635,23 +753,37 @@ def cacheclear(page):
 def wikindex() -> List[Path]:
     mds = []
     for p in wikipath.glob("**/*.md"):
+        if p.relative_to(wikipath).as_posix().startswith("."):
+            continue  # skip hidden files
         mds.append(p.relative_to(wikipath))
     return sorted(mds)
 
 
 def gettags():
-    if not wikitags:
-        updatewikitags()
-    return wikitags
+    if not wikicache.get("tags", None):
+        updatewikicache()
+    return wikicache["tags"]
 
 
-def updatewikitags():
+def getlinks():
+    if not wikicache.get("links", None):
+        updatewikicache()
+    return wikicache["links"]
+
+
+def updatewikicache():
     dt = time.time() - wikistamp[0]
     dt = "a while" if dt > 6e4 else (str(dt) + "seconds")
     print(f"it has been {dt} since the last wiki indexing")
     wikistamp[0] = time.time()
+    tags = {}
+    links = {}
     for m in wikindex():
-        wikitags[m.stem] = wikiload(m).tags
+        p = wikiload(m)
+        tags[m.as_posix().replace(m.name, m.stem)] = p.tags
+        links[m.as_posix().replace(m.name, m.stem)] = p.links
+    wikicache["tags"] = tags
+    wikicache["links"] = links
     refresh_cache()
     print("index took: " + str(1000 * (time.time() - wikistamp[0])) + " milliseconds")
 
@@ -710,7 +842,7 @@ def refresh_cache(page=""):
         }
     )
 
-    for key, tags in wikitags.items():
+    for key, tags in wikicache["tags"].items():
         if "character" in tags:
             get_fen_char(key)
 

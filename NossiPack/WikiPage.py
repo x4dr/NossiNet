@@ -10,4 +10,5 @@ class WikiPage:
     title: str
     tags: list
     body: str
+    links: list
     meta: list

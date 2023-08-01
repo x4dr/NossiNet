@@ -53,6 +53,7 @@ hr {
     color: #00e700;
 }
 
+
 .leet {
     background-color: black;
     color: #00d700;
@@ -197,6 +198,36 @@ label { white-space: nowrap }
     width: 100%;
     height: 100px;
     font-size: 48px;
+}
+
+.textbtn {
+    border: 1px solid #006700;
+    background-color: black;
+    color: #00f700;
+    padding: 1px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+}
+
+.textbtn:hover {
+    background-color: #00d700;
+    color: black;
+
+}
+
+.txtinput   {
+    background-color: black;
+    color: #006700;
+    height: 100%;
+    box-sizing: border-box;
+
+}
+.single_line_form{
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    align-content: center;
 }
 
 .add-entry {

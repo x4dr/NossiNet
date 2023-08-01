@@ -67,22 +67,26 @@
     {% block metanavcomplete %}
         <div class=metanavcontainer>
             {% if not session.logged_in %}
-                <a class=metanav href="{{ url_for("wiki.wiki_index") }}">wiki</a>
-                <a class=metanav href="{{ url_for("views.login") }}">log in</a>
-                <a class=metanav href="{{ url_for("views.register_user") }}">register</a>
+                <a class="textbtn metanav" href="{{ url_for("wiki.wikipage", page="home") }}">wiki</a>
+                <a class="textbtn metanav" href="{{ url_for("views.login") }}">log in</a>
+                <a class="textbtn metanav" href="{{ url_for("views.register_user") }}">register</a>
             {% else %}
-                {%- block metanav -%}
-                {%- endblock -%}
                 <div class="metanavcontainer">
-                    <a class=metanav href="{{ url_for("wiki.wiki_index") }}">WIKI</a>
-                    <a class=metanav href="{{ url_for("views.charsheet") }}">SHEET</a>
-                    <a class=metanav href="{{ url_for("views.chatsite") }}">CHAT</a>
-                    <a class=metanav
+                    {%- block metanavpre -%}
+                    {%- endblock -%}
+                    <a class="textbtn metanav" href="{{ url_for("wiki.wikipage", page="home") }}"">WIKI</a>
+                    <a class="textbtn metanav" href="{{ url_for("views.charsheet") }}">SHEET</a>
+                    <a class="textbtn metanav" href="{{ url_for("views.chatsite") }}">CHAT</a>
+                    <a class="textbtn metanav"
                        href="{{ url_for("views.show_user_profile",username=session.user) }}">{{ session.user }}</a>
-                    <a class=metanav href="{{ url_for("views.logout") }}">LOG&nbsp;OUT</a>
+                    <a class="textbtn metanav" href="{{ url_for("views.logout") }}">LOG&nbsp;OUT</a>
+
                 </div>
+
             {%- endif %}
         </div>
+        {%- block metanavpost -%}
+        {%- endblock -%}
     {%- endblock -%}
     {%- if error %}
         <p class=error><strong>Error:</strong> {{ error }}{% endif %}

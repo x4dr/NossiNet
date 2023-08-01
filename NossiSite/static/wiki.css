@@ -4,11 +4,56 @@ table, th, td {
     table-layout: fixed;
 }
 td:before {
-  content: '';
-  display: block;
-  width: 2em;
+    content: '';
+    display: block;
+    width: 2em;
 }
 img {
-  max-width: 100%;
-  height: auto;
+    max-width: 100%;
+    height: auto;
+}
+.indextable {
+    width: 100%;
+    border: 0;
+    border-collapse: collapse;
+}
+.indextable, .indextable td, .indextable th {
+    border: 0;
+}
+.indextable th,
+.indextable td {
+    padding: 3px 5px;
+
+}
+.indextable td:before {
+    content: none;
+    width: 0;
+}
+
+.indextable tr:hover{
+    background: #004000;
+}
+.indextable td:hover {
+    font-weight: bold;
+    background: #005839;
+
+}
+
+.tdcontainer {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    overflow: hidden;
+}
+.tdcontainer > * {
+    flex: 1;
+    min-width: 0;
+    height: 100%
+;
+}
+.tdcontainer > *:first-child {
+    margin-left:0;
+}
+.tdcontainer > *:last-child {
+    margin-right:0;
 }

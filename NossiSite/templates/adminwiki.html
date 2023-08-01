@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+{% block head %}
+    <script>
+    function are_you_sure(about) {
+        if (about == "delete") {
+            return confirm("Are you sure you want to delete {{ page }}?");
+        } else {
+            return confirm("Are you sure you want to move {{ page }} to /"+ document.getElementById("wiki").value +"?");
+        }
+
+    }
+    </script>
+{% endblock %}
+{% block body %}
+    <h1>Page: {{ page }}</h1>
+    <p> Link: <a href="{{ url_for('wiki.wikipage', page=page) }}">{{ page }}</a></p>
+    <p> Wordcount: {{ wordcount }}</p>
+    <p> Last edited: {{ last_edited }}</p>
+    {% if session.logged_in %}
+    <form class="single_line_form" action="{{ url_for("wiki.adminwiki", page=page) }}"  method=post>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <label for="wiki">Path</label>
+        <input id="wiki" type="text" name="n" class="leet single_line_form">
+        <button type="submit" name="move" class="leeet" onclick="are_you_sure('move')">Move</button>
+        <button type="submit" name="delete" class="leeet" onclick="are_you_sure('delete')">Delete</button>
+    </form>
+    {% endif %}
+
+    <h1>Backlinks</h1>
+    {% for link in backlinks %}
+        <p><a href="{{ link }}">{{ link }}</a></p>
+    {% endfor %}
+    <h1>Links</h1>
+    {% for link in links %}
+        <p><a href="{{ link }}">{{ link }}</a></p>
+    {% endfor %}
+{% endblock %}

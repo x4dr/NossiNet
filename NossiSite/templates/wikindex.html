@@ -5,44 +5,78 @@
 {% block pagetitle %}
     <a href="{{ url_for("wiki.wiki_index") }}"><h1>Wiki-Index</h1></a>
 {% endblock %}
-{% block body %}
-    <h1> Entries </h1>
-    <form action="{{ url_for("wiki.searchwiki",) }}" method="get" target="_self">
-        <label for="searchterm">Search Term</label><input type="text" id="searchterm" name="s" class="leet">
-        <input type="submit" id="searchbutton" value="search" class="leet">
-    </form>
-    <div style="margin-bottom: 10px;">
-        <h2>Subcategories</h2>
-            {% for m in subdirs %}
-                <a href="{{ url_for("wiki.wiki_index", path=m) }}"> {{ m }}</a> |
-            {% endfor %}
+{% block head %}
+    <link href="{{ url_for('static', filename='/wiki.css') }}" rel="stylesheet">
+{% endblock %}
+{% block metanavcomplete %}
+    <div class="metanavcontainer">
+
+        {% if current_path is not none %}
+            <div class="metanavcontainer">
+            <a class="textbtn metanav" href="{{ url_for("wiki.wiki_index", path=parent) }}">
+                {{ current_path }}
+            </a>
+            <div class="metanav"> / </div>
+        {% else %}
+            {{ super() }}
+        {% endif %}
+        {% if subdirs %}
+            <div class="metanavcontainer">
+                {% for m in subdirs %}
+                    {% if current_path is not none %}
+                        <a class="textbtn metanav" href="{{ url_for("wiki.wiki_index", path=current_path / m) }}">{{ m }}</a>
+                    {% else %}
+                        <a class="textbtn metanav" href="{{ url_for("wiki.wiki_index", path=m) }}">{{ m }}</a>
+                    {% endif %}
+
+                {% endfor %}
+
+                {% if current_path is not none %}
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
     </div>
-    <h2>Sites</h2>
-    <table>
+    <form action="{{ url_for("wiki.searchwiki") }}" method="get" target="_self" class="single_line_form">
+        <label for="searchterm">Search: </label><input type="text" id="searchterm" name="s" class="leet txtinput">
+        <input type="submit" id="searchbutton" value="search" class="leet textbtn">
+    </form>
+{% endblock %}
+{% block body %}
+    <table class="indextable">
         <thead>
         <tr>
-            <td>Site</td>
-            <td>| Tags</td>
+            <th>Page</th>
+            <th>Tags</th>
         </tr>
         </thead>
         <tbody>
         <tr>
             {% for m in entries %}
                 <td>
-                    <a href="{{ url_for("wiki.wikipage", page=m) }}"> {{ m }}</a></td>
-                <td> |
+                    <a href="{{ url_for("wiki.wikipage", page=m) }}" style="text-decoration: none"><div>{{ m }}</div></a>
+                </td>
+                <td class="tdcontainer">
+                    {% if not tags[m] %}
+                        <a href="{{ url_for("wiki.tagsearch", tag="")}}" style="text-decoration: none"><div>&nbsp;</div></a>
+                    {% endif %}
                     {% for x in tags[m] %}
-                        <a href="{{ url_for("wiki.tagsearch", tag=x) }}">{{ x }}</a> |
-                    {% endfor %} </td></tr>
+                        <a href="{{ url_for("wiki.tagsearch", tag=x) }}" style="text-decoration: none"><div>{{ x }}</div></a>
+                    {% endfor %}
+                </td></tr>
                 <tr>
             {% endfor %}
             </tr>
         </tbody>
     </table>
-    <form class="leet" action="{{ url_for("wiki.wikipage") }}" method=post>
+    <form class="single_line_form" action="{{ url_for("wiki.wikipage") }}" method=post>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <label for="wikiaccess">Wikipage Access</label>
-        <input id="wikiaccess" type="text" name="n" class="leeet">
-        <button type="submit" class="leeet">New</button>
+        <input id="wikiaccess" type="text" name="n" class="leet single_line_form">
+        <button type="submit" name="edit" class="leeet">Edit</button>
+        {% if session.logged_in %}
+            <button type="submit" name="administrate" class="leeet">Administrate</button>
+        {% endif %}
+
     </form>
 {% endblock %}

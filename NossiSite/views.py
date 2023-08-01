@@ -66,8 +66,7 @@ def entry_text(x):
         return {}
     db = connect_db("entrybyid")
     e = db.execute("SELECT text FROM entries WHERE id = ?", [x]).fetchone()
-
-    return e[0]
+    return bleach.clean(e[0])
 
 
 @views.route("/")
