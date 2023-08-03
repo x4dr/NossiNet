@@ -28,7 +28,7 @@ from NossiSite import ALLOWED_TAGS
 from NossiSite.base import log
 from NossiSite.helpers import checklogin, srs
 
-wikipath = Path.home() / "wiki"
+WikiPage.set_wikipath(Path.home() / "wiki")
 wikistamp = [0.0]
 
 chara_objects = {}
@@ -62,7 +62,10 @@ def update(response):
 def wiki_index(path="."):
     r = WikiPage.wikindex()
     path = Path(path)
-    if not (wikipath / path).exists() or not (wikipath / path).is_dir():
+    if (
+        not (WikiPage.wikipath() / path).exists()
+        or not (WikiPage.wikipath() / path).is_dir()
+    ):
         abort(404)
     return render_template(
         "wikindex.html",
@@ -71,7 +74,7 @@ def wiki_index(path="."):
         subdirs=sorted(
             [
                 x.stem
-                for x in (wikipath / path).iterdir()
+                for x in (WikiPage.wikipath() / path).iterdir()
                 if x.is_dir()  # only show directories
                 and not x.stem.startswith(".")  # hide hidden directories
             ]
@@ -103,7 +106,7 @@ def tagsearch(tag=None):
 
 @views.route("/wikiadmin/<path:page>", methods=["GET", "POST"])
 def adminwiki(page: str = None):
-    path: Path = (wikipath / page).with_suffix(".md")
+    path: Path = (WikiPage.wikipath() / page).with_suffix(".md")
     if request.method == "GET":
         backlinks = [
             k
@@ -113,7 +116,7 @@ def adminwiki(page: str = None):
         info = subprocess.run(
             [
                 (Path("~").expanduser() / "bin/wikidata").as_posix(),
-                path.relative_to(wikipath).as_posix(),
+                path.relative_to(WikiPage.wikipath()).as_posix(),
             ],
             shell=True,
             stdout=subprocess.PIPE,
@@ -133,27 +136,27 @@ def adminwiki(page: str = None):
             return redirect(url_for("wiki.wiki_index"))
     n = None
     if path.exists():
-        n = wikipath / request.form["n"]
+        n = WikiPage.wikipath() / request.form["n"]
         if n.is_dir():
             n = n / path.name
-        n = n.relative_to(wikipath)
+        n = n.relative_to(WikiPage.wikipath())
     for k in WikiPage.wikicache.keys():
-        if path.relative_to(wikipath).as_posix() in k or k in path.relative_to(
-            wikipath
-        ):
+        if path.relative_to(
+            WikiPage.wikipath()
+        ).as_posix() in k or k in path.relative_to(WikiPage.wikipath()):
             WikiPage.cacheclear(WikiPage.locate(k))
     if "delete" in request.form:
-        n = (wikipath / n).with_suffix(".md")
+        n = (WikiPage.wikipath() / n).with_suffix(".md")
         if n != path:
             flash("Type in the page name to delete it.", "error")
             return redirect(url_for("wiki.adminwiki", page=page))
-        with (wikipath / "control").open("a+") as h:
+        with (WikiPage.wikipath() / "control").open("a+") as h:
             h.write(f"{session['user']} deleted {page}.\n")
         retcode = subprocess.run(
             [
                 Path("~").expanduser() / "bin/wikimove",
-                path.relative_to(wikipath).as_posix(),
-                (".deleted" / path.relative_to(wikipath)).as_posix(),
+                path.relative_to(WikiPage.wikipath()).as_posix(),
+                (".deleted" / path.relative_to(WikiPage.wikipath())).as_posix(),
             ],
         ).returncode
         if retcode:
@@ -163,16 +166,18 @@ def adminwiki(page: str = None):
         WikiPage.updatewikicache()
         return redirect(url_for("wiki.wiki_index"))
     if "move" in request.form:
-        with (wikipath / "control").open("a+") as h:
-            h.write(f"{session['user']} moved {path.relative_to(wikipath)} to {n}.\n")
+        with (WikiPage.wikipath() / "control").open("a+") as h:
+            h.write(
+                f"{session['user']} moved {path.relative_to(WikiPage.wikipath())} to {n}.\n"
+            )
         subprocess.run(
             [
                 Path("~").expanduser() / "bin/wikimove",
-                path.relative_to(wikipath).as_posix(),
+                path.relative_to(WikiPage.wikipath()).as_posix(),
                 n.as_posix(),
             ]
         )
-        flash(f"Moved {path.relative_to(wikipath)} to {n}.", "warning")
+        flash(f"Moved {path.relative_to(WikiPage.wikipath())} to {n}.", "warning")
         WikiPage.updatewikicache()
         return redirect(url_for("wiki.wiki_index", page=n))
     abort(400)
@@ -238,9 +243,9 @@ def editwiki(page=None):
         p = WikiPage.locate(page)
     except FileNotFoundError:
         # check if the page is eligible for creation
-        if not (wikipath / Path(page).parent).exists():
+        if not (WikiPage.wikipath() / Path(page).parent).exists():
             return redirect(url_for("wiki.wikipage", page=Path(page).stem))
-        (wikipath / Path(page)).touch()  # create
+        (WikiPage.wikipath() / Path(page)).touch()  # create
         p = WikiPage.locate(page)
     if p.as_posix()[:-3] != page:
         return redirect(url_for("wiki.wikipage", page=p))
