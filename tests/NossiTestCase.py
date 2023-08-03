@@ -5,6 +5,7 @@ from flask_testing import TestCase
 from flask_wtf import CSRFProtect
 
 from Data import close_db
+from NossiPack.WikiPage import WikiPage
 from NossiSite import views, wiki, extra, webhook, helpers
 
 
@@ -19,6 +20,8 @@ class NossiTestCase(TestCase):
         }
 
     def create_app(self):
+        if WikiPage._wikipath is None:
+            WikiPage.set_wikipath(Path("."))
         close_db()  # might be open
         app = Flask(__name__)
         app.register_blueprint(views.views)

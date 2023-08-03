@@ -16,7 +16,7 @@ from gamepack.MDPack import (
 import Data
 from NossiPack.WikiPage import WikiPage
 from NossiSite import helpers
-from NossiSite.wiki import wikisave, fill_infolets
+from NossiSite.wiki import fill_infolets
 from tests.NossiTestCase import NossiTestCase
 
 
@@ -35,28 +35,29 @@ class TestViews(NossiTestCase):
     def test_ewparsing(self):
         x = None
         try:
-            wikisave(
+            WikiPage(
                 "unittest",
-                "",
-                WikiPage(
-                    "unittest",
-                    ["character"],
-                    "#Layer1\n## layer2\n### layer3\ntext\n### layer 3 again\n"
-                    "more text\n## some more layer 2\n a|b\n--|--\nc|d\n but what about THIS\n\n### finalthird\nfinal text\n",
-                    [],
-                    [],
-                ),
-            )
+                ["character"],
+                "#Layer1\n## layer2\n### layer3\ntext\n### layer 3 again\n"
+                "more text\n## some more layer 2\n a|b\n--|--\nc|d\n but what about THIS\n\n### finalthird\nfinal "
+                "text\n",
+                [],
+                [],
+            ).save(WikiPage.locate("unittest"), "unittest")
         except Exception as e:
             x = e
-        self.assertTrue(isinstance(x, DescriptiveError))
+            if not isinstance(x, DescriptiveError):
+                raise
+        self.assertIsInstance(x, DescriptiveError)
         self.assertEqual(x.args[0], "wikiupdate failed")
         self.render_templates = False
         app = self.create_app()
         helpers.register(app)
         c = app.test_client()
         c.get("/ewsheet/test")
-        self.create_app()
+        del WikiPage.page_cache[WikiPage.locate("unittest")]
+        WikiPage.locate("unittest.md").unlink()
+        (WikiPage.wikipath() / "control").unlink()
 
     def test_xp_parsing(self):
         self.assertEqual(
@@ -98,8 +99,20 @@ class TestViews(NossiTestCase):
         )
 
     def test_infolets(self):
+        self.assertRaises(
+            DescriptiveError,
+            lambda: WikiPage(
+                title="healing",
+                tags=[],
+                body="# heilung\n## Aurier\n### Resonanzen\nWunde\n",
+                links=[],
+                meta=[],
+            ).save(WikiPage.locate("healing"), "unittest"),
+        )
         sut = fill_infolets("[[specific:healing:heilung:aurier:resonanzen:-]]", "test")
         self.assertIn("Wunde", sut)
+        WikiPage.locate("healing.md").unlink()
+        (WikiPage.wikipath() / "control").unlink()
 
     def test_tablesrearch(self):
         sut = "##somestuff\n|a|b|\n|-|-|\n|x|1|\ny|2\n"
