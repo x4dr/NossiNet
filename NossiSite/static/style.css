@@ -97,7 +97,7 @@ hr {
     color: #4f4;
     text-align: center;
     position: absolute;
-    transform: translateX(-100%) translateY(-100%);
+    transform: translateX(-4em) translateY(-30%);
 
     z-index: 1;
     white-space: nowrap;

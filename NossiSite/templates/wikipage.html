@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block head %}
-    <script src="{{ url_for("static", filename="live_edit.js") }}"></script>
-    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="live_edit.css") }}">
+    <script src="{{ url_for("static", filename="live_edit.js") }}?v={{ restart_id }}"></script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="live_edit.css") }}?v={{ restart_id }}">
     <script>
         window.addEventListener("click", function (e) {
             const x = e.clientX, y = e.clientY, mouselement = document.elementFromPoint(x, y);
@@ -22,7 +22,7 @@
     {% for headstate in heads %}
         {{ headstate|safe }}
     {% endfor %}
-    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="wiki.css") }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="wiki.css") }}?v={{ restart_id }}">
 {% endblock %}
 {% block title %}
     <title xmlns="http://www.w3.org/1999/html">{{ title }}</title>

@@ -33,3 +33,6 @@ fh.setLevel(logging.DEBUG)
 log.addHandler(fh)
 logging.basicConfig(format="%(asctime)s %(levelname)s:%(message)s")
 log.setLevel(logging.DEBUG)
+app.jinja_env.globals["restart_id"] = "".join(
+    random.SystemRandom().choice(string.hexdigits) for _ in range(4)
+)

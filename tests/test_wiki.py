@@ -13,10 +13,11 @@ from gamepack.MDPack import (
     table_remove,
     table_row_edit,
 )
+from gamepack.WikiPage import WikiPage
+
 import Data
-from NossiPack.WikiPage import WikiPage
+from NossiPack.LocalMarkdown import LocalMarkdown
 from NossiSite import helpers
-from NossiSite.wiki import fill_infolets
 from tests.NossiTestCase import NossiTestCase
 
 
@@ -56,8 +57,8 @@ class TestViews(NossiTestCase):
         c = app.test_client()
         c.get("/ewsheet/test")
         del WikiPage.page_cache[WikiPage.locate("unittest")]
-        WikiPage.locate("unittest.md").unlink()
-        (WikiPage.wikipath() / "control").unlink()
+        WikiPage.locate("unittest.md").unlink(True)
+        (WikiPage.wikipath() / "control").unlink(True)
 
     def test_xp_parsing(self):
         self.assertEqual(
@@ -98,22 +99,6 @@ class TestViews(NossiTestCase):
             table("|a|b|cut\n|-|-\n1|2\nextra\n"),
         )
 
-    def test_infolets(self):
-        self.assertRaises(
-            DescriptiveError,
-            lambda: WikiPage(
-                title="healing",
-                tags=[],
-                body="# heilung\n## Aurier\n### Resonanzen\nWunde\n",
-                links=[],
-                meta=[],
-            ).save(WikiPage.locate("healing"), "unittest"),
-        )
-        sut = fill_infolets("[[specific:healing:heilung:aurier:resonanzen:-]]", "test")
-        self.assertIn("Wunde", sut)
-        WikiPage.locate("healing.md").unlink()
-        (WikiPage.wikipath() / "control").unlink()
-
     def test_tablesrearch(self):
         sut = "##somestuff\n|a|b|\n|-|-|\n|x|1|\ny|2\n"
         self.assertEqual(search_tables(sut, "y", 0), "y|2\n")
@@ -123,3 +108,81 @@ class TestViews(NossiTestCase):
         self.assertEqual(search_tables(sut, "y", 0), "")
         sut = table_row_edit(sut, "z", "whoop")
         self.assertEqual(search_tables(sut, "z", 0), "| z | whoop |\n")
+
+    def test_local_markdown_transclusion(self):
+        sut = WikiPage(
+            title="healing",
+            tags=[],
+            body="# heilung\n## Aurier\n### Resonanzen\nWunde\n",
+            links=[],
+            meta=[],
+        )
+        self.assertRaises(
+            DescriptiveError, lambda: sut.save(WikiPage.locate("healing"), "unittest")
+        )
+        x = LocalMarkdown.pre_process("![](healing#resonanzen)")[0]
+        self.assertEqual(x, "Wunde\n")
+        x = LocalMarkdown.pre_process("![healing#resonanzen]")[0]
+        self.assertIn("Wunde", x)
+        self.assertNotIn("!", x)
+        x = LocalMarkdown.pre_process("![healing]")[0]
+        self.assertIn("heilung", x)
+        self.assertNotIn("!", x)
+        x = LocalMarkdown.pre_process("![healing#resonanzen](test)")[0]  # wrong order
+        self.assertEqual("![healing#resonanzen](test)", x)
+        x = LocalMarkdown.pre_process("![test](healing#resonanzen)")[0]
+        self.assertIn("Wunde", x)
+        self.assertNotIn("!", x)
+        self.assertNotIn("esonanzen", x)
+        self.assertIn("test", x)
+        x = LocalMarkdown.pre_process("![test](healing)")[0]
+        self.assertEqual(len(x.split("\n")), 5)
+        self.assertNotIn("!", x)
+        WikiPage.locate("healing").unlink(True)
+        del WikiPage.page_cache[WikiPage.locate("healing")]
+        (WikiPage.wikipath() / "control").unlink(True)
+
+    def test_local_markdown_fold_transclusion(self):
+        sut = WikiPage(
+            title="healing",
+            tags=[],
+            body="# heilung\n## Aurier\n### Resonanzen\nWunde\n",
+            links=[],
+            meta=[],
+        )
+        self.assertRaises(
+            DescriptiveError, lambda: sut.save(WikiPage.locate("healing"), "unittest")
+        )
+        x = LocalMarkdown.pre_process("![[]](healing#resonanzen)")[0]  # empty heading
+        self.assertEqual(x, "#!\nWunde\n")
+        x = LocalMarkdown.pre_process("![[healing#resonanzen]]")[
+            0
+        ]  # shortform with path
+        self.assertIn("Wunde", x)
+        self.assertIn("###!", x)
+        x = LocalMarkdown.pre_process("![[healing]]")[0]  # shortform without path
+        self.assertIn("#! heilung", x)
+        x = LocalMarkdown.pre_process("![[healing#resonanzen]](test)")[0]  # wrong order
+        self.assertEqual(x, "![[healing#resonanzen]](test)")
+        x = LocalMarkdown.pre_process("![[test]](healing#resonanzen)")[0]
+        # heading with path
+        self.assertIn("Wunde", x)
+        self.assertIn("###! test", x)
+        x = LocalMarkdown.pre_process("![[test]](healing)")[0]  # heading without path
+        self.assertEqual(len(x.split("\n")), 5)
+        self.assertIn("#! test", x)
+        WikiPage.locate("healing").unlink(True)
+        del WikiPage.page_cache[WikiPage.locate("healing")]
+        (WikiPage.wikipath() / "control").unlink(True)
+
+    def test_local_markdown_hiding(self):
+        print(
+            LocalMarkdown.process(
+                "# thing\n"
+                "## !hidden subheading\n"
+                "hiddentext\n"
+                "and stuff \n"
+                "### hidden sub subheading\n"
+                "## visible again"
+            )
+        )

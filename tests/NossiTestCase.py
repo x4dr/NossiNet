@@ -3,9 +3,9 @@ from pathlib import Path
 from flask import Flask, url_for
 from flask_testing import TestCase
 from flask_wtf import CSRFProtect
+from gamepack.WikiPage import WikiPage
 
 from Data import close_db
-from NossiPack.WikiPage import WikiPage
 from NossiSite import views, wiki, extra, webhook, helpers
 
 

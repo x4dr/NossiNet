@@ -2,7 +2,7 @@
 {% block head %}
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="sheet.css") }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="live_edit.css") }}">
-    <script src="{{ url_for("static", filename="live_edit.js") }}"></script>
+    <script src="{{ url_for("static", filename="live_edit.js") }}?v={{ restart_id }}"></script>
     {% if owner %}
         {% for err in character.errors %}
 
@@ -150,11 +150,9 @@
     </div>
     {%- for key,data in character.Meta.items() -%}
         {% set r = srs() %}
-
         <h2 class="hider" data-for="{{ r }}">{{ key }}<span
                 {%- if owner %} class="editeable" data-category="{{ key }}"{% endif -%}
         >&nbsp</span></h2>
-
         <div id="{{ r }}" class="hiding">
             {{ treepart(data,3, key) }}
         </div>

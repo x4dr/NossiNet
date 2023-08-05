@@ -3,7 +3,7 @@
     <title>Wiki-Index</title>
 {% endblock %}
 {% block pagetitle %}
-    <a href="{{ url_for("wiki.wiki_index") }}"><h1>Wiki-Index</h1></a>
+    <a href="{{ url_for("wiki.wiki_index") }}?v={{ restart_id }}"><h1>Wiki-Index</h1></a>
 {% endblock %}
 {% block head %}
     <link href="{{ url_for('static', filename='/wiki.css') }}" rel="stylesheet">

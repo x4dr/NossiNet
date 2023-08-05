@@ -3,7 +3,6 @@ import subprocess
 import time
 import urllib.parse
 from pathlib import Path
-from re import Match
 import bleach
 import markdown
 from flask import (
@@ -19,14 +18,15 @@ from flask import (
 from gamepack.Dice import DescriptiveError
 from gamepack.FenCharacter import FenCharacter
 from gamepack.MDPack import traverse_md, search_tables
+from gamepack.WikiCharacterSheet import WikiCharacterSheet
+from gamepack.WikiPage import WikiPage
 from markupsafe import Markup
 
+from NossiPack.LocalMarkdown import LocalMarkdown
 from NossiPack.User import User, Config
-from NossiPack.WikiCharacterSheet import WikiCharacterSheet
-from NossiPack.WikiPage import WikiPage
 from NossiSite import ALLOWED_TAGS
 from NossiSite.base import log
-from NossiSite.helpers import checklogin, srs
+from NossiSite.helpers import checklogin
 
 WikiPage.set_wikipath(Path.home() / "wiki")
 wikistamp = [0.0]
@@ -205,12 +205,12 @@ def wikipage(page=None):
         page = page.strip(".").replace("/.", "/")  # remove hidden directory-dots
         p = WikiPage.locate(page)
         if p.as_posix()[:-3] != page:
-            return redirect(url_for("wiki.wikipage", page=p))
+            return redirect(url_for("wiki.wikipage", page=p.as_posix()[:-3]))
         loaded_page = WikiPage.load_str(page)
     except (DescriptiveError, FileNotFoundError) as e:
         if (
             isinstance(e, DescriptiveError)
-            and str(e.args[0]) != page + " not found in wiki."
+            and str(e.args[0]) != page + ".md not found in wiki."
         ):
             raise
         if session.get("logged_in"):
@@ -223,8 +223,8 @@ def wikipage(page=None):
         return redirect(url_for("views.login"))
     if not raw:
         body = bleach.clean(loaded_page.body)
-        body = markdown.markdown(body, extensions=["tables", "toc", "nl2br"])
-        body = fill_infolets(body, page)
+        body = LocalMarkdown().process(body)
+        # body = fill_infolets(body, page)
         return render_template(
             "wikipage.html",
             title=loaded_page.title,
@@ -302,19 +302,23 @@ def fensheet(c):
         if char is None:
             return redirect(url_for("wiki.tagsearch", tag="character"))
         u = User(un).configs()
+        if char.sheet.get(hash(u)) is not None:
+            return char.sheet.get(hash(u))
+
         time1 = time.time()
         body = render_template(
             "fensheet.html",
-            character=char,
+            character=char.char,
             context=c,
             userconf=u,
             infolet=infolet_filler(c),
-            md=lambda x: markdown.markdown(x, extensions=["tables", "nl2br"]),
+            md=lambda x: LocalMarkdown.process(x),
             extract=infolet_extractor,
             owner=u.get("character_sheet", None)
             if u.get("character_sheet", None) == c
             else "",
         )
+        char.sheet[hash(u)] = body
         time2 = time.time()
         return body + f"<!---load: {time1 - time0} render: {time2 - time1}--->"
     except DescriptiveError as e:
@@ -499,19 +503,19 @@ def specific(a: str, parse_md=None):
     else:
         article = article[article.find("\n") * hide_headline :]
     if parse_md:
-        return Markup(markdown.markdown(article, extensions=["tables", "toc", "nl2br"]))
+        return Markup(LocalMarkdown.process(article))
     return article
 
 
 def infolet_filler(context):
     def wrap(s):
-        return fill_infolets(str(s), context)
+        return LocalMarkdown.fill_infolet(s, context)
 
     return wrap
 
 
 def infolet_extractor(x):
-    m = hiddeninfos.match(str(x))
+    m = LocalMarkdown.infolet_re.match(str(x))
     if not m:
         return str(x)
     return m.group("name")
@@ -535,112 +539,3 @@ def lowercase_access(d, k):
             k.lower() + " does not exist in " + " ".join(data.keys())
         )
     return res
-
-
-def get_info(info_context):
-    def recursive_traverse(focus, path):
-        for seek in path[1:]:
-            focus = traverse_md(focus, seek.strip())
-        return focus
-
-    def wrap(match):
-        a = match.group("ref").split(":")
-        article = None
-        if a[-1] == "-":
-            a = a[:-1]
-            hide_headline = 1
-        else:
-            hide_headline = 0
-        try:
-            if a[0].strip() == "-":
-                for context_attempt in [info_context, "items", "prices", "notes"]:
-                    try:
-                        article = recursive_traverse(
-                            WikiPage.load_str(
-                                context_attempt,
-                            ).body,
-                            a,
-                        )
-                        if article:
-                            context = context_attempt
-                            break
-                    except Exception as e:
-                        print(
-                            f"searching {context_attempt} for {a} encountered Error {repr(e)}"
-                        )
-                        article = ""
-                else:
-                    context = info_context
-            else:
-                article = recursive_traverse(WikiPage.load_str(a[0]).body, a)
-                context = a[0]
-        except DescriptiveError as e:
-            flash(e.args[0])
-            article = ""
-            context = info_context
-
-        if not article:
-            if match.group("cmd") == "q":  # short version => no error
-                return None
-            article = ":".join(a) + "<br>[[not found]]"
-        elif hide_headline:
-            article = article[article.find("\n") * hide_headline :]
-
-        res = markdown.markdown(
-            fill_infolets(article, context), extensions=["tables", "toc", "nl2br"]
-        )
-        return res
-
-    return wrap
-
-
-def hide(func):
-    def hidden(text: Match):
-        header = (
-            text.group("name") or text.group("ref").strip("[]-:").split(":")[-1].title()
-        )
-        res = func(text)
-        if res is None:  # means do not replace
-            return text.group("name")
-        try:
-            h = srs()
-            return (
-                f'<div class=hider data-for="{h}"><b>{header}</b></div>\n'
-                f'<div id="{h}" class="hiding">{str(res)}</div>'
-            )
-        except Exception as e:
-            return f"Error with {header}:\n  {e.args} !"
-
-    return hidden
-
-
-def headerfix(text: Match):
-    if "\n" not in text.group("content"):
-        return text.group()
-    return (
-        f"<{text.group('h')} {text.group('extra')}> "
-        f"{text.group('content').splitlines()[0]}</{text.group('h')}>"
-        + "\n".join(text.group("content").splitlines()[1:])
-    )
-
-
-hiddentable = re.compile(
-    r"\[(?P<name>.*?)\[\[(?P<kind>.+?):(?P<ref>[\S ]+):(?P<mod>.*?)]]]",
-    re.IGNORECASE,
-)
-table = re.compile(r"\[\[(?P<kind>.+?):(?P<ref>[\S ]+):(?P<mod>.*?)]]", re.IGNORECASE)
-hiddeninfos = re.compile(
-    r"\[(?P<name>.*?)\[\[(?P<cmd>specific|q):(?P<ref>[\S ]+)]]]", re.IGNORECASE
-)
-infos = re.compile(r"\[\[(?P<cmd>specific|q):(?P<ref>(-:)?[\S ]+)]]", re.IGNORECASE)
-re_links = re.compile(r"\[(.+?)]\((?P<ref>.+?)\)")
-headers = re.compile(
-    r"<(?P<h>h\d*)\b(?P<extra>[^>]*)>(?P<content>.*?)</(?P=h)\b[^>]*>",
-    re.IGNORECASE | re.DOTALL,
-)
-
-
-def fill_infolets(body, context):
-    body = re_links.sub(r'<a href="/wiki/\g<2>"> \g<1> </a>', body)
-    body = infos.sub(get_info(context), hiddeninfos.sub(hide(get_info(context)), body))
-    return headers.sub(headerfix, body)

@@ -11,9 +11,9 @@
             Nossinet Berlin by Night
         {%- endif -%}</title>
     {% endblock %}
-    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename='style.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename='style.css') }}?v={{ restart_id }}">
     {%- if session.light or light is defined -%}
-        <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename='stylelight.css') }}">
+        <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename='stylelight.css') }}?v={{ restart_id }}">
     {%- endif %}
     <script type="text/javascript" charset="utf-8">
         window.addEventListener("load", () => {

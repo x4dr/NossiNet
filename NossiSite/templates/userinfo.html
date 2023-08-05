@@ -24,11 +24,8 @@
             <br>
             <a href="{{ url_for("views.showsheet", name=user.username) }}">Sheet of {{ user.username }}</a>
         {% else %}
-            <h3>You have {{ user.funds }} Credits.</h3>
             <h3>Your Discord account is {{ configs.get("discord", "not set") }}. <a
                     href="{{ url_for("views.config", x="discord") }}"> CHANGE </a></h3>
-            <h3><a href="{{ url_for("views.add_funds") }}"> BUY CREDITS </a></h3>
-            <h3><a href="{{ url_for("views.payout") }}"> SELL CREDITS </a></h3>
             <h3><a href="{{ url_for("views.editentries", x="all") }}">MAKE OR EDIT POSTS</a></h3>
             <h3><a href="{{ url_for("views.resetpassword") }}"> CHANGE PASSWORD </a></h3>
             <h4 class="hider" data-for="config"> Configuration</h4>

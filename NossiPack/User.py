@@ -2,6 +2,7 @@ import pickle
 import sqlite3
 from typing import Union, List, Dict
 
+from frozendict import frozendict
 from flask import flash
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -106,7 +107,7 @@ class User:
 
     def configs(
         self,
-    ) -> Dict[str, str]:
+    ) -> frozendict[str, str]:
         # central place to store default values for users
         res = {
             "discord": "not set",
@@ -117,7 +118,8 @@ class User:
         }
 
         res.update(Config.loadall(self.username))
-        return res
+
+        return frozendict(res)
 
     def config(self, option, default=None):
         val = Config.load(self.username, option)

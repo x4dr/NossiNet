@@ -3,9 +3,9 @@
 <title>NossiNet</title>
 <link rel=stylesheet type=text/css href="
 {%- if session.light -%}
-{{ url_for("static", filename='stylelight.css') }}
+{{ url_for("static", filename='stylelight.css') }}?v={{ restart_id }}
 {%- else -%}
-{{ url_for("static", filename='style.css') }}
+{{ url_for("static", filename='style.css') }}?v={{ restart_id }}
 {%- endif -%}
 ">
 <head>

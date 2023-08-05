@@ -182,17 +182,8 @@ def config(x=None):
     checklogin()
     if request.method == "GET":
         c = Config.load(session["user"], x) or ""
-        heading = "Change " + x.title()
-        if x == "discord":
-            desc = (
-                "Your Discord account (name#number) that will be able to "
-                "remote control your Nosferatunet Account:"
-            )
-        else:
-            desc = f"What would you like {x.title()} to be?"
-        return render_template(
-            "config.html", heading=heading, description=desc, config=x, curval=c
-        )
+        heading = x
+        return render_template("config.html", heading=heading, config=x, curval=c)
     if request.method == "POST":
         if not x:
             return redirect(url_for("views.config", x=request.form["configuration"]))
@@ -200,6 +191,13 @@ def config(x=None):
             log.info(f"Deleting {x} of user {session['user']}.")
             Config.delete(session["user"], x.lower())
             flash(f"Deleted {x}!")
+        elif s := request.form.get("confirm", None):
+            if x != "unconfirmed_discord_link":
+                abort(400)
+            log.info(f"confirming discord account {s} for user {session['user']}.")
+            Config.save(session["user"], "discord", s)
+            Config.delete(session["user"], x.lower())
+            flash(f"Confirmed {s} as your discord account!")
         else:
             Config.save(session["user"], x.lower(), request.form["configuration"])
             flash(f"Saved {x}!")
