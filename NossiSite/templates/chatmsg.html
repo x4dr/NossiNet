@@ -1,0 +1,5 @@
+{%- for linenr, message in messages.items() -%}
+<div id="chatbox" hx-swap-oob="beforeend"><div>[<div class="timestamp">{{ message.time }}</div>] {{ message.line -}}</div></div>
+{%- endfor -%}
+<div id="statusmessage">Connected! Last Update: [<div class="timestamp">{{ now|string }}</div>]</div>
+{{- none -}}

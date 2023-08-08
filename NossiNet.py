@@ -2,17 +2,17 @@ import logging.config
 import sys
 import Data
 from NossiSite import views, wiki, extra, webhook, helpers, chat
-from NossiSite.base import app, socketio
+from NossiSite.base import app
 
 logging.config.fileConfig(Data.handle("logging_config.conf"))
 # register the endpoints
 app.register_blueprint(views.views)
 app.register_blueprint(wiki.views)
 app.register_blueprint(extra.views)
-socketio.on_namespace(chat.Chat("/chat"))
+app.register_blueprint(chat.views)
 webhook.register(app)
 helpers.register(app)
-
+chat.sock.init_app(app)
 
 if __name__ == "__main__":
     logging.warning("Nosferatu net being run directly, DO NOT USE IN PRODUCTION")

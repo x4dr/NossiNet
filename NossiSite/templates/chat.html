@@ -1,33 +1,37 @@
 {% extends "layout.html" %}
 {% block head %}
-    <!--suppress , JSUnresolvedVariable, JSUnresolvedFunction -->
-    <script type="text/javascript" charset="utf-8">
-        window.onload = function () {
-            const script = document.createElement('script');
-            script.src = '/static/chat.js';
-            script.type = 'text/javascript';
-            const head = document.getElementsByTagName("head")[0];
-            head.appendChild(script);
-        }
+    <script src="https://unpkg.com/htmx.org@1.9.3" integrity="sha384-lVb3Rd/Ca0AxaoZg5sACe8FJKF0tnUgR2Kd7ehUOG5GCcROv5uBIZsOqovBAcWua" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
+    <meta name="htmx-config" content='{"useTemplateFragments":"true"}'>
+    <script>
+        document.addEventListener("htmx:wsAfterMessage", function (event) {
+            const chatbox = document.getElementById("chatbox");
+            chatbox.scrollTop = chatbox.scrollHeight;
+
+            document.querySelectorAll(".timestamp").forEach(function (element) {
+                const date =  new Date(element.innerText);
+                element.outerHTML = date.getHours().toString().padStart(2,"0")+":"+date.getMinutes().toString().padStart(2,"0")+":"+date.getSeconds().toString().padStart(2,"0");
+            });
+        });
+         document.addEventListener("htmx:wsAfterSend", function (event) {
+            document.getElementById("message_data").value = "";
+        });
+
     </script>
-    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"
-            integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+"
-            crossorigin="anonymous"></script>
 {% endblock %}
 {% block body %}
-    <div id="wrapper">
-        <div id="inner" style="width: 100%;">
+    <div id="wrapper"hx-ext="ws" ws-connect="/chatupdates">
+        <div id="inner" style="width: 100%;"  >
             <div id="chatbox" class="chatbox"></div>
         </div>
-        <div id="statusmessage">Waiting for Server connection...</div>
-        <form id="messageform" name="messageform" action="#">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div id="statusmessage"  >Waiting for Server connection...</div>
+        <form id="messageform" ws-send>
             <div class="formline" style="display: flex; align-items: center">
                 <label for="message_data"></label>
                 <input class="leet" type="text" name="message_data" id="message_data"
                        placeholder="Message" autocomplete="off" style="flex-grow: 1">
                 <input class="leet" name="submitmsg" type="submit" id="submitmsg"
-                       value="Send" style="width:  auto"/>
+                       value="Send" />
             </div>
         </form>
     </div>
