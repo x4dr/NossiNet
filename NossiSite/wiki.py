@@ -140,11 +140,14 @@ def adminwiki(page: str = None):
         if n.is_dir():
             n = n / path.name
         n = n.relative_to(WikiPage.wikipath())
-    for k in WikiPage.wikicache.keys():
-        if path.relative_to(
-            WikiPage.wikipath()
-        ).as_posix() in k or k in path.relative_to(WikiPage.wikipath()):
+    # copy to list to avoid changing dict while iterating
+    for k in list(WikiPage.wikicache.keys()):
+        if (
+            path.relative_to(WikiPage.wikipath()).as_posix() in k
+            or k in path.relative_to(WikiPage.wikipath()).as_posix()
+        ):
             WikiPage.cacheclear(WikiPage.locate(k))
+    WikiPage.cacheclear(WikiPage.locate(path))
     if "delete" in request.form:
         n = (WikiPage.wikipath() / n).with_suffix(".md")
         if n != path:
@@ -173,13 +176,13 @@ def adminwiki(page: str = None):
         subprocess.run(
             [
                 Path("~").expanduser() / "bin/wikimove",
-                path.relative_to(WikiPage.wikipath()).as_posix(),
-                n.as_posix(),
+                path.relative_to(WikiPage.wikipath()).with_suffix(".md").as_posix(),
+                n.with_suffix(".md").as_posix(),
             ]
         )
         flash(f"Moved {path.relative_to(WikiPage.wikipath())} to {n}.", "warning")
         WikiPage.updatewikicache()
-        return redirect(url_for("wiki.wiki_index", page=n))
+        return redirect(url_for("wiki.adminwiki", page=n))
     abort(400)
 
 
