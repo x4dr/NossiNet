@@ -30,8 +30,11 @@ class User:
         self.username = username.strip().upper()
         if passwordhash is not None:
             self.pw_hash = passwordhash
-        else:
+        elif password:
             self.pw_hash = generate_password_hash(password)
+        else:
+            self.pw_hash = ""
+
         self.funds = funds
         self.sheet = "unused"
         self.sheetid = sheet

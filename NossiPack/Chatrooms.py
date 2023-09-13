@@ -4,10 +4,18 @@ from datetime import datetime
 from typing import List, Tuple, Union
 
 from flask import session
-from flask_socketio import emit
+
+# from flask_socketio import emit
 from gamepack.Dice import DescriptiveError
 
 from Data import connect_db
+
+
+def dummy(*args, **kwargs):
+    print("dummy called with", args, kwargs)
+
+
+emit = dummy
 
 
 def echo(message):

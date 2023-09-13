@@ -298,16 +298,13 @@ def editwiki(page=None):
 
 @views.route("/fensheet/<c>")
 def fensheet(c):
-    un = session.get("user", "")
+    username = session.get("user", "")
     try:
         time0 = time.time()
         char = WikiCharacterSheet.load_str(c)
         if char is None:
             return redirect(url_for("wiki.tagsearch", tag="character"))
-        u = User(un).configs()
-        if char.sheet.get(hash(u)) is not None:
-            return char.sheet.get(hash(u))
-
+        u = User(username).configs()
         time1 = time.time()
         body = render_template(
             "fensheet.html",
@@ -321,7 +318,6 @@ def fensheet(c):
             if u.get("character_sheet", None) == c
             else "",
         )
-        char.sheet[hash(u)] = body
         time2 = time.time()
         return body + f"<!---load: {time1 - time0} render: {time2 - time1}--->"
     except DescriptiveError as e:
