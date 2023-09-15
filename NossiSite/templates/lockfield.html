@@ -1,5 +1,5 @@
 {% for num in toupdate %}
 <div class="divTableCell" id="cell-{{ num }}" hx-get="/lock/{{num}}" hx-swap-oob="true" style="background: {% if field[num] -%}
-    #000866{% else -%}
-    #10a010{% endif %}"></div>
+    #10a010{% else -%}
+    #000866{% endif %}"></div>
 {% endfor %}

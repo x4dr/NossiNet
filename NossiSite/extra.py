@@ -54,9 +54,8 @@ def lock():
     for i, x in enumerate(randommatrix(25)):
         if x:
             f, _ = togglelock(f, i)
-
     session["lock"] = f
-    return render_template("lock.html", field=session["lock"])
+    return render_template("lock.html", field=f)
 
 
 @views.route("/lock/<int:pos>")

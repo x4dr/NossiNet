@@ -29,9 +29,9 @@
             {% for i in range(5) %}
                 <div class="divTableRow">
                     {% for j in range(5) %}
-                        <div class="divTableCell" id="cell-{{ i*5 + j }}" hx-swap-oob="true"  hx-get="/lock/{{i*5+j}}" style="background: {% if field[i*5 + j] -%}
-                            #000866{% else -%}
-                            #10a010{% endif %}"></div>
+                        <div class="divTableCell" id="cell-{{ i*5 + j }}" hx-swap-oob="true" hx-get="/lock/{{i*5+j}}" style="background: {% if field[i*5 + j] -%}
+                            #10a010{% else -%}
+                            #000866{% endif %}"></div>
                     {% endfor %}
                 </div>
             {% endfor %}
