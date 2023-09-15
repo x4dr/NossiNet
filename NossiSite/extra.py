@@ -23,11 +23,6 @@ from NossiSite.helpers import checklogin
 views = Blueprint("extra", __name__)
 
 
-def matrixtonumber(matrix: list[int], length: int) -> int:
-    # matrix is a list of 0s and 1s
-    return sum(2**i for i, x in enumerate(matrix) if x)
-
-
 def numbertomatrix(number: int, length: int) -> list[int]:
     return [int(x) for x in bin(number)[2:].rjust(length, "0")]
 
@@ -36,7 +31,7 @@ def randommatrix(length: int) -> list[int]:
     return [random.randint(0, 1) for _ in range(length)]
 
 
-def togglelock(matrix: list[int], position: int) -> list[int]:
+def togglelock(matrix: list[int], position: int) -> (list[int], list[int]):
     # toggles the bit at position number and its neighbors if interpreted as a square matrix
     length = int(len(matrix) ** 0.5)
     pos = [position]
@@ -58,8 +53,8 @@ def lock():
     f = [0] * 25
     for i, x in enumerate(randommatrix(25)):
         if x:
-            f, dbg = togglelock(f, i)
-            print(dbg)
+            f, _ = togglelock(f, i)
+
     session["lock"] = f
     return render_template("lock.html", field=session["lock"])
 
@@ -297,10 +292,8 @@ def chargen(a, b, c, abia, abib, abic, shuffle, vamp=None, back=None):
             int(abic),
             int(shuffle),
         )
-        print(vamp)
         if vamp is not None:
             char.makevamprandom(vamp, back)
-        print(char.getdictrepr())
         if session.get("logged_in", False):
             return render_template(
                 "vampsheet_editor.html",

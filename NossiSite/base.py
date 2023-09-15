@@ -23,6 +23,8 @@ except FileNotFoundError:
 
 SECRET_KEY = key
 SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Strict"
 app.config.from_object(__name__)
 log = logging.getLogger("frontend")
 fh = logging.FileHandler("nossilog.log", mode="w")
