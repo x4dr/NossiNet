@@ -23,6 +23,57 @@ from NossiSite.helpers import checklogin
 views = Blueprint("extra", __name__)
 
 
+def matrixtonumber(matrix: list[int], length: int) -> int:
+    # matrix is a list of 0s and 1s
+    return sum(2**i for i, x in enumerate(matrix) if x)
+
+
+def numbertomatrix(number: int, length: int) -> list[int]:
+    return [int(x) for x in bin(number)[2:].rjust(length, "0")]
+
+
+def randommatrix(length: int) -> list[int]:
+    return [random.randint(0, 1) for _ in range(length)]
+
+
+def togglelock(matrix: list[int], position: int) -> list[int]:
+    # toggles the bit at position number and its neighbors if interpreted as a square matrix
+    length = int(len(matrix) ** 0.5)
+    pos = [position]
+    if pos[0] > length - 1:
+        pos.append(pos[0] - length)
+    if pos[0] < len(matrix) - length:
+        pos.append(pos[0] + length)
+    if pos[0] % length > 0:
+        pos.append(pos[0] - 1)
+    if pos[0] % length < length - 1:
+        pos.append(pos[0] + 1)
+    for p in pos:
+        matrix[p] = 1 - matrix[p]
+    return matrix, pos
+
+
+@views.route("/lock")
+def lock():
+    f = [0] * 25
+    for i, x in enumerate(randommatrix(25)):
+        if x:
+            f, dbg = togglelock(f, i)
+            print(dbg)
+    session["lock"] = f
+    return render_template("lock.html", field=session["lock"])
+
+
+@views.route("/lock/<int:pos>")
+def lockinteract(pos: int):
+    if "lock" not in session:
+        return redirect(url_for("extra.lock"))
+    f = session["lock"]
+    f, p = togglelock(f, pos)
+    session["lock"] = f
+    return render_template("lockfield.html", field=f, toupdate=p)
+
+
 @views.route("/setfromsource/")
 def setfromsource():
     checklogin()
