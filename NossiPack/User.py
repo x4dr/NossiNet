@@ -4,6 +4,7 @@ from typing import Union, List, Dict
 
 from frozendict import frozendict
 from flask import flash
+from gamepack.Dice import DescriptiveError
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from NossiPack.VampireCharacter import VampireCharacter
@@ -266,7 +267,7 @@ class Config:
         res = [x[0] for x in res if x[0].strip()]
         if len(res) != len(set(res)):
             db.rollback()
-            raise Exception("every charactersheet can only be chosen once!")
+            raise DescriptiveError("every charactersheet can only be chosen once!")
 
     @staticmethod
     def save(user, option, value, db=None):

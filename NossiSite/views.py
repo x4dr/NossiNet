@@ -199,8 +199,11 @@ def config(x=None):
             Config.delete(session["user"], x.lower())
             flash(f"Confirmed {s} as your discord account!")
         else:
-            Config.save(session["user"], x.lower(), request.form["configuration"])
-            flash(f"Saved {x}!")
+            try:
+                Config.save(session["user"], x.lower(), request.form["configuration"])
+                flash(f"Saved {x}!")
+            except DescriptiveError as e:
+                flash(f"Error: {e}", category="error")
         return redirect(url_for("views.show_user_profile", username=session["user"]))
     return abort(405)
 
