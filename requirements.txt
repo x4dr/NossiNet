@@ -4,7 +4,7 @@ pyopenssl==23.2.0
 coverage==7.2.7
 pre-commit==3.3.3
 bleach==6.0.0
-dnspython==2.4.1
+dnspython==2.6.0rc1
 eventlet==0.33.3
 Flask==2.3.2
 flask_wtf==1.1.1
