@@ -348,7 +348,7 @@ input[type='radio']:checked + label {
     background: url(radio.png) left center no-repeat;
 }
 
-.tablebody:nth-child(even) {background-color: #081008}
+.tablebody:nth-child(even) {background-color: #040a05}
 
 .alternate:nth-child(4n) {
     content: "";
@@ -361,10 +361,10 @@ input[type='radio']:checked + label {
 }
 
 .category:nth-child(even){
-    background: #000c0f;
+    background: #000205;
 }
 .category:nth-child(odd){
-    background: #000f0c;
+    background: #000502;
 }
 
 

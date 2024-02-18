@@ -3,6 +3,7 @@
 <meta name="viewport" content="width=device-width">
 <meta name="description" content="NosferatuNetwork by Maric
      Pen and Paper helper to support Roleplaying">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <head>
     {% block title -%}
         <title> {%- if session.light -%}

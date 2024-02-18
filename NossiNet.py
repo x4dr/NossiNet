@@ -27,7 +27,7 @@ if __name__ == "__main__":
         debug=True,
         port=port,
         use_reloader=False,
-        ssl_context="adhoc",
+        ssl_context=("cert.pem", "key.pem") if not test else None,
     )
 
     logging.warning("Nosferatu net closing")

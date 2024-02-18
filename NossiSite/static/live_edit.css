@@ -1,4 +1,14 @@
 
+.editeable:empty::before {
+    content: "_";
+    opacity: 0;
+}
+.editeable:empty:not(:hover) {
+    background: #00d700;
+    opacity: 0.05;
+}
+
+
 .editeable:hover {
     box-shadow:
             inset 8px 0 10px -3px rgba(0, 200, 0, 0.3),
@@ -7,17 +17,30 @@
     z-index: 1;
 }
 
+
+
 #text {
     overflow: scroll;
 }
 
 .message {
-    position: relative;
-    width: 99%;
-    height: 90%;
+    position: absolute;
+    height: 80%;
+    width: 50em;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     white-space: pre-wrap;
     transition:0.1s;
     font-size: larger;
+    clear: both;
+}
+
+.table_input {
+    transition:0.1s;
+    background: black;
+    color: #00d700;
+
 }
 
 .overlay {
@@ -33,10 +56,25 @@
 }
 
 .editfield {
-    width: 8%;
-    height: 8%;
-    left: 46%;
-    top: 46%;
+    width: 90%;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    height: 90%;
+    z-index: -1;
+    position: fixed;
+    background: #010e01;
+    box-shadow: inset 0 0 0 1px #00d700;
+    box-sizing: border-box;
+    visibility: hidden;
+    display: inline-block;
+    transition: 0.5s;
+}
+
+.editfield_table {
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
     z-index: -1;
     position: fixed;
     background: black;
@@ -45,18 +83,13 @@
     visibility: hidden;
     display: inline-block;
     transition: 0.5s;
+    padding: 10px;
 }
+
+
 
 .bottombutton{
-    bottom: 5px;
-    position: absolute;
-    right: 5px;
-}
-
-#closebutton{
-    bottom: 5px;
-    position: absolute;
-    left: 5px;
+    margin: 10px;
 }
 
 #editform{
@@ -65,10 +98,6 @@
 }
 
 .activeedit {
-    width: 90%;
-    left: 5%;
-    top: 2%;
-    height: 80%;
     z-index: 3;
     transition: 0.5s;
     visibility: visible;

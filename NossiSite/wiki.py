@@ -17,7 +17,7 @@ from flask import (
 )
 from gamepack.Dice import DescriptiveError
 from gamepack.FenCharacter import FenCharacter
-from gamepack.MDPack import traverse_md, search_tables
+from gamepack.MDPack import traverse_md, MDObj
 from gamepack.WikiCharacterSheet import WikiCharacterSheet
 from gamepack.WikiPage import WikiPage
 from markupsafe import Markup
@@ -296,7 +296,7 @@ def editwiki(page=None):
     return abort(405)
 
 
-@views.route("/fensheet/<c>")
+@views.route("/fensheet/<path:c>")
 def fensheet(c):
     username = session.get("user", "")
     try:
@@ -306,6 +306,7 @@ def fensheet(c):
             return redirect(url_for("wiki.tagsearch", tag="character"))
         u = User(username).configs()
         time1 = time.time()
+        charsh = u.get("character_sheet", None)
         body = render_template(
             "fensheet.html",
             character=char.char,
@@ -315,7 +316,7 @@ def fensheet(c):
             md=lambda x: LocalMarkdown.process(x),
             extract=infolet_extractor,
             owner=u.get("character_sheet", None)
-            if u.get("character_sheet", None) == c
+            if WikiPage.locate(c) == WikiPage.locate(charsh)
             else "",
         )
         time2 = time.time()
@@ -432,7 +433,6 @@ def live_edit():
             ]
             if e
         ]
-
         res: str = WikiPage.load_str(x["context"]).body
         if m := re.match(r"perc(0\.?\d*|1)", a[0]):  # percentage request
             ratio = float(m.group(1))
@@ -441,9 +441,13 @@ def live_edit():
         for seek in a[:-1]:
             res = traverse_md(res, seek)
         found = traverse_md(res, a[-1])
+        t = "text"
 
         if not found:
-            found = search_tables(res, a[-1], 1)
+            md = MDObj.from_md(res)
+            found = md.search_tables(a[-1]).to_simple()
+            t = "table"
+            return {"data": found, "type": t, "original": a[-1]}
 
         return {"data": found}
     # else, form was transmitted
@@ -456,26 +460,41 @@ def live_edit():
     if sheet_owner:
         sheet_owner = sheet_owner[0][0]
     if (not sheet_owner) or session.get("user") == sheet_owner:
-        old = x["original"].replace("\r\n", "\n")
-        new = x["new"].replace("\r\n", "\n")
-        if not old == new:
+        if x["type"] == "text":
+            old = x["original"].replace("\r\n", "\n")
+            new = x["new"].replace("\r\n", "\n")
+            if not old == new:
+                context = WikiPage.locate(context)
+                log.info(f"livereplacing {context}")
+                page = WikiPage.load(context)
+                page.body = page.body.replace("\r\n", "\n")
+                if old not in page.body:
+                    if old[:-1] in page.body:
+                        old = old[:-1]
+                    else:
+                        log.error(f"live replace didn't match {context}")
+                page.body = page.body.replace(old, new, 1)
+                page.save(context, session.get("user"))
+            else:
+                log.info(f"rejected empty replace {context}")
+        elif x["type"] == "table":
             context = WikiPage.locate(context)
-            log.info(f"livereplacing {context}")
             page = WikiPage.load(context)
-            page.body = page.body.replace("\r\n", "\n")
-            if old not in page.body:
-                if old[:-1] in page.body:
-                    old = old[:-1]
-                else:
-                    log.error(f"live replace didn't match {context}")
-            page.body = page.body.replace(old, new, 1)
-            page.save(context, session.get("user"))
-        else:
-            log.info(f"rejected empty replace {context}")
+            md = MDObj.from_md(page.body)
+            t = md.search_tables(x["original"])
+            t.clear_rows()
+            for k, v in x.items():
+                match k.split("_"):
+                    case ["table", row, col]:
+                        t.update_cell(int(row), int(col), v)
+            md = md.to_md()
+            if md != page.body:
+                page.body = md
+                page.save(context, session.get("user"))
     else:
         flash("Unauthorized, so ... no.", "error")
     if not wiki:
-        return redirect(url_for("wiki.fensheet", c=context))
+        return redirect(url_for("wiki.fensheet", c=x["context"]))
     else:
         return redirect(url_for("wiki.wikipage", page=context))
 
