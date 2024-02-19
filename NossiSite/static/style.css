@@ -364,7 +364,12 @@ input[type='radio']:checked + label {
     background: #000205;
 }
 .category:nth-child(odd){
-    background: #000502;
+    background: #020002;
+}
+
+.nonempty:empty::before {
+    content: "invisible";
+
 }
 
 

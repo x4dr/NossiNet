@@ -1,3 +1,4 @@
+import json
 import re
 import subprocess
 import time
@@ -421,80 +422,109 @@ def searchwiki():
     )
 
 
+def live_edit_get(formdata):
+    a = formdata.get("path", [])
+    a = [urllib.parse.unquote(x) for x in a if x]
+    t = urllib.parse.unquote(formdata.get("type", "text"))
+    res: str = WikiPage.load_str(formdata["context"]).body
+    if t == "text":
+        return live_edit_get_text(res, a)
+    if t == "table":
+        return {**live_edit_get_table(res, a), "path": a}
+    return {"data": "", "type": "error"}
+
+
+def live_edit_get_text(res, a):
+    if m := re.match(r"perc(0\.?\d*|1)", a[0]):  # percentage request
+        ratio = float(m.group(1))
+        pos = int(len(res) * ratio)
+        return {"data": res[max(0, pos - 200) : pos + 500]}
+    mdo = MDObj.from_md(res)
+    for step in a:
+        mdo = mdo.children[step]
+    header = f"{'#' * len(a)} {a[-1]}\n"
+    return {"data": header + mdo.to_md(len(a)), "type": "text"}
+
+
+def live_edit_get_table(res, a):
+    mdo = MDObj.from_md(res)
+    for step in a:
+        mdo = mdo.children[step]
+    if mdo.tables is None:
+        return {"data": "", "type": "error"}
+
+    return {"data": mdo.tables[0].to_simple(), "type": "table"}
+
+
+def live_edit_write(formdata, context):
+    if formdata["type"] == "text":
+        return live_edit_write_text(formdata, context)
+    elif formdata["type"] == "table":
+        return live_edit_write_table(formdata, context)
+
+
+def live_edit_write_text(formdata, context):
+    old = formdata["original"].replace("\r\n", "\n")
+    new = formdata["new"].replace("\r\n", "\n")
+    if not old == new:
+        context = WikiPage.locate(context)
+        log.info(f"livereplacing {context}")
+        page = WikiPage.load(context)
+        page.body = page.body.replace("\r\n", "\n")
+        if old not in page.body:
+            if old[:-1] in page.body:
+                old = old[:-1]
+            else:
+                log.error(f"live replace didn't match {context}")
+        page.body = page.body.replace(old, new, 1)
+        page.save(context, session.get("user"))
+    else:
+        log.info(f"rejected empty replace {context}")
+
+
+def live_edit_write_table(formdata, context):
+    context = WikiPage.locate(context)
+    page = WikiPage.load(context)
+    md = MDObj.from_md(page.body)
+    path = json.loads(formdata["path"])
+    t = md
+    for p in path:
+        t = t.children[p]
+    if not t.tables:
+        raise ValueError("path failure")
+    t = t.tables[0]
+    t.clear_rows()
+
+    data = [x for x in formdata.items() if x[0].startswith("table_")]
+    # remove empty rows at the end
+    for k, v in data:
+        _, row, col = k.split("_")
+        t.update_cell(int(row), int(col), v)
+    t.headers = [x[1] for x in formdata.items() if x[0].startswith("header_")]
+    md = md.to_md()
+    if md != page.body:
+        page.body = md
+        page.save(context, session.get("user"))
+
+
 @views.route("/live_edit", methods=["POST"])
 def live_edit():
-    if request.is_json and (x := request.get_json()):
-        a = [
-            e
-            for e in [
-                urllib.parse.unquote(x["cat"]),
-                urllib.parse.unquote(x.get("sec", "")),
-                urllib.parse.unquote(x.get("it", "")),
-            ]
-            if e
-        ]
-        res: str = WikiPage.load_str(x["context"]).body
-        if m := re.match(r"perc(0\.?\d*|1)", a[0]):  # percentage request
-            ratio = float(m.group(1))
-            pos = int(len(res) * ratio)
-            return {"data": res[max(0, pos - 200) : pos + 500]}
-        for seek in a[:-1]:
-            res = traverse_md(res, seek)
-        found = traverse_md(res, a[-1])
-        t = "text"
-
-        if not found:
-            md = MDObj.from_md(res)
-            found = md.search_tables(a[-1]).to_simple()
-            t = "table"
-            return {"data": found, "type": t, "original": a[-1]}
-
-        return {"data": found}
+    if request.is_json and (formdata := request.get_json()):
+        return live_edit_get(formdata)
     # else, form was transmitted
-    x = request.form
-    context = x.get("context", None)
+    formdata = request.form
+    context = formdata.get("context", None)
     wiki = not context
-    context = context or x.get("wiki", None)
-
+    context = context or formdata.get("wiki", None)
     sheet_owner = Config.users_with_option_value("character_sheet", context)
     if sheet_owner:
         sheet_owner = sheet_owner[0][0]
     if (not sheet_owner) or session.get("user") == sheet_owner:
-        if x["type"] == "text":
-            old = x["original"].replace("\r\n", "\n")
-            new = x["new"].replace("\r\n", "\n")
-            if not old == new:
-                context = WikiPage.locate(context)
-                log.info(f"livereplacing {context}")
-                page = WikiPage.load(context)
-                page.body = page.body.replace("\r\n", "\n")
-                if old not in page.body:
-                    if old[:-1] in page.body:
-                        old = old[:-1]
-                    else:
-                        log.error(f"live replace didn't match {context}")
-                page.body = page.body.replace(old, new, 1)
-                page.save(context, session.get("user"))
-            else:
-                log.info(f"rejected empty replace {context}")
-        elif x["type"] == "table":
-            context = WikiPage.locate(context)
-            page = WikiPage.load(context)
-            md = MDObj.from_md(page.body)
-            t = md.search_tables(x["original"])
-            t.clear_rows()
-            for k, v in x.items():
-                match k.split("_"):
-                    case ["table", row, col]:
-                        t.update_cell(int(row), int(col), v)
-            md = md.to_md()
-            if md != page.body:
-                page.body = md
-                page.save(context, session.get("user"))
+        live_edit_write(formdata, context)
     else:
         flash("Unauthorized, so ... no.", "error")
     if not wiki:
-        return redirect(url_for("wiki.fensheet", c=x["context"]))
+        return redirect(url_for("wiki.fensheet", c=formdata["context"]))
     else:
         return redirect(url_for("wiki.wikipage", page=context))
 

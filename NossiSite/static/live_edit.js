@@ -6,18 +6,20 @@ window.addEventListener("load", () => {
         window.get_edit_content =
             (con, ref) => {
                 return async () => {
+
                     if (lock_edit_content) return;
                     lock_edit_content = true
-                    const {category, section, item} = ref.dataset;
+                    const path = ref.dataset.path.split("|");
+                    let req = {"context": con, "path": path}
+                    req.type = ref.dataset["type"] || "text";
                     const response = await fetch("/live_edit", {
                         method: 'POST',
-                        body: JSON.stringify({"context": con, "cat": category, "sec": section, "it":item}),
+                        body: JSON.stringify(req),
                         headers: {
                             'Content-Type': 'application/json',
                             'X-CSRFToken': csrf_token
                         }
                     });
-
                     let reply;
                     try {
                         reply = await response.json(); //extract JSON from the http response
@@ -32,7 +34,6 @@ window.addEventListener("load", () => {
                         ref.onclick=()=>{};
                     }
                     else {
-                        console.log(reply)
                         if (reply["type"] === "table") {
                             table_row_overlay_edit(reply)
                         }
@@ -57,44 +58,49 @@ window.addEventListener("load", () => {
             textdiv.focus();
             textdiv.click();
             //document.body.style.overflow="hidden"
-            overlay.style.visibility = "visible";
+            overlay.style.opacity="1";
+            overlay.style.zIndex="1";
             closebutton.onclick = () => {
-            document.body.style.overflow="auto"
-            editfield.className="editfield"
-            textdiv.value = ""
-            olddata.value = ""
-            overlay.style.visibility="hidden";
+                document.body.style.overflow="auto"
+                editfield.className="editfield"
+                textdiv.value = ""
+                olddata.value = ""
+                overlay.style.opacity="0";
+                overlay.style.opacity="1";
+                overlay.style.zIndex="-1";
+            }
         }
-        }
-        function table_row_overlay_edit(reply) {
+        function table_row_overlay_edit(reply, path) {
             const editfield = document.getElementById("table_editor");
             const overlay = document.getElementById("overlay");
             const table = editfield.querySelector("table");
+            const addbutton = editfield.querySelector("[name='addtable_entry']");
             const closebutton = editfield.querySelector("[name='closebutton']");
-            const olddata = editfield.querySelector("[name='original']");
             const headers = reply["data"]["headers"];
             const rows = reply["data"]["rows"];
-            const style = reply["data"]["styles"];
-            console.log(reply)
-            olddata.value = reply["original"];
-            let thead = document.createElement('thead');
-            table.appendChild(thead);
-            let tr = document.createElement('tr');
-            thead.appendChild(tr);
+            editfield.querySelector("[name='styles']").value = reply["data"]["styles"];
 
+            editfield.querySelector("[name='path']").value = JSON.stringify(reply["path"]);
+
+            let header_row = table.querySelector("thead tr");
+            header_row.innerHTML = "";
             for (let i = 0; i < headers.length; i++) {
                 let cell = document.createElement('th');
-                cell.innerHTML = headers[i];
-                tr.appendChild(cell);
+                let input = document.createElement('input');
+                input.value = headers[i];
+                input.className = "leeeet"
+                input.style.padding= "5px";
+                input.style.alignContent= "center";
+                input.style.color= "#007000";
+                input.name = "header_"+i;
+                cell.appendChild(input);
+                header_row.appendChild(cell);
             }
-
-            let tbody = document.createElement('tbody');
-            table.appendChild(tbody);
-
+            let tbody = table.querySelector("tbody");
+            tbody.innerHTML = "";
             for (let i = 0; i < rows.length; i++) {
                 let row = document.createElement('tr');
                 for (let prop in rows[i]) {
-                    console.log(rows[i][prop])
                     let cell = document.createElement('td');
                     let input = document.createElement('input');
                     input.value = rows[i][prop];
@@ -106,12 +112,27 @@ window.addEventListener("load", () => {
                 tbody.appendChild(row);
             }
             editfield.classList.add("activeedit");
-            overlay.style.visibility = "visible";
+            overlay.style.opacity="1";
+            overlay.style.zIndex="1";
             closebutton.onclick = () => {
                 document.body.style.overflow="auto"
                 editfield.className="editfield_table"
-                table.innerHTML = ""
-                overlay.style.visibility="hidden";
+                overlay.style.zIndex="-1";
+                overlay.style.opacity="0";
+            }
+            addbutton.onclick = () => {
+                let row = document.createElement('tr');
+                for (let i = 0; i < headers.length; i++) {
+                    let cell = document.createElement('td');
+                    let input = document.createElement('input');
+                    input.value = "";
+                    input.className = "leet"
+                    input.name = "table_"+rows.length+"_"+i;
+                    cell.appendChild(input);
+                    row.appendChild(cell);
+                }
+                rows.push(row);
+                tbody.appendChild(row);
             }
         }
 

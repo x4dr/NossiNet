@@ -6,16 +6,42 @@
 .editeable:empty:not(:hover) {
     background: #00d700;
     opacity: 0.05;
+    margin: 0;
+    border: 0;
 }
 
+.editeable {
+    position: relative;
+}
 
-.editeable:hover {
+.editeable::before {
     box-shadow:
-            inset 8px 0 10px -3px rgba(0, 200, 0, 0.3),
-            inset -8px 0 10px -3px rgba(0, 200, 0, 0.3);
-    transition: 0.5s;
-    z-index: 1;
+            inset 0 0 10px -5px rgba(0, 0, 50, 0),
+            inset 0 0 10px -5px rgba(0, 0, 50, 0);
+    transition: 1s;
+    position: absolute;
+    top: 100%;
+    left: 100%;
+    width: calc(100% + 16px);
+    height: calc(100% + 16px);
+    transform: translate(calc(-100% + 8px), calc(-100% + 8px));
+    content: " "
 }
+
+.editeable:hover::before {
+    box-shadow:
+            inset 10px 10px 10px -5px rgba(20, 180, 0, 0.3),
+            inset -10px -10px 10px -5px rgba(0, 180, 20, 0.3);
+    transition: 0.1s;
+    position: absolute;
+    top: 100%;
+    left: 100%;
+    width: 100%;
+    height: 100%;
+    content: " ";
+    transform: translate(-100%, -100%);
+}
+
 
 
 
@@ -44,11 +70,11 @@
 }
 
 .overlay {
-    visibility: hidden;
+    opacity: 0;
     position: fixed;
     height: 100%;
     width: 100%;
-    z-index: 1;
+    z-index: -1;
     background: rgba(50,60,55,0.8);
     transition:0.5s;
     top:0;
@@ -104,7 +130,17 @@
 }
 
 .failed {
-    box-shadow: inset 0 500px 100px 0 rgba(250, 0, 0, 0.9);
+    position: relative;
+    will-change: transform;
+}
+
+.failed::before {
+    box-shadow: inset 0 500px 100px 0 rgba(255, 0, 0, 0.3);
     transition: 10s;
-    flex: 0 1 0;
+    content: " ";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
 }

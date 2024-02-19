@@ -24,8 +24,8 @@
         ○
     {%- endfor -%}
 {%- endmacro -%}
-{%- macro tablematrix(table, cat) -%}
-    <table>
+{%- macro tablematrix(table, cat, path) -%}
+    <table class="editeable" data-path="{{ path }}" data-type="table" >
         {%- if table.headers -%}
             <thead class="heading">
             <tr  class="tablebody">
@@ -40,9 +40,7 @@
             <tr class="tablebody">
                 {% set outer_loop = loop %}
                 {% for subline in line -%}
-                    <td{%- if owner %} class = "editeable" data-category="{{ cat|urlencode }}"
-                                       data-section="{{ extract(k)|urlencode }}"{% endif -%}
-                    >{{ infolet(subline) | safe }}</td>
+                    <td>{{ infolet(subline) | safe }}</td>
                 {% endfor -%}
             </tr>
 
@@ -53,16 +51,17 @@
 {% endmacro %}
 {% macro sectionformat(cat,name) %}
     {%- for k,v in cat.items() -%}
-        <table>
+        <table style="border-collapse: collapse">
+            <thead>
             {%- if v is mapping -%}
-                <th data-category="{{ name|urlencode }}" data-section="{{ k[:30]|urlencode }}" class="subheading
-            {%- if owner %} editeable{% endif %}" colspan="2">
-                    {{- k -}}
-                </th>
+                <th  data-path="{{character.headings_used["values"]}}|{{ name|urlencode }}|{{ k[:30]|urlencode }}" class="subheading
+                {%- if owner %} editeable{% endif %}" colspan="2">{{- k -}}</th>
+                </thead>
+                <tbody class="{%- if owner %} editeable{% endif -%}"
+                       data-path="{{character.headings_used["values"]}}|{{ name|urlencode }}|{{ k[:30]|urlencode }}" data-type="table">
                 {% set notfirstsection = loop.index0 %}
                 {%- for vk,vv in v.items() -%}
-                    <tr class="tablebody  {%- if owner %} editeable{% endif -%}" data-category="{{ name|urlencode }}" data-section="{{ k[:30]|urlencode -}}
-                        " data-item="{{vk}}">
+                    <tr class="tablebody">
                         <td>&nbsp;{{ infolet(vk | remove_leading_underscore) | safe }}</td>
                         <td class="tooltip" style="text-align: right; width: 1%">
                             {%- if not notfirstsection
@@ -79,6 +78,7 @@
                         </td>
                     </tr>
                 {%- endfor -%}
+                </tbody>
             {% else %}
                 Debug: {{ v }} has no items
             {%- endif -%}
@@ -87,7 +87,7 @@
 {% endmacro %}
 {%- macro catformat(cat, name, cost) -%}
     <div class="gridwrapper category">
-        <div data-category="{{ name|urlencode }}"  class="tooltip heading span-2{% if owner %} editeable{% endif %}">{{ name }}
+        <div data-path="{{character.headings_used["values"]}}|{{ name|urlencode }}"  class="tooltip heading span-2{% if owner %} editeable{% endif %}">{{ name }}
             <a href="{{url_for("wiki.fen_calc",inputstring=cost) }} "><span class="tooltiptext">Options<br/>for {{ cost }}<br/>{% for l in
                     character.cost_calc(cost)
                     %}{% for b in l %}{{ b }}{% if not loop.last %},{% endif %}{% endfor %}<br/> {% endfor %} </span></a>
@@ -101,18 +101,21 @@
         {% endif %}
     </div>
 {%- endmacro -%}
-{% macro treepart(tree, depth, name) %}
-    {{ md(infolet(tree.plaintext)) | safe}}
-
+{% macro treepart(tree, depth, name, path) %}
+    <div class="editeable" data-path="{{ path }}">
+        {{md(infolet(tree.plaintext)) | safe}}
+    <br/>
+    </div>
     {% for table in tree.tables -%}
-        {{- tablematrix(table, name) }}
+        {{- tablematrix(table, name, path) }}
     {% endfor %}
     {% for child, content in tree.children.items() %}
         {% set s=srs() %}
         <h{{ depth }} class="hider" data-for="{{ s }}">{{ child }}</h{{ depth }}>
-        <div id="{{ s }}" class="hiding {% if owner %}editeable{% endif %}" data-category="{{ name|urlencode }}"
-             data-section="{{ child|urlencode }}">
-            {{ treepart(content, depth + 1, child) }}
+        <div id="{{ s }}" class="hiding {% if owner %}editeable{% endif %} nonempty"
+             data-path="{{ path+"|"+child }}" style="overflow: hidden;min-height: 2em;" >
+            {{- treepart(content, depth + 1, child, path+"|"+child) -}}
+
         </div>
     {% endfor %}
 {% endmacro %}
@@ -131,7 +134,8 @@
 
     <div class="flexwrapper">
         {%- for key,val in character.Character.items() -%}
-            <div class="infobox box{% if owner %} editeable{% endif %}" data-category="{{ key|urlencode }}">
+            <div class="infobox box{% if owner %} editeable{% endif %}"
+                 data-path="{{ character.headings_used["description"]|urlencode }}|{{ key|urlencode }}">
                 <div class="heading box">{{ key }}</div>
                 <div class="desc-text">
                     {%- if val is string -%}
@@ -145,16 +149,14 @@
     </div>
     <div class="flexwrapper categories">
         {%- for category,data in character.Categories.items() -%}
-            {{- catformat(data,category, character.points(category))-}}
+            {{- catformat(data, category, character.points(category))-}}
         {% endfor -%}
     </div>
     {%- for key,data in character.Meta.items() -%}
         {% set r = srs() %}
-        <h2 class="hider" data-for="{{ r }}">{{ key }}<span
-                {%- if owner %} class="editeable" data-category="{{ key }}"{% endif -%}
-        >&nbsp</span></h2>
-        <div id="{{ r }}" class="hiding">
-            {{ treepart(data,3, key) }}
+        <h2 class="hider" data-for="{{ r }}">{{ key }}</h2>
+        <div id="{{ r }}" class="hiding" style="overflow: visible">
+            {{ treepart(data,3, key, key) }}
         </div>
     {%- endfor -%}
     <div><button id="TopButton" title="Upwards">Top</button></div>
@@ -179,10 +181,12 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input name="context" type="hidden" value="{{ context }}">
             <input name="type" type="hidden" value="table">
-            <input name="original" type="hidden" value="">
-            <table id="table_editor"></table>
+            <input name="styles" type="hidden" value="">
+            <input name="path" type="hidden" value="">
+            <table id="table_editor"><thead><tr></tr></thead><tbody></tbody></table>
             <div style="justify-content: space-between; display: flex">
                 <input type="button" class="leeeet bottombutton" value="Close" name="closebutton">
+                <input type="button" class="leeeet bottombutton" value="+" name="addtable_entry">
                 <input type="submit" class="leeeet bottombutton" value="Overwrite">
             </div>
         </form>
