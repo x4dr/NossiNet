@@ -52,10 +52,10 @@
 {% macro sectionformat(cat,name) %}
     {%- for k,v in cat.items() -%}
         <table style="border-collapse: collapse">
-            <thead>
             {%- if v is mapping -%}
-                <th  data-path="{{character.headings_used["values"]}}|{{ name|urlencode }}|{{ k[:30]|urlencode }}" class="subheading
-                {%- if owner %} editeable{% endif %}" colspan="2">{{- k -}}</th>
+                <thead>
+                <tr><th  data-path="{{character.headings_used["values"]}}|{{ name|urlencode }}|{{ k[:30]|urlencode }}" class="subheading
+                {%- if owner %} editeable{% endif %}" colspan="2">{{- k -}}</th></tr>
                 </thead>
                 <tbody class="{%- if owner %} editeable{% endif -%}"
                        data-path="{{character.headings_used["values"]}}|{{ name|urlencode }}|{{ k[:30]|urlencode }}" data-type="table">
@@ -104,7 +104,7 @@
 {% macro treepart(tree, depth, name, path) %}
     <div class="editeable" data-path="{{ path }}">
         {{md(infolet(tree.plaintext)) | safe}}
-    <br/>
+        <br/>
     </div>
     {% for table in tree.tables -%}
         {{- tablematrix(table, name, path) }}

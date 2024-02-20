@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="mul">
+<head>
 <meta name="viewport" content="width=device-width">
 <meta name="description" content="NosferatuNetwork by Maric
      Pen and Paper helper to support Roleplaying">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<head>
     {% block title -%}
         <title> {%- if session.light -%}
             NossiNet Berlin by Day
@@ -75,7 +75,7 @@
                 <div class="metanavcontainer">
                     {%- block metanavpre -%}
                     {%- endblock -%}
-                    <a class="textbtn metanav" href="{{ url_for("wiki.wikipage", page="home") }}"">WIKI</a>
+                    <a class="textbtn metanav" href="{{ url_for("wiki.wikipage", page="home") }}">WIKI</a>
                     <a class="textbtn metanav" href="{{ url_for("views.charsheet") }}">SHEET</a>
                     <a class="textbtn metanav" href="{{ url_for("views.chatsite") }}">CHAT</a>
                     <a class="textbtn metanav"
