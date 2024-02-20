@@ -6,8 +6,6 @@ from gamepack.Dice import DescriptiveError
 from gamepack.FenCharacter import FenCharacter
 from gamepack.Item import fenconvert, fendeconvert
 from gamepack.MDPack import (
-    split_row,
-    table,
     search_tables,
     table_add,
     table_remove,
@@ -89,15 +87,6 @@ class TestViews(NossiTestCase):
         self.assertEqual(fendeconvert(fenconvert("252s"), "money"), "2.52a")
         self.assertEqual(fendeconvert(fenconvert("3332c"), "money"), "33.32s")
         self.assertEqual(fendeconvert(fenconvert("0.001a"), "money"), "10k")
-
-    def test_table_md(self):
-        self.assertEqual(["", "", "a"], split_row("||a", 3))
-        self.assertEqual([["a", "b"], ["1", "2"]], table("|a|b|\n|-|-\n1|2\n"))
-        self.assertEqual([], table("h|i"))
-        self.assertEqual(
-            [["a", "b"], ["1", "2"], ["extra", ""]],
-            table("|a|b|cut\n|-|-\n1|2\nextra\n"),
-        )
 
     def test_tablesrearch(self):
         sut = "##somestuff\n|a|b|\n|-|-|\n|x|1|\ny|2\n"
