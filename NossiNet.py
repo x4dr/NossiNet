@@ -31,3 +31,4 @@ if __name__ == "__main__":
     )
 
     logging.warning("Nosferatu net closing")
+application = app
