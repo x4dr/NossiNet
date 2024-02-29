@@ -25,7 +25,7 @@
     {%- endfor -%}
 {%- endmacro -%}
 {%- macro tablematrix(table, cat, path) -%}
-    <table class="editeable" data-path="{{ path }}" data-type="table" >
+    <table {% if owner %}class="editeable" {% endif %}data-path="{{ path }}" data-type="table" >
         {%- if table.headers -%}
             <thead class="heading">
             <tr  class="tablebody">
@@ -102,7 +102,7 @@
     </div>
 {%- endmacro -%}
 {% macro treepart(tree, depth, name, path) %}
-    <div class="editeable" data-path="{{ path }}">
+    <div{% if owner %} class="editeable"{% endif %} data-path="{{ path }}">
         {{md(infolet(tree.plaintext)) | safe}}
         <br/>
     </div>
