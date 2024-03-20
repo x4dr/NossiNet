@@ -17,7 +17,7 @@ MarkupSafe==2.1.3
 requests==2.31.0
 setuptools==68.0.0
 Werkzeug==3.0.1
-black==23.7.0
+black==24.3.0
 git+https://github.com/x4dr/GamePack.git@master#egg=gamepack
 frozendict~=2.3.8
 gunicorn==21.2.0
