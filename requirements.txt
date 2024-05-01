@@ -20,4 +20,4 @@ Werkzeug==3.0.1
 black==24.3.0
 git+https://github.com/x4dr/GamePack.git@master#egg=gamepack
 frozendict~=2.3.8
-gunicorn==21.2.0
+gunicorn==22.0.0
