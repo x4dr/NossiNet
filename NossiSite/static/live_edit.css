@@ -25,7 +25,8 @@
     width: calc(100% + 16px);
     height: calc(100% + 16px);
     transform: translate(calc(-100% + 8px), calc(-100% + 8px));
-    content: " "
+    content: " ";
+    pointer-events: none;
 }
 
 .editeable:hover::before {
@@ -40,6 +41,7 @@
     height: 100%;
     content: " ";
     transform: translate(-100%, -100%);
+    pointer-events: none;
 }
 
 

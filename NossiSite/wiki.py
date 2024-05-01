@@ -33,7 +33,6 @@ WikiPage.set_wikipath(Path.home() / "wiki")
 wikistamp = [0.0]
 
 chara_objects = {}
-page_cache = {}
 mdlinks = re.compile(r"<a href=\"(.*?)\".*?</a")
 
 bleach.ALLOWED_TAGS = ALLOWED_TAGS
@@ -316,9 +315,11 @@ def fensheet(c):
             infolet=infolet_filler(c),
             md=lambda x: LocalMarkdown.process(x),
             extract=infolet_extractor,
-            owner=u.get("character_sheet", None)
-            if WikiPage.locate(c) == WikiPage.locate(charsh)
-            else "",
+            owner=(
+                u.get("character_sheet", None)
+                if WikiPage.locate(c) == WikiPage.locate(charsh)
+                else ""
+            ),
         )
         time2 = time.time()
         return body + f"<!---load: {time1 - time0} render: {time2 - time1}--->"
@@ -413,7 +414,7 @@ def searchwiki():
                 (
                     w,
                     loaded_page.title,
-                    f"{loaded_page.body[max(p+m-pre,0):p+m+pos+length]}",
+                    f"{loaded_page.body[max(p+m-pre, 0):p+m+pos+length]}",
                 )
             )
             p += m + 1

@@ -54,7 +54,6 @@ class TestViews(NossiTestCase):
         helpers.register(app)
         c = app.test_client()
         c.get("/ewsheet/test")
-        del WikiPage.page_cache[WikiPage.locate("unittest")]
         WikiPage.locate("unittest.md").unlink(True)
         (WikiPage.wikipath() / "control").unlink(True)
 
@@ -128,7 +127,6 @@ class TestViews(NossiTestCase):
         self.assertEqual(len(x.split("\n")), 5)
         self.assertNotIn("!", x)
         WikiPage.locate("healing").unlink(True)
-        del WikiPage.page_cache[WikiPage.locate("healing")]
         (WikiPage.wikipath() / "control").unlink(True)
 
     def test_local_markdown_fold_transclusion(self):
@@ -161,7 +159,6 @@ class TestViews(NossiTestCase):
         self.assertEqual(len(x.split("\n")), 5)
         self.assertIn("#! test", x)
         WikiPage.locate("healing").unlink(True)
-        del WikiPage.page_cache[WikiPage.locate("healing")]
         (WikiPage.wikipath() / "control").unlink(True)
 
     def test_local_markdown_hiding(self):
