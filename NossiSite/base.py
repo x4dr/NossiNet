@@ -25,6 +25,7 @@ SECRET_KEY = key
 SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Strict"
+WTF_CSRF_TIME_LIMIT = 60 * 60 * 24 * 7  #
 app.config.from_object(__name__)
 log = logging.getLogger("frontend")
 fh = logging.FileHandler("nossilog.log", mode="w")
