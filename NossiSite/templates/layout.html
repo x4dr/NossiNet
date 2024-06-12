@@ -68,14 +68,14 @@
     {% block metanavcomplete %}
         <div class=metanavcontainer>
             {% if not session.logged_in %}
-                <a class="textbtn metanav" href="{{ url_for("wiki.wikipage", page="home") }}">wiki</a>
+                <a class="textbtn metanav" href="{{ url_for("wiki.wikipage", page="index") }}">wiki</a>
                 <a class="textbtn metanav" href="{{ url_for("views.login") }}">log in</a>
                 <a class="textbtn metanav" href="{{ url_for("views.register_user") }}">register</a>
             {% else %}
                 <div class="metanavcontainer">
                     {%- block metanavpre -%}
                     {%- endblock -%}
-                    <a class="textbtn metanav" href="{{ url_for("wiki.wikipage", page="home") }}">WIKI</a>
+                    <a class="textbtn metanav" href="{{ url_for("wiki.wikipage", page="index") }}">WIKI</a>
                     <a class="textbtn metanav" href="{{ url_for("views.charsheet") }}">SHEET</a>
                     <a class="textbtn metanav" href="{{ url_for("views.chatsite") }}">CHAT</a>
                     <a class="textbtn metanav"
