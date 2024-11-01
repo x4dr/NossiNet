@@ -14,4 +14,4 @@ numpy==2.0.0rc2
 Requests==2.31.0
 setuptools==69.5.1
 simple_websocket==1.0.0
-Werkzeug==3.0.3
+Werkzeug==3.0.6
