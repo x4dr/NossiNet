@@ -11,8 +11,8 @@ Markdown==3.6
 MarkupSafe==2.1.5
 matplotlib==3.9.0
 numpy==2.0.0rc2
+setuptools==70.0.0
 Requests==2.32.0
-setuptools==69.5.1
 simple_websocket==1.0.0
 Werkzeug==3.0.3
 zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
