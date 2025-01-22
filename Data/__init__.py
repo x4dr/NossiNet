@@ -4,6 +4,8 @@ import logging
 import pathlib
 import sqlite3
 from contextlib import closing
+from importlib import resources
+from importlib.resources import as_file
 from pathlib import Path
 
 
@@ -41,18 +43,17 @@ def close_db():
         g["db"] = None
 
 
-def get_str(res):
-    with importlib.resources.files("Data").joinpath(pathlib.Path(res)).open(
+def get_str(res:str):
+    with resources.files(__name__).joinpath(res).open(
         "r"
     ) as data:
         return data.read()
 
 
 def handle(res):
-    path: pathlib.Path
     try:
-        with importlib.resources.files("Data").joinpath(pathlib.Path(res)) as path:
-            return path.as_posix()
+        path = resources.files(__name__).joinpath(res)
+        return str(path)
     except FileNotFoundError as e:
         path = pathlib.Path(e.filename)
         path.touch()

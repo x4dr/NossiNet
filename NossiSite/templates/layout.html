@@ -69,7 +69,7 @@
         <div class=metanavcontainer>
             {% if not session.logged_in %}
                 <a class="textbtn metanav" href="{{ url_for("wiki.wikipage", page="index") }}">wiki</a>
-                <a class="textbtn metanav" href="{{ url_for("views.login") }}">log in</a>
+                <a class="textbtn metanav" href="{{ url_for("views.login") }}">log&nbsp;in</a>
                 <a class="textbtn metanav" href="{{ url_for("views.register_user") }}">register</a>
             {% else %}
                 <div class="metanavcontainer">

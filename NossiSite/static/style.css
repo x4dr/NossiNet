@@ -1,5 +1,5 @@
 
-* {
+body {
     color: #00f000;
     font-family: "Lucida Grande", Monaco, monospace;
 }
@@ -191,7 +191,7 @@ textarea {
 .entries li { margin: 0.8em ; }
 .entries li h2  { margin-left: 0; }
 
-label { white-space: nowrap }
+#label { white-space: nowrap }
 
 .bigbtn {
     position: absolute;

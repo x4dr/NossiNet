@@ -1,4 +1,5 @@
 import json
+import math
 import re
 import subprocess
 import time
@@ -287,13 +288,60 @@ def editwiki(page=None):
                     tags=request.form["tags"].split(" "),
                     body=request.form["text"],
                     links=mdlinks.findall(markdown.markdown(request.form["text"])),
-                    meta=[],
+                    meta={},
                 )
 
             page.save(p, session["user"])
             flash(f"Saved {page.title.strip() or p}.")
         return redirect(url_for("wiki.wikipage", page=request.form.get("wiki", None)))
     return abort(405)
+
+
+@views.route("/pbta/<path:c>")
+def pbtasheet(c):
+    username = session.get("user", "")
+
+    char = WikiPage.load_str(c)
+    return render_template("pbtasheet.html", character=char)
+
+
+@views.route("/clock/<int:active>/<int:total>")
+def generate_clock(active: int, total: int):
+    def generate_clip_path(segments):
+        fraction = 1 / segments
+        radius = 50  # Percentage radius
+        center_x, center_y = 50, 50  # Center of the circle in percentage
+        helper = 8
+        angle = 360 * fraction / helper
+        angle_rad = math.radians(angle)
+
+        points = [f"{center_x}% {center_y}%"]
+        for i in range(helper + 1):
+            theta = angle_rad * i
+            x = center_x + radius * math.cos(theta)
+            y = center_y + radius * math.sin(theta)
+            points.append(f"{x}% {y}%")
+        points.append(f"{center_x}% {center_y}%")
+        return f"polygon({', '.join(points)})"
+
+    slice_html = ""
+
+    for i in range(total):
+        color = " active" if i < active else ""
+        clip_path = generate_clip_path(total)
+        angle_shape = (360 / total) * i - 90
+        angle_line = angle_shape - 90
+        slice_html += f"""
+                    <div class="segment{color}" style="
+                        clip-path: {clip_path};
+                        transform: rotate({angle_shape}deg);
+                    "></div>
+                    <div class="line" style="
+                    transform: translate(50%,50%)
+                    translateX(-100%)
+                     rotate({angle_line}deg);"></div>
+                """
+    return slice_html
 
 
 @views.route("/fensheet/<path:c>")

@@ -1,12 +1,15 @@
-{%- extends "layout.html" -%}
+
 {% block head %}
-    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="sheet.css") }}?v={{ restart_id }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="live_edit.css") }}?v={{ restart_id }}">
-    <script src="{{ url_for("static", filename="live_edit.js") }}?v={{ restart_id }}"></script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="pbta.css") }}?v={{ restart_id }}">
+    <script src="https://unpkg.com/htmx.org"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pirata+One&display=swap" rel="stylesheet">
+
     {% if owner %}
         {% for err in character.errors %}
 
-            <!-- Error in Fensheet. Please Fix because some features rely on correct formatting. -->
+            <!-- Error in PBTASheet. Please Fix because some features rely on correct formatting. -->
             <!-- {{err|safe}} -->
 
         {% endfor %}
@@ -31,7 +34,176 @@
     {%- else -%}
         <title>Charactersheet</title>
     {%- endif -%}
-{%- endblock -%}
-
 
 {%- endblock -%}
+
+{%- block body -%}
+<body>
+<div class="container">
+    <!-- Left Column -->
+    <div class="column column-left">
+        <div class="section">
+            <h2 class="pirata-one-regular">Place in the Holder</h2>
+            <div class="metadata-item">
+
+                <span class="value">Placeholder</span>
+                <span class="label">Crew</span>
+            </div>
+            <div class="metadata-item">
+
+                <span class="value">Placeholder</span>
+                <span class="label">Name</span>
+            </div>
+            <div class="metadata-item">
+                <span class="value">Placeholder</span>
+                <span class="label">Alias</span>
+            </div>
+            <div class="metadata-item">
+                <span class="value">Placeholder that is really asdasdasdasdasd long and descriptive about how a character looks and stuff. Placeholder that is really long and descriptive about how a character looks and stuff. Placeholder that is really long and descriptive about how a character looks and stuff.</span>
+                <span class="label">Look</span>
+            </div>
+            <div class="metadata-item">
+                <span class="value">Placeholder</span>
+                <span class="label">Heritage</span>
+            </div>
+            <div class="metadata-item">
+                <span class="value">Placeholder</span>
+                <span class="label">Background</span>
+            </div>
+            <div class="metadata-item">
+                <span class="value">Placeholder</span>
+                <span class="label">Vice</span>
+            </div>
+        </div>
+    <div class="stress section">
+        <div>
+            <div class="gauge">
+                <div class="gauge-box filled"></div>
+                <div class="gauge-box filled"></div>
+                <div class="gauge-box empty"></div>
+                <div class="gauge-box empty"></div>
+                <div class="gauge-box empty"></div>
+            </div>
+            <label class="under label">Stress</label>
+        </div>
+
+        <div>
+            <div class="gauge trauma">
+                <div class="gauge-box filled"></div>
+                <div class="gauge-box filled"></div>
+                <div class="gauge-box empty"></div>
+                <div class="gauge-box empty"></div>
+                <div class="gauge-box empty"></div>
+            </div>
+            <label class="under label">Trauma</label>
+        </div>
+    </div>
+
+<div class="harm section">
+    <table class="harmtable">
+        <tbody>
+            <tr>
+                <td>3</td>
+                <td colspan="2">Harm</td>
+                <td>Need Help</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>Harm</td>
+                <td>Harm</td>
+                <td>-1d</td>
+            </tr>
+            <tr>
+                <td>1</td>
+                <td>Harm</td>
+                <td>Harm</td>
+                <td>Reduced Effect</td>
+            </tr>
+        </tbody>
+    </table>
+    <div>
+    <div class="healing-clock-section">
+        <div hx-get="/clock/1/4" class="clock" hx-trigger="load"></div>
+        <label class="label">Healing Clock</label>
+    </div>
+    <div id = armor">
+    <div id="armor" class="gauge">
+                <div class="gauge-box filled"></div>
+                <div class="gauge-box filled"></div>
+                <div class="gauge-box empty"></div>
+    </div>
+        <label class="label">Armor</label>
+        </div>
+</div>
+</div>
+        <div class="section">
+            <h2>Notes</h2>
+            <textarea class="input-field" rows="4" placeholder="Notes..."></textarea>
+        </div>
+    </div>
+
+    <div class="column column-middle">
+        <div class="section">
+            <h2 class="pirata-one-regular">Playbook</h2>
+            <div>Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 2000 years old. Richard McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of the more obscure Latin words, consectetur, from a Lorem Ipsum passage, and going through the cites of the word in classical literature, discovered the undoubtable source. Lorem Ipsum comes from sections 1.10.32 and 1.10.33 of "de Finibus Bonorum et Malorum" (The Extremes of Good and Evil) by Cicero, written in 45 BC. This book is a treatise on the theory of ethics, very popular during the Renaissance. The first line of Lorem Ipsum, "Lorem ipsum dolor sit amet..", comes from a line in section 1.10.32.</div>
+        </div>
+    </div>
+
+    <div class="column column-right">
+        <div class="section">
+            <h2 class="pirata-one-regular">Attributes</h2>
+            <table class="table">
+                <thead>
+                    <tr><th>Attribute</th><th>Rating</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Insight</td><td>999</td></tr>
+                    <tr><td>Prowess</td><td>999</td></tr>
+                    <tr><td>Resolve</td><td>999</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2 class="pirata-one-regular">Bonus Die</h2>
+            <div><br></div>
+            <div>Devils Bargain: +1 Dice <br>2 Stress: +1 Dice </div>
+
+        </div>
+
+        <div class="section">
+            <h2 class="pirata-one-regular">Load/Gather</h2>
+            stuff
+        </div>
+    </div>
+</div>
+
+</body>
+
+<script>
+const rootStyles = getComputedStyle(document.documentElement);
+const cssVars = Array.from(rootStyles).filter(v => v.startsWith('--'));
+const table = document.createElement('table');
+document.body.appendChild(table);
+cssVars.forEach(varName => {
+  const row = table.insertRow();
+  const labelCell = row.insertCell();
+  const inputCell = row.insertCell();
+
+  labelCell.textContent = varName;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = rootStyles.getPropertyValue(varName).trim();
+  input.className = 'input-field'
+
+  // Update CSS variable on input change
+  input.addEventListener('input', () => {
+    document.documentElement.style.setProperty(varName, input.value);
+  });
+
+  inputCell.appendChild(input);
+});
+</script>
+
+{%- endblock -%}
+

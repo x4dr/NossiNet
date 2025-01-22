@@ -1,0 +1,228 @@
+:root {
+    --background-color: #000;
+    --accent-color: #151;
+    --inactive-color: #030;
+    --active-color: #0a0;
+    --warning-color: #F01010;
+    --line-color: #010;
+    --text-color: #0f0;
+}
+body {
+    background : var(--background-color);
+    color: var(--text-color);
+    font-family: "Lucida Grande", Monaco, monospace;
+}
+.page {
+    justify-content: center;
+    padding: 15px;
+    width: 95%;
+    color: var(--text-color);
+    background = var(--background-color);
+}
+
+.container {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+}
+
+.column {
+    padding: 15px;
+    background-color: var(--background-color);
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.column-left {
+    flex-grow: 1 1 30%;
+    margin-right: 20px;
+    max-width: 50%;
+}
+
+.column-middle {
+    flex: 1 1;
+    margin-right: 20px;
+}
+
+.column-right {
+    flex: 1 1;
+}
+
+h2 {
+    margin-top: 0;
+}
+
+.section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.gauge {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    align-items: flex-start;
+    margin-bottom: 5px;
+}
+
+.gauge-box {
+    width: 20px;
+    height: 40px;
+    transform: skewX(-40deg);
+    transform-origin: bottom;
+    background-color: var(--inactive-color);
+    transition: background-color 0.3s ease;
+}
+
+.gauge-box.filled {
+    background-color: var(--active-color);
+}
+
+.gauge.trauma .gauge-box.filled {
+    background-color: var(--warning-color);
+}
+
+.stress.section {
+    margin-bottom: 10px;
+}
+
+.metadata-item {
+    display: flex;
+    flex: 1 1 auto;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+    flex-direction: column;
+    align-items: center;
+}
+
+.value {
+    padding: 5px 10px;
+    background-color: var(--background-color);
+    display: inline-block;
+    max-width: 100%;
+}
+
+.label {
+    font-size: 0.8em;
+    text-align: left;
+    border-top: 1px solid var(--accent-color);
+    padding-top: 5px;
+    width: 100%;
+    display: inline-block;
+    padding-bottom: 5px;
+}
+
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .column-left, .column-middle, .column-right {
+        flex: 1 1 100%;
+        margin-right: 0;
+        margin-bottom: 20px;
+    }
+    .column-right {
+        margin-bottom: 0;
+    }
+}
+
+.harm.section {
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start; /* Align all child elements at the top */
+    gap: 1rem; /* Adds consistent spacing between the table and clock */
+    box-sizing: border-box; /* Ensure consistent sizing */
+}
+
+.harmtable {
+    border-collapse: collapse;
+    margin-top: 10px;
+    flex: 1; /* Allow the table to grow */
+    min-width: 200px; /* Minimum width for the table */
+}
+
+
+
+
+.harmtable td {
+    padding: 10px;
+    text-align: center;
+    border: 1px solid var(--accent-color);
+    background-color: var(--background-color);
+}
+
+.harmtable td:first-child,
+.harmtable td:last-child {
+    width: 30px;
+    text-align: center;
+}
+
+.harmtable tr td:first-child {
+    font-weight: bold;
+}
+
+
+.healing-clock-section {
+    margin: 0; /* Prevent unnecessary margins */
+    flex: 0; /* Prevent stretching */
+    display: flex;
+    flex-direction: column; /* Stack elements vertically */
+    align-items: center; /* Center align the clock and label */
+    min-width: 50px;
+    box-sizing: border-box; /* Ensure padding doesn't overflow */
+}
+
+.healing-clock-label {
+    white-space:wrap;
+    text-align:center;
+}
+
+.clock {
+    margin: 0; /* Remove extra margins */
+    position: relative;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 5px solid var(--line-color);
+    overflow: hidden;
+}
+
+.segment {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    clip-path: var(--clip-path);
+    background-color: var(--inactive-color);
+    transform-origin: center;
+    transition: transform 0.5s;
+    z-index: 1;
+}
+
+.segment.active {
+    background-color: var(--active-color);
+}
+
+.line {
+    position: absolute;
+    width: 5px;
+    height: 50%;
+    background-color: var(--line-color);
+    top: 25%;
+    left:50%;
+    transform-origin: 50% 0%;
+    z-index: 2;
+}
+
+.pirata-one-regular {
+  font-family: "Pirata One", serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.input-field {
+background: var(--inactive-color);
+border: none;
+}
