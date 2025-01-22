@@ -1,0 +1,4 @@
+[submodule "gamepack"]
+	path = gamepack
+	url = https://github.com/x4dr/Gamepack
+	branch = master
