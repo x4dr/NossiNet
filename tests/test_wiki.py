@@ -2,7 +2,10 @@ from pathlib import Path
 from unittest import mock
 
 from flask import url_for
-from gamepack.Dice import DescriptiveError
+
+import Data
+from NossiPack.LocalMarkdown import LocalMarkdown
+from NossiSite import helpers
 from gamepack.FenCharacter import FenCharacter
 from gamepack.Item import fenconvert, fendeconvert
 from gamepack.MDPack import (
@@ -12,10 +15,6 @@ from gamepack.MDPack import (
     table_row_edit,
 )
 from gamepack.WikiPage import WikiPage
-
-import Data
-from NossiPack.LocalMarkdown import LocalMarkdown
-from NossiSite import helpers
 from tests.NossiTestCase import NossiTestCase
 
 

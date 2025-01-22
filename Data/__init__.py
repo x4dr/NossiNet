@@ -1,11 +1,9 @@
-import importlib.resources
 import json
 import logging
 import pathlib
 import sqlite3
 from contextlib import closing
 from importlib import resources
-from importlib.resources import as_file
 from pathlib import Path
 
 

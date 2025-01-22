@@ -299,8 +299,6 @@ def editwiki(page=None):
 
 @views.route("/pbta/<path:c>")
 def pbtasheet(c):
-    username = session.get("user", "")
-
     char = WikiPage.load_str(c)
     return render_template("pbtasheet.html", character=char)
 
