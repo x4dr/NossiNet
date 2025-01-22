@@ -623,9 +623,9 @@ class VampireCharacter:
                     self.special["Bashing"] -= 2  # transform a bashing into lethal
                     self.special["Lethal"] += 1
                 else:
-                    self.special[
-                        "Bashing"
-                    ] = 0  # bashing will not overflow into aggravated
+                    self.special["Bashing"] = (
+                        0  # bashing will not overflow into aggravated
+                    )
                     break
             elif dmg_type == "Lethal":
                 if self.special["Lethal"] > 1:  # same for lethal to aggravated

@@ -43,10 +43,8 @@ def close_db():
         g["db"] = None
 
 
-def get_str(res:str):
-    with resources.files(__name__).joinpath(res).open(
-        "r"
-    ) as data:
+def get_str(res: str):
+    with resources.files(__name__).joinpath(res).open("r") as data:
         return data.read()
 
 

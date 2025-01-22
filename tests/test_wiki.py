@@ -32,23 +32,15 @@ class TestViews(NossiTestCase):
             print(c.get(url_for("wiki.wiki_index")))
 
     def test_ewparsing(self):
-        x = None
-        try:
-            WikiPage(
-                "unittest",
-                ["character"],
-                "#Layer1\n## layer2\n### layer3\ntext\n### layer 3 again\n"
-                "more text\n## some more layer 2\n a|b\n--|--\nc|d\n but what about THIS\n\n### finalthird\nfinal "
-                "text\n",
-                [],
-                [],
-            ).save(WikiPage.locate("unittest"), "unittest")
-        except Exception as e:
-            x = e
-            if not isinstance(x, DescriptiveError):
-                raise
-        self.assertIsInstance(x, DescriptiveError)
-        self.assertEqual(x.args[0], "wikiupdate failed")
+        WikiPage(
+            "unittest",
+            ["character"],
+            "#Layer1\n## layer2\n### layer3\ntext\n### layer 3 again\n"
+            "more text\n## some more layer 2\n a|b\n--|--\nc|d\n but what about THIS\n\n### finalthird\nfinal "
+            "text\n",
+            [],
+            {},
+        ).save(WikiPage.locate("unittest"), "unittest")
         self.render_templates = False
         app = self.create_app()
         helpers.register(app)
@@ -103,11 +95,9 @@ class TestViews(NossiTestCase):
             tags=[],
             body="# heilung\n## Aurier\n### Resonanzen\nWunde\n",
             links=[],
-            meta=[],
+            meta={},
         )
-        self.assertRaises(
-            DescriptiveError, lambda: sut.save(WikiPage.locate("healing"), "unittest")
-        )
+        sut.save(WikiPage.locate("healing"), "unittest")
         x = LocalMarkdown.pre_process("![](healing#resonanzen)")[0]
         self.assertEqual(x, "Wunde\n")
         x = LocalMarkdown.pre_process("![healing#resonanzen]")[0]
@@ -135,11 +125,9 @@ class TestViews(NossiTestCase):
             tags=[],
             body="# heilung\n## Aurier\n### Resonanzen\nWunde\n",
             links=[],
-            meta=[],
+            meta={},
         )
-        self.assertRaises(
-            DescriptiveError, lambda: sut.save(WikiPage.locate("healing"), "unittest")
-        )
+        sut.save(WikiPage.locate("healing"), "unittest")
         x = LocalMarkdown.pre_process("![[]](healing#resonanzen)")[0]  # empty heading
         self.assertEqual(x, "#!\nWunde\n")
         x = LocalMarkdown.pre_process("![[healing#resonanzen]]")[

@@ -50,7 +50,7 @@ def load_chat(after: int):
         return {
             row[2]: {"line": row[0], "time": datetime.fromtimestamp(row[1]).isoformat()}
             for row in reversed(rows)
-        }, rows[0][2] if rows else after
+        }, (rows[0][2] if rows else after)
 
 
 def background_chat_update():
