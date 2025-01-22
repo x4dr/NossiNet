@@ -1,0 +1,3 @@
+[submodule "GamePack"]
+	path = GamePack
+	url = https://github.com/x4dr/GamePack
