@@ -1,0 +1,37 @@
+{%- extends "layout.html" -%}
+{% block head %}
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="sheet.css") }}?v={{ restart_id }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="live_edit.css") }}?v={{ restart_id }}">
+    <script src="{{ url_for("static", filename="live_edit.js") }}?v={{ restart_id }}"></script>
+    {% if owner %}
+        {% for err in character.errors %}
+
+            <!-- Error in Fensheet. Please Fix because some features rely on correct formatting. -->
+            <!-- {{err|safe}} -->
+
+        {% endfor %}
+    {% endif %}
+{% endblock %}
+{%- macro dots(val,max=5) -%}
+    {%- if val is not defined -%}
+        {%- set val = 0 -%}
+    {%- endif -%}
+    {%- for i in range(val) -%}
+        {%- if loop.index0%5 == 0 and loop.index0 > 0 %} {% endif -%}
+        ●
+    {%- endfor -%}
+    {%- for i in range(max-val) -%}
+        ○
+    {%- endfor -%}
+{%- endmacro -%}
+
+{%- block title -%}
+    {%- if character.Name -%}
+        <title>{{ character.Name }}</title>
+    {%- else -%}
+        <title>Charactersheet</title>
+    {%- endif -%}
+{%- endblock -%}
+
+
+{%- endblock -%}
