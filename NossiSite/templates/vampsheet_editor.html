@@ -99,15 +99,15 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <table style="width: 100%">
             <tr>
-                <td colspan="6" style="text-align: center; font-size: 1.5em" class="leeet">
+                <td colspan="6" style="text-align: center; font-size: 1.5em" class="medium">
                     Charactersheet&nbspfor&nbsp{{ session.user }}</td>
             </tr>
             <tr>
                 <td style="text-align: right; ">Name:</td>
-                <td style="text-align: left; "><input title="Name" style="width: 80%;" class="leet" name="Name"
+                <td style="text-align: left; "><input title="Name" style="width: 80%;" class="dark" name="Name"
                                                       type="text" value="{{ character.Meta.Name }}"></td>
                 <td style="text-align: right; ">Nature:</td>
-                <td style="text-align: left; "><input title="Nature" style="width: 80%;" class="leet" name="Nature"
+                <td style="text-align: left; "><input title="Nature" style="width: 80%;" class="dark" name="Nature"
                                                       type="text" value="{{ character.Meta.Nature }}"></td>
                 <td style="text-align: right; ">Generation:</td>
                 <td style="text-align: left; "><input title="Generation" disabled
@@ -116,26 +116,26 @@
             </tr>
             <tr>
                 <td style="text-align: right; ">Player:</td>
-                <td style="text-align: left; "><input title="Player" style="width: 80%;" class="leet" id="Player"
+                <td style="text-align: left; "><input title="Player" style="width: 80%;" class="dark" id="Player"
                                                       name="Player" type="text" value="{{ character.Meta.Player }}">
                 </td>
                 <td style="text-align: right; ">Demeanor:</td>
-                <td style="text-align: left; "><input title="Demeanor" style="width: 80%;" class="leet" name="Demeanor"
+                <td style="text-align: left; "><input title="Demeanor" style="width: 80%;" class="dark" name="Demeanor"
                                                       type="text" value="{{ character.Meta.Demeanor }}"></td>
                 <td style="text-align: right; ">Haven:</td>
-                <td style="text-align: left; "><input title="Haven" style="width: 80%;" class="leet" name="Haven"
+                <td style="text-align: left; "><input title="Haven" style="width: 80%;" class="dark" name="Haven"
                                                       type="text" value="{{ character.Meta.Haven }}"></td>
             <tr>
                 <td style="text-align: right; ">Chronicle:</td>
-                <td style="text-align: left; "><input title="Chronicle" style="width: 80%;" class="leet"
+                <td style="text-align: left; "><input title="Chronicle" style="width: 80%;" class="dark"
                                                       name="Chronicle" type="text"
                                                       value="{{ character.Meta.Chronicle }}"></td>
                 <td style="text-align: right; ">Clan:</td>
                 <td style="text-align: left; "><input title="Clan" id="Clan" oninput="setdisciplines()"
-                                                      style="width: 80%;" class="leet" name="Clan" type="text"
+                                                      style="width: 80%;" class="dark" name="Clan" type="text"
                                                       value="{{ character.Meta.Clan }}" list="Clans"></td>
                 <td style="text-align: right; ">Concept:</td>
-                <td style="text-align: left; "><input title="Concept" style="width: 80%;" class="leet" name="Concept"
+                <td style="text-align: left; "><input title="Concept" style="width: 80%;" class="dark" name="Concept"
                                                       type="text" value="{{ character.Meta.Concept }}">
                 </td>
             </tr>
@@ -143,12 +143,12 @@
         <br>
         <table style="width: 100%">
             <tr>
-                <td colspan="6" style="text-align: center;" class="leeet">Attributes</td>
+                <td colspan="6" style="text-align: center;" class="medium">Attributes</td>
             </tr>
             <tr>
-                <td colspan="2" style="text-align: center; width: 33%;" class="leet">Physical</td>
-                <td colspan="2" style="text-align: center; width: 34%;" class="leet">Social</td>
-                <td colspan="2" style="text-align: center; width: 33%;" class="leet">Mental</td>
+                <td colspan="2" style="text-align: center; width: 33%;" class="dark">Physical</td>
+                <td colspan="2" style="text-align: center; width: 34%;" class="dark">Social</td>
+                <td colspan="2" style="text-align: center; width: 33%;" class="dark">Mental</td>
             </tr>
         </table>
         <table style="width: 100%">
@@ -180,12 +180,12 @@
         <br>
         <table style="width: 100%">
             <tr>
-                <td colspan="6" style="text-align: center;" class="leeet">Abilities</td>
+                <td colspan="6" style="text-align: center;" class="medium">Abilities</td>
             </tr>
             <tr>
-                <td colspan="2" style="text-align: center; width: 33%;" class="leet">Talents</td>
-                <td colspan="2" style="text-align: center; width: 34%;" class="leet">Skills</td>
-                <td colspan="2" style="text-align: center; width: 33%;" class="leet">Knowledges</td>
+                <td colspan="2" style="text-align: center; width: 33%;" class="dark">Talents</td>
+                <td colspan="2" style="text-align: center; width: 34%;" class="dark">Skills</td>
+                <td colspan="2" style="text-align: center; width: 33%;" class="dark">Knowledges</td>
             </tr>
         </table>
         <table style="width: 100%">
@@ -283,14 +283,14 @@
 
         <table style="border-collapse: collapse;    width: 100%;">
             <tr>
-                <td colspan="8" style="text-align: center;" class="leeet">Advantages</td>
+                <td colspan="8" style="text-align: center;" class="medium">Advantages</td>
             </tr>
             <tr>
-                <td colspan="2" style="text-align: center; width: 32%;" class="leet">Backgrounds</td>
+                <td colspan="2" style="text-align: center; width: 32%;" class="dark">Backgrounds</td>
                 <td style="width: 2%;"></td>
-                <td colspan="2" style="text-align: center; width: 32%;" class="leet">Disciplines</td>
+                <td colspan="2" style="text-align: center; width: 32%;" class="dark">Disciplines</td>
                 <td style="width: 2%;"></td>
-                <td colspan="2" style="text-align: center; width: 32%" class="leet">Virtues</td>
+                <td colspan="2" style="text-align: center; width: 32%" class="dark">Virtues</td>
             </tr>
             {%- set bgnew = [0] -%}
             {%- set dscpnew = [0] -%}
@@ -305,13 +305,13 @@
             {%- for bgvdscp in character.BGVDSCP_combined -%}
                 <tr>
                     {%- if bgvdscp.Background -%}
-                        <td><input title="bg" list="Backgrounds" style="width: 90%" class="leet"
+                        <td><input title="bg" list="Backgrounds" style="width: 90%" class="dark"
                                    name="background_name_{{ bgvdscp.Background }}" value="{{ bgvdscp.Background }}">
                         </td>
                         <td>{{ chooser("background_value_"+bgvdscp.Background, bgvdscp.Background_Value, ([5,bgvdscp.Background_Value] | sort)[1] ) }}</td>
                     {%- else -%}
                         {%- if bgnew[0] < 8 -%}
-                            <td><input title="additional bg" list="Backgrounds" class="leet" style="width: 90%"
+                            <td><input title="additional bg" list="Backgrounds" class="dark" style="width: 90%"
                                        name="background_name_New{{ bgnew[0] }}" value=""></td>
                             <td>{{ chooser("background_value_New"+bgnew[0]|string, 0) }}</td>
                             <!-- YEET{{ bgnew }} -->
@@ -322,13 +322,13 @@
                     {%- endif -%}
                     <td style="width: 2%;"></td>
                     {%- if bgvdscp.Discipline -%}
-                        <td><input title="dscp" style="width: 90%" class="leet chr_discipline"
+                        <td><input title="dscp" style="width: 90%" class="dark chr_discipline"
                                    name="discipline_name_{{ bgvdscp.Discipline }}" value="{{ bgvdscp.Discipline }}">
                         </td>
                         <td>{{ chooser("discipline_value_"+bgvdscp.Discipline, bgvdscp.Discipline_Value) }}</td>
                     {%- else -%}
                         {%- if dscpnew[0] < 8 -%}
-                            <td><input title="additional dscp" style="width: 90%" class="leet chr_discipline"
+                            <td><input title="additional dscp" style="width: 90%" class="dark chr_discipline"
                                        name="discipline_name_New{{ dscpnew[0] }}" value=""></td>
                             <td>{{ chooser("discipline_value_New"+dscpnew[0]|string, 0) }}
                                 {% if dscpnew.append(dscpnew.pop() + 1) %}{% endif %}
@@ -353,18 +353,18 @@
         <table style="width: 100%">
             <tr>
 
-                <td colspan="2" style="text-align: center; width: 33%;" class="leeet">Merits/Flaws</td>
-                <td colspan="1" style="text-align: center; width: 34%;" class="leeet">Humanity</td>
-                <td colspan="1" style="text-align: center; width: 33%;" class="leeet">Gear</td>
+                <td colspan="2" style="text-align: center; width: 33%;" class="medium">Merits/Flaws</td>
+                <td colspan="1" style="text-align: center; width: 34%;" class="medium">Humanity</td>
+                <td colspan="1" style="text-align: center; width: 33%;" class="medium">Gear</td>
             </tr>
 
             <tr>
                 <td rowspan="999" colspan="2"><textarea title="Merits and Flaws" style="width: 90%; height:90%"
-                                                        class="leeet"
+                                                        class="medium"
                                                         name="Merits">{{ character.Meta.Merits }}</textarea></td>
 
                 <td>&nbsp</td>
-                <td rowspan="999" colspan="2"><textarea title="Equipment" style="width: 90%; height:90%" class="leeet"
+                <td rowspan="999" colspan="2"><textarea title="Equipment" style="width: 90%; height:90%" class="medium"
                                                         name="Gear">{{ character.Meta.Gear }}</textarea></td>
 
             </tr>
@@ -378,7 +378,7 @@
             </tr>
 
             <tr>
-                <td style="text-align: center; width: 34%;" class="leeet">Willpower</td>
+                <td style="text-align: center; width: 34%;" class="medium">Willpower</td>
             </tr>
             <tr>
                 <td>&nbsp</td>
@@ -392,7 +392,7 @@
                 <td>&nbsp</td>
             </tr>
             <tr>
-                <td style="text-align: center; width: 34%;" class="leeet">Blood</td>
+                <td style="text-align: center; width: 34%;" class="medium">Blood</td>
             </tr>
             <tr>
                 <td>&nbsp</td>
@@ -409,14 +409,14 @@
         <br><br>
         <label>
             <input type="checkbox" name="newsheet" value="newsheet" {% if New %} checked="checked" {% endif -%}
-                   class="leet"> Save this Character Separately instead of editing the current one.
+                   class="dark"> Save this Character Separately instead of editing the current one.
         </label>
 
-        <input type="submit" class="leet bigbtn" value="SAVE"><br><br><br>
+        <input type="submit" class="dark bigbtn" value="SAVE"><br><br><br>
         <div>
                 <textarea title="Notes" style="width: 99%; overflow-y: auto; word-wrap:break-word "
                           onload="textAreaAdjust(this)"
-                          onkeyup="textAreaAdjust(this)" class="leeet"
+                          onkeyup="textAreaAdjust(this)" class="medium"
                           name="Notes">{{ character.Meta.Notes }}</textarea>
         </div>
     </form>
@@ -427,15 +427,15 @@
                 <form action="{{ url_for("extra.setfromsource") }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <label for="source_input">Dalines Link</label>
-                    <input type="text" name="source" id="source_input" class="leet">
-                    <input type="submit" class="leet" value="Load Character from Dalines"><br>(saves the active
+                    <input type="text" name="source" id="source_input" class="dark">
+                    <input type="submit" class="dark" value="Load Character from Dalines"><br>(saves the active
                     character into history)
                 </form>
             </td>
             <td>
                 <form id="checkchar" name="checkchar">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <input id="check" type="submit" class="leet bigbtn" value="CHECK">
+                    <input id="check" type="submit" class="dark bigbtn" value="CHECK">
                 </form>
 
                 <div>Checks the Character cost (uses the newest sheet in your history)</div>

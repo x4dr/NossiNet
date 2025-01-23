@@ -30,7 +30,7 @@ window.addEventListener("load", () => {
                     }
                     lock_edit_content = false;
                     if (reply["data"].length<1){
-                        ref.className= ref.className.replace("editeable","failed")
+                        ref.className= ref.className.replace("editable","failed")
                         ref.onclick=()=>{};
                     }
                     else {
@@ -66,7 +66,6 @@ window.addEventListener("load", () => {
                 textdiv.value = ""
                 olddata.value = ""
                 overlay.style.opacity="0";
-                overlay.style.opacity="1";
                 overlay.style.zIndex="-1";
             }
         }
@@ -88,7 +87,7 @@ window.addEventListener("load", () => {
                 let cell = document.createElement('th');
                 let input = document.createElement('input');
                 input.value = headers[i];
-                input.className = "leeeet"
+                input.className = "bright"
                 input.style.padding= "5px";
                 input.style.alignContent= "center";
                 input.style.color= "#007000";
@@ -104,7 +103,7 @@ window.addEventListener("load", () => {
                     let cell = document.createElement('td');
                     let input = document.createElement('input');
                     input.value = rows[i][prop];
-                    input.className = "leet"
+                    input.className = "dark"
                     input.name = "table_"+i+"_"+prop;
                     cell.appendChild(input);
                     row.appendChild(cell);
@@ -126,7 +125,7 @@ window.addEventListener("load", () => {
                     let cell = document.createElement('td');
                     let input = document.createElement('input');
                     input.value = "";
-                    input.className = "leet"
+                    input.className = "dark"
                     input.name = "table_"+rows.length+"_"+i;
                     cell.appendChild(input);
                     row.appendChild(cell);
@@ -139,7 +138,7 @@ window.addEventListener("load", () => {
 
 
 
-        const anchors = document.getElementsByClassName('editeable');
+        const anchors = document.getElementsByClassName('editable');
         const context_elem = document.getElementById('context_element');
         if (context_elem!=null){
             const context = context_elem.innerHTML;

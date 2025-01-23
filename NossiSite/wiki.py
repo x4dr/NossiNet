@@ -17,6 +17,8 @@ from flask import (
     abort,
     Blueprint,
 )
+from flask_sock import Sock
+
 from gamepack.Dice import DescriptiveError
 from gamepack.FenCharacter import FenCharacter
 from gamepack.MDPack import traverse_md, MDObj
@@ -49,6 +51,8 @@ bleach.ALLOWED_ATTRIBUTES.update(
     }
 )
 views = Blueprint("wiki", __name__)
+sock = Sock()
+sock.bp = views
 
 
 @views.after_app_request
@@ -62,7 +66,7 @@ def update(response):
 @views.route("/index/")
 def wiki_index(path="."):
     r = WikiPage.wikindex()
-    path = Path(path)
+    path = WikiPage.wikipath() / path
     if (
         not (WikiPage.wikipath() / path).exists()
         or not (WikiPage.wikipath() / path).is_dir()
@@ -70,8 +74,12 @@ def wiki_index(path="."):
         abort(404)
     return render_template(
         "wikindex.html",
-        current_path=path if path.as_posix() != "." else None,
-        parent=path.parent.as_posix(),
+        current_path=(
+            path.relative_to(WikiPage.wikipath())
+            if path != WikiPage.wikipath()
+            else None
+        ),
+        parent=path.relative_to(WikiPage.wikipath()).parent.as_posix(),
         subdirs=sorted(
             [
                 x.stem
@@ -297,6 +305,13 @@ def editwiki(page=None):
     return abort(405)
 
 
+@sock.route("/wsync")
+def ws_handler(ws):
+    while True:
+        ws.send('<div id="myElement" >Updatdaded Content</div>')
+        time.sleep(1)
+
+
 @views.route("/pbta/<path:c>")
 def pbtasheet(c):
     char = WikiPage.load_str(c)
@@ -489,8 +504,7 @@ def live_edit_get_text(res, a):
     mdo = MDObj.from_md(res)
     for step in a:
         mdo = mdo.children[step]
-    header = f"{'#' * len(a)} {a[-1]}\n"
-    return {"data": header + mdo.to_md(len(a)), "type": "text"}
+    return {"data": mdo.to_md(), "type": "text"}
 
 
 def live_edit_get_table(res, a):

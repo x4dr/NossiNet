@@ -8,8 +8,8 @@
 {% block body %}
     <h1> Entries </h1>
     <form action="{{ url_for("wiki.searchwiki",) }}" method="get" target="_self">
-        <label for="searchterm">Search Term</label><input type="text" id="searchterm" name="s" class="leet">
-        <input type="submit" id="searchbutton" value="search" class="leet">
+        <label for="searchterm">Search Term</label><input type="text" id="searchterm" name="s" class="dark">
+        <input type="submit" id="searchbutton" value="search" class="dark">
     </form><div><p>This search yielded {{ results | length }} results.</p></div>
     <table>
         <thead>
@@ -32,10 +32,10 @@
             </tr>
         </tbody>
     </table>
-    <form class="leet" action="{{ url_for("wiki.wikipage") }}" method=post>
+    <form class="dark" action="{{ url_for("wiki.wikipage") }}" method=post>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <label for="wikipageaccess">Wikipage Access</label>
-        <input id="wikipageaccess" type="text" name="n" class="leeet">
-        <button type="submit" class="leeet">New</button>
+        <input id="wikipageaccess" type="text" name="n" class="medium">
+        <button type="submit" class="medium">New</button>
     </form>
 {% endblock %}

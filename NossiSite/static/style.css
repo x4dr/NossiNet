@@ -1,242 +1,22 @@
 
 body {
-    color: #00f000;
     font-family: "Lucida Grande", Monaco, monospace;
-}
-
-html {
-    min-height: 100%;
-}
-
-body {
-    min-height: 100%;
-    background: black;
-    overflow-x: auto;
-}
-
-a, h1, h2 { color: #00c700; }
-
-h1 { border-bottom: 2px solid #000000; }
-h2 { font-size: 2em; }
-h3 { font-size: 1.5em; }
-h4 { font-size: 1.25em; }
-h5 { font-size: 1.125em; }
-h6 { font-size: 1em; }
-h3 { color: #00d710; }
-h4 { color: #10b720; }
-h5 { color: #209730; }
-h6 { color: #307740; }
-
-img {
-    width: 200px;
-    transition: 0.5s;
-}
-
-img:hover{
-    width: 100%;
-    transition: 0.5s;
-}
-
-
-hr {
-    border: 0;
-    height: 0; /* Firefox... */
-    box-shadow: 0 0 2px 1px  #109010;
+    background: var(--background-color);
 }
 
 .page {
-    margin: 1em auto;
-    width: 90%;
-    border: 3px solid #00f700;
-    padding: 0.8em;
-    background: #010101;
-    color: #00e700;
+color: var(--primary-color);
+width: 90%;
+margin: 1em auto;
+border: 3px solid var(--secondary-color);
+padding: 0.8em;
+background: var(--background-color);
 }
 
-
-.leet {
-    background-color: black;
-    color: #00d700;
-    border: 1px solid #00d700;
-    margin: 10px;
+.page a:not([class]){
+color: var(--tertiary-color)
 }
 
-.leeet {
-    background-color: #0a120a;
-    font-weight: bold;
-    color: #00e700;
-    border: 1px solid #00e700;
-    margin: 1px;
-}
-
-.leeeet {
-    background-color: #0a1012;
-    font-weight: bold;
-    color: #00f700;
-    border: 1px solid #00f700;
-    margin: 1px;
-}
-
-.entry {
-    padding: 1em;
-    display: inline-block;
-    white-space: pre-wrap;
-}
-
-.wiki {
-    padding: 1em;
-    display: inline-block;
-}
-
-.tooltip .tooltiptext {
-    visibility: hidden;
-    background-color: black;
-    box-shadow: inset 0 0 0 1px #00d700;
-    box-sizing: border-box;
-    padding: 1px;
-    color: #4f4;
-    text-align: center;
-    position: absolute;
-    transform: translateX(-4em) translateY(-30%);
-
-    z-index: 1;
-    white-space: nowrap;
-}
-
-/* Show the tooltip text when you mouse over the tooltip container */
-.tooltip:hover .tooltiptext {
-    visibility: visible;
-}
-
-.hider:before {
-    content: "+";
-}
-
-.hider.hider-expanded:before {
-    content: "-";
-}
-
-
-.hiding{
-    height: 0 !important;
-    display: none;
-    overflow: hidden;
-    transition: 1s;
-}
-
-.nothiding{
-    overflow: auto;
-    transition: 0.5s;
-}
-
-#TopButton {
-    display: none;
-    position: fixed;
-    bottom: 20px;
-    right: 30px;
-    z-index: 99;
-    font-size: 18px;
-    border: none;
-    outline: none;
-    background-color: #109010;
-    color: black;
-    cursor: pointer;
-    padding: 15px;
-    border-radius: 5px;
-}
-
-#TopButton:not(:hover) {
-    opacity: 0.3;
-}
-
-.collapsible{
-    background-color: #000005;
-    cursor: pointer;
-    padding: 2px;
-    width: 100%;
-    border: none;
-    text-align: left;
-    outline: none;
-    font-size: 15px;
-    font-family: "Lucida Grande", Monaco, monospace;
-}
-
-.active, .collapsible:hover {
-    background-color: #311;
-}
-
-.content {
-    padding: 0 18px;
-    display: none;
-    overflow: hidden;
-    color: #0da318;
-    background-color: #000005;
-}
-
-
-input[type="text"],
-textarea {
-    background-color: black;
-    color: #00f700;
-}
-
-.entries {
-    list-style: none;
-    margin: 1em;
-    padding: 0;
-    background: #000000;
-    color:#00f700
-}
-
-.entries li { margin: 0.8em ; }
-.entries li h2  { margin-left: 0; }
-
-#label { white-space: nowrap }
-
-.bigbtn {
-    position: absolute;
-    width: 100%;
-    height: 100px;
-    font-size: 48px;
-}
-
-.textbtn {
-    border: 1px solid #006700;
-    background-color: black;
-    color: #00f700;
-    padding: 1px;
-    cursor: pointer;
-    text-align: center;
-    text-decoration: none;
-}
-
-.textbtn:hover {
-    background-color: #00d700;
-    color: black;
-
-}
-
-.txtinput   {
-    background-color: black;
-    color: #006700;
-    height: 100%;
-    box-sizing: border-box;
-
-}
-.single_line_form{
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    align-content: center;
-}
-
-.add-entry {
-    font-size: 0.9em;
-    border-bottom: 1px solid #000000;
-}
-
-
-.add-entry dl { font-weight: bold; color: #00f700; }
 
 .metanavcontainer {
     display: flex;
@@ -250,139 +30,178 @@ textarea {
     font-size: smaller;
     padding: 0.3em;
     margin: 1em;
-    background: #000;
-    color: #00f700;
+    background: var(--background-color);
+    color: var(--secondary-color);
 }
 
 .flash {
-    background:#000;
+    background: var(--background-color);
     padding: 0.5em;
-    border: 1px solid #00f700;
+    border: 1px solid var(--primary-color);
 }
 
-.imgover {
-    background: transparent;
-    position: absolute;
-    left: 0;
-    top: 0;
+.textbtn {
+    border: 1px solid var(--tertiary-color);
+    background-color: var(--background-color);
+    color: var(--primary-color);
+    padding: 1px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
 }
+
+.textbtn:hover {
+    background-color: var(--secondary-color);
+    color: var(--background-color);
+    transition: 0.5s;
+}
+
 
 .error {
-    background: #cf0012;
+    background: var(--warn-color);
     padding: 0.5em;
-    color: #000000
+    color: var(--background-color);
 }
-.chatbox {
-    position: relative;
-    width : 95%;
-    text-align:left;
-    margin-bottom:25px;
-    padding:10px;
-    background:#000;
-    height:320px;
+
+.hider:before {
+    content: "+";
+}
+
+.hider.hider-expanded:before {
+    content: "-";
+}
+
+
+.hiding{
+    height: 0 !important;
+    overflow:hidden;
+    transition: 1s;
+}
+
+.nothiding{
+    overflow: hidden;
+    transition: 1s;
+    height: inherit
+}
+
+#TopButton:not(:hover) {
+    opacity: 0.3;
+}
+
+
+.dark {
+    background-color: var(--background-color);
+    color: var(--tertiary-color);
+    border: 1px solid var(--tertiary-color);
+    margin: 10px;
+}
+
+.medium {
+    background-color: var(--midground-color);
+    font-weight: bold;
+    color: var(--secondary-color);
+    border: 1px solid var(--secondary-color);
+    margin: 1px;
+}
+
+.bright {
+    background-color: var(--midground-color);
+    font-weight: bold;
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+    margin: 1px;
+}
+
+.entry {
+    padding: 1em;
+    display: inline-block;
     white-space: pre-wrap;
-    border:1px solid #00f700;
-    overflow:auto;
 }
 
-::-webkit-scrollbar {
-    width: auto;
+.entry-headline {
+margin-bottom: 0px;
 }
 
-::-webkit-scrollbar-track {
-    background-color: #000200;
-}
-
-::-webkit-scrollbar-thumb {
-    background-color: #00f700;
-}
-
-::-webkit-scrollbar-button {
-    background-color: #003300;
-}
-
-::-webkit-scrollbar-corner {
-    background-color: #003300;
-}
-
-#usermsg {
-    width:395px;
-    border:1px solid #00f700;
-}
-
-#submit { width: 60px; }
-
-.formLine {
-    overflow: hidden;
-    background: #ccc;
-    width: 100%
-}
-
-.formLine span {
-    display: block;
-    overflow: hidden;
-    padding: 0 5px;
-}
-
-.formLine input {
-    -moz-box-sizing: border-box;
-    -webkit-box-sizing: border-box;
-    box-sizing: border-box;
-}
-
-input[type='radio'] {
-    float: right;
-    position:absolute;
+.tooltiptext {
     visibility: hidden;
-}
-
-input[type='radio'] + label {
-    margin: 0;
-    clear: none;
-    padding: 0 2px 0 1px;
-    cursor: pointer;
-    background: url(off.png) left center no-repeat;
-}
-
-input[type='radio']:checked + label {
-    background: url(radio.png) left center no-repeat;
-}
-
-.tablebody:nth-child(even) {background-color: #040a05}
-
-.alternate:nth-child(4n) {
-    content: "";
-    background: #000008;
-}
-.alternate:nth-child(4n-1) {
-    content: "";
-    width: 110%;
-    background: #000008;
-}
-
-.category:nth-child(even){
-    background: #000205;
-}
-.category:nth-child(odd){
-    background: #020002;
-}
-
-.nonempty:empty::before {
-    content: "invisible";
-
-}
-
-
-.heading {
-    font-size: 24px;
-    border: 1px solid #003700;
+    background-color: black;
+    box-shadow: inset 0 0 0 1px var(--secondary-color);
+    box-sizing: border-box;
+    padding: 1px;
+    color: var(--primary-color);
     text-align: center;
-    background-color: #06110c;
+    position: absolute;
+    transform: translateY(-30%);
+
+    z-index: 1;
+    white-space: nowrap;
 }
 
-.subheading {
-    font-size: 20px;
-    border: 1px solid #002700;
-    text-align: center;
-    background-color: #002008;
+/* Show the tooltip text when you mouse over the tooltip container */
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+}
+
+.hiderbox {
+visibility:hidden;
+position:absolute;
+}
+
+
+@keyframes expand {
+  0% {
+    height: 0;
+    text-shadow: 0 0 0 var(--secondary-color);
+    transform: scaleY(0);
+  }
+  1% {
+    height: auto;
+    transform: scaleY(0);
+  }
+  60% {
+    height: auto;
+    text-shadow: 0 30px 5px var(--background-color);
+    transform: scaleY(0.9) translateY(-30px);
+  }
+  98% {
+    text-shadow: 0 0 1px var(--secondary-color);
+    transform: scaleY(1.01) translateY(1px);
+  }
+  100% {
+    text-shadow: 0 0 0 var(--primary-color);
+    transform: scaleY(1) translateY(0);
+  }
+}
+
+
+
+.content {
+  overflow: hidden;
+  transform-origin: top;
+  animation-fill-mode: forwards;
+  whitespace:pre;
+
+}
+
+.hiderbox:checked ~ .content {
+  animation: expand 0.5s ease forwards;
+}
+.hiderbox:not(:checked) ~ .content{
+  height: 0;
+  transform: scaleY(0);
+}
+
+.hiderbox:checked ~ .content .bordered {
+  border: 1px solid var(--primary-color);
+}
+
+.hiderbox:checked ~ h2::before {
+content:"-"
+}
+.hiderbox:not(:checked) ~ h2::before {
+content:"+"
+}
+
+input:focus-visible {
+outline:var(--tertiary-color)
 }

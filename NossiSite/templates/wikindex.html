@@ -3,19 +3,19 @@
     <title>Wiki-Index</title>
 {% endblock %}
 {% block pagetitle %}
-    <a href="{{ url_for("wiki.wiki_index") }}?v={{ restart_id }}"><h1>Wiki-Index</h1></a>
+    <a href="{{ url_for("views.show_entries") }}?v={{ restart_id }}"><h1>Wiki-Index</h1></a>
 {% endblock %}
 {% block head %}
-    <link href="{{ url_for('static', filename='/wiki.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='wiki.css') }}?v={{ restart_id }}" rel="stylesheet">
 {% endblock %}
 {% block metanavcomplete %}
     <div class="metanavcontainer">
 
         {% if current_path is not none %}
             <div class="metanavcontainer">
-            <a class="textbtn metanav" href="{{ url_for("wiki.wiki_index", path=parent) }}">
-                {{ current_path }}
-            </a>
+            <a class="textbtn metanav" href="{{ url_for("wiki.wiki_index", path=parent) }}">{{- current_path -}}</a>
+
+
             <div class="metanav"> / </div>
         {% else %}
             {{ super() }}
@@ -24,7 +24,7 @@
             <div class="metanavcontainer">
                 {% for m in subdirs %}
                     {% if current_path is not none %}
-                        <a class="textbtn metanav" href="{{ url_for("wiki.wiki_index", path=current_path / m) }}">{{ m }}</a>
+                        <a class="textbtn metanav" href="{{ url_for("wiki.wiki_index", path=(current_path / m)) }}">{{ m }}</a>
                     {% else %}
                         <a class="textbtn metanav" href="{{ url_for("wiki.wiki_index", path=m) }}">{{ m }}</a>
                     {% endif %}
@@ -38,8 +38,8 @@
         {% endif %}
     </div>
     <form action="{{ url_for("wiki.searchwiki") }}" method="get" target="_self" class="single_line_form">
-        <label for="searchterm">Search: </label><input type="text" id="searchterm" name="s" class="leet txtinput">
-        <input type="submit" id="searchbutton" value="search" class="leet textbtn">
+        <label for="searchterm">Search: </label><input type="text" id="searchterm" name="s" class="dark txtinput">
+        <input type="submit" id="searchbutton" value="search" class="dark textbtn">
     </form>
 {% endblock %}
 {% block body %}
@@ -54,14 +54,14 @@
         <tr>
             {% for m in entries %}
                 <td>
-                    <a href="{{ url_for("wiki.wikipage", page=m) }}" style="text-decoration: none"><div>{{ m }}</div></a>
+                    <a href="{{ url_for("wiki.wikipage", page=m) }}" class="wikilink"><div>{{ m }}</div></a>
                 </td>
                 <td class="tdcontainer">
                     {% if not tags[m] %}
-                        <a href="{{ url_for("wiki.tagsearch", tag="")}}" style="text-decoration: none"><div>&nbsp;</div></a>
+                        <a href="{{ url_for("wiki.tagsearch", tag="")}}" class="wikilink"><div>&nbsp;</div></a>
                     {% endif %}
                     {% for x in tags[m] %}
-                        <a href="{{ url_for("wiki.tagsearch", tag=x) }}" style="text-decoration: none"><div>{{ x }}</div></a>
+                        <a href="{{ url_for("wiki.tagsearch", tag=x) }}" class="wikilink"><div>{{ x }}</div></a>
                     {% endfor %}
                 </td></tr>
                 <tr>
@@ -72,10 +72,10 @@
     <form class="single_line_form" action="{{ url_for("wiki.wikipage") }}" method=post>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <label for="wikiaccess">Wikipage Access</label>
-        <input id="wikiaccess" type="text" name="n" class="leet single_line_form">
-        <button type="submit" name="edit" class="leeet">Edit</button>
+        <input id="wikiaccess" type="text" name="n" class="dark single_line_form">
+        <button type="submit" name="edit" class="medium">Edit</button>
         {% if session.logged_in %}
-            <button type="submit" name="administrate" class="leeet">Administrate</button>
+            <button type="submit" name="administrate" class="medium">Administrate</button>
         {% endif %}
 
     </form>

@@ -20,9 +20,9 @@
     <form class="single_line_form" action="{{ url_for("wiki.adminwiki", page=page) }}"  method=post>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <label for="wiki">Path</label>
-        <input id="wiki" type="text" name="n" class="leet single_line_form">
-        <button type="submit" name="move" class="leeet" onclick="are_you_sure('move')">Move</button>
-        <button type="submit" name="delete" class="leeet" onclick="are_you_sure('delete')">Delete</button>
+        <input id="wiki" type="text" name="n" class="dark single_line_form">
+        <button type="submit" name="move" class="medium" onclick="are_you_sure('move')">Move</button>
+        <button type="submit" name="delete" class="medium" onclick="are_you_sure('delete')">Delete</button>
     </form>
     {% endif %}
 

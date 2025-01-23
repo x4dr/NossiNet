@@ -12,6 +12,9 @@ from flask import (
     redirect,
     url_for,
     Blueprint,
+    current_app,
+    make_response,
+    jsonify,
 )
 from gamepack.Dice import DescriptiveError
 from werkzeug.security import gen_salt
@@ -22,8 +25,6 @@ from NossiPack.VampireCharacter import VampireCharacter
 from NossiSite import ALLOWED_TAGS
 from NossiSite.base import log
 from NossiSite.helpers import checklogin
-
-bleach.ALLOWED_TAGS = ALLOWED_TAGS
 
 views = Blueprint("views", __name__)
 
@@ -56,7 +57,7 @@ def get_entry(x=None):
             ).fetchone()
         ]
     ][0]
-    e["text"] = bleach.clean(e["text"])
+    e["text"] = bleach.clean(e["text"], tags=ALLOWED_TAGS)
     return e
 
 
@@ -66,7 +67,7 @@ def entry_text(x):
         return {}
     db = connect_db("entrybyid")
     e = db.execute("SELECT text FROM entries WHERE id = ?", [x]).fetchone()
-    return bleach.clean(e[0])
+    return bleach.clean(e[0], tags=ALLOWED_TAGS)
 
 
 @views.route("/")
@@ -92,6 +93,71 @@ def show_entries():
     ]  # don't send out lowercase authors ("deleted")
     t = render_template("show_entries.html", entries=entries)
     return t
+
+
+@views.route("/themeeditor")
+def theme_editor():
+    return render_template("themeeditor.html")
+
+
+@views.route("/savetheme", methods=["POST"])
+def save_theme():
+    username = session.get("user", "")
+    if not username:
+        flash("not logged in", "error")
+        return (
+            jsonify({"success": False, "redirect_url": url_for("views.show_entries")}),
+            200,
+        )
+    usertheme = ""
+    print(request.form)
+    for k in request.form:
+        v = request.form.get(k)
+        if not v.strip():
+            continue
+        usertheme += f"{k}:{v};"
+    print(usertheme)
+    Config.save(username, "theme", usertheme)
+    flash("theme updated succesfully")
+    return (
+        jsonify({"success": True, "redirect_url": url_for("views.show_entries")}),
+        200,
+    )
+
+
+@views.route("/theme.css")
+def theme():
+    username = session.get("user", "")
+    usertheme = User(username).configs().get("theme", "")
+    if not usertheme and session.get("light"):
+        with open(current_app.static_folder + "/light-theme.conf", "r") as f:
+            usertheme = f.read()
+    t = {}
+    if username:
+        for entry in usertheme.split(";"):
+            if not entry.strip():
+                continue
+            k, v = entry.split(":")
+            t[k.strip()] = v.strip()
+
+    with open(current_app.static_folder + "/base-theme.css", "r") as f:
+        basetheme = f.read()
+    output = ""
+    for line in basetheme.splitlines(True):
+        if "-" not in line:
+            output += line
+            continue
+        colorname = line.lstrip(" -")
+        splitpos = colorname.find("-color:")
+        colorname = colorname[:splitpos]
+        if colorname in t.keys():
+            output += f"    --{colorname}-color: {t[colorname]};\n"
+        else:
+            output += line
+    print(output)
+    response = make_response(output)
+    response.headers["Content-Type"] = "text/css"
+    return response
 
 
 @views.route("/edit/post/<x>", methods=["GET", "POST"])

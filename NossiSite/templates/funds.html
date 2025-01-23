@@ -14,12 +14,12 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             {% if keyprovided %}
                 <dt><label for="key_input">Key:</label>
-                <dd><input id="key_input" class=leet type=text name=key>
+                <dd><input id="key_input" class=dark type=text name=key>
                     {% else %}
                 <dt><label for="amount_input">Amount:</label>
-                <dd><input id="amount_input" class=leet type=number name="amount">
+                <dd><input id="amount_input" class=dark type=number name="amount">
             {% endif %}
-            <dd><input class=leet type=submit value=Send>
+            <dd><input class=dark type=submit value=Send>
         </dl>
     </form>
 {% endblock %}

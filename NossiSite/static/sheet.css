@@ -1,13 +1,3 @@
-* {
-    color: #00b000;
-    font-family: "Lucida Grande", Monaco, monospace;
-}
-
-html {
-	background: black;
-}
-
-
 
 .flexwrapper {
     display: flex;
@@ -28,14 +18,14 @@ html {
         padding: unset;
     }
     .category {
-        border: 1px solid #00c700;
+        border: 1px solid var(--tertiary-color);
     }
 }
 
 .category {
     flex: 1 1 80px;
     margin: 2px;
-    border: 1px solid #003300;
+    border: 1px solid var(--tertiary-color);
     align-self: stretch;
 }
 
@@ -45,7 +35,7 @@ html {
 }
 
 .box{
-    border: 1px solid #00c700;
+    border: 1px solid var(--tertiary-color);
 }
 
 .desc-text {
@@ -67,4 +57,35 @@ html {
 .span-0 {
     grid-column: 1/3;
     visibility: hidden;
+}
+.sheetheading {
+  display: block;
+  font-size: 2em;
+  font-weight: bold;
+  line-height: 1.2;
+}
+.hiderbox:checked ~ .sheetheading::before {
+content:"-"
+}
+.hiderbox:not(:checked) ~ .sheetheading::before {
+content:"+"
+}
+
+.depth1 {
+    font-size: 2em;
+}
+.depth2 {
+    font-size: 1.8em;
+}
+.depth3 {
+    font-size: 1.5em;
+}
+.depth4 {
+    font-size: 1.2em;
+}
+.depth5 {
+    font-size: 1.1em;
+}
+.depth6 {
+    font-size: 1 em;
 }

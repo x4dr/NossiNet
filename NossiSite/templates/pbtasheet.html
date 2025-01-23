@@ -1,40 +1,21 @@
-
+<!doctype html>
+<html lang="en">
+<script src="https://unpkg.com/htmx.org"></script>
+<script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
 {% block head %}
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="pbta.css") }}?v={{ restart_id }}">
-    <script src="https://unpkg.com/htmx.org"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Pirata+One&display=swap" rel="stylesheet">
 
-    {% if owner %}
-        {% for err in character.errors %}
-
-            <!-- Error in PBTASheet. Please Fix because some features rely on correct formatting. -->
-            <!-- {{err|safe}} -->
-
-        {% endfor %}
-    {% endif %}
-{% endblock %}
-{%- macro dots(val,max=5) -%}
-    {%- if val is not defined -%}
-        {%- set val = 0 -%}
-    {%- endif -%}
-    {%- for i in range(val) -%}
-        {%- if loop.index0%5 == 0 and loop.index0 > 0 %} {% endif -%}
-        ●
-    {%- endfor -%}
-    {%- for i in range(max-val) -%}
-        ○
-    {%- endfor -%}
-{%- endmacro -%}
-
 {%- block title -%}
     {%- if character.Name -%}
-        <title>{{ character.Name }}</title>
+        <title>{{ character.Name }}
     {%- else -%}
         <title>Charactersheet</title>
     {%- endif -%}
 
+{%- endblock -%}
 {%- endblock -%}
 
 {%- block body -%}
@@ -123,7 +104,7 @@
     </table>
     <div>
     <div class="healing-clock-section">
-        <div hx-get="/clock/1/4" class="clock" hx-trigger="load"></div>
+        <div hsx-get="/clock/1/4" class="clock" hsx-trigger="load"></div>
         <label class="label">Healing Clock</label>
     </div>
     <div id = armor">
@@ -134,8 +115,8 @@
     </div>
         <label class="label">Armor</label>
         </div>
-</div>
-</div>
+    </div>
+    </div>
         <div class="section">
             <h2>Notes</h2>
             <textarea class="input-field" rows="4" placeholder="Notes..."></textarea>
@@ -145,12 +126,13 @@
     <div class="column column-middle">
         <div class="section">
             <h2 class="pirata-one-regular">Playbook</h2>
+            <div id="myElement" hx-ext="ws" ws-connect="wss://127.0.0.1:5000/wsync">connecting</div>
             <div>Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 2000 years old. Richard McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of the more obscure Latin words, consectetur, from a Lorem Ipsum passage, and going through the cites of the word in classical literature, discovered the undoubtable source. Lorem Ipsum comes from sections 1.10.32 and 1.10.33 of "de Finibus Bonorum et Malorum" (The Extremes of Good and Evil) by Cicero, written in 45 BC. This book is a treatise on the theory of ethics, very popular during the Renaissance. The first line of Lorem Ipsum, "Lorem ipsum dolor sit amet..", comes from a line in section 1.10.32.</div>
         </div>
     </div>
 
     <div class="column column-right">
-        <div class="section">
+        <div class="section" >
             <h2 class="pirata-one-regular">Attributes</h2>
             <table class="table">
                 <thead>
@@ -178,31 +160,7 @@
     </div>
 </div>
 
-</body>
 
-<script>
-const rootStyles = getComputedStyle(document.documentElement);
-const cssVars = Array.from(rootStyles).filter(v => v.startsWith('--'));
-const table = document.createElement('table');
-document.body.appendChild(table);
-cssVars.forEach(varName => {
-  const row = table.insertRow();
-  const labelCell = row.insertCell();
-  const inputCell = row.insertCell();
-
-  labelCell.textContent = varName;
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.value = rootStyles.getPropertyValue(varName).trim();
-  input.className = 'input-field'
-
-  // Update CSS variable on input change
-  input.addEventListener('input', () => {
-    document.documentElement.style.setProperty(varName, input.value);
-  });
-
-  inputCell.appendChild(input);
-});
-</script>
 
 {%- endblock -%}
+</html>

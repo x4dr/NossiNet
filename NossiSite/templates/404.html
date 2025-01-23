@@ -1,23 +1,18 @@
 <!doctype html>
 <html lang="en">
 <title>NossiNet</title>
-<link rel=stylesheet type=text/css href="
-{%- if session.light -%}
-{{ url_for("static", filename='stylelight.css') }}?v={{ restart_id }}
-{%- else -%}
-{{ url_for("static", filename='style.css') }}?v={{ restart_id }}
-{%- endif -%}
-">
+    <link rel="stylesheet" type="text/css" href="{{ url_for("views.theme") }}?v={{ restart_id }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename='style.css') }}?v={{ restart_id }}">
 <head>
     <meta charset="UTF-8">
     <title>This site seems to be obfuscated right now</title>
 </head>
 <body>
-    <div>
+    <div class="page">
         This site seems to be obfuscated right now. <br>
         Or maybe you typed it wrong... In any case, <br>
-        CDIV sends its regards. <br>
-        Best return to where its <a href="/">safe</a>.
+        CDIV sends their regards. <br>
+        Best <a href="/">return to where its safe</a>.
     </div>
 </body>
 </html>

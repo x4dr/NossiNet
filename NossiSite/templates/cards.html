@@ -65,7 +65,7 @@
     <form id="interactionform" action="javascript:void(0);" method=post>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <label for="action" >Action:</label>
-        <select name="action" class ="leeet" id="action">
+        <select name="action" class ="medium" id="action">
             <option value="draw" data-url="{{ url_for("extra.cards", command='draw') }}">Draw</option>
             <option value="spend" data-url="{{ url_for("extra.cards", command='spend') }}">Spend</option>
             <option value="returnfun" data-url="{{ url_for("extra.cards", command='return') }}">Return</option>
@@ -77,7 +77,7 @@
         <label for="parameter">Parameter</label>
         <input type="text" name="parameter" id="parameter"/>
         <br><br>
-        <input type="submit" value="OK" class="leet">
+        <input type="submit" value="OK" class="dark">
     </form>
 
 {% endblock %}

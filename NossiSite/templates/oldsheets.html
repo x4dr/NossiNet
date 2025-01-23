@@ -26,9 +26,9 @@
             <form action="{{ url_for("views.claim_sheet") }}" method=post>
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <label>
-                    <input class="leeet" type="text" name="sheetnum" value="{{ summon }}"/>
+                    <input class="medium" type="text" name="sheetnum" value="{{ summon }}"/>
                 </label>
-                <input class=leet type=submit value=SUMMON/>
+                <input class=dark type=submit value=SUMMON/>
             </form>
         </div>
     {%- endif -%}

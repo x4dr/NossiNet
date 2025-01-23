@@ -1,0 +1,106 @@
+{% extends "layout.html" %}
+{% block head %}
+ <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="live_edit.css") }}?v={{ restart_id }}">
+{% endblock %}
+{% block body %}
+<div></div>
+<div class=flash style="white-space: pre-wrap;" onclick="this.parentNode.removeChild(this)">Flash</div>
+<div class=error style="white-space: pre-wrap;" onclick="this.parentNode.removeChild(this)">Error</div>
+
+<div class="tooltip">
+            <input type="checkbox" class="hiderbox" id="xlmt14vw">
+      <h2 class="entry-headline"><label for="xlmt14vw">drvtrz</label> by
+        <a href="/user/NONA">NONA</a>
+      </h2><div class="bordered content"><form class="add-entry">
+        <button formaction="/edit/post/24" class="medium">Edit</button>
+      </form><div class="content" hx-get="/entry_text/24" hx-trigger="revealed" hx-swap="innerHTML" data-hx-revealed="true">ofrmzozxpgsmszr,simfrtzsh§hpsesx§eozjpizdüvr</div>
+    </div>
+</div>
+
+<div>        <form action="{{ url_for("views.add_entry") }}" class=add-entry>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="id" value="new">
+            <dl>
+                <dt>Title:</dt>
+                <dd><label>
+                    <input class=dark type=text size=30 name=title>
+                </label></dd>
+                <dt>Text:</dt>
+                <dd><label>
+                    <textarea class=dark name=text rows=5 cols=40></textarea>
+                </label></dd>
+                <dt>Tags:</dt>
+                <dd><label>
+                    <input class=dark type=text size=30 name=tags value="default">
+                </label></dd>
+                <dd><input class=medium type=submit value=Share>
+            </dl>
+        </form> </div>
+<div class="editable"> Editable Content on Sheets</div>
+<form id="theme-form"> <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/> </form>
+<script>
+
+const rootStyles = getComputedStyle(document.documentElement);
+const cssVars = Array.from(rootStyles).filter(v => v.startsWith('--'));
+const table = document.createElement('table');
+document.body.appendChild(table);
+table.className = 'page';
+
+function createVarInput(varName, value) {
+  const row = table.insertRow();
+  const labelCell = row.insertCell();
+  const inputCell = row.insertCell();
+
+  labelCell.textContent = varName;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.id = varName.slice(2, -6); // Extract variable name from CSS variable
+  input.value = value.trim();
+  input.className = 'input-field dark';
+
+  // Update CSS variable on input change
+  input.addEventListener('input', () => {
+    document.documentElement.style.setProperty(varName, input.value);
+  });
+
+  inputCell.appendChild(input);
+  return input;
+}
+
+const inputs = cssVars.map(varName => createVarInput(varName, rootStyles.getPropertyValue(varName)));
+
+
+// Create a function to handle form submission (avoids repetition)
+function submitThemeChanges() {
+  const formData = new FormData();
+  inputs.forEach(input => formData.append(input.id, input.value)); // Use input.id for clarity
+
+  const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+
+    fetch('/savetheme', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRFToken': csrfToken
+      }
+    })
+  .then(response => response.json())
+  .then(data => {
+    console.log('Theme saved successfully:', data);
+    window.location.href = data.redirect_url;
+  })
+  .catch(error => {
+    console.error('Error saving theme:', error);
+  });
+}
+// Add a button to trigger form submission
+const saveButton = document.createElement('button');
+saveButton.textContent = 'Save Theme';
+saveButton.className = 'medium'
+saveButton.addEventListener('click', submitThemeChanges);
+table.appendChild(saveButton);
+
+
+
+</script>
+{%endblock%}

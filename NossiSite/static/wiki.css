@@ -57,3 +57,12 @@ img {
 .tdcontainer > *:last-child {
     margin-right:0;
 }
+
+.wikilink:visited {
+color : var(--secondary-color)
+}
+
+.wikilink:link {
+text-decoration: none;
+color : var(--primary-color)
+}

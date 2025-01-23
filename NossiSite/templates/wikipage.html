@@ -15,7 +15,7 @@
 
             if (wikibody.contains(mouselement)) {
                 mouselement.dataset["category"] = "perc" + ratio;
-                mouselement.ondblclick = get_edit_content("{{wiki}}", mouselement);
+                mouselement.ondblclick =  () => get_edit_content("{{wiki}}", mouselement);
             }
         });
     </script>
@@ -32,10 +32,10 @@
 {% endblock %}
 
 {% block body %}
-    <a href="{{ url_for("wiki.editwiki", page=wiki) }}"><input type="button" class="leeet" style="margin-bottom: 1em"
+    <a href="{{ url_for("wiki.editwiki", page=wiki) }}"><input type="button" class="medium" style="margin-bottom: 1em"
 
                                                        value="Edit"></a><br/>
-    <div class="wiki editeable" id="wikibody" style="word-wrap:break-word;border:1px solid">{{ body|safe }}
+    <div class="wiki editable" id="wikibody" style="word-wrap:break-word;border:1px solid">{{ body|safe }}
         <br> {#dangerous body has to be cleaned before being sent here#}
     </div>
     <div style="margin: 2em">|
@@ -44,7 +44,7 @@
         {% endfor %}
         <br>
     </div>
-    <a href="{{ url_for("wiki.editwiki", page=wiki) }}"><input type="button" class="leeet" style="margin-bottom: 1em"
+    <a href="{{ url_for("wiki.editwiki", page=wiki) }}"><input type="button" class="medium" style="margin-bottom: 1em"
                                                        value="Edit"></a><br/>
     <div>
         <button id="TopButton" title="Upwards">Top</button>
@@ -56,8 +56,8 @@
             <input name="original" id="original" type="hidden" value="">
             <label for="text" class="overlay">Text to Change</label><br/><textarea class="message" name="new"
                                                                                    id="text"></textarea>
-            <input type="button" class="leeeet " value="Close" id="closebutton">
-            <input type="submit" class="leeeet bottombutton" value="Overwrite">
+            <input type="button" class="bright " value="Close" id="closebutton">
+            <input type="submit" class="bright bottombutton" value="Overwrite">
 
         </form>
     </div>

@@ -14,8 +14,8 @@
 
 {% macro lolformat(k,v,redir=0) %}
     <tr>
-        <td colspan="2" style="text-align: center;" class="{% if redir %}leet
-                                        {%- else %}leeet{% endif %}" >{{ k }}</td>
+        <td colspan="2" style="text-align: center;" class="{% if redir %}dark
+                                        {%- else %}medium{% endif %}" >{{ k }}</td>
     </tr>
     {%- set table = v[0] -%}
     {%- set lines = v[1] -%}
@@ -42,7 +42,7 @@
 {%- endmacro %}
 {% macro dictformat(k,v) -%}
     <tr>
-        <td colspan="2" style="text-align: center;" class="leeet">{{ k }}</td>
+        <td colspan="2" style="text-align: center;" class="medium">{{ k }}</td>
     </tr>
 
     {%- for vk,vv in v.items() -%}
@@ -61,7 +61,7 @@
 {%- macro catformat(cat, name) -%}
     <table style = "width: 100%">
         <tr>
-            <td colspan="2" style="text-align: center;" class="leeeet">{{ name }}</td>
+            <td colspan="2" style="text-align: center;" class="bright">{{ name }}</td>
         </tr>
         {%- if cat is mapping  -%}
             {%- for k,v in cat.items() -%}
@@ -86,9 +86,9 @@
 
 {%- block body -%}
     <div style="text-align: center ">
-    <table style ="width:100%; margin: 0 0 4px" class="leet dividedtable">
+    <table style ="width:100%; margin: 0 0 4px" class="dark dividedtable">
         <tr>
-            <td colspan="6" style="text-align: center; font-size: 1.5em" class="leeeet">
+            <td colspan="6" style="text-align: center; font-size: 1.5em" class="bright">
                 {%- if character.Name -%}
                     Charactersheet&nbspfor&nbsp{{ character.Name }}
                 {%- else -%}

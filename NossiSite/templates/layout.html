@@ -12,10 +12,8 @@
             Nossinet Berlin by Night
         {%- endif -%}</title>
     {% endblock %}
+    <link rel="stylesheet" type="text/css" href="{{ url_for("views.theme") }}?v={{ restart_id }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename='style.css') }}?v={{ restart_id }}">
-    {%- if session.light or light is defined -%}
-        <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename='stylelight.css') }}?v={{ restart_id }}">
-    {%- endif %}
     <script type="text/javascript" charset="utf-8">
         window.addEventListener("load", () => {
             const hiders = document.getElementsByClassName('hider');
@@ -61,7 +59,7 @@
     {% block head %}{% endblock %}
 </head>
 <body>
-<div id="page_complete" class=page>
+<div id="page_complete" class="page">
     {% block pagetitle %}
         <h1><a href={{ url_for("views.show_entries") }}>NOSFERATU NETWORK</a></h1>
     {% endblock %}

@@ -86,9 +86,9 @@
 {% block body %}
 
 
-    <table class="leet dividedtable">
+    <table class="dark dividedtable">
         <tr>
-            <td colspan="6" style="text-align: center; font-size: 1.5em" class="leeet">
+            <td colspan="6" style="text-align: center; font-size: 1.5em" class="medium">
                 {%- if character.Meta.Name -%}
                     Charactersheet&nbspfor&nbsp{{ character.Meta.Name }}
                 {%- else -%}
@@ -122,12 +122,12 @@
     <br>
     <table>
         <tr>
-            <td colspan="6" style="text-align: center;" class="leeet">Attributes</td>
+            <td colspan="6" style="text-align: center;" class="medium">Attributes</td>
         </tr>
         <tr>
-            <td colspan="2" style="text-align: center; width: 33%;" class="leet">Physical</td>
-            <td colspan="2" style="text-align: center; width: 34%;" class="leet">Social</td>
-            <td colspan="2" style="text-align: center; width: 33%;" class="leet">Mental</td>
+            <td colspan="2" style="text-align: center; width: 33%;" class="dark">Physical</td>
+            <td colspan="2" style="text-align: center; width: 34%;" class="dark">Social</td>
+            <td colspan="2" style="text-align: center; width: 33%;" class="dark">Mental</td>
         </tr>
     </table>
     <table>
@@ -160,12 +160,12 @@
     <br>
     <table>
         <tr>
-            <td colspan="6" style="text-align: center;" class="leeet">Abilities</td>
+            <td colspan="6" style="text-align: center;" class="medium">Abilities</td>
         </tr>
         <tr>
-            <td colspan="2" style="text-align: center; width: 33%;" class="leet">Talents</td>
-            <td colspan="2" style="text-align: center; width: 34%;" class="leet">Skills</td>
-            <td colspan="2" style="text-align: center; width: 33%;" class="leet">Knowledges</td>
+            <td colspan="2" style="text-align: center; width: 33%;" class="dark">Talents</td>
+            <td colspan="2" style="text-align: center; width: 34%;" class="dark">Skills</td>
+            <td colspan="2" style="text-align: center; width: 33%;" class="dark">Knowledges</td>
         </tr>
     </table>
     <table>
@@ -262,12 +262,12 @@
     </table>
     <table>
         <tr>
-            <td colspan="6" style="text-align: center;" class="leeet">Advantages</td>
+            <td colspan="6" style="text-align: center;" class="medium">Advantages</td>
         </tr>
         <tr>
-            <td colspan="2" style="text-align: center; width: 33%;" class="leet">Backgrounds</td>
-            <td colspan="2" style="text-align: center; width: 34%;" class="leet">Disciplines</td>
-            <td colspan="2" style="text-align: center; width: 33%;" class="leet">Virtues</td>
+            <td colspan="2" style="text-align: center; width: 33%;" class="dark">Backgrounds</td>
+            <td colspan="2" style="text-align: center; width: 34%;" class="dark">Disciplines</td>
+            <td colspan="2" style="text-align: center; width: 33%;" class="dark">Virtues</td>
         </tr>
         {% for bgvdscp in character.BGVDSCP_combined %}
             <tr>
@@ -298,9 +298,9 @@
         <table>
             <tr>
 
-                <td colspan="2" style="text-align: center; width: 33%;" class="leeet">Merits/Flaws</td>
-                <td colspan="2" style="text-align: center; width: 34%;" class="leeet">Humanity</td>
-                <td colspan="2" style="text-align: center; width: 33%;" class="leeet">Gear</td>
+                <td colspan="2" style="text-align: center; width: 33%;" class="medium">Merits/Flaws</td>
+                <td colspan="2" style="text-align: center; width: 34%;" class="medium">Humanity</td>
+                <td colspan="2" style="text-align: center; width: 33%;" class="medium">Gear</td>
             </tr>
 
             <tr>
@@ -322,7 +322,7 @@
             </tr>
 
             <tr>
-                <td colspan="2" style="text-align: center; width: 34%;" class="leeet">Willpower</td>
+                <td colspan="2" style="text-align: center; width: 34%;" class="medium">Willpower</td>
 
             </tr>
             <tr>
@@ -338,7 +338,7 @@
                 <td colspan="2">&nbsp</td>
             </tr>
             <tr>
-                <td colspan="2" style="text-align: center; width: 34%;" class="leeet">Blood</td>
+                <td colspan="2" style="text-align: center; width: 34%;" class="medium">Blood</td>
 
             </tr>
             <tr>
@@ -360,18 +360,18 @@
             <form action="{{ url_for("views.del_sheet") }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <input title="sheetnum" hidden name="sheetnum" value="{{ oldsheet }}">
-                <input type="submit" style="float: right" class="leet" value="delete">
+                <input type="submit" style="float: right" class="dark" value="delete">
             </form>
 
             <form action="{{ url_for("views.res_sheet") }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <input title="sheetnum" hidden name="sheetnum" value="{{ oldsheet }}">
-                <input type="submit" style="float: right" class="leet" value="swap out">
+                <input type="submit" style="float: right" class="dark" value="swap out">
             </form>
         {% elif own %}
             <form action="{{ url_for("views.modify_sheet") }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="submit" class="leet bigbtn" value="EDIT">
+                <input type="submit" class="dark bigbtn" value="EDIT">
             </form>
         {% endif %}
     </div><br>

@@ -32,23 +32,23 @@
         <dl>
             <dt>
             <dd><label>config
-                <input class="leet resize_at_start" type=text oninput="resize_input_to_content(this)" name="configuration" value="{{ curval }}">
+                <input class="dark resize_at_start" type=text oninput="resize_input_to_content(this)" name="configuration" value="{{ curval }}">
             </label>
-                <input class=leet type=submit value=Save>
+                <input class=dark type=submit value=Save>
         </dl>
     </form>
     {%- if heading == "unconfirmed_discord_link" %}
-        <form class="leeeet" action="{{ url_for("views.config", x=config) }}" method=post>
+        <form class="bright" action="{{ url_for("views.config", x=config) }}" method=post>
             <label for="confirm">&nbsp;Confirm that this discord account is yours</label>
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input type="hidden" name="confirm" value="{{ curval }}">
-            <input class=leet type=submit value=Confirm>
+            <input class=dark type=submit value=Confirm>
         </form>
     {% endif %}
     <form action="{{ url_for("views.config", x=config) }}" method=post>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <input type="hidden" name="delete" value="true">
-        <input class=leet type=submit value=Delete>
+        <input class=dark type=submit value=Delete>
     </form>
 
 
