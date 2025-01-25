@@ -132,20 +132,17 @@ h2 {
     margin-bottom: 20px;
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-start; /* Align all child elements at the top */
-    gap: 1rem; /* Adds consistent spacing between the table and clock */
-    box-sizing: border-box; /* Ensure consistent sizing */
+    align-items: flex-start; 
+    gap: 1rem; 
+    box-sizing: border-box; 
 }
 
 .harmtable {
     border-collapse: collapse;
     margin-top: 10px;
-    flex: 1; /* Allow the table to grow */
-    min-width: 200px; /* Minimum width for the table */
+    flex: 1; 
+    min-width: 200px; 
 }
-
-
-
 
 .harmtable td {
     padding: 10px;
@@ -166,13 +163,13 @@ h2 {
 
 
 .healing-clock-section {
-    margin: 0; /* Prevent unnecessary margins */
-    flex: 0; /* Prevent stretching */
+    margin: 0; 
+    flex: 0; 
     display: flex;
-    flex-direction: column; /* Stack elements vertically */
-    align-items: center; /* Center align the clock and label */
+    flex-direction: column; 
+    align-items: center; 
     min-width: 50px;
-    box-sizing: border-box; /* Ensure padding doesn't overflow */
+    box-sizing: border-box; 
 }
 
 .healing-clock-label {
@@ -181,7 +178,7 @@ h2 {
 }
 
 .clock {
-    margin: 0; /* Remove extra margins */
+    margin: 0; 
     position: relative;
     width: 50px;
     height: 50px;
@@ -194,7 +191,6 @@ h2 {
     position: absolute;
     width: 100%;
     height: 100%;
-    clip-path: var(--clip-path);
     background-color: var(--inactive-color);
     transform-origin: center;
     transition: transform 0.5s;

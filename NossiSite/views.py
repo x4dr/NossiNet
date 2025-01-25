@@ -110,13 +110,11 @@ def save_theme():
             200,
         )
     usertheme = ""
-    print(request.form)
     for k in request.form:
         v = request.form.get(k)
         if not v.strip():
             continue
         usertheme += f"{k}:{v};"
-    print(usertheme)
     Config.save(username, "theme", usertheme)
     flash("theme updated succesfully")
     return (
@@ -154,7 +152,6 @@ def theme():
             output += f"    --{colorname}-color: {t[colorname]};\n"
         else:
             output += line
-    print(output)
     response = make_response(output)
     response.headers["Content-Type"] = "text/css"
     return response

@@ -14,6 +14,7 @@
     {% endblock %}
     <link rel="stylesheet" type="text/css" href="{{ url_for("views.theme") }}?v={{ restart_id }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename='style.css') }}?v={{ restart_id }}">
+    <script src="https://unpkg.com/htmx.org"></script>
     <script type="text/javascript" charset="utf-8">
         window.addEventListener("load", () => {
             const hiders = document.getElementsByClassName('hider');

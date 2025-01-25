@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
-<script src="https://unpkg.com/htmx.org"></script>
-<script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.3" integrity="sha384-lVb3Rd/Ca0AxaoZg5sACe8FJKF0tnUgR2Kd7ehUOG5GCcROv5uBIZsOqovBAcWua" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
 {% block head %}
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="pbta.css") }}?v={{ restart_id }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -104,11 +104,11 @@
     </table>
     <div>
     <div class="healing-clock-section">
-        <div hsx-get="/clock/1/4" class="clock" hsx-trigger="load"></div>
+        <div hx-get="/clock/1/4" class="clock" hx-trigger="load"></div>
         <label class="label">Healing Clock</label>
     </div>
-    <div id = armor">
-    <div id="armor" class="gauge">
+    <div>
+    <div id = "armor" class="gauge">
                 <div class="gauge-box filled"></div>
                 <div class="gauge-box filled"></div>
                 <div class="gauge-box empty"></div>

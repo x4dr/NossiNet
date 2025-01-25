@@ -4,15 +4,19 @@ from gamepack.Dice import DescriptiveError
 from gamepack.Item import Item
 from gamepack.MDPack import traverse_md, MDObj
 from markdown import markdown
-from gamepack.WikiPage import WikiPage
 
 from NossiSite.helpers import srs
+from gamepack.WikiPage import WikiPage
 
 
 class LocalMarkdown:
     extensions = ["nl2br", "tables", "toc"]
     transclude_re = re.compile(r"!\[(?P<text>.*?)]\((?P<link>.*?)\)", re.IGNORECASE)
     transclude_inner_re = re.compile(r"!\[(?P<link>.*?]?)](?!\()", re.IGNORECASE)
+    clock_re = WikiPage.clock_re
+
+    transcluded_clock_re = re.compile(r"\[clock\|(?P<name>.*?)@(?P<page>.*?)]")
+
     headline_re = re.compile(
         r"<h(?P<level>\d+)(?P<attributes>.*?)>\s*(?P<text>.*?)\s*</h(?P=level)>"
     )
@@ -102,10 +106,28 @@ class LocalMarkdown:
         return hidespans
 
     @classmethod
-    def pre_process(cls, text: str) -> (str, [(str, str)]):
+    def local_clock_make(cls, page: str):
+        def local_clock(match: re.Match):
+            name = match.group("name")
+            return (
+                f'<div id="parent-{name}-{page}" '
+                f'hx-ws="connect:/clocks?name={name}-{page}" >'
+                f'<div id="{name}-{page}">Loading {name}</div></div>'
+            )
+
+        return local_clock
+
+    @classmethod
+    def transcluded_clock(cls, match: re.Match):
+        page = match.group("page")
+        return cls.local_clock_make(page)(match)
+
+    @classmethod
+    def pre_process(cls, text: str, page: str) -> (str, [(str, str)]):
         text = cls.transclude_re.sub(cls.transclude, text)
         text = cls.transclude_inner_re.sub(cls.transclude_inner, text)
-
+        text = cls.transcluded_clock_re.sub(cls.transcluded_clock, text)
+        text = cls.clock_re.sub(cls.local_clock_make(page), text)
         md = MDObj.from_md(text)
         hidespans = cls.find_hidespans(md)
 
@@ -116,8 +138,8 @@ class LocalMarkdown:
         return markdown(text, extensions=cls.extensions)
 
     @classmethod
-    def process(self, text: str) -> str:
-        text, hidespans = self.pre_process(text)
+    def process(self, text: str, page: str) -> str:
+        text, hidespans = self.pre_process(text, page)
         text = self.markdown(text)
         text = self.post_process(text, hidespans)
         return text
@@ -131,8 +153,6 @@ class LocalMarkdown:
         done = text[:start_position]
         text = text[start_position:]
         m = r1.search(text)
-        if not m:
-            print("wtf")
         start = m.span()[0]
         level = m.group("level")
 
@@ -176,8 +196,6 @@ class LocalMarkdown:
     def hide(cls, text):
         random_code = srs()
         header = cls.headline_re.match(text)
-        if not header:
-            print(text)
         text = text[header.end() :]
         headline = (
             f"<h{header.group('level')} {header.group('attributes')} class=hider data-for={random_code}> "

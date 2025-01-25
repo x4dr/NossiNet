@@ -2,9 +2,11 @@ import json
 import math
 import re
 import subprocess
+import threading
 import time
 import urllib.parse
 from pathlib import Path
+
 import bleach
 import markdown
 from flask import (
@@ -18,19 +20,18 @@ from flask import (
     Blueprint,
 )
 from flask_sock import Sock
+from markupsafe import Markup
+from simple_websocket import ConnectionClosed
 
+from NossiPack.LocalMarkdown import LocalMarkdown
+from NossiPack.User import User, Config
+from NossiSite.base import log
+from NossiSite.helpers import checklogin
 from gamepack.Dice import DescriptiveError
 from gamepack.FenCharacter import FenCharacter
 from gamepack.MDPack import traverse_md, MDObj
 from gamepack.WikiCharacterSheet import WikiCharacterSheet
 from gamepack.WikiPage import WikiPage
-from markupsafe import Markup
-
-from NossiPack.LocalMarkdown import LocalMarkdown
-from NossiPack.User import User, Config
-from NossiSite import ALLOWED_TAGS
-from NossiSite.base import log
-from NossiSite.helpers import checklogin
 
 WikiPage.set_wikipath(Path.home() / "wiki")
 wikistamp = [0.0]
@@ -38,7 +39,7 @@ wikistamp = [0.0]
 chara_objects = {}
 mdlinks = re.compile(r"<a href=\"(.*?)\".*?</a")
 
-bleach.ALLOWED_TAGS = ALLOWED_TAGS
+connected_clocks = {}
 
 bleach.ALLOWED_ATTRIBUTES.update(
     {
@@ -53,6 +54,8 @@ bleach.ALLOWED_ATTRIBUTES.update(
 views = Blueprint("wiki", __name__)
 sock = Sock()
 sock.bp = views
+broadcast_names = []
+broadcast = threading.Event()
 
 
 @views.after_app_request
@@ -235,8 +238,7 @@ def wikipage(page=None):
         return redirect(url_for("views.login"))
     if not raw:
         body = bleach.clean(loaded_page.body)
-        body = LocalMarkdown().process(body)
-        # body = fill_infolets(body, page)
+        body = LocalMarkdown().process(body, page=page)
         return render_template(
             "wikipage.html",
             title=loaded_page.title,
@@ -299,17 +301,23 @@ def editwiki(page=None):
                     meta={},
                 )
 
-            page.save(p, session["user"])
+            page.save_overwrite(session["user"])
             flash(f"Saved {page.title.strip() or p}.")
         return redirect(url_for("wiki.wikipage", page=request.form.get("wiki", None)))
     return abort(405)
 
 
-@sock.route("/wsync")
-def ws_handler(ws):
+@sock.route("/clocks")
+def clocks_handler(ws):
+    name = request.args.get("name")
+    print("connection from", name)
+    if name not in connected_clocks:
+        connected_clocks[name] = []
+    connected_clocks[name].append(ws)
+    broadcast_names.append(name)
+    broadcast.set()
     while True:
-        ws.send('<div id="myElement" >Updatdaded Content</div>')
-        time.sleep(1)
+        log.info(ws.receive())
 
 
 @views.route("/pbta/<path:c>")
@@ -318,11 +326,12 @@ def pbtasheet(c):
     return render_template("pbtasheet.html", character=char)
 
 
+@views.route("/clock/<int:active>/<int:total>/<name>")
 @views.route("/clock/<int:active>/<int:total>")
-def generate_clock(active: int, total: int):
+def generate_clock(active: int, total: int, name=""):
     def generate_clip_path(segments):
         fraction = 1 / segments
-        radius = 50  # Percentage radius
+        radius = 55  # Percentage radius
         center_x, center_y = 50, 50  # Center of the circle in percentage
         helper = 8
         angle = 360 * fraction / helper
@@ -338,23 +347,61 @@ def generate_clock(active: int, total: int):
         return f"polygon({', '.join(points)})"
 
     slice_html = ""
-
+    total = int(total)
+    active = int(active)
     for i in range(total):
         color = " active" if i < active else ""
         clip_path = generate_clip_path(total)
         angle_shape = (360 / total) * i - 90
         angle_line = angle_shape - 90
+        incdec = "-1" if i < active else "1"
+
         slice_html += f"""
-                    <div class="segment{color}" style="
-                        clip-path: {clip_path};
-                        transform: rotate({angle_shape}deg);
-                    "></div>
-                    <div class="line" style="
-                    transform: translate(50%,50%)
-                    translateX(-100%)
-                     rotate({angle_line}deg);"></div>
-                """
+            <div class="segment{color}"
+                 style="clip-path: {clip_path}; transform: rotate({angle_shape}deg);"
+                 hx-get="/changeclock/{name}/{incdec}"
+                 hx-trigger="click">
+            </div>
+            <div class="line" style="transform: translate(50%,50%) translateX(-100%) rotate({angle_line}deg);"></div>
+        """
     return slice_html
+
+
+def broadcast_clock_update():
+    while True:
+        broadcast.wait()
+        while broadcast_names:
+            name = broadcast_names.pop()
+            print("processing", name)
+            clockname, page = name.rsplit("-", 1)
+            page = WikiPage.load_str(page)
+            clock = page.get_clock(clockname)
+            if not clock:
+                continue
+            c = generate_clock(clock.group("current"), clock.group("maximum"), name)
+            c = f'<div class="clock-container" id={name}>{c}</div>'
+            clients = connected_clocks.get(name, []).copy()
+            for client in clients:
+                try:
+                    client.send(c)
+                except (ConnectionClosed, BrokenPipeError, OSError, RuntimeError) as e:
+                    # Remove the client if the connection is broken
+                    print("connection closed for", name, e)
+                    connected_clocks[name].remove(client)
+                    if not connected_clocks[name]:
+                        del connected_clocks[name]
+        broadcast.clear()
+
+
+@views.route("/changeclock/<name>/<delta>")
+def change_clock(name: str, delta: str):
+    username = session.get("user", "")
+    if username:
+        broadcast_names.append(name)
+        name, page = name.rsplit("-", 1)
+        WikiPage.load_str(page).change_clock(name, int(delta)).save_low_prio("clock")
+        broadcast.set()
+    return "", 204
 
 
 @views.route("/fensheet/<path:c>")
@@ -374,7 +421,7 @@ def fensheet(c):
             context=c,
             userconf=u,
             infolet=infolet_filler(c),
-            md=lambda x: LocalMarkdown.process(x),
+            md=lambda x: LocalMarkdown.process(x, page=charsh),
             extract=infolet_extractor,
             owner=(
                 u.get("character_sheet", None)
@@ -475,7 +522,7 @@ def searchwiki():
                 (
                     w,
                     loaded_page.title,
-                    f"{loaded_page.body[max(p+m-pre, 0):p+m+pos+length]}",
+                    f"{loaded_page.body[max(p + m - pre, 0):p + m + pos + length]}",
                 )
             )
             p += m + 1
@@ -538,7 +585,7 @@ def live_edit_write_text(formdata, context):
             else:
                 log.error(f"live replace didn't match {context}")
         page.body = page.body.replace(old, new, 1)
-        page.save(context, session.get("user"))
+        page.save_overwrite(session.get("user"))
     else:
         log.info(f"rejected empty replace {context}")
 
@@ -565,7 +612,7 @@ def live_edit_write_table(formdata, context):
     md = md.to_md()
     if md != page.body:
         page.body = md
-        page.save(context, session.get("user"))
+        page.save_overwrite(session.get("user"))
 
 
 @views.route("/live_edit", methods=["POST"])
@@ -612,7 +659,7 @@ def specific(a: str, parse_md=None):
     else:
         article = article[article.find("\n") * hide_headline :]
     if parse_md:
-        return Markup(LocalMarkdown.process(article))
+        return Markup(LocalMarkdown.process(article, page=a[0]))
     return article
 
 
@@ -648,3 +695,9 @@ def lowercase_access(d, k):
             k.lower() + " does not exist in " + " ".join(data.keys())
         )
     return res
+
+
+def start_threads():
+    t = threading.Thread(target=broadcast_clock_update)
+    t.daemon = True
+    t.start()

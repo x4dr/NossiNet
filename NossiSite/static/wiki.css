@@ -3,23 +3,28 @@ table, th, td {
     border-collapse: collapse;
     table-layout: fixed;
 }
+
 td:before {
     content: '';
     display: block;
     width: 2em;
 }
+
 img {
     max-width: 100%;
     height: auto;
 }
+
 .indextable {
     width: 100%;
     border: 0;
     border-collapse: collapse;
 }
+
 .indextable, .indextable td, .indextable th {
     border: 0;
 }
+
 .indextable th,
 .indextable td {
     padding: 3px 5px;
@@ -33,6 +38,7 @@ img {
 .indextable tr:hover{
     background: #004000;
 }
+
 .indextable td:hover {
     font-weight: bold;
     background: #005839;
@@ -65,4 +71,46 @@ color : var(--secondary-color)
 .wikilink:link {
 text-decoration: none;
 color : var(--primary-color)
+}
+
+
+.clock-container {
+    margin: 0;
+    position: relative;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid var(--primary-color);
+    overflow: hidden;
+    flex: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 50px;
+    box-sizing: border-box;
+}
+
+.segment {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: var(--midground-color);
+    transform-origin: center;
+    transition: transform 0.5s;
+    z-index: 1;
+}
+
+.segment.active {
+    background-color: var(--secondary-color);
+}
+
+.line {
+    position: absolute;
+    width: 2px;
+    height: 52%;
+    background-color: var(--primary-color);
+    top: 26%;
+    left: 50%;
+    transform-origin: 50% 0%;
+    z-index: 2;
 }

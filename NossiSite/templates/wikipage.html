@@ -1,6 +1,7 @@
 {% extends "layout.html" %}
 {% block head %}
     <script src="{{ url_for("static", filename="live_edit.js") }}?v={{ restart_id }}"></script>
+<script> htmx.logAll();</script>
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="live_edit.css") }}?v={{ restart_id }}">
     <script>
         window.addEventListener("click", function (e) {
@@ -8,7 +9,7 @@
             if (mouselement.classList.contains("category"))
                 return;
             const wikibody = document.getElementById("wikibody");
-            const toc = wikibody.querySelector(".toc").innerText;
+            const toc = wikibody.querySelector(".toc")?.innerText;
             const fulltext = wikibody.innerText.substring(toc ? toc.length : 0)
             if (mouselement === wikibody) return;
             const ratio = fulltext.indexOf(mouselement.innerText) / fulltext.length

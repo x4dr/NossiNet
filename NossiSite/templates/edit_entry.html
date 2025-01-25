@@ -31,7 +31,7 @@
         <dt><label for="title">Title:</label></dt>
         <dd><input class=dark size=50 id="title" name=title value="{{ entry.title }}"></dd>
         <dt><label for="text">Text:</label></dt>
-        <dd><textarea class=dark id=text name=text rows={% if mode =="blog" %}5{% elif mode =="wiki" %}40{% endif %}
+        <dd><textarea class=textinput id=text name=text rows={% if mode =="blog" %}5{% elif mode =="wiki" %}40{% endif %}
                       style="width: 80%">{{ entry.text }}</textarea></dd>
         <dt><label for="tags">Tags:</label></dt>
         <dd><input class=dark size=50 id="tags" name=tags value="{{ entry.tags }}"></dd>
