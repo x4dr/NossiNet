@@ -310,7 +310,8 @@ def editwiki(page=None):
 @sock.route("/clocks")
 def clocks_handler(ws):
     name = request.args.get("name")
-    print("connection from", name)
+    if not name:
+        return
     if name not in connected_clocks:
         connected_clocks[name] = []
     connected_clocks[name].append(ws)
@@ -372,7 +373,6 @@ def broadcast_clock_update():
         broadcast.wait()
         while broadcast_names:
             name = broadcast_names.pop()
-            print("processing", name)
             clockname, page = name.rsplit("-", 1)
             page = WikiPage.load_str(page)
             clock = page.get_clock(clockname)
@@ -384,9 +384,7 @@ def broadcast_clock_update():
             for client in clients:
                 try:
                     client.send(c)
-                except (ConnectionClosed, BrokenPipeError, OSError, RuntimeError) as e:
-                    # Remove the client if the connection is broken
-                    print("connection closed for", name, e)
+                except (ConnectionClosed, BrokenPipeError, OSError, RuntimeError):
                     connected_clocks[name].remove(client)
                     if not connected_clocks[name]:
                         del connected_clocks[name]
@@ -534,6 +532,8 @@ def searchwiki():
 def live_edit_get(formdata):
     a = formdata.get("path", [])
     a = [urllib.parse.unquote(x) for x in a if x]
+    if not a:
+        a = [formdata["percentage"]]
     t = urllib.parse.unquote(formdata.get("type", "text"))
     res: str = WikiPage.load_str(formdata["context"]).body
     if t == "text":
@@ -544,7 +544,7 @@ def live_edit_get(formdata):
 
 
 def live_edit_get_text(res, a):
-    if m := re.match(r"perc(0\.?\d*|1)", a[0]):  # percentage request
+    if m := re.match(r"(0\.?\d*|1)", a[0]):  # percentage request
         ratio = float(m.group(1))
         pos = int(len(res) * ratio)
         return {"data": res[max(0, pos - 200) : pos + 500]}

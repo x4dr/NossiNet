@@ -15,8 +15,8 @@
             const ratio = fulltext.indexOf(mouselement.innerText) / fulltext.length
 
             if (wikibody.contains(mouselement)) {
-                mouselement.dataset["category"] = "perc" + ratio;
-                mouselement.ondblclick =  () => get_edit_content("{{wiki}}", mouselement);
+                mouselement.dataset["percentage"] = ratio;
+                mouselement.ondblclick = async () => { await get_edit_content("{{wiki}}", mouselement)(); };
             }
         });
     </script>
@@ -33,9 +33,7 @@
 {% endblock %}
 
 {% block body %}
-    <a href="{{ url_for("wiki.editwiki", page=wiki) }}"><input type="button" class="medium" style="margin-bottom: 1em"
 
-                                                       value="Edit"></a><br/>
     <div class="wiki editable" id="wikibody" style="word-wrap:break-word;border:1px solid">{{ body|safe }}
         <br> {#dangerous body has to be cleaned before being sent here#}
     </div>
@@ -54,11 +52,14 @@
         <form id="editform" action="{{ url_for("wiki.live_edit") }}" method="post">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input name="wiki" type="hidden" value="{{ wiki }}">
+            <input type="hidden" name="type" value="text">
             <input name="original" id="original" type="hidden" value="">
             <label for="text" class="overlay">Text to Change</label><br/><textarea class="message" name="new"
                                                                                    id="text"></textarea>
-            <input type="button" class="bright " value="Close" id="closebutton">
-            <input type="submit" class="bright bottombutton" value="Overwrite">
+            <div>
+                <input type="button" class="bright " value="Close" id="closebutton">
+                <input type="submit" class="bright bottombutton" value="Overwrite">
+            </div>
 
         </form>
     </div>

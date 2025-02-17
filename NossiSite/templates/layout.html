@@ -49,9 +49,9 @@
 
                 function scrollFunction() {
                     if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
-                        topButton.style.display = "block";
+                        topButton.classList.add("show");
                     } else {
-                        topButton.style.display = "none";
+                        topButton.classList.remove("show");
                     }
                 }
             }

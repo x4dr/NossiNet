@@ -87,10 +87,10 @@
 {% endmacro %}
 {%- macro catformat(cat, name, cost) -%}
     <div class="gridwrapper category">
-        <div data-path="{{character.headings_used["values"]}}|{{ name|urlencode }}"  class="tooltip heading span-2{% if owner %} editable{% endif %}">{{ name }}
-            <a href="{{url_for("wiki.fen_calc",inputstring=cost) }} "><span class="tooltiptext">Options<br/>for {{ cost }}<br/>{% for l in
+        <div tabindex="0" aria-describedby="{{cat}}-tooltip" data-path="{{character.headings_used["values"]}}|{{ name|urlencode }}"  class="tooltip heading span-2{% if owner %} editable{% endif %}">{{ name }}
+            <span class="tooltiptext" id="{{cat}}-tooltip" role="tooltip" >Options<br/>for {{ cost }}<br/>{% for l in
                     character.cost_calc(cost)
-                    %}{% for b in l %}{{ b }}{% if not loop.last %},{% endif %}{% endfor %}<br/> {% endfor %} </span></a>
+                    %}{% for b in l %}{{ b }}{% if not loop.last %},{% endif %}{% endfor %}<br/> {% endfor %}</span>
         </div>
         {%- if cat is mapping  -%}
             <div class="statblock">
@@ -125,17 +125,24 @@
 {% endmacro %}
 {%- block title -%}
     {%- if character.Name -%}
-        <title>{{ character.Name }}</title>
+        <title>{{ character.Character.Name }}</title>
     {%- else -%}
         <title>Charactersheet</title>
     {%- endif -%}
 {%- endblock -%}
-
-{%- block body -%}
-    {% if owner %}<a href="{{ url_for("wiki.editwiki", page=owner) }}"><input type="button" class="medium" value="Edit"></a><br/>
+{%- block metanavcomplete -%}
+ <div class="metanavcontainer">
+        {{ super()  }}
+        {% if owner %}
+            <div class="metanavcontainer">
+                    {% if owner %}<a href="{{ url_for("wiki.editwiki", page=owner) }}" class="metanav textbtn">edit in wiki</a><br/>
     {% endif %}
+            </div>
+        {% endif %}
+     </div>
+{%- endblock -%}
+{%- block body -%}
     <div style="visibility: hidden" id="context_element">{{ context }}</div>
-
     <div class="flexwrapper">
         {%- for key,val in character.Character.items() -%}
             <div class="infobox box{% if owner %} editable{% endif %}"
@@ -167,8 +174,6 @@
     </div>
     {%- endfor -%}
     <div><button id="TopButton" title="Upwards">Top</button></div>
-    {% if owner %}<a href="{{ url_for("wiki.editwiki", page=owner) }}"><input type="button" class="medium"  value="Edit"></a><br/>
-    {% endif %}
     <div id="editfield" class="editfield">
         <form id="editform" action="{{ url_for("wiki.live_edit") }}" method="post">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>

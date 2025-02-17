@@ -5,12 +5,13 @@ window.addEventListener("load", () => {
         let lock_edit_content = false;
         window.get_edit_content =
             (con, ref) => {
-                return async () => {
 
+                return async () => {
                     if (lock_edit_content) return;
                     lock_edit_content = true
-                    const path = ref.dataset.path.split("|");
-                    let req = {"context": con, "path": path}
+                    const path =(ref.dataset.path ?? "").split("|");
+                    const percentage = ref.dataset.percentage || "";
+                    let req = {"context": con, "path": path, "percentage": percentage}
                     req.type = ref.dataset["type"] || "text";
                     const response = await fetch("/live_edit", {
                         method: 'POST',
@@ -49,15 +50,14 @@ window.addEventListener("load", () => {
             const editfield = document.getElementById("editfield");
             const overlay = document.getElementById("overlay");
             const textdiv = editfield.querySelector("textarea");
-            const olddata = editfield.querySelector("[name='original']");
-            const closebutton = editfield.querySelector("[name='closebutton']");
+            const olddata = editfield.querySelector("[id='original']");
+            const closebutton = editfield.querySelector("[id='closebutton']");
             editfield.className="editfield"
             editfield.classList.add("activeedit");
             textdiv.value = reply["data"];
             olddata.value = reply["data"];
             textdiv.focus();
             textdiv.click();
-            //document.body.style.overflow="hidden"
             overlay.style.opacity="1";
             overlay.style.zIndex="1";
             closebutton.onclick = () => {
@@ -73,12 +73,11 @@ window.addEventListener("load", () => {
             const editfield = document.getElementById("table_editor");
             const overlay = document.getElementById("overlay");
             const table = editfield.querySelector("table");
-            const addbutton = editfield.querySelector("[name='addtable_entry']");
-            const closebutton = editfield.querySelector("[name='closebutton']");
+            const addbutton = editfield.querySelector("[id='addtable_entry']");
+            const closebutton = editfield.querySelector("[id='closebutton']");
             const headers = reply["data"]["headers"];
             const rows = reply["data"]["rows"];
             editfield.querySelector("[name='styles']").value = reply["data"]["styles"];
-
             editfield.querySelector("[name='path']").value = JSON.stringify(reply["path"]);
 
             let header_row = table.querySelector("thead tr");
@@ -145,7 +144,6 @@ window.addEventListener("load", () => {
             context_elem.remove();
             for (let i = 0; i < anchors.length; i++) {
                 let anchor = anchors[i];
-
                 anchor.onclick = get_edit_content(context, anchor)
             }
         }

@@ -1,7 +1,8 @@
 import logging
 import os
-import shlex
+import threading
 
+from flask import jsonify
 from github_webhook import Webhook
 
 from NossiSite.base import app as defaultapp
@@ -18,6 +19,8 @@ def register(app=None):
     def on_push(req):
         repo = req["repository"]["name"]
         if repo in ["NossiNet", "Okysa", "Gamepack"]:
-            os.system(f"redeploy {shlex.quote(repo)}")
+            response = jsonify({"message": "Update received, restarting..."})
+            threading.Timer(1, os._exit, [1]).start()  # shut down to be restarted
+            return response
         else:
             logger.error(f"got unexpected request from: {req['repository']['name']}")

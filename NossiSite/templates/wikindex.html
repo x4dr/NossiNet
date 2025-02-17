@@ -14,8 +14,6 @@
         {% if current_path is not none %}
             <div class="metanavcontainer">
             <a class="textbtn metanav" href="{{ url_for("wiki.wiki_index", path=parent) }}">{{- current_path -}}</a>
-
-
             <div class="metanav"> / </div>
         {% else %}
             {{ super() }}
@@ -28,9 +26,7 @@
                     {% else %}
                         <a class="textbtn metanav" href="{{ url_for("wiki.wiki_index", path=m) }}">{{ m }}</a>
                     {% endif %}
-
                 {% endfor %}
-
                 {% if current_path is not none %}
                     </div>
                 {% endif %}

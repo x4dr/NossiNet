@@ -15,6 +15,11 @@ img {
     height: auto;
 }
 
+.wiki {
+padding: 6px
+
+}
+
 .indextable {
     width: 100%;
     border: 0;

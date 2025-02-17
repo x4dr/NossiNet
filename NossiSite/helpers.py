@@ -70,6 +70,8 @@ def register(app: Flask = None):
     @app.before_request
     def before_request():
         connect_db("before request")
+        if request.endpoint == "postreceive":  # postreceive does not use csrf
+            setattr(request, "csrf_valid", True)
 
     @app.errorhandler(Exception)
     def internal_error(error: Exception):
