@@ -97,17 +97,19 @@ class TestViews(NossiTestCase):
             meta={},
         )
         sut.save(WikiPage.locate("healing"), "unittest")
-        x = LocalMarkdown.pre_process("![](healing#resonanzen)")[0]
+        x = LocalMarkdown.pre_process("![](healing#resonanzen)", "test")[0]
         self.assertEqual(x, "Wunde\n")
-        x = LocalMarkdown.pre_process("![healing#resonanzen]")[0]
+        x = LocalMarkdown.pre_process("![healing#resonanzen]", "test")[0]
         self.assertIn("Wunde", x)
         self.assertNotIn("!", x)
-        x = LocalMarkdown.pre_process("![healing]")[0]
+        x = LocalMarkdown.pre_process("![healing]", "test")[0]
         self.assertIn("heilung", x)
         self.assertNotIn("!", x)
-        x = LocalMarkdown.pre_process("![healing#resonanzen](test)")[0]  # wrong order
+        x = LocalMarkdown.pre_process("![healing#resonanzen](test)", "test")[
+            0
+        ]  # wrong order
         self.assertEqual("![healing#resonanzen](test)", x)
-        x = LocalMarkdown.pre_process("![test](healing#resonanzen)")[0]
+        x = LocalMarkdown.pre_process("![test](healing#resonanzen)", "test")[0]
         self.assertIn("Wunde", x)
         self.assertNotIn("!", x)
         self.assertNotIn("esonanzen", x)
@@ -127,22 +129,30 @@ class TestViews(NossiTestCase):
             meta={},
         )
         sut.save(WikiPage.locate("healing"), "unittest")
-        x = LocalMarkdown.pre_process("![[]](healing#resonanzen)")[0]  # empty heading
+        x = LocalMarkdown.pre_process("![[]](healing#resonanzen)", "test")[
+            0
+        ]  # empty heading
         self.assertEqual(x, "#!\nWunde\n")
-        x = LocalMarkdown.pre_process("![[healing#resonanzen]]")[
+        x = LocalMarkdown.pre_process("![[healing#resonanzen]]", "test")[
             0
         ]  # shortform with path
         self.assertIn("Wunde", x)
         self.assertIn("###!", x)
-        x = LocalMarkdown.pre_process("![[healing]]")[0]  # shortform without path
+        x = LocalMarkdown.pre_process("![[healing]]", "test")[
+            0
+        ]  # shortform without path
         self.assertIn("#! heilung", x)
-        x = LocalMarkdown.pre_process("![[healing#resonanzen]](test)")[0]  # wrong order
-        self.assertEqual(x, "![[healing#resonanzen]](test)")
-        x = LocalMarkdown.pre_process("![[test]](healing#resonanzen)")[0]
+        x = LocalMarkdown.pre_process("![[healing#resonanzen]](test)", "test")[
+            0
+        ]  # wrong order
+        self.assertEqual(x, "![[healing#resonanzen]](test)", "test")
+        x = LocalMarkdown.pre_process("![[test]](healing#resonanzen)", "test")[0]
         # heading with path
         self.assertIn("Wunde", x)
         self.assertIn("###! test", x)
-        x = LocalMarkdown.pre_process("![[test]](healing)")[0]  # heading without path
+        x = LocalMarkdown.pre_process("![[test]](healing)", "test")[
+            0
+        ]  # heading without path
         self.assertEqual(len(x.split("\n")), 5)
         self.assertIn("#! test", x)
         WikiPage.locate("healing").unlink(True)
@@ -156,6 +166,7 @@ class TestViews(NossiTestCase):
                 "hiddentext\n"
                 "and stuff \n"
                 "### hidden sub subheading\n"
-                "## visible again"
+                "## visible again",
+                "test",
             )
         )
