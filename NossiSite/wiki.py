@@ -5,6 +5,7 @@ import subprocess
 import threading
 import time
 import urllib.parse
+from dataclasses import dataclass
 from pathlib import Path
 
 import bleach
@@ -18,6 +19,7 @@ from flask import (
     flash,
     abort,
     Blueprint,
+    jsonify,
 )
 from flask_sock import Sock
 from markupsafe import Markup
@@ -30,6 +32,7 @@ from NossiSite.helpers import checklogin
 from gamepack.Dice import DescriptiveError
 from gamepack.FenCharacter import FenCharacter
 from gamepack.MDPack import traverse_md, MDObj
+from gamepack.PBTACharacter import PBTACharacter
 from gamepack.WikiCharacterSheet import WikiCharacterSheet
 from gamepack.WikiPage import WikiPage
 
@@ -54,7 +57,18 @@ bleach.ALLOWED_ATTRIBUTES.update(
 views = Blueprint("wiki", __name__)
 sock = Sock()
 sock.bp = views
-broadcast_names = []
+
+
+@dataclass
+class BroadcastElement:
+    name: str
+    page: str
+    context: str
+    type: str
+    initial: bool
+
+
+broadcast_elements: [BroadcastElement] = []
 broadcast = threading.Event()
 
 
@@ -299,6 +313,7 @@ def editwiki(page=None):
                     body=request.form["text"],
                     links=mdlinks.findall(markdown.markdown(request.form["text"])),
                     meta={},
+                    file=WikiPage.wikipath() / p,
                 )
 
             page.save_overwrite(session["user"])
@@ -307,29 +322,77 @@ def editwiki(page=None):
     return abort(405)
 
 
-@sock.route("/clocks")
+@sock.route("/active_element")
 def clocks_handler(ws):
     name = request.args.get("name")
+    page = request.args.get("page")
+    element_type = request.args.get("type") or "round"
+    pid = f"{name}-{page}"
     if not name:
         return
     if name not in connected_clocks:
-        connected_clocks[name] = []
-    connected_clocks[name].append(ws)
-    broadcast_names.append(name)
+        connected_clocks[pid] = []
+    connected_clocks[pid].append(ws)
+    if request.args.get("sheet") == "true":
+        context = "sheet"
+    else:
+        context = "wiki"
+
+    broadcast_elements.append(BroadcastElement(name, page, context, element_type, True))
     broadcast.set()
+    print(f"adding {pid} for clocks")
     while True:
         log.info(ws.receive())
 
 
+#   <div hx-get="/active_sheet_element/{{c}}/health/healing" class="clock" hx-trigger="load"></div>
+
+
 @views.route("/pbta/<path:c>")
 def pbtasheet(c):
-    char = WikiPage.load_str(c)
-    return render_template("pbtasheet.html", character=char)
+    char = WikiCharacterSheet.load_str(c)
+
+    return render_template("pbtasheet.html", character=char.char, c=c)
 
 
-@views.route("/clock/<int:active>/<int:total>/<name>")
+@views.route("/pbta-update-notes", methods=["POST"])
+def update_notes():
+    context = request.args["c"]
+    username = session.get("user", "")
+
+    notes = request.form.get("notes")  # Ensure your textarea has name="notes"
+
+    sheet = WikiCharacterSheet.load_str(context)
+    if username.lower() in sheet.tags:
+        sheet.char.notes = notes
+        sheet.body = sheet.char.to_md()
+        sheet.save_low_prio(f"notes updated by {username}")
+    return jsonify(success=True)
+
+
+@views.route("/active_sheet_element/<c>/health/<element_type>")
+def active_elem(c, element_type):
+    char = WikiCharacterSheet.load_str(c).char
+    if not isinstance(char, PBTACharacter):
+        raise ValueError("only PBTACharacters have active sheet elements for now")
+    if element_type == "healing":
+        healing = char.health_get(element_type)
+        return generate_clock(
+            healing[0],
+            healing[1],
+            f"{element_type}-{c}",
+            "change_sheet_clock",
+            initial=True,
+        )
+    return f"<div>{element_type} unhandled </div>"
+
+
+@views.route("/clock/<int:active>/<int:total>/<name>/page")
 @views.route("/clock/<int:active>/<int:total>")
-def generate_clock(active: int, total: int, name=""):
+def generate_clock(
+    active: int, total: int, name="", page="", endpoint="changeclock", initial=False
+):
+
     def generate_clip_path(segments):
         fraction = 1 / segments
         radius = 55  # Percentage radius
@@ -360,45 +423,139 @@ def generate_clock(active: int, total: int, name=""):
         slice_html += f"""
             <div class="segment{color}"
                  style="clip-path: {clip_path}; transform: rotate({angle_shape}deg);"
-                 hx-get="/changeclock/{name}/{incdec}"
+                 hx-get="/{endpoint}/{name}/{page}/{incdec}"
                  hx-trigger="click">
             </div>
             <div class="line" style="transform: translate(50%,50%) translateX(-100%) rotate({angle_line}deg);"></div>
         """
-    return slice_html
+    return f'<div class="clock-container {"" if initial else "cooldown"}" id={name}-{page}>{slice_html}</div>'
+
+
+@views.route("/line/<int:active>/<int:total>/<name>/page")
+@views.route("/line/<int:active>/<int:total>")
+def generate_line(
+    active: int, total: int, name="", page="", endpoint="changeline", initial=False
+):
+
+    total = int(total)
+    active = int(active)
+    boxes = ""
+    for i in range(total):
+        status = "filled" if i < active else "empty"
+        incdec = "-1" if i < active else "1"
+
+        boxes += f"""<div class="gauge-box {status}""
+                 hx-get="/{endpoint}/{name}/{page}/{incdec}"
+                 hx-trigger="click"
+                 style="--bouncedelay:{i/total}">
+                </div>"""
+    return f'<div class="gauge {"" if initial else "cooldown"}" id={name}-{page}>{boxes}</div>'
+
+
+def send_broadcast(c, element):
+    pid = f"{element.name}-{element.page}"
+    clients = connected_clocks.get(pid, []).copy()
+    for client in clients:
+        try:
+            client.send(c)
+        except (ConnectionClosed, BrokenPipeError, OSError, RuntimeError):
+            connected_clocks[pid].remove(client)
+            if not connected_clocks[pid]:
+                del connected_clocks[pid]
 
 
 def broadcast_clock_update():
     while True:
         broadcast.wait()
-        while broadcast_names:
-            name = broadcast_names.pop()
-            clockname, page = name.rsplit("-", 1)
-            page = WikiPage.load_str(page)
-            clock = page.get_clock(clockname)
-            if not clock:
-                continue
-            c = generate_clock(clock.group("current"), clock.group("maximum"), name)
-            c = f'<div class="clock-container" id={name}>{c}</div>'
-            clients = connected_clocks.get(name, []).copy()
-            for client in clients:
-                try:
-                    client.send(c)
-                except (ConnectionClosed, BrokenPipeError, OSError, RuntimeError):
-                    connected_clocks[name].remove(client)
-                    if not connected_clocks[name]:
-                        del connected_clocks[name]
+        while broadcast_elements:
+            element: BroadcastElement = broadcast_elements.pop()
+            try:
+                if element.context == "wiki":
+                    page = WikiPage.load_str(element.page)
+                    clock = page.get_clock(element.name)
+                    if not clock:
+                        continue
+                    if element.type == "round":
+                        c = generate_clock(
+                            clock.group("current"),
+                            clock.group("maximum"),
+                            element.name,
+                            element.page,
+                            initial=element.initial,
+                        )
+                    else:
+                        c = generate_line(
+                            clock.group("current"),
+                            clock.group("maximum"),
+                            element.name,
+                            element.page,
+                            initial=element.initial,
+                        )
+                else:  # if element.context == "sheet":
+                    char = WikiCharacterSheet.load_str(element.page).char
+                    if element.name == "healing":
+                        healing = char.health_get(element.name)
+                        c = generate_clock(
+                            healing[0],
+                            healing[1],
+                            element.name,
+                            element.page,
+                            "change_sheet_clock",
+                            initial=element.initial,
+                        )
+                    else:
+                        s = char.health_get(element.name)
+                        c = generate_line(
+                            s[0],
+                            s[1],
+                            element.name,
+                            element.page,
+                            "change_sheet_clock",
+                            initial=element.initial,
+                        )
+                send_broadcast(c, element)
+            except Exception as e:  # don't stop for any reason
+                print(e)
+                raise
         broadcast.clear()
 
 
-@views.route("/changeclock/<name>/<delta>")
-def change_clock(name: str, delta: str):
+@views.route("/changeline/<name>/<page>/<delta>")
+@views.route("/changeclock/<name>/<page>/<delta>")
+def change_clock(name: str, page: str, delta: str):
     username = session.get("user", "")
     if username:
-        broadcast_names.append(name)
-        name, page = name.rsplit("-", 1)
+        if request.path.startswith("/changeline"):
+            element_type = "line"
+        else:
+            element_type = "round"
+        broadcast_elements.append(
+            BroadcastElement(name, page, "wiki", element_type, False)
+        )
         WikiPage.load_str(page).change_clock(name, int(delta)).save_low_prio("clock")
         broadcast.set()
+    return "", 204
+
+
+@views.route("/change_sheet_line/<name>/<page>/<delta>")
+@views.route("/change_sheet_clock/<name>/<page>/<delta>")
+def change_sheet_clock(name: str, page: str, delta: str):
+    username = session.get("user", "")
+    if username:
+        if request.path.startswith("/change_sheet_line"):
+            element_type = "line"
+        else:
+            element_type = "round"
+        broadcast_elements.append(
+            BroadcastElement(name, page, "sheet", element_type, False)
+        )
+        if username.lower() in (charpage := WikiCharacterSheet.load_str(page)).tags:
+            char: PBTACharacter = charpage.char
+            char.health[name.title()][char.current_headings[0].title()] = (
+                char.health_get(name)[0] + int(delta)
+            )
+            charpage.save_low_prio(f"active element used by {username}")
+            broadcast.set()
     return "", 204
 
 

@@ -3,6 +3,7 @@
     <script src="https://unpkg.com/htmx.org@1.9.3" integrity="sha384-lVb3Rd/Ca0AxaoZg5sACe8FJKF0tnUgR2Kd7ehUOG5GCcROv5uBIZsOqovBAcWua" crossorigin="anonymous"></script>
     <script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
 {% block head %}
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="wiki.css") }}?v={{ restart_id }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="pbta.css") }}?v={{ restart_id }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -10,13 +11,50 @@
 
 {%- block title -%}
     {%- if character.Name -%}
-        <title>{{ character.Name }}
+        <title>{{ character.Name }}</title>
     {%- else -%}
         <title>Charactersheet</title>
     {%- endif -%}
-
+<script>
+document.body.addEventListener('htmx:afterSwap', (event) => {
+  event.target.querySelectorAll('.cooldown').forEach(el => {
+  el.style.pointerEvents = 'none';
+    el.addEventListener('animationend', () => {
+      el.style.pointerEvents = 'auto';
+    });
+  });
+});
+</script>
 {%- endblock -%}
 {%- endblock -%}
+{% macro render_md_table(table) %}
+    <table border="1">
+        <thead>
+            <tr>
+                {% for header in table.headers %}
+                    <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in table.rows %}
+                <tr>
+                    {% for cell in row %}
+                        <td>{{ cell }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endmacro %}
+{% macro chara_data(data) %}
+    {% for k,v in data.items() %}
+    <div class="metadata-item">
+        <span class="value">{{v}}</span>
+        <span class="label">{{k}}</span>
+    </div>
+    {%- endfor -%}
+{% endmacro %}
 
 {%- block body -%}
 <body>
@@ -25,56 +63,19 @@
     <div class="column column-left">
         <div class="section">
             <h2 class="pirata-one-regular">Place in the Holder</h2>
-            <div class="metadata-item">
-
-                <span class="value">Placeholder</span>
-                <span class="label">Crew</span>
-            </div>
-            <div class="metadata-item">
-
-                <span class="value">Placeholder</span>
-                <span class="label">Name</span>
-            </div>
-            <div class="metadata-item">
-                <span class="value">Placeholder</span>
-                <span class="label">Alias</span>
-            </div>
-            <div class="metadata-item">
-                <span class="value">Placeholder that is really asdasdasdasdasd long and descriptive about how a character looks and stuff. Placeholder that is really long and descriptive about how a character looks and stuff. Placeholder that is really long and descriptive about how a character looks and stuff.</span>
-                <span class="label">Look</span>
-            </div>
-            <div class="metadata-item">
-                <span class="value">Placeholder</span>
-                <span class="label">Heritage</span>
-            </div>
-            <div class="metadata-item">
-                <span class="value">Placeholder</span>
-                <span class="label">Background</span>
-            </div>
-            <div class="metadata-item">
-                <span class="value">Placeholder</span>
-                <span class="label">Vice</span>
-            </div>
+            {{chara_data(character.info)}}
         </div>
     <div class="stress section">
         <div>
-            <div class="gauge">
-                <div class="gauge-box filled"></div>
-                <div class="gauge-box filled"></div>
-                <div class="gauge-box empty"></div>
-                <div class="gauge-box empty"></div>
-                <div class="gauge-box empty"></div>
+            <div id="parent-stress-{{c}}" hx-ws="connect:/active_element?name=stress&page={{c}}&sheet=true" >
+                <div id="stress-{{c}}">Loading stress meter...</div>
             </div>
             <label class="under label">Stress</label>
         </div>
 
-        <div>
-            <div class="gauge trauma">
-                <div class="gauge-box filled"></div>
-                <div class="gauge-box filled"></div>
-                <div class="gauge-box empty"></div>
-                <div class="gauge-box empty"></div>
-                <div class="gauge-box empty"></div>
+        <div class="trauma">
+           <div id="parent-trauma-{{c}}" hx-ws="connect:/active_element?name=trauma&page={{c}}&sheet=true" >
+                <div id="trauma-{{c}}">Loading trauma meter...</div>
             </div>
             <label class="under label">Trauma</label>
         </div>
@@ -104,7 +105,9 @@
     </table>
     <div>
     <div class="healing-clock-section">
-        <div hx-get="/clock/1/4" class="clock" hx-trigger="load"></div>
+            <div id="parent-healing-{{c}}" hx-ws="connect:/active_element?name=healing&page={{c}}&sheet=true" >
+                <div id="healing-{{c}}">Loading healing clock...</div>
+            </div>
         <label class="label">Healing Clock</label>
     </div>
     <div>
@@ -119,18 +122,28 @@
     </div>
         <div class="section">
             <h2>Notes</h2>
-            <textarea class="input-field" rows="4" placeholder="Notes..."></textarea>
+            <textarea class="input-field cooldown"
+                      name="notes"
+                      rows="4"
+                      autocomplete="off"
+                      hx-post="/pbta-update-notes?c={{c}}"
+                      hx-trigger="blur, keyup delay:30s"
+                      hx-include="#csrf">{{character.notes | safe}}</textarea>
+            <input type="hidden" id="csrf" name="csrf_token" value="{{ csrf_token() }}"/>
         </div>
     </div>
-
     <div class="column column-middle">
         <div class="section">
-            <h2 class="pirata-one-regular">Playbook</h2>
-            
-            <div>Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 2000 years old. Richard McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of the more obscure Latin words, consectetur, from a Lorem Ipsum passage, and going through the cites of the word in classical literature, discovered the undoubtable source. Lorem Ipsum comes from sections 1.10.32 and 1.10.33 of "de Finibus Bonorum et Malorum" (The Extremes of Good and Evil) by Cicero, written in 45 BC. This book is a treatise on the theory of ethics, very popular during the Renaissance. The first line of Lorem Ipsum, "Lorem ipsum dolor sit amet..", comes from a line in section 1.10.32.</div>
+        {% for heading in character.meta %}
+            <h2 class="pirata-one-regular">{{ heading }}</h2>
+            {% if character.meta[heading].tables %}
+                {% for table in character.meta[heading].tables %}
+                    {{ render_md_table(table) }}
+                {% endfor %}
+            {% endif %}
+        {% endfor %}
         </div>
     </div>
-
     <div class="column column-right">
         <div class="section" >
             <h2 class="pirata-one-regular">Attributes</h2>
@@ -145,14 +158,11 @@
                 </tbody>
             </table>
         </div>
-
         <div class="section">
             <h2 class="pirata-one-regular">Bonus Die</h2>
             <div><br></div>
             <div>Devils Bargain: +1 Dice <br>2 Stress: +1 Dice </div>
-
         </div>
-
         <div class="section">
             <h2 class="pirata-one-regular">Load/Gather</h2>
             stuff
@@ -160,7 +170,7 @@
     </div>
 </div>
 
-
+</body>
 
 {%- endblock -%}
 </html>

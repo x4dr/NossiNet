@@ -72,15 +72,34 @@ h2 {
     transform: skewX(-40deg);
     transform-origin: bottom;
     background-color: var(--inactive-color);
-    transition: background-color 0.3s ease;
+}
+
+.cooldown>.gauge-box{
+    animation: wave 5s linear forwards;
+    animation-delay: calc(var(--bouncedelay) * 0.5s);
 }
 
 .gauge-box.filled {
     background-color: var(--active-color);
 }
 
-.gauge.trauma .gauge-box.filled {
+.trauma .gauge-box.filled {
     background-color: var(--warning-color);
+}
+
+
+@keyframes wave {
+  0% { transform: translateY(0) skewX(-40deg); }
+  10% { transform: translateY(-8px) skewX(-40deg); }
+  20% { transform: translateY(5px) skewX(-40deg); }
+  30% { transform: translateY(-4px) skewX(-40deg); }
+  40% { transform: translateY(4px) skewX(-40deg); }
+  50% { transform: translateY(-3px) skewX(-40deg); }
+  60% { transform: translateY(3px) skewX(-40deg); }
+  70% { transform: translateY(-2px) skewX(-40deg); }
+  80% { transform: translateY(2px) skewX(-40deg); }
+  90% { transform: translateY(-1px) skewX(-40deg); }
+  100% { transform: translateY(0) skewX(-40deg); }
 }
 
 .stress.section {
@@ -219,6 +238,9 @@ h2 {
 }
 
 .input-field {
-background: var(--inactive-color);
-border: none;
+
+background: var(--background-color);
+color: var(--active-color);
+border: 1px solid var(--inactive-color);
+outline: 1px solid var(--accent-color);
 }

@@ -1,11 +1,11 @@
 import re
 
-from gamepack.Dice import DescriptiveError
-from gamepack.Item import Item
-from gamepack.MDPack import traverse_md, MDObj
 from markdown import markdown
 
 from NossiSite.helpers import srs
+from gamepack.Dice import DescriptiveError
+from gamepack.Item import Item
+from gamepack.MDPack import traverse_md, MDObj
 from gamepack.WikiPage import WikiPage
 
 
@@ -111,7 +111,7 @@ class LocalMarkdown:
             name = match.group("name")
             return (
                 f'<div id="parent-{name}-{page}" '
-                f'hx-ws="connect:/clocks?name={name}-{page}" >'
+                f'hx-ws="connect:/active_element?name={name}&page={page}" >'
                 f'<div id="{name}-{page}">Loading {name}</div></div>'
             )
 
@@ -209,7 +209,10 @@ class LocalMarkdown:
         if not (m := cls.infolet_re.match(s)):
             return s
         infolet = m.group("name")
-        if s.lower().strip().startswith("!q:") or s.lower().strip().startswith("[!q:"):
+        if any(
+            s.lower().strip().startswith(prefix)
+            for prefix in ["!q:", "[!q:", "!p:", "[!p:"]
+        ):
             if "#" in infolet:
                 pass
                 # page, *path = infolet.split("#")
@@ -217,10 +220,20 @@ class LocalMarkdown:
                 # todo
             result = Item.item_cache.get(infolet)
             if not result:
-                items = WikiPage.load_str("items")
-                items.body += f"|{infolet}| | | |\n"
+                itemspage = WikiPage.load_str("items")
+                itemsmd = itemspage.md()
+                itemstable = itemsmd.tables[0]
+                itemstable.rows.append([infolet])
+                seen = set()
+                new_rows = []
+                for row in itemstable.rows:
+                    if row[0] not in seen:
+                        seen.add(row[0])
+                        new_rows.append(row)
+                itemstable.rows = new_rows
                 Item.item_cache[infolet] = Item(infolet, 0, 0, "", 1)
-                items.save(WikiPage.locate("items"), "automatically added item")
+                itemspage.body = itemsmd.to_md()
+                itemspage.save_low_prio("automatically added item")
         return cls.inline_load(infolet)
 
     @classmethod
