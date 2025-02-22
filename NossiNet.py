@@ -1,7 +1,7 @@
 import logging.config
 import sys
 import Data
-from NossiSite import views, extra, webhook, helpers, chat, socks
+from NossiSite import views, extra, webhook, helpers, chat, socks, wiki
 from NossiSite.base import app
 from gamepack.WikiPage import WikiPage
 
@@ -9,7 +9,7 @@ logconf = Data.handle("logging_config.conf")
 logging.config.fileConfig(logconf)
 # register the endpoints
 app.register_blueprint(views.views)
-# app.register_blueprint(wiki.views)
+app.register_blueprint(wiki.views)
 socks.sock.init_app(app)
 socks.start_threads()
 app.register_blueprint(extra.views)
