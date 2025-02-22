@@ -6,11 +6,9 @@ import string
 from flask import Flask
 from flask_wtf.csrf import CSRFProtect
 
-async_mode = "eventlet"
-
 app = Flask(__name__)
 CSRFProtect(app)
-i = 0
+
 
 key = ""
 try:
