@@ -84,7 +84,7 @@ def register(app: Flask = None):
                 return error.args[0]
         flash("internal error. sorry", category="error")
         log.exception("Unhandled internal error")
-        raise error
+        raise error from None
 
     @app.errorhandler(404)
     def page_not_found(e):

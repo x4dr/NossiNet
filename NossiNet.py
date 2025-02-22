@@ -10,7 +10,6 @@ logging.config.fileConfig(logconf)
 # register the endpoints
 app.register_blueprint(views.views)
 app.register_blueprint(wiki.views)
-socks.sock.init_app(app)
 socks.start_threads()
 app.register_blueprint(extra.views)
 app.register_blueprint(chat.views)

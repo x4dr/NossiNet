@@ -4,16 +4,15 @@ import time
 from datetime import datetime
 
 import requests
-import simple_websocket
-from flask import Blueprint, render_template, session
+from flask import render_template, session, request
 from jinja2 import Environment, PackageLoader, select_autoescape
+from simple_websocket import Server
+
 from Data import connect_db
-from NossiSite.socks import sock
+from NossiSite.socks import views
 
 env = Environment(loader=PackageLoader("NossiSite"), autoescape=select_autoescape())
 template = env.get_template("chatmsg.html")
-
-views = Blueprint("chat", __name__)
 
 clients = []
 last_update = {}
@@ -71,8 +70,9 @@ def init():
     data["thread"] = t
 
 
-@sock.route("/chatupdates")
-def chat_updates(ws: simple_websocket.ws):
+@views.route("/ws-chatupdates", websocket=True)
+def chat_updates():
+    ws = Server.accept(request.environ)
     clients.append(ws)
     while True:
         try:

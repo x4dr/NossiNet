@@ -1,7 +1,6 @@
 bleach~=6.2.0
 black~=24.10.0
 Flask~=3.1.0
-flask_sock~=0.7.0
 Flask_Testing~=0.8.1
 flask_wtf~=1.2.2
 frozendict~=2.4.6
@@ -20,8 +19,5 @@ pyyaml~=6.0.2
 gunicorn~=23.0.0
 eventlet~=0.38.2
 GitPython~=3.1.44
-
 Flask-Testing~=0.8.1
-setuptools~=75.8.0
-simple-websocket~=1.1.0
 gevent~=24.11.1

@@ -111,7 +111,7 @@ class LocalMarkdown:
             name = match.group("name")
             return (
                 f'<div id="parent-{name}-{page}" '
-                f'hx-ws="connect:/active_element?name={name}&page={page}" >'
+                f'hx-ws="connect:/ws-active_element?name={name}&page={page}" >'
                 f'<div id="{name}-{page}">Loading {name}</div></div>'
             )
 

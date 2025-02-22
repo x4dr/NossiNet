@@ -2,15 +2,14 @@ import math
 import threading
 from dataclasses import dataclass
 
-import simple_websocket
-from flask import request
-from flask_sock import Sock
+from flask import request, Blueprint, jsonify
+from simple_websocket import Server, ConnectionClosed, ConnectionError
 
 from NossiSite.base import log
 from gamepack.WikiCharacterSheet import WikiCharacterSheet
 from gamepack.WikiPage import WikiPage
 
-sock = Sock()
+views = Blueprint("socks", __name__)
 
 
 @dataclass
@@ -27,15 +26,17 @@ broadcast = threading.Event()
 connected_clocks = {}
 
 
-@sock.route("/active_element")
-def clocks_handler(ws):
+@views.route("/ws-active_element", websocket=True)
+def clocks_handler():
+    print(",", request.args)
+    ws = Server.accept(request.environ)
     name = request.args.get("name")
     page = request.args.get("page")
     element_type = request.args.get("type") or "round"
+    if not name or not page:
+        return jsonify({"status": "no valid name"})
     pid = f"{name}-{page}"
-    if not name:
-        return
-    if name not in connected_clocks:
+    if pid not in connected_clocks:
         connected_clocks[pid] = []
     connected_clocks[pid].append(ws)
     if request.args.get("sheet") == "true":
@@ -46,8 +47,12 @@ def clocks_handler(ws):
     broadcast_elements.append(BroadcastElement(name, page, context, element_type, True))
     broadcast.set()
     print(f"adding {pid} for clocks")
-    while True:
-        log.info(ws.receive())
+    try:
+        while True:
+            log.info(ws.receive())
+    except (ConnectionClosed, ConnectionError):
+        pass
+    return jsonify({"status": "success"})
 
 
 def send_broadcast(c, element):
@@ -57,8 +62,8 @@ def send_broadcast(c, element):
         try:
             client.send(c)
         except (
-            simple_websocket.ConnectionClosed,
-            simple_websocket.ConnectionError,
+            ConnectionClosed,
+            ConnectionError,
         ):
             connected_clocks[pid].remove(client)
             if not connected_clocks[pid]:
