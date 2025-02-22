@@ -16,7 +16,6 @@ from flask import (
     flash,
     abort,
     Blueprint,
-    jsonify,
 )
 from markupsafe import Markup
 
@@ -327,24 +326,7 @@ def update_notes():
         sheet.char.notes = notes
         sheet.body = sheet.char.to_md()
         sheet.save_low_prio(f"notes updated by {username}")
-    return jsonify(success=True)
-
-
-@views.route("/active_sheet_element/<c>/health/<element_type>")
-def active_elem(c, element_type):
-    char = WikiCharacterSheet.load_str(c).char
-    if not isinstance(char, PBTACharacter):
-        raise ValueError("only PBTACharacters have active sheet elements for now")
-    if element_type == "healing":
-        healing = char.health_get(element_type)
-        return generate_clock(
-            healing[0],
-            healing[1],
-            f"{element_type}-{c}",
-            "change_sheet_clock",
-            initial=True,
-        )
-    return f"<div>{element_type} unhandled </div>"
+    return notes
 
 
 @views.route("/clock/<int:active>/<int:total>/<name>/page")

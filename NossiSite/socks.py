@@ -28,7 +28,6 @@ connected_clocks = {}
 
 @views.route("/ws-active_element", websocket=True)
 def clocks_handler():
-    print(",", request.args)
     ws = Server.accept(request.environ)
     name = request.args.get("name")
     page = request.args.get("page")
