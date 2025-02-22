@@ -23,6 +23,7 @@ SECRET_KEY = key
 SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Strict"
+GITHUB_WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET")
 WTF_CSRF_TIME_LIMIT = 60 * 60 * 24 * 7  #
 app.config.from_object(__name__)
 log = logging.getLogger("frontend")

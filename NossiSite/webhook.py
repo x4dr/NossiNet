@@ -25,7 +25,7 @@ def register(app=None):
             return False
 
         local_signature = hmac.new(
-            app.config["SECRET_KEY"].encode(),
+            app.config["GITHUB_WEBHOOK_SECRET"].encode(),
             msg=request.get_data(),
             digestmod="sha256",
         )
@@ -34,8 +34,10 @@ def register(app=None):
     @app.route("/postreceive", methods=["POST"])
     @csrf.exempt
     def on_push():
+        print("verifying signature")
         if not verify_signature():
             return jsonify({"message": "Invalid signature"}), 400
+        print("verifying success")
         req = request.json
         repo = req["repository"]["name"]
         if repo in ["NossiNet", "Okysa", "Gamepack"]:
