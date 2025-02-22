@@ -6,15 +6,15 @@ from datetime import datetime
 import requests
 import simple_websocket
 from flask import Blueprint, render_template, session
-from flask_sock import Sock
 from jinja2 import Environment, PackageLoader, select_autoescape
 from Data import connect_db
+from NossiSite.socks import sock
 
 env = Environment(loader=PackageLoader("NossiSite"), autoescape=select_autoescape())
 template = env.get_template("chatmsg.html")
 
 views = Blueprint("chat", __name__)
-sock = Sock()
+
 clients = []
 last_update = {}
 data: dict = {"webhook": "", "thread": None}

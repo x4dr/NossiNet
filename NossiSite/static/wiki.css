@@ -132,14 +132,14 @@ color : var(--primary-color)
 
 
 @keyframes cooldown {
-  0%   { filter: grayscale(100%); transform: scale(60%); }
+  0%   { filter: grayscale(100%); transform: scale(90%); }
   90%  { filter: grayscale(100%); transform: scale(95%); }
   95%  { filter: saturate(120%); transform: scale(105%); }
   100% { filter: saturate(100%); transform: scale(100%); }
 }
 
 @keyframes rotatecd{
-  0%   { filter: grayscale(100%); transform: scale(60%) rotate(-5deg); }
+  0%   { filter: grayscale(100%); transform: scale(90%) rotate(-5deg); }
   90%  { filter: grayscale(100%); transform: scale(95%) rotate(720deg); }
   95%  { filter: saturate(120%); transform: scale(105%) rotate(720deg); }
   100% { filter: saturate(100%); transform: scale(100%) rotate(720deg); }

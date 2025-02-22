@@ -1,7 +1,7 @@
 import logging.config
 import sys
 import Data
-from NossiSite import views, wiki, extra, webhook, helpers, chat
+from NossiSite import views, extra, webhook, helpers, chat, socks
 from NossiSite.base import app
 from gamepack.WikiPage import WikiPage
 
@@ -10,13 +10,12 @@ logging.config.fileConfig(logconf)
 # register the endpoints
 app.register_blueprint(views.views)
 # app.register_blueprint(wiki.views)
-wiki.sock.init_app(app)
-wiki.start_threads()
+socks.sock.init_app(app)
+socks.start_threads()
 app.register_blueprint(extra.views)
 app.register_blueprint(chat.views)
 webhook.register(app)
 helpers.register(app)
-chat.sock.init_app(app)
 
 WikiPage.live = True
 if __name__ == "__main__":
