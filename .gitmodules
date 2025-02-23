@@ -1,4 +1,4 @@
-[submodule "gamepack"]
-	path = gamepack
-	url = https://github.com/x4dr/Gamepack
+[submodule "GamePack"]
+	path = GamePack
+	url = https://github.com/x4dr/GamePack.git
 	branch = master
