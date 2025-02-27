@@ -76,7 +76,7 @@ def broadcast_clock_update():
             element: BroadcastElement = broadcast_elements.pop()
             try:
                 if element.context == "wiki":
-                    page = WikiPage.load_str(element.page)
+                    page = WikiPage.load_locate(element.page)
                     clock = page.get_clock(element.name)
                     if not clock:
                         continue
@@ -97,7 +97,7 @@ def broadcast_clock_update():
                             initial=element.initial,
                         )
                 else:  # if element.context == "sheet":
-                    char = WikiCharacterSheet.load_str(element.page).char
+                    char = WikiCharacterSheet.load_locate(element.page).char
                     if element.name == "healing":
                         healing = char.health_get(element.name)
                         c = generate_clock(

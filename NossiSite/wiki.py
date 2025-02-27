@@ -139,7 +139,7 @@ def adminwiki(page: str = None):
                 page=page,
                 links=WikiPage.getlinks().get(page, []),
                 backlinks=backlinks,
-                wordcount=len(WikiPage.load_str(page).body.split()),
+                wordcount=len(WikiPage.load_locate(page).body.split()),
                 last_edited=info,
             )
         except DescriptiveError as e:
@@ -157,8 +157,8 @@ def adminwiki(page: str = None):
             path.relative_to(WikiPage.wikipath()).as_posix() in k
             or k in path.relative_to(WikiPage.wikipath()).as_posix()
         ):
-            WikiPage.cacheclear(WikiPage.locate(k))
-    WikiPage.cacheclear(WikiPage.locate(path))
+            WikiPage.reload_cache(WikiPage.locate(k))
+    WikiPage.reload_cache(WikiPage.locate(path))
     if "delete" in request.form:
         n = (WikiPage.wikipath() / n).with_suffix(".md")
         if n != path:
@@ -220,7 +220,7 @@ def wikipage(page=None):
         p = WikiPage.locate(page)
         if p.as_posix()[:-3] != page:
             return redirect(url_for("wiki.wikipage", page=p.as_posix()[:-3]))
-        loaded_page = WikiPage.load_str(page)
+        loaded_page = WikiPage.load_locate(page)
     except (DescriptiveError, FileNotFoundError) as e:
         if (
             isinstance(e, DescriptiveError)
@@ -309,7 +309,7 @@ def editwiki(page=None):
 
 @views.route("/pbta/<path:c>")
 def pbtasheet(c):
-    char = WikiCharacterSheet.load_str(c)
+    char = WikiCharacterSheet.load_locate(c)
 
     return render_template("pbtasheet.html", character=char.char, c=c)
 
@@ -321,7 +321,7 @@ def update_notes():
 
     notes = request.form.get("notes")  # Ensure your textarea has name="notes"
 
-    sheet = WikiCharacterSheet.load_str(context)
+    sheet = WikiCharacterSheet.load_locate(context)
     if username.lower() in sheet.tags:
         sheet.char.notes = notes
         sheet.body = sheet.char.to_md()
@@ -357,7 +357,7 @@ def change_clock(name: str, page: str, delta: str):
         broadcast_elements.append(
             BroadcastElement(name, page, "wiki", element_type, False)
         )
-        WikiPage.load_str(page).change_clock(name, int(delta)).save_low_prio("clock")
+        WikiPage.load_locate(page).change_clock(name, int(delta)).save_low_prio("clock")
         broadcast.set()
     return "", 204
 
@@ -374,7 +374,7 @@ def change_sheet_clock(name: str, page: str, delta: str):
         broadcast_elements.append(
             BroadcastElement(name, page, "sheet", element_type, False)
         )
-        if username.lower() in (charpage := WikiCharacterSheet.load_str(page)).tags:
+        if username.lower() in (charpage := WikiCharacterSheet.load_locate(page)).tags:
             char: PBTACharacter = charpage.char
             char.health[name.title()][char.current_headings[0].title()] = (
                 char.health_get(name)[0] + int(delta)
@@ -389,7 +389,7 @@ def fensheet(c):
     username = session.get("user", "")
     try:
         time0 = time.time()
-        char = WikiCharacterSheet.load_str(c)
+        char = WikiCharacterSheet.load_locate(c)
         if char is None:
             return redirect(url_for("wiki.tagsearch", tag="character"))
         u = User(username).configs()
@@ -517,7 +517,7 @@ def live_edit_get(formdata):
     if not a:
         a = [formdata["percentage"]]
     t = urllib.parse.unquote(formdata.get("type", "text"))
-    res: str = WikiPage.load_str(formdata["context"]).body
+    res: str = WikiPage.load_locate(formdata["context"]).body
     if t == "text":
         return live_edit_get_text(res, a)
     if t == "table":
@@ -633,7 +633,7 @@ def specific(a: str, parse_md=None):
     else:
         hide_headline = 0
 
-    article: str = WikiPage.load_str(a[0]).body
+    article: str = WikiPage.load_locate(a[0]).body
     for seek in a[1:]:
         article = traverse_md(article, seek)
     if not article:

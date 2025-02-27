@@ -137,7 +137,7 @@ class Cards:
         moved = set()
         try:
             if movemode == 1:
-                moved = random.sample(source, int(par))
+                moved = random.sample(list(source), int(par))
                 target.update(set(moved))
             elif movemode == 2:
                 moved = sorted(list(source), key=cls.cardvalue())[-int(par) :]

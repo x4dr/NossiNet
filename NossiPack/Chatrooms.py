@@ -1,6 +1,6 @@
 import re
 import time
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import List, Tuple, Union
 
 from flask import session
@@ -111,7 +111,7 @@ class Chatroom:
             if present:
                 result = (
                     result
-                    + datetime.utcfromtimestamp(t).strftime("%Y/%m/%d-%H:%M:%S ")
+                    + datetime.fromtimestamp(t, UTC).strftime("%Y/%m/%d-%H:%M:%S ")
                     + line
                     + "\n"
                 )

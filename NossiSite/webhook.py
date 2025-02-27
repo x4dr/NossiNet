@@ -1,6 +1,7 @@
 import hmac
 import logging
 import os
+import signal
 import threading
 
 from flask import jsonify, request
@@ -8,6 +9,11 @@ from flask import jsonify, request
 from NossiSite.base import app as defaultapp, csrf
 
 logger = logging.getLogger(__name__)
+
+
+def shutdown():
+    os.kill(os.getpid(), signal.SIGTERM)
+    return ""
 
 
 def register(app=None):
@@ -42,7 +48,7 @@ def register(app=None):
         repo = req["repository"]["name"]
         if repo in ["NossiNet", "Okysa", "Gamepack"]:
             response = jsonify({"message": "Update received, restarting..."})
-            threading.Timer(1, os._exit, [1]).start()  # shut down to be restarted
+            threading.Timer(1, shutdown).start()  # shut down to be restarted
             return response
         else:
             logger.error(f"got unexpected request from: {req['repository']['name']}")

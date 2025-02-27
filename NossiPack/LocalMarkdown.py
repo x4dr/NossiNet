@@ -68,7 +68,7 @@ class LocalMarkdown:
             return match.group(0)
         pagename, *path = path.split("#")
         try:
-            page = WikiPage.load_str(pagename)
+            page = WikiPage.load_locate(pagename)
         except DescriptiveError:
             return match.group(0)
         if path:
@@ -138,10 +138,10 @@ class LocalMarkdown:
         return markdown(text, extensions=cls.extensions)
 
     @classmethod
-    def process(self, text: str, page: str) -> str:
-        text, hidespans = self.pre_process(text, page)
-        text = self.markdown(text)
-        text = self.post_process(text, hidespans)
+    def process(cls, text: str, page: str) -> str:
+        text, hidespans = cls.pre_process(text, page)
+        text = cls.markdown(text)
+        text = cls.post_process(text, hidespans)
         return text
 
     @classmethod
@@ -220,7 +220,7 @@ class LocalMarkdown:
                 # todo
             result = Item.item_cache.get(infolet)
             if not result:
-                itemspage = WikiPage.load_str("items")
+                itemspage = WikiPage.load_locate("items")
                 itemsmd = itemspage.md()
                 itemstable = itemsmd.tables[0]
                 itemstable.rows.append([infolet])
