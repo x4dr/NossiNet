@@ -70,15 +70,15 @@
         </div>
     <div class="stress section">
         <div>
-            <div id="parent-stress-{{c}}" hx-ws="connect:/ws-active_element?name=stress&page={{c}}&sheet=true" >
-                <div id="stress-{{c}}">Loading stress meter...</div>
+            <div id="parent-stress-{{c|b64e}}" hx-ws="connect:/ws-active_element?name=stress&page={{c|urlencode}}&sheet=true" >
+                <div id="stress-{{c|b64e}}">Loading stress meter...</div>
             </div>
             <label class="under label">Stress</label>
         </div>
 
         <div class="trauma">
-           <div id="parent-trauma-{{c}}" hx-ws="connect:/ws-active_element?name=trauma&page={{c}}&sheet=true" >
-                <div id="trauma-{{c}}">Loading trauma meter...</div>
+           <div id="parent-trauma-{{c|b64e}}" hx-ws="connect:/ws-active_element?name=trauma&page={{c|urlencode}}&sheet=true" >
+                <div id="trauma-{{c|b64e}}">Loading trauma meter...</div>
             </div>
             <label class="under label">Trauma</label>
         </div>
@@ -108,8 +108,8 @@
     </table>
     <div>
     <div class="healing-clock-section">
-            <div id="parent-healing-{{c}}" hx-ws="connect:/ws-active_element?name=healing&page={{c}}&sheet=true" >
-                <div id="healing-{{c}}">Loading healing clock...</div>
+            <div id="parent-healing-{{c|b64e}}}" hx-ws="connect:/ws-active_element?name=healing&page={{c|urlencode}}&sheet=true" >
+                <div id="healing-{{c|b64e}}">Loading healing clock...</div>
             </div>
         <label class="label">Healing Clock</label>
     </div>
@@ -129,7 +129,7 @@
                       name="notes"
                       rows="4"
                       autocomplete="off"
-                      hx-post="/pbta-update-notes?c={{c}}"
+                      hx-post="/pbta-update-notes?c={{c|urlencode}}"
                       hx-trigger="blur, keyup delay:30s"
                       hx-include="#csrf">{{character.notes | safe}}</textarea>
             <input type="hidden" id="csrf" name="csrf_token" value="{{ csrf_token() }}"/>

@@ -3,13 +3,14 @@ import sys
 import Data
 from NossiSite import views, extra, webhook, helpers, chat, socks, wiki
 from NossiSite.base import app
-from gamepack.WikiPage import WikiPage
+from gamepack.WikiPage import WikiPage, start_savequeue
 
 logconf = Data.handle("logging_config.conf")
 logging.config.fileConfig(logconf)
 # register the endpoints
 app.register_blueprint(views.views)
 app.register_blueprint(wiki.views)
+
 socks.start_threads()
 app.register_blueprint(extra.views)
 app.register_blueprint(chat.views)
@@ -17,6 +18,8 @@ webhook.register(app)
 helpers.register(app)
 
 WikiPage.live = True
+start_savequeue()
+
 if __name__ == "__main__":
     logging.warning("Nosferatu net being run directly, DO NOT USE IN PRODUCTION")
 

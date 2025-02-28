@@ -22,6 +22,7 @@ from markupsafe import Markup
 from NossiPack.LocalMarkdown import LocalMarkdown
 from NossiPack.User import User, Config
 from NossiSite.base import log
+from NossiSite.base_ext import decode_id
 from NossiSite.helpers import checklogin
 from NossiSite.socks import (
     broadcast_elements,
@@ -348,6 +349,7 @@ def _generate_line(
 @views.route("/changeline/<name>/<page>/<delta>")
 @views.route("/changeclock/<name>/<page>/<delta>")
 def change_clock(name: str, page: str, delta: str):
+    page = decode_id(page)
     username = session.get("user", "")
     if username:
         if request.path.startswith("/changeline"):
@@ -365,6 +367,7 @@ def change_clock(name: str, page: str, delta: str):
 @views.route("/change_sheet_line/<name>/<page>/<delta>")
 @views.route("/change_sheet_clock/<name>/<page>/<delta>")
 def change_sheet_clock(name: str, page: str, delta: str):
+    page = decode_id(page)
     username = session.get("user", "")
     if username:
         if request.path.startswith("/change_sheet_line"):
@@ -381,6 +384,7 @@ def change_sheet_clock(name: str, page: str, delta: str):
             )
             charpage.save_low_prio(f"active element used by {username}")
             broadcast.set()
+            charpage.body = char.to_md()
     return "", 204
 
 

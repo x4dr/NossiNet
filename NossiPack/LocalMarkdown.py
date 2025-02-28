@@ -2,6 +2,7 @@ import re
 
 from markdown import markdown
 
+from NossiSite.base_ext import encode_id
 from NossiSite.helpers import srs
 from gamepack.Dice import DescriptiveError
 from gamepack.Item import Item
@@ -110,9 +111,9 @@ class LocalMarkdown:
         def local_clock(match: re.Match):
             name = match.group("name")
             return (
-                f'<div id="parent-{name}-{page}" '
+                f'<div id="parent-{name}-{encode_id(page)}" '
                 f'hx-ws="connect:/ws-active_element?name={name}&page={page}" >'
-                f'<div id="{name}-{page}">Loading {name}</div></div>'
+                f'<div id="{name}-{encode_id(page)}">Loading {name}</div></div>'
             )
 
         return local_clock

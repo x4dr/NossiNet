@@ -6,6 +6,8 @@ import string
 from flask import Flask
 from flask_wtf.csrf import CSRFProtect
 
+from NossiSite.base_ext import encode_id
+
 app = Flask(__name__)
 csrf = CSRFProtect(app)
 
@@ -35,3 +37,4 @@ log.setLevel(logging.DEBUG)
 app.jinja_env.globals["restart_id"] = "".join(
     random.SystemRandom().choice(string.hexdigits) for _ in range(4)
 )
+app.jinja_env.filters["b64e"] = encode_id

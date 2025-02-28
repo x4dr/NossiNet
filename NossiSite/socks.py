@@ -6,6 +6,7 @@ from flask import request, Blueprint, jsonify
 from simple_websocket import Server, ConnectionClosed, ConnectionError
 
 from NossiSite.base import log
+from NossiSite.base_ext import encode_id
 from gamepack.WikiCharacterSheet import WikiCharacterSheet
 from gamepack.WikiPage import WikiPage
 
@@ -115,7 +116,7 @@ def broadcast_clock_update():
                             s[1],
                             element.name,
                             element.page,
-                            "change_sheet_clock",
+                            "change_sheet_line",
                             initial=element.initial,
                         )
                 send_broadcast(c, element)
@@ -165,12 +166,12 @@ def generate_clock(
         slice_html += f"""
             <div class="segment{color}"
                  style="clip-path: {clip_path}; transform: rotate({angle_shape}deg);"
-                 hx-get="/{endpoint}/{name}/{page}/{incdec}"
+                 hx-get="/{endpoint}/{name}/{encode_id(page)}/{incdec}"
                  hx-trigger="click">
             </div>
             <div class="line" style="transform: translate(50%,50%) translateX(-100%) rotate({angle_line}deg);"></div>
         """
-    return f'<div class="clock-container {"" if initial else "cooldown"}" id={name}-{page}>{slice_html}</div>'
+    return f'<div class="clock-container {"" if initial else "cooldown"}" id={name}-{encode_id(page)}>{slice_html}</div>'
 
 
 def generate_line(
@@ -185,8 +186,8 @@ def generate_line(
         incdec = "-1" if i < active else "1"
 
         boxes += f"""<div class="gauge-box {status}""
-                 hx-get="/{endpoint}/{name}/{page}/{incdec}"
+                 hx-get="/{endpoint}/{name}/{encode_id(page)}/{incdec}"
                  hx-trigger="click"
                  style="--bouncedelay:{i/total}">
                 </div>"""
-    return f'<div class="gauge {"" if initial else "cooldown"}" id={name}-{page}>{boxes}</div>'
+    return f'<div class="gauge {"" if initial else "cooldown"}" id={name}-{encode_id(page)}>{boxes}</div>'
