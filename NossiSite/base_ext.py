@@ -2,8 +2,9 @@ import base64
 
 
 def encode_id(unencoded):
-    return base64.urlsafe_b64encode(unencoded.encode()).decode()
+    return base64.b32encode(unencoded.encode()).decode().rstrip("=")
 
 
 def decode_id(encoded):
-    return base64.urlsafe_b64decode(encoded).decode()
+    padding = "=" * (8 - (len(encoded) % 8))
+    return base64.b32decode(encoded + padding).decode()

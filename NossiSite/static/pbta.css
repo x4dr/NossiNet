@@ -232,15 +232,80 @@ h2 {
 }
 
 .pirata-one-regular {
-  font-family: "Pirata One", serif;
-  font-weight: 400;
+    font-family: "Pirata One", serif;
+    font-weight: 400;
+    font-style: normal;
+}
+
+.tillana-medium {
+  font-family: "Tillana", system-ui;
+  font-weight: 500;
   font-style: normal;
 }
 
 .input-field {
+    width: 100%;
+    height: 200px;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    resize: vertical;
+    background: var(--background-color);
+    color: var(--active-color);
+    border: 1px solid var(--inactive-color);
+    outline: 1px solid var(--accent-color);
+}
 
-background: var(--background-color);
-color: var(--active-color);
-border: 1px solid var(--inactive-color);
-outline: 1px solid var(--accent-color);
+
+
+.attribute-category {
+    margin-bottom: 20px;
+}
+
+.category-header {
+    background-color: black;
+    color: white;
+    padding: 5px;
+    font-weight: bold;
+    display: inline-block;
+}
+
+.progress-track {
+    display: flex;
+    gap: 2px;
+    margin: 5px 0;
+}
+
+.track-box {
+    width: 15px;
+    height: 20px;
+    display: inline-block;
+}
+
+.track-box.filled {
+    background-color: red;
+}
+
+.track-box.empty {
+    background-color: white;
+    border: 1px solid black;
+}
+
+.skill {
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+}
+
+.skill-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1px solid var(--inactive-color);
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.skill-dot.filled {
+    background-color: var(--accent-color);
 }

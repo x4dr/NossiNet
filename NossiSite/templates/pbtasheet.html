@@ -6,10 +6,10 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="wiki.css") }}?v={{ restart_id }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="pbta.css") }}?v={{ restart_id }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Pirata+One&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Tillana:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-{%- block title -%}
+    {%- block title -%}
     {%- if character.Name -%}
         <title>{{ character.Name }}</title>
     {%- else -%}
@@ -65,7 +65,7 @@
     <!-- Left Column -->
     <div class="column column-left">
         <div class="section">
-            <h2 class="pirata-one-regular">Place in the Holder</h2>
+            <h2 class="pirata-one-regular">Shenanigans in the City</h2>
             {{chara_data(character.info)}}
         </div>
     <div class="stress section">
@@ -87,21 +87,25 @@
 <div class="harm section">
     <table class="harmtable">
         <tbody>
+            {% set health_3 = character.health.get("3", []) %}
+            {% set health_2 = character.health.get("2", []) %}
+            {% set health_1 = character.health.get("1", []) %}
+
             <tr>
                 <td>3</td>
-                <td colspan="2">Harm</td>
+                <td colspan="2">{{ health_3[0] if health_3|length > 0 else "" }}</td>
                 <td>Need Help</td>
             </tr>
             <tr>
                 <td>2</td>
-                <td>Harm</td>
-                <td>Harm</td>
+                <td>{{ health_2[0] if health_2|length > 0 else "" }}</td>
+                <td>{{ health_2[1] if health_2|length > 1 else "" }}</td>
                 <td>-1d</td>
             </tr>
             <tr>
                 <td>1</td>
-                <td>Harm</td>
-                <td>Harm</td>
+                <td>{{ health_1[0] if health_1|length > 0 else "" }}</td>
+                <td>{{ health_1[1] if health_1|length > 1 else "" }}</td>
                 <td>Reduced Effect</td>
             </tr>
         </tbody>
@@ -114,18 +118,16 @@
         <label class="label">Healing Clock</label>
     </div>
     <div>
-    <div id = "armor" class="gauge">
-                <div class="gauge-box filled"></div>
-                <div class="gauge-box filled"></div>
-                <div class="gauge-box empty"></div>
-    </div>
+    <div id="parent-armor-{{c|b64e}}" hx-ws="connect:/ws-active_element?name=armor&page={{c|urlencode}}&sheet=true" >
+                <div id="armor-{{c|b64e}}">Loading armor meter...</div>
+            </div>
         <label class="label">Armor</label>
         </div>
     </div>
     </div>
         <div class="section">
             <h2>Notes</h2>
-            <textarea class="input-field cooldown"
+            <textarea class="input-field tillana-medium"
                       name="notes"
                       rows="4"
                       autocomplete="off"
@@ -148,23 +150,29 @@
         </div>
     </div>
     <div class="column column-right">
-        <div class="section" >
-            <h2 class="pirata-one-regular">Attributes</h2>
-            <table class="table">
-                <thead>
-                    <tr><th>Attribute</th><th>Rating</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td>Insight</td><td>999</td></tr>
-                    <tr><td>Prowess</td><td>999</td></tr>
-                    <tr><td>Resolve</td><td>999</td></tr>
-                </tbody>
-            </table>
-        </div>
-        <div class="section">
-            <h2 class="pirata-one-regular">Bonus Die</h2>
-            <div><br></div>
-            <div>Devils Bargain: +1 Dice <br>2 Stress: +1 Dice </div>
+ <div class="attribute-category">
+        <div class="category-header">INSIGHT</div>
+        <div class="skill"><span class="skill-dot filled"></span>HUNT</div>
+        <div class="skill"><span class="skill-dot"></span>STUDY</div>
+        <div class="skill"><span class="skill-dot"></span>SURVEY</div>
+        <div class="skill"><span class="skill-dot"></span>TINKER</div>
+    </div>
+
+    <div class="attribute-category">
+        <div class="category-header">PROWESS</div>
+        <div class="skill"><span class="skill-dot"></span>FINESSE</div>
+        <div class="skill"><span class="skill-dot"></span>PROWL</div>
+        <div class="skill"><span class="skill-dot filled"></span><span class="skill-dot filled"></span>SKIRMISH</div>
+        <div class="skill"><span class="skill-dot"></span>WRECK</div>
+    </div>
+
+    <div class="attribute-category">
+        <div class="category-header">RESOLVE</div>
+        <div class="skill"><span class="skill-dot"></span>ATTUNE</div>
+        <div class="skill"><span class="skill-dot"></span>COMMAND</div>
+        <div class="skill"><span class="skill-dot"></span>CONSORT</div>
+        <div class="skill"><span class="skill-dot"></span>SWAY</div>
+    </div>
         </div>
         <div class="section">
             <h2 class="pirata-one-regular">Load/Gather</h2>
