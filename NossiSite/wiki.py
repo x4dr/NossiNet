@@ -311,7 +311,6 @@ def editwiki(page=None):
 @views.route("/pbta/<path:c>")
 def pbtasheet(c):
     char = WikiCharacterSheet.load_locate(c)
-
     return render_template("pbtasheet.html", character=char.char, c=c)
 
 

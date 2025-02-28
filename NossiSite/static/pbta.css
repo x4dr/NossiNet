@@ -1,23 +1,15 @@
-:root {
-    --background-color: #000;
-    --accent-color: #151;
-    --inactive-color: #030;
-    --active-color: #0a0;
-    --warning-color: #F01010;
-    --line-color: #010;
-    --text-color: #0f0;
-}
 body {
-    background : var(--background-color);
-    color: var(--text-color);
+    background: var(--background-color);
+    color: var(--primary-color);
     font-family: "Lucida Grande", Monaco, monospace;
 }
+
 .page {
     justify-content: center;
     padding: 15px;
     width: 95%;
-    color: var(--text-color);
-    background = var(--background-color);
+    color: var(--primary-color);
+    background: var(--background-color);
 }
 
 .container {
@@ -71,35 +63,34 @@ h2 {
     height: 40px;
     transform: skewX(-40deg);
     transform-origin: bottom;
-    background-color: var(--inactive-color);
+    background-color: var(--midground-color);
 }
 
-.cooldown>.gauge-box{
+.cooldown>.gauge-box {
     animation: wave 5s linear forwards;
     animation-delay: calc(var(--bouncedelay) * 0.5s);
 }
 
 .gauge-box.filled {
-    background-color: var(--active-color);
+    background-color: var(--secondary-color);
 }
 
 .trauma .gauge-box.filled {
-    background-color: var(--warning-color);
+    background-color: var(--warn-color);
 }
 
-
 @keyframes wave {
-  0% { transform: translateY(0) skewX(-40deg); }
-  10% { transform: translateY(-8px) skewX(-40deg); }
-  20% { transform: translateY(5px) skewX(-40deg); }
-  30% { transform: translateY(-4px) skewX(-40deg); }
-  40% { transform: translateY(4px) skewX(-40deg); }
-  50% { transform: translateY(-3px) skewX(-40deg); }
-  60% { transform: translateY(3px) skewX(-40deg); }
-  70% { transform: translateY(-2px) skewX(-40deg); }
-  80% { transform: translateY(2px) skewX(-40deg); }
-  90% { transform: translateY(-1px) skewX(-40deg); }
-  100% { transform: translateY(0) skewX(-40deg); }
+    0% { transform: translateY(0) skewX(-40deg); }
+    10% { transform: translateY(-8px) skewX(-40deg); }
+    20% { transform: translateY(5px) skewX(-40deg); }
+    30% { transform: translateY(-4px) skewX(-40deg); }
+    40% { transform: translateY(4px) skewX(-40deg); }
+    50% { transform: translateY(-3px) skewX(-40deg); }
+    60% { transform: translateY(3px) skewX(-40deg); }
+    70% { transform: translateY(-2px) skewX(-40deg); }
+    80% { transform: translateY(2px) skewX(-40deg); }
+    90% { transform: translateY(-1px) skewX(-40deg); }
+    100% { transform: translateY(0) skewX(-40deg); }
 }
 
 .stress.section {
@@ -125,7 +116,7 @@ h2 {
 .label {
     font-size: 0.8em;
     text-align: left;
-    border-top: 1px solid var(--accent-color);
+    border-top: 1px solid var(--secondary-color);
     padding-top: 5px;
     width: 100%;
     display: inline-block;
@@ -151,22 +142,22 @@ h2 {
     margin-bottom: 20px;
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-start; 
-    gap: 1rem; 
-    box-sizing: border-box; 
+    align-items: flex-start;
+    gap: 1rem;
+    box-sizing: border-box;
 }
 
 .harmtable {
     border-collapse: collapse;
     margin-top: 10px;
-    flex: 1; 
-    min-width: 200px; 
+    flex: 1;
+    min-width: 200px;
 }
 
 .harmtable td {
     padding: 10px;
     text-align: center;
-    border: 1px solid var(--accent-color);
+    border: 1px solid var(--secondary-color);
     background-color: var(--background-color);
 }
 
@@ -180,15 +171,14 @@ h2 {
     font-weight: bold;
 }
 
-
 .healing-clock-section {
-    margin: 0; 
-    flex: 0; 
+    margin: 0;
+    flex: 0;
     display: flex;
-    flex-direction: column; 
-    align-items: center; 
+    flex-direction: column;
+    align-items: center;
     min-width: 50px;
-    box-sizing: border-box; 
+    box-sizing: border-box;
 }
 
 .healing-clock-label {
@@ -197,38 +187,13 @@ h2 {
 }
 
 .clock {
-    margin: 0; 
+    margin: 0;
     position: relative;
     width: 50px;
     height: 50px;
     border-radius: 50%;
-    border: 5px solid var(--line-color);
+    border: 5px solid var(--midground-color);
     overflow: hidden;
-}
-
-.segment {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background-color: var(--inactive-color);
-    transform-origin: center;
-    transition: transform 0.5s;
-    z-index: 1;
-}
-
-.segment.active {
-    background-color: var(--active-color);
-}
-
-.line {
-    position: absolute;
-    width: 5px;
-    height: 50%;
-    background-color: var(--line-color);
-    top: 25%;
-    left:50%;
-    transform-origin: 50% 0%;
-    z-index: 2;
 }
 
 .pirata-one-regular {
@@ -251,12 +216,10 @@ h2 {
     border-radius: 5px;
     resize: vertical;
     background: var(--background-color);
-    color: var(--active-color);
-    border: 1px solid var(--inactive-color);
-    outline: 1px solid var(--accent-color);
+    color: var(--primary-color);
+    border: 1px solid var(--midground-color);
+    outline: 1px solid var(--secondary-color);
 }
-
-
 
 .attribute-category {
     margin-bottom: 20px;
@@ -270,27 +233,6 @@ h2 {
     display: inline-block;
 }
 
-.progress-track {
-    display: flex;
-    gap: 2px;
-    margin: 5px 0;
-}
-
-.track-box {
-    width: 15px;
-    height: 20px;
-    display: inline-block;
-}
-
-.track-box.filled {
-    background-color: red;
-}
-
-.track-box.empty {
-    background-color: white;
-    border: 1px solid black;
-}
-
 .skill {
     display: flex;
     align-items: center;
@@ -301,11 +243,11 @@ h2 {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    border: 1px solid var(--inactive-color);
+    border: 1px solid var(--tertiary-color);
     display: inline-block;
     margin-right: 8px;
 }
 
 .skill-dot.filled {
-    background-color: var(--accent-color);
+    background-color: var(--secondary-color);
 }

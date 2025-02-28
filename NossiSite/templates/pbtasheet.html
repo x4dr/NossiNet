@@ -3,11 +3,12 @@
     <script src="https://unpkg.com/htmx.org@1.9.3" integrity="sha384-lVb3Rd/Ca0AxaoZg5sACe8FJKF0tnUgR2Kd7ehUOG5GCcROv5uBIZsOqovBAcWua" crossorigin="anonymous"></script>
     <script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
 {% block head %}
+    <link rel="stylesheet" type="text/css" href="{{ url_for("views.theme") }}?v={{ restart_id }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="wiki.css") }}?v={{ restart_id }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="pbta.css") }}?v={{ restart_id }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Tillana:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Tillana:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     {%- block title -%}
     {%- if character.Name -%}
@@ -50,6 +51,25 @@
         </tbody>
     </table>
 {% endmacro %}
+
+{% macro render_attribute_table(name, category) %}
+    <div class="attribute-category">
+        <div class="category-header pirata-one-regular">{{ name }}</div>
+        {% for skill, value in category.items() %}
+            <div class="skill">
+                {% for dot in range(value|int) %}
+                    <span class="skill-dot filled"></span>
+                {% endfor %}
+                {% for dot in range(5 - (value|int)) %}
+                    <span class="skill-dot"></span>
+                {% endfor %}
+                <span>{{skill}}</span>
+                {{ skill.name }}
+            </div>
+        {% endfor %}
+    </div>
+{% endmacro %}
+
 {% macro chara_data(data) %}
     {% for k,v in data.items() %}
     <div class="metadata-item">
@@ -126,7 +146,7 @@
     </div>
     </div>
         <div class="section">
-            <h2>Notes</h2>
+            <h2 class="pirata-one-regular">Notes</h2>
             <textarea class="input-field tillana-medium"
                       name="notes"
                       rows="4"
@@ -150,37 +170,16 @@
         </div>
     </div>
     <div class="column column-right">
- <div class="attribute-category">
-        <div class="category-header">INSIGHT</div>
-        <div class="skill"><span class="skill-dot filled"></span>HUNT</div>
-        <div class="skill"><span class="skill-dot"></span>STUDY</div>
-        <div class="skill"><span class="skill-dot"></span>SURVEY</div>
-        <div class="skill"><span class="skill-dot"></span>TINKER</div>
-    </div>
+        {% for heading in character.stats %}
+            {{ render_attribute_table(heading, character.stats[heading]) }}
+        {% endfor %}
 
-    <div class="attribute-category">
-        <div class="category-header">PROWESS</div>
-        <div class="skill"><span class="skill-dot"></span>FINESSE</div>
-        <div class="skill"><span class="skill-dot"></span>PROWL</div>
-        <div class="skill"><span class="skill-dot filled"></span><span class="skill-dot filled"></span>SKIRMISH</div>
-        <div class="skill"><span class="skill-dot"></span>WRECK</div>
-    </div>
-
-    <div class="attribute-category">
-        <div class="category-header">RESOLVE</div>
-        <div class="skill"><span class="skill-dot"></span>ATTUNE</div>
-        <div class="skill"><span class="skill-dot"></span>COMMAND</div>
-        <div class="skill"><span class="skill-dot"></span>CONSORT</div>
-        <div class="skill"><span class="skill-dot"></span>SWAY</div>
-    </div>
-        </div>
         <div class="section">
             <h2 class="pirata-one-regular">Load/Gather</h2>
             stuff
         </div>
     </div>
 </div>
-
 </body>
 
 {%- endblock -%}
