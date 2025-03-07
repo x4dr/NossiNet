@@ -2,8 +2,8 @@ import json
 import re
 import subprocess
 import time
-import urllib.parse
 from pathlib import Path
+from urllib import parse
 
 import bleach
 import markdown
@@ -16,6 +16,7 @@ from flask import (
     flash,
     abort,
     Blueprint,
+    render_template_string,
 )
 from markupsafe import Markup
 
@@ -314,6 +315,86 @@ def pbtasheet(c):
     return render_template("pbtasheet.html", character=char.char, c=c)
 
 
+@views.route("/preview_move/<context>/<name>")
+def preview_move(context, name):
+    page = WikiPage.load_locate(context)  # Load the wiki page
+    md_obj = MDObj.from_md(page.body)  # Convert to Markdown object
+    result = md_obj.search_children(name)  # Search for the name
+    if not result:
+        page = WikiPage.load_locate("pbtamoves")  # Load the wiki page
+        md_obj = MDObj.from_md(page.body)  # Convert to Markdown object
+        result = md_obj.search_children(name)  # Search for the name
+    if not result:
+        return "Not Found"
+    result.level = None
+    preview_content = Markup(result.to_md(False))
+
+    return render_template_string(
+        "<a href=/wiki/{{c|urlencode }}#{{ name|urlencode }}><b>{{header}}:</b> {{ preview_content }}</a>",
+        c=page.file.stem,
+        name=name,
+        preview_content=preview_content,
+        header=result.header.title(),
+    )
+
+
+@views.route("/checkbox/<name>/<path:context>", methods=["GET", "POST"])
+def checkbox(context, name):
+    page = WikiPage.load_locate(context)
+    #    username = session.get("user", "")
+    md = page.md()
+    checklists = md.search_checklist_with_path(name)
+    for path in checklists:
+        current = md
+        for p in path:
+            current = current.children[p]
+        for li in md.checklists:
+            val = li.get(name)
+            if val is not None:
+                checked = "checked" if val else ""
+                text = li.get(name, {}).get("text", name)
+                return make_checkbox(context, text, checked)
+
+
+def make_checkbox(context, name, checked):
+    return render_template_string(
+        """<input type="checkbox"
+           class="checkbox{{cd}}"
+           id="checkbox-{{ name }}"
+           name="{{ name }}"
+           {% if checked %}checked{% endif %}
+           hx-post="/update_move/{{c|urlencode}}/{{name|urlencode}}"
+           hx-trigger="change"
+           hx-swap="outerHTML"
+           aria-checked="{{ 'true' if checked else 'false' }}"
+           role="checkbox"
+           hx-include="#csrf"
+           aria-labelledby="checkbox-{{ name }}-label">""",
+        name=name,
+        c=context,
+        checked=checked,
+        cd=" cooldown" if request.method == "POST" else "",
+    )
+
+
+@views.route("/update_move/<context>/<name>", methods=["GET", "POST"])
+def update_move(context, name):
+    sheet = WikiCharacterSheet.load_locate(context)
+    username = session.get("user", "")
+    assert isinstance(sheet.char, PBTACharacter)
+    res = False
+    if sheet.tagcheck(username):
+        for move in sheet.char.moves:
+            if move[0] == name:
+                if request.method == "POST":
+                    move[1] = not move[1]
+                res = move[1]
+            break
+        sheet.body = sheet.char.to_md()
+        sheet.save_low_prio(f"moves updated by {username}")
+    return make_checkbox(context, name, res)
+
+
 @views.route("/pbta-update-notes", methods=["POST"])
 def update_notes():
     context = request.args["c"]
@@ -322,7 +403,7 @@ def update_notes():
     notes = request.form.get("notes")  # Ensure your textarea has name="notes"
 
     sheet = WikiCharacterSheet.load_locate(context)
-    if username.lower() in sheet.tags:
+    if sheet.tagcheck(username):
         sheet.char.notes = notes
         sheet.body = sheet.char.to_md()
         sheet.save_low_prio(f"notes updated by {username}")
@@ -376,11 +457,18 @@ def change_sheet_clock(name: str, page: str, delta: str):
         broadcast_elements.append(
             BroadcastElement(name, page, "sheet", element_type, False)
         )
-        if username.lower() in (charpage := WikiCharacterSheet.load_locate(page)).tags:
+        charpage = WikiCharacterSheet.load_locate(page)
+        if charpage.tagcheck(username):
             char: PBTACharacter = charpage.char
-            char.health[name.title()][char.current_headings[0].title()] = (
-                char.health_get(name)[0] + int(delta)
-            )
+            if name.startswith("item-"):
+                for item in char.inventory:
+                    if item.name == name[5:]:
+                        item.count += int(delta)
+                        break
+            else:
+                char.health[name.title()][char.current_headings[0].title()] = (
+                    char.health_get(name)[0] + int(delta)
+                )
             charpage.save_low_prio(f"active element used by {username}")
             broadcast.set()
             charpage.body = char.to_md()
@@ -516,10 +604,10 @@ def searchwiki():
 
 def live_edit_get(formdata):
     a = formdata.get("path", [])
-    a = [urllib.parse.unquote(x) for x in a if x]
+    a = [parse.unquote(x) for x in a if x]
     if not a:
         a = [formdata["percentage"]]
-    t = urllib.parse.unquote(formdata.get("type", "text"))
+    t = parse.unquote(formdata.get("type", "text"))
     res: str = WikiPage.load_locate(formdata["context"]).body
     if t == "text":
         return live_edit_get_text(res, a)
@@ -578,7 +666,7 @@ def live_edit_write_text(formdata, context):
 def live_edit_write_table(formdata, context):
     context = WikiPage.locate(context)
     page = WikiPage.load(context)
-    md = MDObj.from_md(page.body)
+    md = page.md()
     path = json.loads(formdata["path"])
     t = md
     for p in path:

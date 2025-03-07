@@ -28,6 +28,7 @@ class LocalMarkdown:
         re.IGNORECASE | re.DOTALL,
     )
     infolet_re = re.compile(r"\[!q:(?P<name>.*?)]", re.IGNORECASE)
+    checkbox_re = re.compile(r"(?!)")  # MDChecklist.CHECKBOX_PATTERN
 
     @classmethod
     def transclude(cls, match: re.Match):
@@ -124,11 +125,25 @@ class LocalMarkdown:
         return cls.local_clock_make(page)(match)
 
     @classmethod
+    def checkbox(cls, page):
+        def build_checkbox(match: re.Match):
+            checked = "checked" if match.group(1).strip() == "x" else ""
+            text = match.group(2).strip()
+            return (
+                f'<input type="checkbox" {checked} '
+                f'hx-get="/checkbox/{text}/{page}" '
+                f'hx-swap="outerHTML" hx-trigger="load"> {text}'
+            )
+
+        return build_checkbox
+
+    @classmethod
     def pre_process(cls, text: str, page: str) -> (str, [(str, str)]):
         text = cls.transclude_re.sub(cls.transclude, text)
         text = cls.transclude_inner_re.sub(cls.transclude_inner, text)
         text = cls.transcluded_clock_re.sub(cls.transcluded_clock, text)
         text = cls.clock_re.sub(cls.local_clock_make(page), text)
+        text = cls.checkbox_re.sub(cls.checkbox(page), text)
         md = MDObj.from_md(text)
         hidespans = cls.find_hidespans(md)
 

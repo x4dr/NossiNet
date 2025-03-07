@@ -7,6 +7,7 @@ from simple_websocket import Server, ConnectionClosed, ConnectionError
 
 from NossiSite.base import log
 from NossiSite.base_ext import encode_id
+from gamepack.PBTACharacter import PBTACharacter
 from gamepack.WikiCharacterSheet import WikiCharacterSheet
 from gamepack.WikiPage import WikiPage
 
@@ -46,7 +47,7 @@ def clocks_handler():
 
     broadcast_elements.append(BroadcastElement(name, page, context, element_type, True))
     broadcast.set()
-    print(f"adding {pid} for clocks")
+    # print(f"adding {pid} for clocks")
     try:
         while True:
             log.info(ws.receive())
@@ -99,6 +100,8 @@ def broadcast_clock_update():
                         )
                 else:  # if element.context == "sheet":
                     char = WikiCharacterSheet.load_locate(element.page).char
+                    if not isinstance(char, PBTACharacter):
+                        continue
                     if element.name == "healing":
                         healing = char.health_get(element.name)
                         c = generate_clock(
@@ -109,6 +112,18 @@ def broadcast_clock_update():
                             "change_sheet_clock",
                             initial=element.initial,
                         )
+                    elif element.name.startswith("item-"):
+                        name = element.name[5:]
+                        item = char.inventory_get(name)
+                        c = generate_line(
+                            item.count,
+                            item.maximum,
+                            element.name,
+                            element.page,
+                            "change_sheet_line",
+                            initial=element.initial,
+                        )
+
                     else:
                         s = char.health_get(element.name)
                         c = generate_line(

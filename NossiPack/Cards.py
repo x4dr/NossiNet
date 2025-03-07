@@ -175,10 +175,10 @@ class Cards:
     def remove(self, toremove: str):
         try:
             return self.move(self.Hand, self.Removed, toremove, 2)
-        except Exception:
+        except DescriptiveError:
             try:
                 return self.move(self.Deck, self.Removed, toremove, 1)
-            except Exception:
+            except DescriptiveError:
                 return self.move(self.Pile, self.Removed, toremove, 1)
 
     def dedicate(self, todedicate, purpose):

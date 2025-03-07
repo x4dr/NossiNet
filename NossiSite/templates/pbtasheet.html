@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
-    <script src="https://unpkg.com/htmx.org@1.9.3" integrity="sha384-lVb3Rd/Ca0AxaoZg5sACe8FJKF0tnUgR2Kd7ehUOG5GCcROv5uBIZsOqovBAcWua" crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
+<script src="https://unpkg.com/htmx.org@1.9.3" integrity="sha384-lVb3Rd/Ca0AxaoZg5sACe8FJKF0tnUgR2Kd7ehUOG5GCcROv5uBIZsOqovBAcWua" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
 {% block head %}
     <link rel="stylesheet" type="text/css" href="{{ url_for("views.theme") }}?v={{ restart_id }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="wiki.css") }}?v={{ restart_id }}">
@@ -11,43 +11,43 @@
     <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Tillana:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     {%- block title -%}
-    {%- if character.Name -%}
-        <title>{{ character.Name }}</title>
-    {%- else -%}
-        <title>Charactersheet</title>
-    {%- endif -%}
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-   document.body.addEventListener('htmx:afterSwap', (event) => {
-  event.target.querySelectorAll('.cooldown').forEach(el => {
-  el.style.pointerEvents = 'none';
-    el.addEventListener('animationend', () => {
-      el.style.pointerEvents = 'auto';
-    });
-  });
-});
-});
+        {%- if character.Name -%}
+            <title>{{ character.Name }}</title>
+        {%- else -%}
+            <title>Charactersheet</title>
+        {%- endif -%}
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                document.body.addEventListener('htmx:afterSwap', (event) => {
+                    event.target.querySelectorAll('.cooldown').forEach(el => {
+                        el.style.pointerEvents = 'none';
+                        el.addEventListener('animationend', () => {
+                            el.style.pointerEvents = 'auto';
+                        });
+                    });
+                });
+            });
 
-</script>
-{%- endblock -%}
+        </script>
+    {%- endblock -%}
 {%- endblock -%}
 {% macro render_md_table(table) %}
-    <table border="1">
+    <table >
         <thead>
-            <tr>
-                {% for header in table.headers %}
-                    <th>{{ header }}</th>
-                {% endfor %}
-            </tr>
+        <tr>
+            {% for header in table.headers %}
+                <th>{{ header }}</th>
+            {% endfor %}
+        </tr>
         </thead>
         <tbody>
-            {% for row in table.rows %}
-                <tr>
-                    {% for cell in row %}
-                        <td>{{ cell }}</td>
-                    {% endfor %}
-                </tr>
-            {% endfor %}
+        {% for row in table.rows %}
+            <tr>
+                {% for cell in row %}
+                    <td>{{ cell }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
         </tbody>
     </table>
 {% endmacro %}
@@ -58,10 +58,10 @@
         {% for skill, value in category.items() %}
             <div class="skill">
                 {% for dot in range(value|int) %}
-                    <span class="skill-dot filled"></span>
+                    <span class="checkcircle filled"></span>
                 {% endfor %}
                 {% for dot in range(5 - (value|int)) %}
-                    <span class="skill-dot"></span>
+                    <span class="checkcircle"></span>
                 {% endfor %}
                 <span>{{skill}}</span>
                 {{ skill.name }}
@@ -70,117 +70,148 @@
     </div>
 {% endmacro %}
 
+{% macro display_moves(moves) %}
+    {% for name, checked in moves %}
+        <div class="preview-container">
+                <input type="checkbox"
+                       class="checkbox"
+                       id="checkbox-{{ name }}"
+                       hx-get="/update_move/{{ c|urlencode }}/{{ name|urlencode }}"
+                       hx-trigger="load"
+                       hx-swap="outerHTML"><label
+                    for="checkbox-{{ name }}" class="preview-label">{{ name }}</label>
+            <div class="preview-box"
+                 hx-get="/preview_move/{{ c|urlencode }}/{{ name|urlencode }}"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+            </div>
+        </div>
+    {% endfor %}
+{% endmacro %}
+
 {% macro chara_data(data) %}
     {% for k,v in data.items() %}
-    <div class="metadata-item">
-        <span class="value">{{v}}</span>
-        <span class="label">{{k}}</span>
-    </div>
+        <div class="metadata-item">
+            <span class="value">{{v}}</span>
+            <span class="label">{{k}}</span>
+        </div>
+    {%- endfor -%}
+{% endmacro %}
+
+
+{% macro display_inv(inventory) %}
+    {% for k in inventory  %}
+        <div class="flex-center">
+            <div id="parent-item-{{ k.name }}-{{c|b64e}}" hx-ws="connect:/ws-active_element?name=item-{{ k.name }}&page={{c|urlencode}}&sheet=true" >
+                <div id="item-{{ k.name }}-{{c|b64e}}">Loading item...</div>
+            </div>
+            <label class="under label">{{ k.name.title() }}</label>
+        </div>
     {%- endfor -%}
 {% endmacro %}
 
 {%- block body -%}
-<body>
-<div class="container">
-    <!-- Left Column -->
-    <div class="column column-left">
-        <div class="section">
-            <h2 class="pirata-one-regular">Shenanigans in the City</h2>
-            {{chara_data(character.info)}}
-        </div>
-    <div class="stress section">
-        <div>
-            <div id="parent-stress-{{c|b64e}}" hx-ws="connect:/ws-active_element?name=stress&page={{c|urlencode}}&sheet=true" >
-                <div id="stress-{{c|b64e}}">Loading stress meter...</div>
+    <body>
+    <div class="container">
+        <!-- Left Column -->
+        <div class="column column-left">
+            <div class="section">
+                <h1 class="pirata-one-regular">Shenanigans in the City</h1>
+                {{chara_data(character.info)}}
             </div>
-            <label class="under label">Stress</label>
-        </div>
+            <div class="stress section slanted-gauge">
+                <div>
+                    <div id="parent-stress-{{c|b64e}}" hx-ws="connect:/ws-active_element?name=stress&page={{c|urlencode}}&sheet=true" >
+                        <div id="stress-{{c|b64e}}">Loading stress meter...</div>
+                    </div>
+                    <label class="under label">Stress</label>
+                </div>
 
-        <div class="trauma">
-           <div id="parent-trauma-{{c|b64e}}" hx-ws="connect:/ws-active_element?name=trauma&page={{c|urlencode}}&sheet=true" >
-                <div id="trauma-{{c|b64e}}">Loading trauma meter...</div>
+                <div class="trauma">
+                    <div id="parent-trauma-{{c|b64e}}" hx-ws="connect:/ws-active_element?name=trauma&page={{c|urlencode}}&sheet=true" >
+                        <div id="trauma-{{c|b64e}}">Loading trauma meter...</div>
+                    </div>
+                    <label class="under label">Trauma</label>
+                </div>
             </div>
-            <label class="under label">Trauma</label>
-        </div>
-    </div>
 
-<div class="harm section">
-    <table class="harmtable">
-        <tbody>
-            {% set health_3 = character.health.get("3", []) %}
-            {% set health_2 = character.health.get("2", []) %}
-            {% set health_1 = character.health.get("1", []) %}
+            <div class="harm section">
+                <table class="harmtable">
+                    <tbody>
+                    {% set health_3 = character.health.get("3", []) %}
+                    {% set health_2 = character.health.get("2", []) %}
+                    {% set health_1 = character.health.get("1", []) %}
 
-            <tr>
-                <td>3</td>
-                <td colspan="2">{{ health_3[0] if health_3|length > 0 else "" }}</td>
-                <td>Need Help</td>
-            </tr>
-            <tr>
-                <td>2</td>
-                <td>{{ health_2[0] if health_2|length > 0 else "" }}</td>
-                <td>{{ health_2[1] if health_2|length > 1 else "" }}</td>
-                <td>-1d</td>
-            </tr>
-            <tr>
-                <td>1</td>
-                <td>{{ health_1[0] if health_1|length > 0 else "" }}</td>
-                <td>{{ health_1[1] if health_1|length > 1 else "" }}</td>
-                <td>Reduced Effect</td>
-            </tr>
-        </tbody>
-    </table>
-    <div>
-    <div class="healing-clock-section">
-            <div id="parent-healing-{{c|b64e}}}" hx-ws="connect:/ws-active_element?name=healing&page={{c|urlencode}}&sheet=true" >
-                <div id="healing-{{c|b64e}}">Loading healing clock...</div>
+                    <tr>
+                        <td>3</td>
+                        <td colspan="2">{{ health_3[0] if health_3|length > 0 else "" }}</td>
+                        <td>Need Help</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>{{ health_2[0] if health_2|length > 0 else "" }}</td>
+                        <td>{{ health_2[1] if health_2|length > 1 else "" }}</td>
+                        <td>-1d</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>{{ health_1[0] if health_1|length > 0 else "" }}</td>
+                        <td>{{ health_1[1] if health_1|length > 1 else "" }}</td>
+                        <td>Reduced Effect</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div class="slanted-gauge">
+                    <div class="healing-clock-section">
+                        <div id="parent-healing-{{c|b64e}}}" hx-ws="connect:/ws-active_element?name=healing&page={{c|urlencode}}&sheet=true" >
+                            <div id="healing-{{c|b64e}}">Loading healing clock...</div>
+                        </div>
+                        <label class="label">Healing Clock</label>
+                    </div>
+                    <div>
+                        <div id="parent-armor-{{c|b64e}}" hx-ws="connect:/ws-active_element?name=armor&page={{c|urlencode}}&sheet=true" >
+                            <div id="armor-{{c|b64e}}">Loading armor meter...</div>
+                        </div>
+                        <label class="label">Armor</label>
+                    </div>
+                </div>
             </div>
-        <label class="label">Healing Clock</label>
-    </div>
-    <div>
-    <div id="parent-armor-{{c|b64e}}" hx-ws="connect:/ws-active_element?name=armor&page={{c|urlencode}}&sheet=true" >
-                <div id="armor-{{c|b64e}}">Loading armor meter...</div>
+            <div class="section">
+                <h2 class="pirata-one-regular"><label for="notes">Notes</label></h2>
+                <textarea id="notes"
+                          class="input-field tillana-medium"
+                          name="notes"
+                          rows="4"
+                          autocomplete="off"
+                          hx-post="/pbta-update-notes?c={{c|urlencode}}"
+                          hx-trigger="blur, keyup delay:30s"
+                          hx-include="#csrf">{{character.notes | safe}}</textarea>
+                <input type="hidden" id="csrf" name="csrf_token" value="{{ csrf_token() }}"/>
             </div>
-        <label class="label">Armor</label>
         </div>
-    </div>
-    </div>
-        <div class="section">
-            <h2 class="pirata-one-regular">Notes</h2>
-            <textarea class="input-field tillana-medium"
-                      name="notes"
-                      rows="4"
-                      autocomplete="off"
-                      hx-post="/pbta-update-notes?c={{c|urlencode}}"
-                      hx-trigger="blur, keyup delay:30s"
-                      hx-include="#csrf">{{character.notes | safe}}</textarea>
-            <input type="hidden" id="csrf" name="csrf_token" value="{{ csrf_token() }}"/>
-        </div>
-    </div>
-    <div class="column column-middle">
-        <div class="section">
-        {% for heading in character.meta %}
-            <h2 class="pirata-one-regular">{{ heading }}</h2>
-            {% if character.meta[heading].tables %}
-                {% for table in character.meta[heading].tables %}
-                    {{ render_md_table(table) }}
-                {% endfor %}
-            {% endif %}
-        {% endfor %}
-        </div>
-    </div>
-    <div class="column column-right">
-        {% for heading in character.stats %}
-            {{ render_attribute_table(heading, character.stats[heading]) }}
-        {% endfor %}
+        <div class="column column-middle">
 
-        <div class="section">
-            <h2 class="pirata-one-regular">Load/Gather</h2>
-            stuff
+            <div class="section boxes-gauge">
+                <h2 class="tillana-medium">Inventory</h2>
+                {{ display_inv(character.inventory) }}
+            </div>
+            <div class="section vert">
+                <h2 class="tillana-medium">Moves</h2>
+                {{ display_moves(character.moves) }}
+            </div>
+        </div>
+        <div class="column column-right">
+            {% for heading in character.stats %}
+                {{ render_attribute_table(heading, character.stats[heading]) }}
+            {% endfor %}
+
+            <div class="section">
+                <h2 class="pirata-one-regular">Load/Gather</h2>
+                stuff
+            </div>
         </div>
     </div>
-</div>
-</body>
+    </body>
 
 {%- endblock -%}
 </html>

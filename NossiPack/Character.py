@@ -334,7 +334,7 @@ class Character:
                 special[i] = int(
                     self.special[i]
                 )  # legacy ... rework might be as easy as removing this
-            except Exception:
+            except ValueError:
                 pass  # sort all numeric values into special
 
         return [
