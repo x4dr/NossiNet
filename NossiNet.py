@@ -1,12 +1,14 @@
 import logging.config
 import sys
+
 import Data
 from NossiSite import views, extra, webhook, helpers, chat, socks, wiki
 from NossiSite.base import app
 from gamepack.WikiPage import WikiPage, start_savequeue
 
 logconf = Data.handle("logging_config.conf")
-logging.config.fileConfig(logconf)
+logging.config.fileConfig(logconf, disable_existing_loggers=False)
+
 # register the endpoints
 app.register_blueprint(views.views)
 app.register_blueprint(wiki.views)
