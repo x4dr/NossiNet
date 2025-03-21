@@ -430,6 +430,7 @@ def _generate_line(
 @views.route("/changeclock/<name>/<page>/<delta>")
 def change_clock(name: str, page: str, delta: str):
     page = decode_id(page)
+    name = decode_id(name)
     username = session.get("user", "")
     if username:
         if request.path.startswith("/changeline"):

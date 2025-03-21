@@ -6,7 +6,7 @@ from flask import request, Blueprint, jsonify
 from simple_websocket import Server, ConnectionClosed, ConnectionError
 
 from NossiSite.base import log
-from NossiSite.base_ext import encode_id
+from NossiSite.base_ext import encode_id, decode_id
 from gamepack.PBTACharacter import PBTACharacter
 from gamepack.WikiCharacterSheet import WikiCharacterSheet
 from gamepack.WikiPage import WikiPage
@@ -31,8 +31,8 @@ connected_clocks = {}
 @views.route("/ws-active_element", websocket=True)
 def clocks_handler():
     ws = Server.accept(request.environ)
-    name = request.args.get("name")
-    page = request.args.get("page")
+    name = decode_id(request.args.get("name"))
+    page = decode_id(request.args.get("page"))
     element_type = request.args.get("type") or "round"
     if not name or not page:
         return jsonify({"status": "no valid name"})
@@ -76,6 +76,7 @@ def broadcast_clock_update():
         broadcast.wait()
         while broadcast_elements:
             element: BroadcastElement = broadcast_elements.pop()
+
             try:
                 if element.context == "wiki":
                     page = WikiPage.load_locate(element.page)
@@ -181,12 +182,15 @@ def generate_clock(
         slice_html += f"""
             <div class="segment{color}"
                  style="clip-path: {clip_path}; transform: rotate({angle_shape}deg);"
-                 hx-get="/{endpoint}/{name}/{encode_id(page)}/{incdec}"
+                 hx-get="/{endpoint}/{encode_id(name)}/{encode_id(page)}/{incdec}"
                  hx-trigger="click">
             </div>
             <div class="line" style="transform: translate(50%,50%) translateX(-100%) rotate({angle_line}deg);"></div>
         """
-    return f'<div class="clock-container {"" if initial else "cooldown"}" id={name}-{encode_id(page)}>{slice_html}</div>'
+    return (
+        f'<div class="clock-container '
+        f'{"" if initial else "cooldown"}" id={encode_id(name)}-{encode_id(page)}>{slice_html}</div>'
+    )
 
 
 def generate_line(
@@ -201,8 +205,8 @@ def generate_line(
         incdec = "-1" if i < active else "1"
 
         boxes += f"""<div class="gauge-box {status}""
-                 hx-get="/{endpoint}/{name}/{encode_id(page)}/{incdec}"
+                 hx-get="/{endpoint}/{encode_id(name)}/{encode_id(page)}/{incdec}"
                  hx-trigger="click"
                  style="--bouncedelay:{i/total}">
                 </div>"""
-    return f'<div class="gauge {"" if initial else "cooldown"}" id={name}-{encode_id(page)}>{boxes}</div>'
+    return f'<div class="gauge {"" if initial else "cooldown"}" id={encode_id(name)}-{encode_id(page)}>{boxes}</div>'

@@ -110,11 +110,12 @@ class LocalMarkdown:
     @classmethod
     def local_clock_make(cls, page: str):
         def local_clock(match: re.Match):
-            name = match.group("name")
+            name = encode_id(match.group("name"))
+            p = encode_id(page)
             return (
-                f'<div id="parent-{name}-{encode_id(page)}" '
-                f'hx-ws="connect:/ws-active_element?name={name}&page={page}" >'
-                f'<div id="{name}-{encode_id(page)}">Loading {name}</div></div>'
+                f'<div id="parent-{name}-{p}" '
+                f'hx-ws="connect:/ws-active_element?name={name}&page={p}" >'
+                f'<div id="{name}-{p}">Loading {name}</div></div>'
             )
 
         return local_clock
