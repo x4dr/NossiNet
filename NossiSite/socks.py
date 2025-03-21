@@ -1,3 +1,4 @@
+import binascii
 import math
 import threading
 from dataclasses import dataclass
@@ -31,8 +32,15 @@ connected_clocks = {}
 @views.route("/ws-active_element", websocket=True)
 def clocks_handler():
     ws = Server.accept(request.environ)
-    name = decode_id(request.args.get("name"))
-    page = decode_id(request.args.get("page"))
+    try:
+        name = decode_id(request.args.get("name"))
+        page = decode_id(request.args.get("page"))
+    except binascii.Error:
+        print(
+            "invalid name or page", request.args.get("name"), request.args.get("page")
+        )
+        return jsonify("error")
+
     element_type = request.args.get("type") or "round"
     if not name or not page:
         return jsonify({"status": "no valid name"})
