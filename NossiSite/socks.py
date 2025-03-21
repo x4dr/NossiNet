@@ -1,4 +1,3 @@
-import binascii
 import math
 import threading
 from dataclasses import dataclass
@@ -9,6 +8,7 @@ from simple_websocket import Server, ConnectionClosed, ConnectionError
 from NossiSite.base import log
 from NossiSite.base_ext import encode_id, decode_id
 from gamepack.PBTACharacter import PBTACharacter
+from gamepack.PBTAItem import PBTAItem
 from gamepack.WikiCharacterSheet import WikiCharacterSheet
 from gamepack.WikiPage import WikiPage
 
@@ -34,12 +34,10 @@ def clocks_handler():
     ws = Server.accept(request.environ)
     try:
         name = decode_id(request.args.get("name"))
-    except binascii.Error:
-        name = request.args.get("name")
-    try:
         page = decode_id(request.args.get("page"))
-    except binascii.Error:
-        page = request.args.get("page")
+    except:
+        print(str(request))
+        raise
 
     element_type = request.args.get("type") or "round"
     if not name or not page:
@@ -55,7 +53,6 @@ def clocks_handler():
 
     broadcast_elements.append(BroadcastElement(name, page, context, element_type, True))
     broadcast.set()
-    # print(f"adding {pid} for clocks")
     try:
         while True:
             log.info(ws.receive())
@@ -124,6 +121,8 @@ def broadcast_clock_update():
                     elif element.name.startswith("item-"):
                         name = element.name[5:]
                         item = char.inventory_get(name)
+                        if not item:
+                            item = PBTAItem(name, 1, "-", 1, 1)
                         c = generate_line(
                             item.count,
                             item.maximum,
@@ -132,7 +131,6 @@ def broadcast_clock_update():
                             "change_sheet_line",
                             initial=element.initial,
                         )
-
                     else:
                         s = char.health_get(element.name)
                         c = generate_line(
@@ -204,7 +202,6 @@ def generate_clock(
 def generate_line(
     active: int, total: int, name="", page="", endpoint="changeline", initial=False
 ):
-
     total = int(total)
     active = int(active)
     boxes = ""

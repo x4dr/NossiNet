@@ -450,6 +450,7 @@ def change_clock(name: str, page: str, delta: str):
 def change_sheet_clock(name: str, page: str, delta: str):
     page = decode_id(page)
     username = session.get("user", "")
+    name = decode_id(name)
     if username:
         if request.path.startswith("/change_sheet_line"):
             element_type = "line"

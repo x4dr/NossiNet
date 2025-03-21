@@ -7,6 +7,7 @@ def encode_id(unencoded):
 
 def decode_id(encoded):
     if not encoded:
-        encoded = ""
-    padding = "=" * (8 - (len(encoded) % 8))
-    return base64.b32decode(encoded + padding).decode()
+        return ""
+    if len(encoded) % 8:
+        encoded += "=" * (8 - (len(encoded) % 8))
+    return base64.b32decode(encoded).decode()

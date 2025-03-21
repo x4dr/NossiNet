@@ -77,7 +77,7 @@
                        class="checkbox"
                        id="checkbox-{{ name }}"
                        hx-get="/update_move/{{ c|urlencode }}/{{ name|urlencode }}"
-                       hx-trigger="load"
+                       hx-trigger="click"
                        hx-swap="outerHTML"><label
                     for="checkbox-{{ name }}" class="preview-label">{{ name }}</label>
             <div class="preview-box"
@@ -102,8 +102,8 @@
 {% macro display_inv(inventory) %}
     {% for k in inventory  %}
         <div class="flex-center">
-            <div id="parent-item-{{ k.name }}-{{c|b64e}}" hx-ws="connect:/ws-active_element?name=item-{{ k.name }}&page={{c|urlencode}}&sheet=true" >
-                <div id="item-{{ k.name }}-{{c|b64e}}">Loading item...</div>
+            <div id="parent-{{("item-"+ k.name) |b64e }}-{{c|b64e}}" hx-ws="connect:/ws-active_element?name={{("item-"+ k.name) |b64e }}&page={{c|b64e}}&sheet=true" >
+                <div id="{{("item-"+ k.name) |b64e }}-{{ c|b64e }}">Loading item...</div>
             </div>
             <label class="under label">{{ k.name.title() }}</label>
         </div>
@@ -121,15 +121,15 @@
             </div>
             <div class="stress section slanted-gauge">
                 <div>
-                    <div id="parent-stress-{{c|b64e}}" hx-ws="connect:/ws-active_element?name=stress&page={{c|urlencode}}&sheet=true" >
-                        <div id="stress-{{c|b64e}}">Loading stress meter...</div>
+                    <div id="parent-{{ "stress" | b64e }}-{{c|b64e}}" hx-ws="connect:/ws-active_element?name={{ "stress"|b64e }}&page={{c|b64e}}&sheet=true" >
+                        <div id="{{ "stress" | b64e }}-{{c|b64e}}">Loading stress meter...</div>
                     </div>
                     <label class="under label">Stress</label>
                 </div>
 
                 <div class="trauma">
-                    <div id="parent-trauma-{{c|b64e}}" hx-ws="connect:/ws-active_element?name=trauma&page={{c|urlencode}}&sheet=true" >
-                        <div id="trauma-{{c|b64e}}">Loading trauma meter...</div>
+                    <div id="parent-{{ "trauma"|b64e }}-{{c|b64e}}" hx-ws="connect:/ws-active_element?name={{ "trauma"|b64e }}&page={{c|b64e}}&sheet=true" >
+                        <div id="{{"trauma" | b64e }}-{{c|b64e}}">Loading trauma meter...</div>
                     </div>
                     <label class="under label">Trauma</label>
                 </div>
@@ -163,14 +163,14 @@
                 </table>
                 <div class="slanted-gauge">
                     <div class="healing-clock-section">
-                        <div id="parent-healing-{{c|b64e}}}" hx-ws="connect:/ws-active_element?name=healing&page={{c|urlencode}}&sheet=true" >
-                            <div id="healing-{{c|b64e}}">Loading healing clock...</div>
+                        <div id="parent-{{"healing"|b64e }}-{{c|b64e}}}" hx-ws="connect:/ws-active_element?name={{"healing"|b64e }}&page={{c|b64e}}&sheet=true" >
+                            <div id="{{"healing"|b64e }}-{{c|b64e}}">Loading healing clock...</div>
                         </div>
                         <label class="label">Healing Clock</label>
                     </div>
                     <div>
-                        <div id="parent-armor-{{c|b64e}}" hx-ws="connect:/ws-active_element?name=armor&page={{c|urlencode}}&sheet=true" >
-                            <div id="armor-{{c|b64e}}">Loading armor meter...</div>
+                        <div id="parent-{{"armor"|b64e }}-{{c|b64e}}" hx-ws="connect:/ws-active_element?name={{"armor"|b64e }}&page={{c|b64e}}&sheet=true" >
+                            <div id="{{"armor"|b64e }}-{{c|b64e}}">Loading armor meter...</div>
                         </div>
                         <label class="label">Armor</label>
                     </div>
