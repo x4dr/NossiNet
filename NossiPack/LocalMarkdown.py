@@ -114,7 +114,7 @@ class LocalMarkdown:
             p = encode_id(page)
             return (
                 f'<div id="parent-{name}-{p}" '
-                f'hx-ws="connect:/ws-active_element?name={name}&page={p}" >'
+                f'hx-ws="connect:/ws_active_element?name={name}&page={p}" >'
                 f'<div id="{name}-{p}">Loading {name}</div></div>'
             )
 

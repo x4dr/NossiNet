@@ -102,7 +102,7 @@
 {% macro display_inv(inventory) %}
     {% for k in inventory  %}
         <div class="flex-center">
-            <div id="parent-{{("item-"+ k.name) |b64e }}-{{c|b64e}}" hx-ws="connect:/ws-active_element?name={{("item-"+ k.name) |b64e }}&page={{c|b64e}}&sheet=true" >
+            <div id="parent-{{("item-"+ k.name) |b64e }}-{{c|b64e}}" hx-ws="connect:/ws_active_element?name={{("item-"+ k.name) |b64e }}&page={{c|b64e}}&sheet=true" >
                 <div id="{{("item-"+ k.name) |b64e }}-{{ c|b64e }}">Loading item...</div>
             </div>
             <label class="under label">{{ k.name.title() }}</label>
@@ -121,14 +121,14 @@
             </div>
             <div class="stress section slanted-gauge">
                 <div>
-                    <div id="parent-{{ "stress" | b64e }}-{{c|b64e}}" hx-ws="connect:/ws-active_element?name={{ "stress"|b64e }}&page={{c|b64e}}&sheet=true" >
+                    <div id="parent-{{ "stress" | b64e }}-{{c|b64e}}" hx-ws="connect:/ws_active_element?name={{ "stress"|b64e }}&page={{c|b64e}}&sheet=true" >
                         <div id="{{ "stress" | b64e }}-{{c|b64e}}">Loading stress meter...</div>
                     </div>
                     <label class="under label">Stress</label>
                 </div>
 
                 <div class="trauma">
-                    <div id="parent-{{ "trauma"|b64e }}-{{c|b64e}}" hx-ws="connect:/ws-active_element?name={{ "trauma"|b64e }}&page={{c|b64e}}&sheet=true" >
+                    <div id="parent-{{ "trauma"|b64e }}-{{c|b64e}}" hx-ws="connect:/ws_active_element?name={{ "trauma"|b64e }}&page={{c|b64e}}&sheet=true" >
                         <div id="{{"trauma" | b64e }}-{{c|b64e}}">Loading trauma meter...</div>
                     </div>
                     <label class="under label">Trauma</label>
@@ -163,13 +163,13 @@
                 </table>
                 <div class="slanted-gauge">
                     <div class="healing-clock-section">
-                        <div id="parent-{{"healing"|b64e }}-{{c|b64e}}}" hx-ws="connect:/ws-active_element?name={{"healing"|b64e }}&page={{c|b64e}}&sheet=true" >
+                        <div id="parent-{{"healing"|b64e }}-{{c|b64e}}}" hx-ws="connect:/ws_active_element?name={{"healing"|b64e }}&page={{c|b64e}}&sheet=true" >
                             <div id="{{"healing"|b64e }}-{{c|b64e}}">Loading healing clock...</div>
                         </div>
                         <label class="label">Healing Clock</label>
                     </div>
                     <div>
-                        <div id="parent-{{"armor"|b64e }}-{{c|b64e}}" hx-ws="connect:/ws-active_element?name={{"armor"|b64e }}&page={{c|b64e}}&sheet=true" >
+                        <div id="parent-{{"armor"|b64e }}-{{c|b64e}}" hx-ws="connect:/ws_active_element?name={{"armor"|b64e }}&page={{c|b64e}}&sheet=true" >
                             <div id="{{"armor"|b64e }}-{{c|b64e}}">Loading armor meter...</div>
                         </div>
                         <label class="label">Armor</label>

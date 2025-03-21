@@ -29,7 +29,7 @@ broadcast = threading.Event()
 connected_clocks = {}
 
 
-@views.route("/ws-active_element", websocket=True)
+@views.route("/ws_active_element", websocket=True)
 def clocks_handler():
     ws = Server.accept(request.environ)
     try:
