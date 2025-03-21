@@ -34,12 +34,12 @@ def clocks_handler():
     ws = Server.accept(request.environ)
     try:
         name = decode_id(request.args.get("name"))
+    except binascii.Error:
+        name = request.args.get("name")
+    try:
         page = decode_id(request.args.get("page"))
     except binascii.Error:
-        print(
-            "invalid name or page", request.args.get("name"), request.args.get("page")
-        )
-        return jsonify("error")
+        page = request.args.get("page")
 
     element_type = request.args.get("type") or "round"
     if not name or not page:
