@@ -254,17 +254,34 @@ h2 {
 }
 
 .category-header {
-    background-color: black;
-    color: white;
+    background-color: var(--background-color);
+    color: var(--primary-color);
     padding: 5px;
-    font-weight: bold;
+
     display: inline-block;
 }
 
-.skill {
+.skill-table {
     display: flex;
-    align-items: center;
-    font-weight: bold;
+    align-items: start;
+}
+
+
+.first-dot-column {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--tertiary-color);
+    padding: 5px 2px;
+    justify-content: flex-start;
+    height: auto;
+}
+.first-dot-column span:not(:last-child) {
+    margin-bottom: 10px; /* Space between dots */
+}
+.skills {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--background-color);
 }
 
 .checkcircle {
@@ -273,13 +290,16 @@ h2 {
     border-radius: 50%;
     border: 1px solid var(--tertiary-color);
     display: inline-block;
-    margin-right: 8px;
+    margin: 0 2px;
 }
 
 .checkcircle.filled {
     background-color: var(--secondary-color);
 }
 
+.skill.checkcircle {
+
+}
 
 
 .preview-box {

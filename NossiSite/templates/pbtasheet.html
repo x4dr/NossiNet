@@ -54,32 +54,49 @@
 
 {% macro render_attribute_table(name, category) %}
     <div class="attribute-category">
-        <div class="category-header pirata-one-regular">{{ name }}</div>
-        {% for skill, value in category.items() %}
-            <div class="skill">
-                {% for dot in range(value|int) %}
-                    <span class="checkcircle filled"></span>
-                {% endfor %}
-                {% for dot in range(5 - (value|int)) %}
-                    <span class="checkcircle"></span>
-                {% endfor %}
-                <span>{{skill}}</span>
-                {{ skill.name }}
+        {% set active_dots = category.values() | map("int") | select('gt', 0) | list | length %}
+        <h2 class="category-header tillana-medium">
+            {{ name }} {{ active_dots }}
+        </h2>
+        <div class="skill-table">
+            <div class="first-dot-column">
+                {%- for skill, value in category.items()-%}
+                    {%- if value|int > 0 -%}
+                        <span class="checkcircle filled"></span>
+                    {%- else -%}
+                        <span class="checkcircle"></span>
+                    {%- endif -%}
+                {%- endfor -%}
             </div>
-        {% endfor %}
+            <div class="skills">
+                {% for skill, value in category.items() %}
+                    {% set value_adj = value|int - 1 if value|int > 0 else 0 %}
+                    <div class="skill">
+                        {%- for dot in range(value_adj) -%}
+                            <span class="checkcircle filled"></span>
+                        {%- endfor -%}
+                        {%- for dot in range(4-value_adj) -%}
+                            <span class="checkcircle"></span>
+                        {%- endfor -%}
+                        <span>{{ skill }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 {% endmacro %}
+
 
 {% macro display_moves(moves) %}
     {% for name, checked in moves %}
         <div class="preview-container">
-                <input type="checkbox"
-                       class="checkbox"
-                       id="checkbox-{{ name }}"
-                       hx-get="/update_move/{{ c|urlencode }}/{{ name|urlencode }}"
-                       hx-trigger="click"
-                       hx-swap="outerHTML"><label
-                    for="checkbox-{{ name }}" class="preview-label">{{ name }}</label>
+            <input type="checkbox"
+                   class="checkbox"
+                   id="checkbox-{{ name }}"
+                   hx-get="/update_move/{{ c|urlencode }}/{{ name|urlencode }}"
+                   hx-trigger="click"
+                   hx-swap="outerHTML"><label
+                for="checkbox-{{ name }}" class="preview-label">{{ name }}</label>
             <div class="preview-box"
                  hx-get="/preview_move/{{ c|urlencode }}/{{ name|urlencode }}"
                  hx-trigger="load"
