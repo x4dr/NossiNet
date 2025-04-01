@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
-<script src="https://unpkg.com/htmx.org@1.9.3" integrity="sha384-lVb3Rd/Ca0AxaoZg5sACe8FJKF0tnUgR2Kd7ehUOG5GCcROv5uBIZsOqovBAcWua" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/htmx.org@1.9.3" integrity="sha384-lVb3Rd/Ca0AxaoZg5sACe8FJKF0tnUgR2Kd7ehUOG5GCcROv5uBIZsOqovBAcWua" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/htmx.org/dist/ext/ws.js"></script>
 {% block head %}
     <link rel="stylesheet" type="text/css" href="{{ url_for("views.theme") }}?v={{ restart_id }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="wiki.css") }}?v={{ restart_id }}">
