@@ -83,7 +83,7 @@ def wiki_index(path="."):
             if path != WikiPage.wikipath()
             else None
         ),
-        parent=path.relative_to(WikiPage.wikipath()).parent.as_posix(),
+        parent=WikiPage.wikipath(),
         subdirs=sorted(
             [
                 x.stem
@@ -92,7 +92,11 @@ def wiki_index(path="."):
                 and not x.stem.startswith(".")  # hide hidden directories
             ]
         ),
-        entries=[x.with_suffix("").as_posix() for x in r if x.parent == path],
+        entries=[
+            x.relative_to(WikiPage.wikipath()).with_suffix("")
+            for x in r
+            if x.parent == path
+        ],
         tags=WikiPage.gettags(),
     )
 
