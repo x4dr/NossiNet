@@ -23,6 +23,7 @@ class LocalMarkdown:
     )
 
     re_links = re.compile(r"\[(.+?)]\((?P<ref>.+?)\)")
+    re_glitchlinks = re.compile(r"\[glitch\|(.+?)]\((?P<ref>.+?)\)")
     headers = re.compile(
         r"<(?P<h>h\d*)\b(?P<extra>[^>]*)>(?P<content>.*?)</(?P=h)\b[^>]*>",
         re.IGNORECASE | re.DOTALL,
@@ -145,6 +146,9 @@ class LocalMarkdown:
         text = cls.transcluded_clock_re.sub(cls.transcluded_clock, text)
         text = cls.clock_re.sub(cls.local_clock_make(page), text)
         text = cls.checkbox_re.sub(cls.checkbox(page), text)
+        text = cls.re_glitchlinks.sub(
+            r'<a href="/wiki/\g<2>" class=glitch data-text="\g<1>"> \g<1> </a>', text
+        )
         md = MDObj.from_md(text)
         hidespans = cls.find_hidespans(md)
 

@@ -130,6 +130,46 @@ color : var(--primary-color)
     animation: rotatecd 5s ease forwards;
 }
 
+a.glitch {
+  position: relative;
+  color: var(--tertiary-color);
+  text-decoration: none;
+}
+
+a.glitch::before,
+a.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  color: #ff0;
+  clip: rect(0, 0, 0, 0);
+}
+
+a.glitch::before {
+  animation: glitchTop 1.23s infinite linear alternate-reverse;
+  color: #f0f;
+}
+
+a.glitch::after {
+  animation: glitchBottom 1.93s infinite linear alternate-reverse;
+  color: #0ff;
+}
+
+@keyframes glitchTop {
+  0% { clip: rect(0, 9999px, 0, 0); transform: translate(0, 0); }
+  10% { clip: rect(0, 9999px, 5px, 0); transform: translate(-2px, -2px); }
+  20% { clip: rect(5px, 9999px, 10px, 0); transform: translate(2px, -1px); }
+  100% { clip: rect(0, 9999px, 0, 0); transform: translate(0, 0); }
+}
+
+@keyframes glitchBottom {
+  0% { clip: rect(0, 9999px, 0, 0); transform: translate(0, 0); }
+  10% { clip: rect(10px, 9999px, 15px, 0); transform: translate(2px, 2px); }
+  20% { clip: rect(15px, 9999px, 20px, 0); transform: translate(-1px, 2px); }
+  100% { clip: rect(0, 9999px, 0, 0); transform: translate(0, 0); }
+}
 
 @keyframes cooldown {
   0%   { filter: grayscale(100%); transform: scale(90%); }
