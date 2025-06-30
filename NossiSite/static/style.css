@@ -14,11 +14,25 @@ background: var(--background-color);
 }
 
 .page a:not([class]){
-color: var(--tertiary-color)
+color: var(--accent-color)
 }
 
+hr {
+  border: none;
+  height: 2px;
+  background: linear-gradient(to right, var(--secondary-color), var(--midground-color) );
+  color: transparent;
+  margin: 1em 0;
+}
 
 .metanavcontainer {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: space-around;
+}
+
+.metanavsubcontainer {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-around;

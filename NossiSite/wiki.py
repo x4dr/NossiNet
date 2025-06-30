@@ -83,7 +83,7 @@ def wiki_index(path="."):
             if path != WikiPage.wikipath()
             else None
         ),
-        parent=WikiPage.wikipath(),
+        parent=path.relative_to(WikiPage.wikipath()).parent,
         subdirs=sorted(
             [
                 x.stem
@@ -250,6 +250,7 @@ def wikipage(page=None):
             tags=loaded_page.tags,
             body=body,
             wiki=page,
+            css=url_for("static", filename="mecha.css") if "endworld" in page else "",
         )
     return loaded_page.body, 200, {"Content-Type": "text/plain; charset=utf-8"}
 

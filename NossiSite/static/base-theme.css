@@ -1,10 +1,11 @@
 :root {
     --background-color: #010101;
     --midground-color: #0a120a;
-    --primary-color: #00e700;
+    --primary-color: #00d700;
     --secondary-color:#00a700;
     --tertiary-color:#006700;
     --warn-color: #cf0012;
     --shade-color: rgba(0, 0, 50, 0);
+    --accent-color: #1070a0;
     --highlight-color: rgba(0, 180, 20, 0.3);
 }
