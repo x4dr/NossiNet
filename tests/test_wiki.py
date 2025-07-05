@@ -14,6 +14,7 @@ from gamepack.MDPack import (
     table_remove,
     table_row_edit,
 )
+from gamepack.Mecha import Mecha
 from gamepack.WikiPage import WikiPage
 from tests.NossiTestCase import NossiTestCase
 
@@ -100,3 +101,15 @@ class TestViews(NossiTestCase):
                 "test",
             )
         )
+
+    def test_mecha(self):
+
+        wikipage = WikiPage.load(
+            Path(__file__).parent.absolute() / "testmecha.md", False
+        )
+        mecha_sheet = Mecha.from_mdobj(wikipage.md(True))
+        print(mecha_sheet.speeds())
+        wikipage.body = mecha_sheet.to_mdobj().to_md()
+        wikipage.tags = ["mech"]
+        wikipage.live = False
+        wikipage.save_overwrite("", "")
