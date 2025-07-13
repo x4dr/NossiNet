@@ -1,0 +1,22 @@
+{% extends "base/layout.html" %}
+{% block body %}
+    <h2>Login</h2>
+    <form action="{{ url_for("views.register_user") }}" method=post>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <dl>
+            <dt>register a new account<br></dt>
+            <dt>Username:
+            <dd><input class=dark type=text name=username>
+            <dt>Password:
+            <dd><input class=dark type=password name=password>
+            <dt>Password Check:
+            <dd><input class=dark type=password name=passwordcheck>
+            <dd><input class=dark type=submit value=Register>
+                <br>By registering you assure that you have the personal invitation of the author of this site to do so,
+                you
+                have not and will not use this service in a non-personal way, and that there has not been and there will
+                not be
+                any real money involved in your use of this website.
+        </dl>
+    </form>
+{% endblock %}

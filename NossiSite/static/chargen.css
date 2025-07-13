@@ -1,0 +1,203 @@
+.centered-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: 100%;
+}
+
+.form-row {
+    display: flex;
+    justify-content: space-around;
+}
+
+.form-row label {
+    width: 100px;
+    flex-shrink: 0;
+}
+
+.textinput {
+    flex: 1;
+    padding: 4px 6px;
+}
+
+.textbtn {
+    margin-top: 0.5rem;
+    padding: 6px 12px;
+}
+
+.grid-container3 {
+    display: grid;
+    grid-template-columns: auto 1fr 1fr;
+    row-gap: 0.5rem;
+    column-gap: 1rem;
+    align-items: center;
+}
+
+.grid-container2 {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    row-gap: 0.5rem;
+    column-gap: 1rem;
+}
+
+.grid-container-2 {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    row-gap: 0.5rem;
+    column-gap: 1rem;
+}
+
+
+.label, .draggable-item, .value {
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.draggable-item {
+    cursor: grab;
+    user-select: none;
+    transition: transform 400ms ease;
+
+}
+
+.value {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-width: 40%;
+}
+
+.bar {
+    position: absolute;
+    inset: 0; /* top:0; right:0; bottom:0; left:0 */
+    background: var(--accent-color);
+    width: calc(var(--bar-scale, 0) * 100%);
+    opacity: 0.3;
+    z-index: 0;
+}
+
+.value > *:not(.bar) {
+    position: relative;
+    z-index: 1;
+    padding-left: 5px;
+    white-space: nowrap; /* prevent text wrapping */
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+.num-input {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    white-space: nowrap;
+}
+
+.num-input button {
+    width: 20px;
+    height: 20px;
+    margin: 0 2px;
+    border-radius: 50%;
+    border: 2px solid var(--secondary-color);
+    background: var(--background-color);
+    cursor: pointer;
+    transition: background-color 0.5s;
+    flex: none
+
+}
+
+.num-input button.active {
+    background: var(--secondary-color);
+    border-color: var(--tertiary-color);
+}
+
+.grid-container-x {
+    display: grid;
+    grid-template-columns: repeat(var(--per-row), 1fr);
+    gap: 1rem;
+    width: 100%;
+    justify-content: space-around;
+}
+
+.grid-container-x > * {
+    justify-self: center;
+    width: auto;
+    max-width: none;
+}
+
+.grid-wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 1rem;
+}
+
+.button-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    gap: 1rem;
+}
+
+.showpoints {
+    position: relative;
+    font-weight: bold;
+    z-index: 0;
+    border: 2px solid var(--bar-color, var(--accent-color));
+    transition: border 0.4s ease;
+}
+
+.showpoints::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--bar-pct, 0%);
+    background-color: var(--bar-color, var(--accent-color));
+    transition: background-color 2s ease, width 0.5s ease;
+    z-index: -1;
+}
+
+.showpoints.over100 {
+    --bar-color: var(--warn-color);
+}
+
+/* Remaining points display */
+.showpoints::after {
+    content: var(--diff-content, "");
+    margin-left: 8px;
+    color: var(--tertiary-color);
+    position: relative;
+    z-index: 2;
+}
+
+#explanation {
+    transition: opacity 3s ease;
+    opacity: 1;
+}
+
+#explanation.htmx-request {
+    opacity: 0;
+}
+
+#explanation.htmx-after-swap {
+    opacity: 1;
+}

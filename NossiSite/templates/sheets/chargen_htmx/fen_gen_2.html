@@ -1,0 +1,36 @@
+<div class="grid-wrapper">
+    {% for cat in categories %}
+        <div hx-get="/skills/endworld/{{ cat.heading }}"
+             hx-trigger="load"
+             hx-swap="outerHTML"
+             style="display: none"></div>
+    {% endfor %}
+    <p style="text-align: center;">
+        Assign points to Skills in your Categories! <br>
+        Remember that level 3 skills require extraordinary explanation.
+    </p>
+    <div id="explanation" style="text-align: center;">
+        Doubleclick the fields for available skills!
+    </div>
+
+    <div class="grid-container-x">
+        {% for cat in categories %}
+            {% set heading = cat.heading %}
+            {% set points = cat.points %}
+            {% set fields = cat.fields %}
+            {% include "sheets/chargen_htmx/gen_cat.html" %}
+        {% endfor %}
+    </div>
+    <form class="button-row">
+        <input type="hidden" value="{{ csrf_token() }}" name="csrf_token">
+        <button type="button" class="textbtn"
+                hx-post="/chargen"
+                hx-vals='{"stage": 1}'
+                hx-target="#question">Back
+        </button>
+        <button type="button" class="textbtn"
+                id="stage-3-button"
+                hx-target="#question">Next
+        </button>
+    </form>
+</div>

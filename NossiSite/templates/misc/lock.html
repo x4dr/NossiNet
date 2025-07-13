@@ -1,0 +1,42 @@
+{% extends "base/layout.html" %}
+
+{% block head %}
+    <style>
+        .divTable {
+            display: table;
+
+        }
+
+        .divTableRow {
+            display: table-row;
+        }
+
+        .divTableCell {
+            border: 1px solid #050;
+            display: table-cell;
+            padding: 20px 20px;
+            transition: all 0.5s ease-in-out;
+        }
+
+        .divTableBody {
+            display: table-row-group;
+        }
+
+    </style>
+{% endblock %}
+{% block body %}
+    <div class="divTable">
+        <div class="divTableBody">
+            {% for i in range(5) %}
+                <div class="divTableRow">
+                    {% for j in range(5) %}
+                        <div class="divTableCell" id="cell-{{ i*5 + j }}" hx-swap-oob="true" hx-get="/lock/{{ i*5+j }}"
+                             style="background: {% if field[i*5 + j] -%}
+                                 #10a010{% else -%}
+                                 #000866{% endif %}"></div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

@@ -12,7 +12,7 @@ from Data import connect_db
 from NossiSite.socks import views
 
 env = Environment(loader=PackageLoader("NossiSite"), autoescape=select_autoescape())
-template = env.get_template("chatmsg.html")
+template = env.get_template("base/chatmsg.html")
 
 clients = []
 last_update = {}
@@ -93,7 +93,7 @@ def chat_updates():
 
 @views.route("/chat")
 def chat():
-    return render_template("chat.html")
+    return render_template("base/chat.html")
 
 
 init()

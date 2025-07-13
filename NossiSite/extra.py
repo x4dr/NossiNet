@@ -12,13 +12,13 @@ from flask import (
     render_template,
     Blueprint,
 )
-from gamepack.Dice import DescriptiveError
 
 from NossiPack.Cards import Cards
 from NossiPack.User import Userlist
 from NossiPack.VampireCharacter import VampireCharacter
 from NossiSite.base import log
 from NossiSite.helpers import checklogin
+from gamepack.Dice import DescriptiveError
 
 views = Blueprint("extra", __name__)
 
@@ -55,7 +55,7 @@ def lock():
         if x:
             f, _ = togglelock(f, i)
     session["lock"] = f
-    return render_template("lock.html", field=f)
+    return render_template("misc/lock.html", field=f)
 
 
 @views.route("/lock/<int:pos>")
@@ -65,7 +65,7 @@ def lockinteract(pos: int):
     f = session["lock"]
     f, p = togglelock(f, pos)
     session["lock"] = f
-    return render_template("lockfield.html", field=f, toupdate=p)
+    return render_template("misc/lockfield.html", field=f, toupdate=p)
 
 
 @views.route("/setfromsource/")
@@ -168,10 +168,10 @@ def boardgamemap(size, seed=""):
 def gameboard(size, seed=""):
     if size > 20:
         size = 20
-    return render_template("gameboard.html", size=size, seed=seed)
+    return render_template("misc/gameboard.html", size=size, seed=seed)
 
 
-@views.route("/chargen/standard")
+@views.route("/vamp_chargen/standard")
 def standardchar():
     return redirect(
         url_for("extra.chargen", a=3, b=5, c=7, abia=5, abib=9, abic=13, shuffle=1)
@@ -219,7 +219,7 @@ def cards(command: str = None):
             else:
                 return {"result": "error", "error": f"invalid command {command}"}
 
-        return render_template("cards.html", cards=deck)
+        return render_template("misc/cards.html", cards=deck)
     except DescriptiveError as e:
         return {"result": "error", "error": e.args[0]}
     except TypeError:
@@ -228,14 +228,14 @@ def cards(command: str = None):
         Cards.savedeck(session["user"], deck)
 
 
-@views.route("/chargen", methods=["GET", "POST"])
+@views.route("/vamp_chargen", methods=["GET", "POST"])
 def chargen_menu():
     if request.method == "POST":
         f = dict(request.form)
         if not f.get("vampire", None):
             return redirect(
                 url_for(
-                    "chargen",
+                    "vamp_chargen",
                     a=f["a"],
                     b=f["b"],
                     c=f["c"],
@@ -247,7 +247,7 @@ def chargen_menu():
             )
         return redirect(
             url_for(
-                "chargen",
+                "vamp_chargen",
                 a=f["a"],
                 b=f["b"],
                 c=f["c"],
@@ -259,11 +259,11 @@ def chargen_menu():
                 back=f["back"],
             )
         )
-    return render_template("generate_dialog.html")
+    return render_template("sheets/generate_dialog.html")
 
 
-@views.route("/chargen/<a>,<b>,<c>,<abia>,<abib>,<abic>,<shuffle>")
-@views.route("/chargen/<a>,<b>,<c>,<abia>,<abib>,<abic>,<shuffle>,<vamp>,<back>")
+@views.route("/vamp_chargen/<a>,<b>,<c>,<abia>,<abib>,<abic>,<shuffle>")
+@views.route("/vamp_chargen/<a>,<b>,<c>,<abia>,<abib>,<abic>,<shuffle>,<vamp>,<back>")
 def chargen(a, b, c, abia, abib, abic, shuffle, vamp=None, back=None):
     """
     Redirects to the charactersheet/ editor(if logged in) of a randomly
@@ -295,13 +295,13 @@ def chargen(a, b, c, abia, abib, abic, shuffle, vamp=None, back=None):
             char.makevamprandom(vamp, back)
         if session.get("logged_in", False):
             return render_template(
-                "vampsheet_editor.html",
+                "sheets/vampsheet_editor.html",
                 character=char.getdictrepr(),
                 Clans=VampireCharacter.get_clans(),
                 Backgrounds=VampireCharacter.get_backgrounds(),
                 New=True,
             )
-        return render_template("vampsheet.html", character=char.getdictrepr())
+        return render_template("sheets/vampsheet.html", character=char.getdictrepr())
     except Exception as e:
         flash("ERROR" + "\n".join(e.args))
         raise

@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<script src="https://cdn.jsdelivr.net/npm/htmx.org@1.9.3"
+        integrity="sha384-lVb3Rd/Ca0AxaoZg5sACe8FJKF0tnUgR2Kd7ehUOG5GCcROv5uBIZsOqovBAcWua"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/htmx.org/dist/ext/ws.js"></script>
+{% block head %}
+    <link rel="stylesheet" type="text/css" href="{{ url_for("views.theme") }}?v={{ restart_id }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="wiki.css") }}?v={{ restart_id }}">
+    <link rel="stylesheet" type="text/css"
+          href="{{ url_for("static", filename="activesheet.css") }}?v={{ restart_id }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="mechasheet.css") }}?v={{ restart_id }}">
+    {%- block title -%}
+        {%- if character.Name -%}
+            <title>{{ character.Name }}</title>
+        {%- else -%}
+            <title>Charactersheet</title>
+        {%- endif -%}
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                document.body.addEventListener('htmx:afterSwap', (event) => {
+                    event.target.querySelectorAll('.cooldown').forEach(el => {
+                        el.style.pointerEvents = 'none';
+                        el.addEventListener('animationend', () => {
+                            el.style.pointerEvents = 'auto';
+                        });
+                    });
+                });
+            });
+
+        </script>
+    {%- endblock -%}
+{%- endblock -%}
+{% macro render_md_table(table) %}
+    <table>
+        <thead>
+        <tr>
+            {% for header in table.headers %}
+                <th>{{ header }}</th>
+            {% endfor %}
+        </tr>
+        </thead>
+        <tbody>
+        {% for row in table.rows %}
+            <tr>
+                {% for cell in row %}
+                    <td>{{ cell }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endmacro %}
+{% macro chara_data(data) %}
+    {% for k,v in data.items() %}
+        <div class="metadata-item">
+            <span class="value">{{ v }}</span>
+            <span class="label">{{ k }}</span>
+        </div>
+    {%- endfor -%}
+{% endmacro %}
+{%- macro dots(val,max=5) -%}
+    {%- if val is not defined -%}
+        {%- set val = 0 -%}
+    {%- endif -%}
+    {%- for i in range(val) -%}
+        {%- if loop.index0%5 == 0 and loop.index0 > 0 %} {% endif -%}
+        ●
+    {%- endfor -%}
+    {%- for i in range(max-val) -%}
+        ○
+    {%- endfor -%}
+{%- endmacro -%}
+{%- macro tablematrix(table, cat, path) -%}
+    <table {% if owner %}class="editable" {% endif %}data-path="{{ path }}" data-type="table">
+        {%- if table.headers -%}
+            <thead class="heading">
+            <tr class="tablebody">
+                {%- for subline in table.headers -%}
+                    <th>{{ infolet(subline) | safe }}</th>
+                {%- endfor -%}
+            </tr>
+            </thead>
+        {%- endif -%}
+        <tbody>
+        {% for line in table.rows -%}
+            <tr class="tablebody">
+                {% set outer_loop = loop %}
+                {% for subline in line -%}
+                    <td>{{ infolet(subline) | safe }}</td>
+                {% endfor -%}
+            </tr>
+
+            </tbody>
+
+        {%- endfor %}
+    </table>
+{% endmacro %}
+{% macro sectionformat(cat,name) %}
+    {%- for k,v in cat.items() -%}
+        <table style="border-collapse: collapse">
+            {%- if v is mapping -%}
+                <thead>
+                <tr>
+                    <th data-path="{{ character.headings_used["values"] }}|{{ name|urlencode }}|{{ k[:30]|urlencode }}"
+                        class="subheading
+                {%- if owner %} editable{% endif %}" colspan="2">{{- k -}}</th>
+                </tr>
+                </thead>
+                <tbody class="{%- if owner %} editable{% endif -%}"
+                       data-path="{{ character.headings_used["values"] }}|{{ name|urlencode }}|{{ k[:30]|urlencode }}"
+                       data-type="table">
+                {% set notfirstsection = loop.index0 %}
+                {%- for vk,vv in v.items() -%}
+                    <tr class="tablebody">
+                        <td>&nbsp;{{ infolet(vk | remove_leading_underscore) | safe }}</td>
+                        <td class="tooltip" style="text-align: right; width: 1%">
+                            {%- if not notfirstsection
+                                    or (vv|remove_leading_underscore|int(-1) != -1
+                                    and (userconf["fensheet_dot_max"] |int) >= vv|remove_leading_underscore|int) -%}
+                                {{- dots(vv|remove_leading_underscore|int, userconf["fensheet_dot_max"]|int(5)
+                            if notfirstsection else 5)
+                            if userconf["fensheet_dots"]|int(0) else vv }}
+                                {%- else -%}{{ vv }}
+                            {%- endif -%}
+                            {%- if
+                            k.lower() in character.fullpoint_sections %}
+                                <span class="tooltip tooltiptext">+ {{ character.get_xp_for(vk) }} FP</span>{%- endif -%}
+                            &nbsp;
+                        </td>
+                    </tr>
+                {%- endfor -%}
+                </tbody>
+            {% else %}
+                Debug: {{ v }} has no items
+            {%- endif -%}
+        </table>
+    {%- endfor %}
+{% endmacro %}
+{%- macro catformat(cat, name, cost) -%}
+    <div class="gridwrapper category">
+        <div tabindex="0" aria-describedby="{{ cat }}-tooltip"
+             data-path="{{ character.headings_used["values"] }}|{{ name|urlencode }}"
+             class="tooltip heading span-2{% if owner %} editable{% endif %}">{{ name }}
+            <span class="tooltiptext" id="{{ cat }}-tooltip" role="tooltip">Options<br/>for {{ cost }}<br/>{% for l in
+                    character.cost_calc(cost) %}{% for b in l %}{{ b }}{% if not loop.last %},{% endif %}{% endfor %}
+                <br/> {% endfor %}</span>
+        </div>
+        {%- if cat is mapping -%}
+            <div class="statblock">
+                {{ sectionformat(cat,name) }}
+            </div>
+        {% else %}
+            Error: {{ cat }} is no dict
+        {% endif %}
+    </div>
+{%- endmacro -%}
+{% macro treepart(tree, depth, name, path) %}
+    <div{% if owner %} class="editable"{% endif %} data-path="{{ path }}">
+        {{ md(infolet(tree.plaintext)) | safe }}
+        <br/>
+    </div>
+    {% for table in tree.tables -%}
+        <div id="{{ child }}-table">
+            {{- tablematrix(table, name, path) }}
+        </div>
+    {% endfor %}
+    {% for child, content in tree.children.items() %}
+        {% set s=srs() %}
+        <div id="{{ child }}-treepart">
+            <input type="checkbox" class="hiderbox" id="{{ s }}">
+            <label class="sheetheading depth{{ depth }}" for="{{ s }}" data-for="{{ s }}">{{ child }}</label>
+            <div id="{{ s }}" class="content {% if owner %}editable{% endif %} nonempty"
+                 data-path="{{ path+"|"+child }}">
+                {{- treepart(content, depth + 1, child, path+"|"+child) -}}
+            </div>
+        </div>
+    {% endfor %}
+{% endmacro %}
+{%- block body -%}
+    <body>
+    <div class="container">
+        <div class="column column-left">
+            <h1>Shenanigans in the Endworld</h1>
+            <div class="section">
+                {{ chara_data(character.description) }}
+            </div>
+            <div class="section">
+                <h2><label for="notes">Notes</label></h2>
+                <textarea id="notes"
+                          class="input-field"
+                          name="notes"
+                          rows="4"
+                          autocomplete="off"
+                          hx-post="/update-notes?c={{ c|urlencode }}"
+                          hx-trigger="blur, keyup delay:30s"
+                          hx-include="#csrf">{{ character.notes | safe }}</textarea>
+                <input type="hidden" id="csrf" name="csrf_token" value="{{ csrf_token() }}"/>
+            </div>
+        </div>
+        <div class="column column-middle">
+
+            <div class="section boxes-gauge">
+                <h2>Inventory</h2>
+                inv
+            </div>
+            <div class="section vert">
+                <h2>Moves</h2>
+
+            </div>
+        </div>
+        <div class="column column-right">
+            {% for heading in character.stats %}
+                {{ render_attribute_table(heading, character.stats[heading]) }}
+            {% endfor %}
+
+            <div class="section">
+                <h2>Systems</h2>
+                {% for category, systems in character.systems.items() %}
+                    <div style="border: 1px solid #030">
+                        <h3>{{ category | capitalize }}</h3>
+                        {% for system_name, system in systems.items() %}
+                            <div>{{ system_name }}</div>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    </body>
+
+{%- endblock -%}
+</html>

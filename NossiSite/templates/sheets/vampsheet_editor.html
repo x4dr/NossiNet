@@ -1,0 +1,445 @@
+<!--suppress JSUnresolvedVariable, JSUnresolvedFunction -->
+{%- extends "base/layout.html" -%}
+{% macro chooser(name, value, max=5) -%}
+    {% for count in range(1,max + 1) -%}{%- if loop.index0 > 1 and loop.index0 % 10 == 0 -%}
+        <br>{%- endif -%}<input
+            style="width: 10px" type="radio" name="{{ name }}"
+            value="{{ count|string }}" id="{{ name }}_{{ count|string }}"{% if value == count -%}
+            checked {%- endif %} xmlns="http://www.w3.org/1999/html"><label ondblclick="resetDot(this.control)"
+                                                                            style="user-select: none;"
+                                                                            for="{{ name }}_{{ count|string }}"
+    >&nbsp</label>{%- endfor %}
+{%- endmacro %}
+{% block head %}
+    <script>
+        $(document).ready(function () {
+            $('form input').on('keypress', function (e) {
+                return e.which !== 13;
+            });
+
+            const namespace = '/character';
+
+            const socket = io.connect('https://' + document.domain + ':' + location.port + namespace);
+
+            socket.on('comments', function (msg) {
+                const box = $('pre#comments');
+                box.html(msg.data);
+                window.scrollTo(0, 0);
+            });
+
+            socket.on('connect', function () {
+                socket.emit('ClientServerEvent', {data: 'editing character'})
+            });
+
+
+            $('form#checkchar').submit(function () {
+                const message_data = $('form#sheet').serializeArray();
+                socket.emit('CheckChar', {data: message_data});
+                return false;
+            });
+        });
+
+        function resetDot(el) {
+            el.checked = '';
+            if (window.getSelection) {
+                if (window.getSelection().empty) {  // Chrome
+                    window.getSelection().empty();
+                } else if (window.getSelection().removeAllRanges) {  // Firefox
+                    window.getSelection().removeAllRanges();
+                }
+            } else if (document.selection) {  // IE?
+                document.selection.empty();
+            }
+        }
+
+        function textAreaAdjust(el) {
+            if (el.scrollHeight > el.clientHeight) {
+                el.style.height = el.scrollHeight + "px"
+            }
+        }
+
+        function setdisciplines() {
+            const disci_inputs = document.getElementsByClassName("chr_discipline");
+            const disc = document.getElementById('Clan').value;
+            for (let i = 0; i < disci_inputs.length; i++) {
+                disci_inputs[i].setAttribute('list', disc);
+            }
+        }
+
+
+        window.onload = function () {
+            setdisciplines();
+        }
+
+    </script>
+
+{%- endblock -%}
+{%- block body -%}
+    <datalist id="Clans">
+        {%- for c in Clans -%}
+            <option value="{{ c }}">{{ c }}</option>
+        {%- endfor -%}
+    </datalist>
+    {%- for c in Clans -%}
+        <datalist id="{{ c }}">
+            {%- set discilist = Clans[c] -%}
+            {%- for d in discilist -%}
+                <option value="{{ d }}">{{ d }}</option>
+            {%- endfor -%}
+        </datalist>
+    {%- endfor -%}
+    <datalist id="Backgrounds">
+        {%- for b in Backgrounds -%}
+            <option value="{{ b }}">{{ b }}</option>
+        {%- endfor -%}
+    </datalist>
+    <pre id="comments"></pre>
+
+    <form id="sheet" action="{{ url_for("views.modify_sheet") }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <table style="width: 100%">
+            <tr>
+                <td colspan="6" style="text-align: center; font-size: 1.5em" class="medium">
+                    Charactersheet&nbspfor&nbsp{{ session.user }}</td>
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Name:</td>
+                <td style="text-align: left; "><input title="Name" style="width: 80%;" class="dark" name="Name"
+                                                      type="text" value="{{ character.Meta.Name }}"></td>
+                <td style="text-align: right; ">Nature:</td>
+                <td style="text-align: left; "><input title="Nature" style="width: 80%;" class="dark" name="Nature"
+                                                      type="text" value="{{ character.Meta.Nature }}"></td>
+                <td style="text-align: right; ">Generation:</td>
+                <td style="text-align: left; "><input title="Generation" disabled
+                                                      style="width: 80%; border: 2px solid #003700;" name="Gen_dud"
+                                                      type="text" value="{{ character.Meta.Generation }}"></td>
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Player:</td>
+                <td style="text-align: left; "><input title="Player" style="width: 80%;" class="dark" id="Player"
+                                                      name="Player" type="text" value="{{ character.Meta.Player }}">
+                </td>
+                <td style="text-align: right; ">Demeanor:</td>
+                <td style="text-align: left; "><input title="Demeanor" style="width: 80%;" class="dark" name="Demeanor"
+                                                      type="text" value="{{ character.Meta.Demeanor }}"></td>
+                <td style="text-align: right; ">Haven:</td>
+                <td style="text-align: left; "><input title="Haven" style="width: 80%;" class="dark" name="Haven"
+                                                      type="text" value="{{ character.Meta.Haven }}"></td>
+            <tr>
+                <td style="text-align: right; ">Chronicle:</td>
+                <td style="text-align: left; "><input title="Chronicle" style="width: 80%;" class="dark"
+                                                      name="Chronicle" type="text"
+                                                      value="{{ character.Meta.Chronicle }}"></td>
+                <td style="text-align: right; ">Clan:</td>
+                <td style="text-align: left; "><input title="Clan" id="Clan" oninput="setdisciplines()"
+                                                      style="width: 80%;" class="dark" name="Clan" type="text"
+                                                      value="{{ character.Meta.Clan }}" list="Clans"></td>
+                <td style="text-align: right; ">Concept:</td>
+                <td style="text-align: left; "><input title="Concept" style="width: 80%;" class="dark" name="Concept"
+                                                      type="text" value="{{ character.Meta.Concept }}">
+                </td>
+            </tr>
+        </table>
+        <br>
+        <table style="width: 100%">
+            <tr>
+                <td colspan="6" style="text-align: center;" class="medium">Attributes</td>
+            </tr>
+            <tr>
+                <td colspan="2" style="text-align: center; width: 33%;" class="dark">Physical</td>
+                <td colspan="2" style="text-align: center; width: 34%;" class="dark">Social</td>
+                <td colspan="2" style="text-align: center; width: 33%;" class="dark">Mental</td>
+            </tr>
+        </table>
+        <table style="width: 100%">
+            <tr>
+                <td style="text-align: right; ">Strength:</td>
+                <td style="text-align: Left; ">{{ chooser("Strength",character.Attributes.Strength) }}</td>
+                <td style="text-align: right; ">Charisma:</td>
+                <td style="text-align: Left; ">{{ chooser("Charisma", character.Attributes.Charisma) }}</td>
+                <td style="text-align: right; ">Perception:</td>
+                <td style="text-align: Left; ">{{ chooser("Perception", character.Attributes.Perception) }}</td>
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Dexterity:</td>
+                <td style="text-align: Left; ">{{ chooser("Dexterity", character.Attributes.Dexterity) }}</td>
+                <td style="text-align: right; ">Manipulation:</td>
+                <td style="text-align: Left; ">{{ chooser("Manipulation", character.Attributes.Manipulation) }}</td>
+                <td style="text-align: right; ">Intelligence:</td>
+                <td style="text-align: Left; ">{{ chooser("Intelligence", character.Attributes.Intelligence) }}</td>
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Stamina:</td>
+                <td style="text-align: Left; ">{{ chooser("Stamina", character.Attributes.Stamina) }}</td>
+                <td style="text-align: right; ">Appearance:</td>
+                <td style="text-align: Left; ">{{ chooser("Appearance", character.Attributes.Appearance) }}</td>
+                <td style="text-align: right; ">Wits:</td>
+                <td style="text-align: Left; ">{{ chooser("Wits", character.Attributes.Wits) }}</td>
+            </tr>
+        </table>
+        <br>
+        <table style="width: 100%">
+            <tr>
+                <td colspan="6" style="text-align: center;" class="medium">Abilities</td>
+            </tr>
+            <tr>
+                <td colspan="2" style="text-align: center; width: 33%;" class="dark">Talents</td>
+                <td colspan="2" style="text-align: center; width: 34%;" class="dark">Skills</td>
+                <td colspan="2" style="text-align: center; width: 33%;" class="dark">Knowledges</td>
+            </tr>
+        </table>
+        <table style="width: 100%">
+            <tr>
+                <td style="text-align: right; ">Alertness:</td>
+                <td style="text-align: Left; ">{{ chooser("Alertness", character.Abilities.Talents.Alertness) }}</td>
+                <td style="text-align: right; ">AnimalKen:</td>
+                <td style="text-align: Left; ">{{ chooser("AnimalKen", character.Abilities.Skills.AnimalKen) }}</td>
+                <td style="text-align: right; ">Academics:</td>
+                <td style="text-align: Left; ">{{ chooser("Academics", character.Abilities.Knowledges.Academics) }}</td>
+
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Athletics:</td>
+                <td style="text-align: Left; ">{{ chooser("Athletics", character.Abilities.Talents.Athletics) }}</td>
+                <td style="text-align: right; ">Crafts:</td>
+                <td style="text-align: Left; ">{{ chooser("Crafts", character.Abilities.Skills.Crafts) }}</td>
+                <td style="text-align: right; ">Computer:</td>
+                <td style="text-align: Left; ">{{ chooser("Computer", character.Abilities.Knowledges.Computer) }}</td>
+
+            </tr>
+            <tr>
+                <td style="text-align: right;overflow: hidden; width: 1px; ">Brawl:</td>
+                <td style="text-align: Left; ">{{ chooser("Brawl", character.Abilities.Talents.Brawl) }}</td>
+                <td style="text-align: right; ">Drive:</td>
+                <td style="text-align: Left; ">{{ chooser("Drive", character.Abilities.Skills.Drive) }}</td>
+                <td style="text-align: right; ">Finance:</td>
+                <td style="text-align: Left; ">{{ chooser("Finance", character.Abilities.Knowledges.Finance) }}</td>
+
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Dodge:</td>
+                <td style="text-align: Left; ">{{ chooser("Dodge", character.Abilities.Talents.Dodge) }}</td>
+                <td style="text-align: right; ">Etiquette:</td>
+                <td style="text-align: Left; ">{{ chooser("Etiquette", character.Abilities.Skills.Etiquette) }}</td>
+                <td style="text-align: right; ">Investigation:</td>
+                <td style="text-align: Left; ">{{ chooser("Investigation", character.Abilities.Knowledges.Investigation) }}</td>
+
+            </tr>
+            <tr>
+                <td style="text-align: right;">Empathy:</td>
+                <td style="text-align: Left; ">{{ chooser("Empathy", character.Abilities.Talents.Empathy) }}</td>
+                <td style="text-align: right; ">Firearms:</td>
+                <td style="text-align: Left; ">{{ chooser("Firearms", character.Abilities.Skills.Firearms) }}</td>
+                <td style="text-align: right; ">Law:</td>
+                <td style="text-align: Left; ">{{ chooser("Law", character.Abilities.Knowledges.Law) }}</td>
+
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Expression:</td>
+                <td style="text-align: Left; ">{{ chooser("Expression", character.Abilities.Talents.Expression) }}</td>
+                <td style="text-align: right; ">Melee:</td>
+                <td style="text-align: Left; ">{{ chooser("Melee", character.Abilities.Skills.Melee) }}</td>
+                <td style="text-align: right; ">Linguistics:</td>
+                <td style="text-align: Left; ">{{ chooser("Linguistics", character.Abilities.Knowledges.Linguistics) }}</td>
+
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Intimidation:</td>
+                <td style="text-align: Left; ">{{ chooser("Intimidation", character.Abilities.Talents.Intimidation) }}</td>
+                <td style="text-align: right; ">Performance:</td>
+                <td style="text-align: Left; ">{{ chooser("Performance", character.Abilities.Skills.Performance) }}</td>
+                <td style="text-align: right; ">Medicine:</td>
+                <td style="text-align: Left; ">{{ chooser("Medicine", character.Abilities.Knowledges.Medicine) }}</td>
+
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Leadership:</td>
+                <td style="text-align: Left; ">{{ chooser("Leadership", character.Abilities.Talents.Leadership) }}</td>
+                <td style="text-align: right; ">Security:</td>
+                <td style="text-align: Left; ">{{ chooser("Security", character.Abilities.Skills.Security) }}</td>
+                <td style="text-align: right; ">Occult:</td>
+                <td style="text-align: Left; ">{{ chooser("Occult", character.Abilities.Knowledges.Occult) }}</td>
+
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Streetwise:</td>
+                <td style="text-align: Left; ">{{ chooser("Streetwise", character.Abilities.Talents.Streetwise) }}</td>
+                <td style="text-align: right; ">Stealth:</td>
+                <td style="text-align: Left; ">{{ chooser("Stealth", character.Abilities.Skills.Stealth) }}</td>
+                <td style="text-align: right; ">Politics:</td>
+                <td style="text-align: Left; ">{{ chooser("Politics", character.Abilities.Knowledges.Politics) }}</td>
+
+            </tr>
+            <tr>
+                <td style="text-align: right; ">Subterfuge:</td>
+                <td style="text-align: Left; ">{{ chooser("Subterfuge", character.Abilities.Talents.Subterfuge) }}</td>
+                <td style="text-align: right; ">Survival:</td>
+                <td style="text-align: Left; ">{{ chooser("Survival", character.Abilities.Skills.Survival) }}</td>
+                <td style="text-align: right; ">Science:</td>
+                <td style="text-align: Left; ">{{ chooser("Science", character.Abilities.Knowledges.Science) }}</td>
+
+            </tr>
+        </table>
+
+        <table style="border-collapse: collapse;    width: 100%;">
+            <tr>
+                <td colspan="8" style="text-align: center;" class="medium">Advantages</td>
+            </tr>
+            <tr>
+                <td colspan="2" style="text-align: center; width: 32%;" class="dark">Backgrounds</td>
+                <td style="width: 2%;"></td>
+                <td colspan="2" style="text-align: center; width: 32%;" class="dark">Disciplines</td>
+                <td style="width: 2%;"></td>
+                <td colspan="2" style="text-align: center; width: 32%" class="dark">Virtues</td>
+            </tr>
+            {%- set bgnew = [0] -%}
+            {%- set dscpnew = [0] -%}
+            {%- if character.BGVDSCP_combined.append('') -%}{%- endif -%}
+            {%- if character.BGVDSCP_combined.append('') -%}{%- endif -%}
+            {%- if character.BGVDSCP_combined.append('') -%}{%- endif -%}
+            {%- if character.BGVDSCP_combined.append('') -%}{%- endif -%}
+            {%- if character.BGVDSCP_combined.append('') -%}{%- endif -%}
+            {%- if character.BGVDSCP_combined.append('') -%}{%- endif -%}
+            {%- if character.BGVDSCP_combined.append('') -%}{%- endif -%}
+            {%- if character.BGVDSCP_combined.append('') -%}{%- endif -%}
+            {%- for bgvdscp in character.BGVDSCP_combined -%}
+                <tr>
+                    {%- if bgvdscp.Background -%}
+                        <td><input title="bg" list="Backgrounds" style="width: 90%" class="dark"
+                                   name="background_name_{{ bgvdscp.Background }}" value="{{ bgvdscp.Background }}">
+                        </td>
+                        <td>{{ chooser("background_value_"+bgvdscp.Background, bgvdscp.Background_Value, ([5,bgvdscp.Background_Value] | sort)[1] ) }}</td>
+                    {%- else -%}
+                        {%- if bgnew[0] < 8 -%}
+                            <td><input title="additional bg" list="Backgrounds" class="dark" style="width: 90%"
+                                       name="background_name_New{{ bgnew[0] }}" value=""></td>
+                            <td>{{ chooser("background_value_New"+bgnew[0]|string, 0) }}</td>
+                            <!-- YEET{{ bgnew }} -->
+                            {% if bgnew.append(bgnew.pop() + 1) %}{% endif %}
+                        {%- else -%}
+                            <td colspan="2">&nbsp</td>
+                        {%- endif -%}
+                    {%- endif -%}
+                    <td style="width: 2%;"></td>
+                    {%- if bgvdscp.Discipline -%}
+                        <td><input title="dscp" style="width: 90%" class="dark chr_discipline"
+                                   name="discipline_name_{{ bgvdscp.Discipline }}" value="{{ bgvdscp.Discipline }}">
+                        </td>
+                        <td>{{ chooser("discipline_value_"+bgvdscp.Discipline, bgvdscp.Discipline_Value) }}</td>
+                    {%- else -%}
+                        {%- if dscpnew[0] < 8 -%}
+                            <td><input title="additional dscp" style="width: 90%" class="dark chr_discipline"
+                                       name="discipline_name_New{{ dscpnew[0] }}" value=""></td>
+                            <td>{{ chooser("discipline_value_New"+dscpnew[0]|string, 0) }}
+                                {% if dscpnew.append(dscpnew.pop() + 1) %}{% endif %}
+                                {%- else -%}
+                            <td colspan="2">&nbsp</td>
+                        {%- endif -%}
+                    {%- endif -%}
+                    <td style="width: 2%;"></td>
+                    {%- if bgvdscp -%}
+                        {%- if bgvdscp.Virtue -%}
+                            <td>{{ bgvdscp.Virtue }} <input title="hidden virtue name" hidden
+                                                            value="{{ bgvdscp.Virtue }}"
+                                                            name="virtue_name_{{ bgvdscp.Virtue }}"></td>
+                            <td>{{ chooser("virtue_value_"+bgvdscp.Virtue,bgvdscp.Virtue_Value) }}
+                                {%- else -%}
+                            <td colspan="2">&nbsp</td>
+                        {%- endif -%}
+                    {%- endif -%}
+                </tr>
+            {%- endfor -%}
+        </table>
+        <table style="width: 100%">
+            <tr>
+
+                <td colspan="2" style="text-align: center; width: 33%;" class="medium">Merits/Flaws</td>
+                <td colspan="1" style="text-align: center; width: 34%;" class="medium">Humanity</td>
+                <td colspan="1" style="text-align: center; width: 33%;" class="medium">Gear</td>
+            </tr>
+
+            <tr>
+                <td rowspan="999" colspan="2"><textarea title="Merits and Flaws" style="width: 90%; height:90%"
+                                                        class="medium"
+                                                        name="Merits">{{ character.Meta.Merits }}</textarea></td>
+
+                <td>&nbsp</td>
+                <td rowspan="999" colspan="2"><textarea title="Equipment" style="width: 90%; height:90%" class="medium"
+                                                        name="Gear">{{ character.Meta.Gear }}</textarea></td>
+
+            </tr>
+            <tr>
+
+                <td style="font-weight: bolder; text-align: center;
+                 letter-spacing: 3px">{{ chooser("Humanity",character.Special.Humanity,10) }}</td>
+            </tr>
+            <tr>
+                <td>&nbsp</td>
+            </tr>
+
+            <tr>
+                <td style="text-align: center; width: 34%;" class="medium">Willpower</td>
+            </tr>
+            <tr>
+                <td>&nbsp</td>
+            </tr>
+            <tr>
+                <td style="font-weight: bolder; text-align: center;
+                 letter-spacing: 3px">{{ chooser("Willmax",character.Special.Willmax,10) }}</td>
+
+            </tr>
+            <tr>
+                <td>&nbsp</td>
+            </tr>
+            <tr>
+                <td style="text-align: center; width: 34%;" class="medium">Blood</td>
+            </tr>
+            <tr>
+                <td>&nbsp</td>
+            </tr>
+            <tr>
+                <td style="font-weight: bolder; text-align: center;
+                 letter-spacing: 3px">{{ chooser("Bloodmax",character.Special.Bloodmax,20) }}</td>
+            </tr>
+            <tr>
+                <td>&nbsp</td>
+            </tr>
+        </table>
+
+        <br><br>
+        <label>
+            <input type="checkbox" name="newsheet" value="newsheet" {% if New %} checked="checked" {% endif -%}
+                   class="dark"> Save this Character Separately instead of editing the current one.
+        </label>
+
+        <input type="submit" class="dark bigbtn" value="SAVE"><br><br><br>
+        <div>
+                <textarea title="Notes" style="width: 99%; overflow-y: auto; word-wrap:break-word "
+                          onload="textAreaAdjust(this)"
+                          onkeyup="textAreaAdjust(this)" class="medium"
+                          name="Notes">{{ character.Meta.Notes }}</textarea>
+        </div>
+    </form>
+    <br>
+    <table>
+        <tr>
+            <td>
+                <form action="{{ url_for("extra.setfromsource") }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <label for="source_input">Dalines Link</label>
+                    <input type="text" name="source" id="source_input" class="dark">
+                    <input type="submit" class="dark" value="Load Character from Dalines"><br>(saves the active
+                    character into history)
+                </form>
+            </td>
+            <td>
+                <form id="checkchar" name="checkchar">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input id="check" type="submit" class="dark bigbtn" value="CHECK">
+                </form>
+
+                <div>Checks the Character cost (uses the newest sheet in your history)</div>
+            </td>
+        </tr>
+    </table>
+{%- endblock -%}

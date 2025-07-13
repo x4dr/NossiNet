@@ -1,0 +1,37 @@
+{% extends "base/layout.html" %}
+{% block body %}
+    {% if oldsheets %}
+        Older Versions:
+        <table style="width: 100%">
+            <tr>
+                <td>Date</td>
+                <td>XP Difference to the sheet above</td>
+            </tr>
+            {% for foo in oldsheets %}
+                <tr>
+                    <td style="text-wrap: avoid"><a
+                            href="{{ url_for("views.showoldsheets", x=foo[0]) }}">{{ foo[2]['Name'] }}
+                        <br/>{{ foo[1] }}</a><br></td>
+                    <td style="text-align: right">
+                        <div style="text-align: right">
+                            <pre>{{ xpdiffs[loop.index0] }} </pre>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+
+        </table>
+    {% endif %}
+    {%- if summon -%}
+        <div>
+            <form action="{{ url_for("views.claim_sheet") }}" method=post>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <label>
+                    <input class="medium" type="text" name="sheetnum" value="{{ summon }}"/>
+                </label>
+                <input class=dark type=submit value=SUMMON/>
+            </form>
+        </div>
+    {%- endif -%}
+
+{% endblock %}

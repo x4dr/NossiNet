@@ -1,0 +1,68 @@
+{% extends "base/layout.html" %}
+{% block head %}
+    {% for headstate in heads %}
+        {{ headstate|safe }}
+    {% endfor %}
+{% endblock %}
+{%- block metanavpost -%}
+    <form action="{{ url_for("views.update_filter") }}" method=post class="single_line_form metanav">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <label>
+            <input class=dark type=text size=30 name=tags value="default">
+        </label><input class=medium type=submit value=search>
+    </form>&nbsp
+{%- endblock -%}
+{% block body %}
+    {% if session.logged_in and edit is defined %}
+        <form action="{{ url_for("views.add_entry") }}" method=post class=add-entry>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="id" value="new">
+            <dl>
+                <dt>Title:</dt>
+                <dd><label>
+                    <input class=dark type=text size=30 name=title>
+                </label></dd>
+                <dt>Text:</dt>
+                <dd><label>
+                    <textarea class=dark name=text rows=5 cols=40></textarea>
+                </label></dd>
+                <dt>Tags:</dt>
+                <dd><label>
+                    <input class=dark type=text size=30 name=tags value="default">
+                </label></dd>
+                <dd><input class=medium type=submit value=Share>
+            </dl>
+        </form>
+    {% endif %}
+    <ul class=entries>
+        {% for entry in entries %}
+            {% set s = srs() %}
+            <div class="tooltip">
+                <input type="checkbox" class="hiderbox" id="{{ s }}">
+                <h2 class="entry-headline"><label for="{{ s }}">{{ entry.title }}</label> by
+                    <a href="{{ url_for("views.show_user_profile", username=entry.author) }}">{{ entry.author }}</a>
+                </h2>
+                {%- if entry.tags != "default" -%}
+                    <span class="tooltiptext">Tags: {{ entry.tags }}</span>{%- endif -%}
+
+                <div class="bordered content">
+                    {%- if session.logged_in -%}
+                        {%- if entry.own is defined -%}
+                            <form class="add-entry">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button formaction="{{ url_for("views.editentries", x=entry.id) }}" class="medium">
+                                    Edit
+                                </button>
+                            </form>
+                        {%- endif -%}
+                    {%- endif -%}
+                    <div class="content" hx-get="{{ url_for("views.entry_text", x=entry.id) }}" hx-trigger="revealed"
+                         hx-swap="innerHTML"></div>
+                </div>
+            </div>
+
+        {% else %}
+            <li><em>Unbelievable. No entries here so far</em></li>
+        {% endfor %}
+    </ul>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% macro num_button(max_buttons, input_name, val) %}
+    <div class="num-input">
+        {%- for i in range(max_buttons) -%}
+            <button type="button"
+                    {%- if i < val %} class="active"{% endif %}></button>
+        {%- endfor -%}
+        <input type="hidden" name="{{ input_name }}" value="{{ val }}">
+    </div>
+{% endmacro %}
+<form hx-post="/chargen/" hx-trigger="blur"
+      hx-swap="none" class="skill-form">
+    <h2 data-max="{{ points }}" class="showpoints">{{ heading }}</h2>
+
+    <div class="grid-container2" data-heading="{{ heading }}">
+        {% set count = [fields|length, 3]|max %}
+        {% for i in range(count) %}
+            {% set f = fields[i] if i < fields|length else ["",0] %}
+            <div class="input-cell">
+                <label for="field_{{ i }}" class="sr-only">Skill Name {{ i + 1 }}</label>
+                {% if f %}
+                    <input id="field_{{ i }}" type="text" name="field_{{ i }}" list="{{ heading }}_skills"
+                           value="{{ f[0] }}" class="textinput skill-input" autocomplete="off">
+
+                {%- else -%}
+                    <input id="field_{{ i }}" type="text" name="field_{{ i }}" list="{{ heading }}_skills"
+                           value="{{ f[0] or '' }}" class="textinput skill-input" autocomplete="off">
+                {%- endif -%}
+
+            </div>
+            {{- num_button(3, "val_"+i|string, f[1]) -}}
+
+        {% endfor %}
+    </div>
+
+    <input type="hidden" name="heading" value="{{ heading }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>

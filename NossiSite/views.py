@@ -16,7 +16,6 @@ from flask import (
     make_response,
     jsonify,
 )
-from gamepack.Dice import DescriptiveError
 from werkzeug.security import gen_salt
 
 from Data import connect_db
@@ -25,6 +24,7 @@ from NossiPack.VampireCharacter import VampireCharacter
 from NossiSite import ALLOWED_TAGS
 from NossiSite.base import log
 from NossiSite.helpers import checklogin
+from gamepack.Dice import DescriptiveError
 
 views = Blueprint("views", __name__)
 
@@ -91,13 +91,13 @@ def show_entries():
     entries = [
         e for e in entries if e.get("author", "none")[0].isupper()
     ]  # don't send out lowercase authors ("deleted")
-    t = render_template("show_entries.html", entries=entries)
+    t = render_template("base/show_entries.html", entries=entries)
     return t
 
 
 @views.route("/themeeditor")
 def theme_editor():
-    return render_template("themeeditor.html")
+    return render_template("base/themeeditor.html")
 
 
 @views.route("/savetheme", methods=["POST"])
@@ -173,7 +173,7 @@ def editentries(x=None):
                 dict(author=row[0], title=row[1], text=row[2], id=row[3], tags=row[4])
                 for row in cur.fetchall()
             ]
-            return render_template("show_entries.html", entries=entries, edit=True)
+            return render_template("base/show_entries.html", entries=entries, edit=True)
         try:
             x = int(x)
             cur = db.execute(
@@ -187,7 +187,7 @@ def editentries(x=None):
             if (session.get("user").upper() == entry["author"].upper()) or session.get(
                 "admin"
             ):
-                return render_template("edit_entry.html", mode="blog", entry=entry)
+                return render_template("base/edit_entry.html", mode="blog", entry=entry)
             else:
                 raise ValueError()
         except (ValueError, IndexError):
@@ -246,7 +246,7 @@ def config(x=None):
     if request.method == "GET":
         c = Config.load(session["user"], x) or ""
         heading = x
-        return render_template("config.html", heading=heading, config=x, curval=c)
+        return render_template("base/config.html", heading=heading, config=x, curval=c)
     if request.method == "POST":
         if not x:
             return redirect(url_for("views.config", x=request.form["configuration"]))
@@ -281,9 +281,11 @@ def charsheet():
         return redirect(url_for("wiki.fensheet", c=configchar))
     sheet = u.getsheet().getdictrepr()
     if sheet["Type"] == "OWOD":
-        return render_template("vampsheet.html", character=sheet, own=True)
+        return render_template("sheets/vampsheet.html", character=sheet, own=True)
     error = "unrecognized sheet format"
-    return render_template("vampsheet.html", character=sheet, error=error, own=True)
+    return render_template(
+        "sheets/vampsheet.html", character=sheet, error=error, own=True
+    )
 
 
 @views.route("/showsheet/<name>")
@@ -296,11 +298,11 @@ def showsheet(name="None"):
     u = ul.loaduserbyname(name)
     if u and u.sheetpublic or session.get("admin", False):
         return render_template(
-            "vampsheet.html", character=u.getsheet().getdictrepr(), own=False
+            "sheets/vampsheet.html", character=u.getsheet().getdictrepr(), own=False
         )
     flash("you do not have permission to see this")
     return render_template(
-        "vampsheet.html", character=VampireCharacter().getdictrepr(), own=False
+        "sheets/vampsheet.html", character=VampireCharacter().getdictrepr(), own=False
     )
 
 
@@ -336,7 +338,7 @@ def res_sheet():
 
 @views.route("/berlinmap")
 def berlinmap():
-    return render_template("map.html")
+    return render_template("misc/map.html")
     # return redirect(
     # "https://www.google.com/maps/d/viewer?mid=1TH6vryHyVxv_xFjFJDXgXQegZO4")
 
@@ -378,13 +380,15 @@ def menu_oldsheets():
             xpdiffs.append(sheet.get_diff(u.getsheet(oldsheets[-2][0])))
         else:
             xpdiffs.append(sheet.get_diff(None))
-    return render_template("oldsheets.html", oldsheets=oldsheets, xpdiffs=xpdiffs)
+    return render_template(
+        "sheets/oldsheets.html", oldsheets=oldsheets, xpdiffs=xpdiffs
+    )
 
 
 @views.route("/chat/")
 def chatsite():
     checklogin()
-    return render_template("chat.html")
+    return render_template("base/chat.html")
 
 
 @views.route("/showoldsheets/<x>")
@@ -400,7 +404,7 @@ def showoldsheets(x):
     sheet = u.loadsheet(sheetnum)
     if sheet:
         return render_template(
-            "vampsheet.html",
+            "sheets/vampsheet.html",
             character=u.getsheet(sheetnum).getdictrepr(),
             oldsheet=x,
         )
@@ -408,13 +412,13 @@ def showoldsheets(x):
         "I am not allowed to tell you if that character even exists. "
         "Maybe you can summon them?"
     )
-    return render_template("oldsheets.html", summon=x)
+    return render_template("sheets/oldsheets.html", summon=x)
 
 
 @views.route("/new_vamp_sheet/", methods=["GET"])
 def new_vamp_sheet():
     checklogin()
-    return render_template("vampsheet_editor.html", character=VampireCharacter())
+    return render_template("sheets/vampsheet_editor.html", character=VampireCharacter())
 
 
 @views.route("/modify_sheet/", methods=["GET", "POST"])
@@ -432,7 +436,7 @@ def modify_sheet():
     print("sheet", sheet)
     if sheet["Type"] == "OWOD":
         return render_template(
-            "vampsheet_editor.html",
+            "sheets/vampsheet_editor.html",
             character=sheet,
             Clans=u.getsheet().get_clans(),
             Backgrounds=u.getsheet().get_backgrounds(),
@@ -531,7 +535,9 @@ def add_funds():
 
     ul.saveuserlist()
 
-    return render_template("funds.html", user=u, error=error, keyprovided=keyprovided)
+    return render_template(
+        "base/funds.html", user=u, error=error, keyprovided=keyprovided
+    )
 
 
 @views.route("/register", methods=["GET", "POST"])
@@ -556,7 +562,7 @@ def register_user():  # this is not clrs secure because it does not need to be
             error = "Username is too short!"
     if error:
         flash(error, category="error")
-    return render_template("register.html")
+    return render_template("base/register.html")
 
 
 @views.route("/login", methods=["GET", "POST"])
@@ -580,7 +586,7 @@ def login():
 
             returnto = session.pop("returnto", None) or url_for("views.show_entries")
             return redirect(returnto)
-    return render_template("login.html", error=error)
+    return render_template("base/login.html", error=error)
 
 
 @views.route("/logout")
@@ -593,7 +599,7 @@ def logout():
 @views.route("/nn")
 def start():
     return render_template(
-        "show_entries.html",
+        "base/show_entries.html",
         entries=[
             dict(
                 author="the NOSFERATU NETWORK",
@@ -644,13 +650,13 @@ def show_user_profile(username):
     u = ul.loaduserbyname(username)
     if u is None:
         u = User(username, "")
-    site = render_template("userinfo.html", user=u, msgs=msgs, configs=u.configs())
+    site = render_template("base/userinfo.html", user=u, msgs=msgs, configs=u.configs())
     return site
 
 
 @views.route("/impressum/")
 def impressum():
-    return render_template("Impressum.html")
+    return render_template("base/Impressum.html")
 
 
 @views.route("/sendmsg/<username>", methods=["POST"])
@@ -709,7 +715,7 @@ def unlock(ident):
             db.commit()
             ul.saveuserlist()
     return render_template(
-        "userinfo.html",
+        "base/userinfo.html",
         user=u,
         error=error,
         heads=[
@@ -742,10 +748,10 @@ def resetpassword():
                 flash("You are not " + username)
         except Exception:
             flash("You seem to not exist. Huh...")
-            return render_template("resetpassword.html")
+            return render_template("base/resetpassword.html")
     ul.saveuserlist()
 
-    return render_template("resetpassword.html")
+    return render_template("base/resetpassword.html")
 
 
 @views.route("/payout/", methods=["GET", "POST"])
@@ -768,7 +774,7 @@ def payout():
         except Exception:
             error = 'Error deducting "' + request.form.get("amount", "nothing") + '".'
 
-    return render_template("payout.html", user=u, error=error)
+    return render_template("base/payout.html", user=u, error=error)
 
 
 @views.route("/lightswitch/")

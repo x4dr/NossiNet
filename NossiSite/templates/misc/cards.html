@@ -1,0 +1,84 @@
+{% extends "base/layout.html" %}
+{% block head %}
+    <script type="text/javascript" charset="utf-8">
+        window.addEventListener("load", () => {
+            document.getElementById("interactionform").onsubmit = async (e) => {
+                e.preventDefault()
+                const a = document.getElementById("action");
+                const action = a.options[a.selectedIndex];
+                const r = await (await fetch(action.dataset.url, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        parameter: document.getElementById("parameter").value
+                    }),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })).json()
+                console.log(r)
+                if (r.result === "error")
+                    alert(r.error)
+                else location.reload()
+                return false;
+            };
+        });
+    </script>
+{% endblock %}
+{% block body %}
+    <h2>Handcards</h2>
+    <p>
+        Welcome to the NossiNetCardDeckService, NNCDS lets manage a Deck of Cards in magical ways!<br/>
+        IF YOU WANT MORE FEATURES JUST REQUEST THEM AND I WILL TELL YOU IF THEY CAN BE DONE
+    </p>
+    <h4>Status</h4>
+    {% set deck = cards.render %}
+    <h5>Hand</h5>
+    <span style="font-size: 144%; ">{%- for card in deck["hand"] -%}{{ card }}&nbsp;{%- endfor %}</span>
+    <h5>Deck</h5>
+    {% for color in deck["deck"].keys()| sort -%}
+        <p>{{ color }}: {% for card in deck["deck"][color] -%}
+            {{ card }} {%- if not loop.last %}, {% endif %}
+        {%- endfor -%}</p>
+    {% endfor %}
+    <h5 class="hider" data-for="discardpile">Discard Pile</h5>
+    <div id="discardpile" class="hiding">
+        {% for color in deck["pile"].keys()| sort -%}
+            <p>{{ color }}: {% for card in deck["pile"][color] -%}
+                {{ card }} {%- if not loop.last %}, {% endif %}
+            {%- endfor -%}</p>
+        {% endfor %}
+    </div>
+    <h5 class="hider" data-for="removedpile">Removed</h5>
+    <div id="removedpile" class="hiding">
+        {% for color in deck["removed"].keys() | sort %}
+            <p>{{ color }}: {% for card in deck["removed"][color] -%}
+                {{ card }} {%- if not loop.last %}, {% endif %}
+            {%- endfor -%}</p>
+        {% endfor %}
+        {% for k,j in deck["notes"].items() %}
+            <p>{{ k }}: {{ ", ".join(j) }}</p>
+        {% endfor %}
+    </div>
+    <h3>Actions</h3>
+    <p>If context allows, number of cards can be supplied, otherwise the exact cardnames separated by spaces are
+        needed.</p>
+    <p>For dedication, the reason should be supplied after a ":".</p>
+    <form id="interactionform" action="javascript:void(0);" method=post>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <label for="action">Action:</label>
+        <select name="action" class="medium" id="action">
+            <option value="draw" data-url="{{ url_for("extra.cards", command='draw') }}">Draw</option>
+            <option value="spend" data-url="{{ url_for("extra.cards", command='spend') }}">Spend</option>
+            <option value="returnfun" data-url="{{ url_for("extra.cards", command='return') }}">Return</option>
+            <option value="dedicate" data-url="{{ url_for("extra.cards", command='dedicate') }}">Dedicate</option>
+            <option value="remove" data-url="{{ url_for("extra.cards", command='remove') }}">Remove</option>
+            <option value="free" data-url="{{ url_for("extra.cards", command='free') }}">Free</option>
+            <option value="undedicate" data-url="{{ url_for("extra.cards", command='undedicate') }}">Undedicate</option>
+        </select>
+        <label for="parameter">Parameter</label>
+        <input type="text" name="parameter" id="parameter"/>
+        <br><br>
+        <input type="submit" value="OK" class="dark">
+    </form>
+
+{% endblock %}

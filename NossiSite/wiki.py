@@ -16,27 +16,16 @@ from flask import (
     flash,
     abort,
     Blueprint,
-    render_template_string,
 )
 from markupsafe import Markup
 
 from NossiPack.LocalMarkdown import LocalMarkdown
-from NossiPack.User import User, Config
+from NossiPack.User import Config
 from NossiSite.base import log
-from NossiSite.base_ext import decode_id
 from NossiSite.helpers import checklogin
-from NossiSite.socks import (
-    broadcast_elements,
-    BroadcastElement,
-    broadcast,
-    generate_clock,
-    generate_line,
-)
 from gamepack.Dice import DescriptiveError
 from gamepack.FenCharacter import FenCharacter
 from gamepack.MDPack import traverse_md, MDObj
-from gamepack.PBTACharacter import PBTACharacter
-from gamepack.WikiCharacterSheet import WikiCharacterSheet
 from gamepack.WikiPage import WikiPage
 
 WikiPage.set_wikipath(Path.home() / "wiki")
@@ -77,7 +66,7 @@ def wiki_index(path="."):
     ):
         abort(404)
     return render_template(
-        "wikindex.html",
+        "wiki/wikindex.html",
         current_path=(
             path.relative_to(WikiPage.wikipath())
             if path != WikiPage.wikipath()
@@ -112,7 +101,7 @@ def tagsearch(tag=None):
         else [x for x in r if not t[x.as_posix().replace(x.name, x.stem)]]
     )
     return render_template(
-        "wikindex.html",
+        "wiki/wikindex.html",
         current_path=None,
         parent=None,
         subdirs=[],
@@ -141,7 +130,7 @@ def adminwiki(page: str = None):
         info = (info.stdout or bytes()).decode("utf-8")
         try:
             return render_template(
-                "adminwiki.html",
+                "wiki/adminwiki.html",
                 page=page,
                 links=WikiPage.getlinks().get(page, []),
                 backlinks=backlinks,
@@ -236,7 +225,7 @@ def wikipage(page=None):
         if session.get("logged_in"):
             entry = dict(id=0, text="", tags="", author=session.get("user"))
             return render_template(
-                "edit_entry.html", mode="wiki", wiki=page, entry=entry
+                "base/edit_entry.html", mode="wiki", wiki=page, entry=entry
             )
         flash("That page doesn't exist. Log in to create it!")
         session["returnto"] = request.url
@@ -245,12 +234,16 @@ def wikipage(page=None):
         body = bleach.clean(loaded_page.body)
         body = LocalMarkdown().process(body, page=page)
         return render_template(
-            "wikipage.html",
+            "wiki/wikipage.html",
             title=loaded_page.title,
             tags=loaded_page.tags,
             body=body,
             wiki=page,
-            css=url_for("static", filename="mecha.css") if "endworld" in page else "",
+            css=(
+                url_for("static", filename="wikimecha.css")
+                if "endworld" in page
+                else ""
+            ),
         )
     return loaded_page.body, 200, {"Content-Type": "text/plain; charset=utf-8"}
 
@@ -285,7 +278,7 @@ def editwiki(page=None):
                 text=loaded_page.body,
             )
             return render_template(
-                "edit_entry.html", mode="wiki", wiki=page, entry=entry
+                "base/edit_entry.html", mode="wiki", wiki=page, entry=entry
             )
         except FileNotFoundError:
             flash("entry " + str(page) + " not found.")
@@ -312,206 +305,6 @@ def editwiki(page=None):
             flash(f"Saved {page.title.strip() or p}.")
         return redirect(url_for("wiki.wikipage", page=request.form.get("wiki", None)))
     return abort(405)
-
-
-@views.route("/pbta/<path:c>")
-def pbtasheet(c):
-    char = WikiCharacterSheet.load_locate(c)
-    return render_template("pbtasheet.html", character=char.char, c=c)
-
-
-@views.route("/preview_move/<context>/<name>")
-def preview_move(context, name):
-    page = WikiPage.load_locate(context)  # Load the wiki page
-    md_obj = MDObj.from_md(page.body)  # Convert to Markdown object
-    result = md_obj.search_children(name)  # Search for the name
-    if not result:
-        page = WikiPage.load_locate("pbtamoves")  # Load the wiki page
-        md_obj = MDObj.from_md(page.body)  # Convert to Markdown object
-        result = md_obj.search_children(name)  # Search for the name
-    if not result:
-        return "Not Found"
-    result.level = None
-    preview_content = Markup(result.to_md(False))
-
-    return render_template_string(
-        "<a href=/wiki/{{c|urlencode }}#{{ name|urlencode }}><b>{{header}}:</b> {{ preview_content }}</a>",
-        c=page.file.stem,
-        name=name,
-        preview_content=preview_content,
-        header=result.header.title(),
-    )
-
-
-@views.route("/checkbox/<name>/<path:context>", methods=["GET", "POST"])
-def checkbox(context, name):
-    page = WikiPage.load_locate(context)
-    #    username = session.get("user", "")
-    md = page.md()
-    checklists = md.search_checklist_with_path(name)
-    for path in checklists:
-        current = md
-        for p in path:
-            current = current.children[p]
-        for li in md.checklists:
-            val = li.get(name)
-            if val is not None:
-                checked = "checked" if val else ""
-                text = li.get(name, {}).get("text", name)
-                return make_checkbox(context, text, checked)
-
-
-def make_checkbox(context, name, checked):
-    return render_template_string(
-        """<input type="checkbox"
-           class="checkbox{{cd}}"
-           id="checkbox-{{ name }}"
-           name="{{ name }}"
-           {% if checked %}checked{% endif %}
-           hx-post="/update_move/{{c|urlencode}}/{{name|urlencode}}"
-           hx-trigger="change"
-           hx-swap="outerHTML"
-           aria-checked="{{ 'true' if checked else 'false' }}"
-           role="checkbox"
-           hx-include="#csrf"
-           aria-labelledby="checkbox-{{ name }}-label">""",
-        name=name,
-        c=context,
-        checked=checked,
-        cd=" cooldown" if request.method == "POST" else "",
-    )
-
-
-@views.route("/update_move/<context>/<name>", methods=["GET", "POST"])
-def update_move(context, name):
-    sheet = WikiCharacterSheet.load_locate(context)
-    username = session.get("user", "")
-    assert isinstance(sheet.char, PBTACharacter)
-    res = False
-    if sheet.tagcheck(username):
-        for move in sheet.char.moves:
-            if move[0] == name:
-                if request.method == "POST":
-                    move[1] = not move[1]
-                res = move[1]
-            break
-        sheet.body = sheet.char.to_md()
-        sheet.save_low_prio(f"moves updated by {username}")
-    return make_checkbox(context, name, res)
-
-
-@views.route("/pbta-update-notes", methods=["POST"])
-def update_notes():
-    context = request.args["c"]
-    username = session.get("user", "")
-
-    notes = request.form.get("notes")  # Ensure your textarea has name="notes"
-
-    sheet = WikiCharacterSheet.load_locate(context)
-    if sheet.tagcheck(username):
-        sheet.char.notes = notes
-        sheet.body = sheet.char.to_md()
-        sheet.save_low_prio(f"notes updated by {username}")
-    return notes
-
-
-@views.route("/clock/<int:active>/<int:total>/<name>/page")
-@views.route("/clock/<int:active>/<int:total>")
-def _generate_clock(
-    active: int, total: int, name="", page="", endpoint="changeclock", initial=False
-):
-    generate_clock(active, total, name, page, endpoint, initial)
-
-
-@views.route("/line/<int:active>/<int:total>/<name>/page")
-@views.route("/line/<int:active>/<int:total>")
-def _generate_line(
-    active: int, total: int, name="", page="", endpoint="changeline", initial=False
-):
-    generate_line(active, total, name, page, endpoint, initial)
-
-
-@views.route("/changeline/<name>/<page>/<delta>")
-@views.route("/changeclock/<name>/<page>/<delta>")
-def change_clock(name: str, page: str, delta: str):
-    page = decode_id(page)
-    name = decode_id(name)
-    username = session.get("user", "")
-    if username:
-        if request.path.startswith("/changeline"):
-            element_type = "line"
-        else:
-            element_type = "round"
-        broadcast_elements.append(
-            BroadcastElement(name, page, "wiki", element_type, False)
-        )
-        WikiPage.load_locate(page).change_clock(name, int(delta)).save_low_prio("clock")
-        broadcast.set()
-    return "", 204
-
-
-@views.route("/change_sheet_line/<name>/<page>/<delta>")
-@views.route("/change_sheet_clock/<name>/<page>/<delta>")
-def change_sheet_clock(name: str, page: str, delta: str):
-    page = decode_id(page)
-    username = session.get("user", "")
-    name = decode_id(name)
-    if username:
-        if request.path.startswith("/change_sheet_line"):
-            element_type = "line"
-        else:
-            element_type = "round"
-        broadcast_elements.append(
-            BroadcastElement(name, page, "sheet", element_type, False)
-        )
-        charpage = WikiCharacterSheet.load_locate(page)
-        if charpage.tagcheck(username):
-            char: PBTACharacter = charpage.char
-            if name.startswith("item-"):
-                for item in char.inventory:
-                    if item.name == name[5:]:
-                        item.count += int(delta)
-                        break
-            else:
-                char.health[name.title()][char.current_headings[0].title()] = (
-                    char.health_get(name)[0] + int(delta)
-                )
-            charpage.save_low_prio(f"active element used by {username}")
-            broadcast.set()
-            charpage.body = char.to_md()
-    return "", 204
-
-
-@views.route("/fensheet/<path:c>")
-def fensheet(c):
-    username = session.get("user", "")
-    try:
-        time0 = time.time()
-        char = WikiCharacterSheet.load_locate(c)
-        if char is None:
-            return redirect(url_for("wiki.tagsearch", tag="character"))
-        u = User(username).configs()
-        time1 = time.time()
-        charsh = u.get("character_sheet", None)
-        body = render_template(
-            "fensheet.html",
-            character=char.char,
-            context=c,
-            userconf=u,
-            infolet=infolet_filler(c),
-            md=lambda x: LocalMarkdown.process(x, page=charsh),
-            extract=infolet_extractor,
-            owner=(
-                u.get("character_sheet", None)
-                if WikiPage.locate(c) == WikiPage.locate(charsh)
-                else ""
-            ),
-        )
-        time2 = time.time()
-        return body + f"<!---load: {time1 - time0} render: {time2 - time1}--->"
-    except DescriptiveError as e:
-        flash("Error with character sheet:\n" + e.args[0])
-        return redirect(url_for("views.showsheet", name=c))
 
 
 @views.route("/costcalc/all/<costs>/<penalty>")
@@ -605,7 +398,7 @@ def searchwiki():
             )
             p += m + 1
     return render_template(
-        "search_results.html", results=matches, start=pre, end=pre + length
+        "wiki/search_results.html", results=matches, start=pre, end=pre + length
     )
 
 
@@ -720,9 +513,11 @@ def live_edit():
 @views.route("/q/<a>")
 @views.route("/q/<a>/raw")
 @views.route("/specific/<a>")
-@views.route("/specific/<a>/raw")
-def specific(a: str, parse_md=None):
+@views.route("/specific/<path:a>")
+def specific(a, parse_md=None):
     parse_md = not request.url.endswith("/raw") if parse_md is None else parse_md
+    if a.endswith("/raw"):
+        a = a[:-4]
     a = a.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
     a = a.split(":")
     if a[-1] == "-":
@@ -741,20 +536,6 @@ def specific(a: str, parse_md=None):
     if parse_md:
         return Markup(LocalMarkdown.process(article, page=a[0]))
     return article
-
-
-def infolet_filler(context):
-    def wrap(s):
-        return LocalMarkdown.fill_infolet(s, context)
-
-    return wrap
-
-
-def infolet_extractor(x):
-    m = LocalMarkdown.infolet_re.match(str(x))
-    if not m:
-        return str(x)
-    return m.group("name")
 
 
 def weaponadd(weapon_damage_array, b, ind=0):

@@ -108,7 +108,7 @@ class TestViews(NossiTestCase):
             Path(__file__).parent.absolute() / "testmecha.md", False
         )
         mecha_sheet = Mecha.from_mdobj(wikipage.md(True))
-        print(mecha_sheet.speeds())
+        print(mecha_sheet.total_mass, mecha_sheet.speeds())
         wikipage.body = mecha_sheet.to_mdobj().to_md()
         wikipage.tags = ["mech"]
         wikipage.live = False

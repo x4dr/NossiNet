@@ -1,0 +1,83 @@
+{% extends "base/layout.html" %}
+{% block head %}
+    {% for headstate in heads %}
+        {{ headstate|safe }}
+    {% else %}
+    {% endfor %}
+{% endblock %}
+{% block body %}
+    {% if session.logged_in %}
+        {% if session.get('user') != user.username %}
+            <form action="{{ url_for("views.send_msg", username=user.username) }}" method=post class=add-entry>
+                <dl>
+                    <dt><label for="title_inp">Title:</label>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <dd><input class=dark type=text size=30 name="title" id="title_inp" required></dd>
+                    <dt><label for="text_inp">Text:</label>
+                    <dd><textarea class=dark name="text" rows=5 cols=40, id="text_inp" required></textarea></dd>
+                    <dt><label for="price_inp">Price to view</label>
+                    <dd><input class=dark value="0" type=number name="price" id="price_inp" required></dd>
+
+                    <dd><input class=medium type=submit value=Send></dd>
+                </dl>
+            </form>
+            <br>
+            <a href="{{ url_for("views.showsheet", name=user.username) }}">Sheet of {{ user.username }}</a>
+        {% else %}
+            <h3>Your Discord account is {{ configs.get("discord", "not set") }}. <a
+                    href="{{ url_for("views.config", x="discord") }}"> CHANGE </a></h3>
+            <h3><a href="{{ url_for("views.editentries", x="all") }}">MAKE OR EDIT POSTS</a></h3>
+            <h3><a href="{{ url_for("views.resetpassword") }}"> CHANGE PASSWORD </a></h3>
+            <h4 class="hider" data-for="config"> Configuration</h4>
+            <div id="config">
+                <form action="{{ url_for("views.config") }}" method=post>
+                    <label>Text:
+                        <input class=medium type="text" name="configuration"/>
+                    </label>
+                    <input class=medium type="submit" value="Add New"/>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                </form>
+                {% for a,b in configs.items() %}
+                    <form action="{{ url_for("views.config") }}" method=post>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input class=medium type="hidden" name="configuration" value="{{ a }}">
+                        <input class=medium type="submit" value="{{ a }}"> = {{ b }}
+                    </form>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% for msg in msgs %}
+            <br>__________________________________________________________<br>
+            <h2>"{{ msg.title }}" {% if msg.author == user.username %}
+                to <a href="{{ url_for("views.show_user_profile", username=msg.recipient) }}">{{ msg.recipient }}
+            {% else %}
+                by <a href="{{ url_for("views.show_user_profile", username=msg.author) }}">
+                {{ msg.author }} {% endif %}</a>
+            </h2>{{ msg.text|safe }}
+            {% if msg.value != 0 %}
+                <br><h3>This message has a price of {{ msg.value }} Credit{% if msg.value!=1 %}s{% endif %}
+                and is{% if msg.lock %} locked{% else %} unlocked{% endif %}.
+
+                {% if msg.lock %}
+                    </h3><br>
+                    <form action="{{ url_for("views.unlock", ident=msg.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <br>
+                        <input class=medium type="submit" value="Unlock (costs {{ msg.value }})">
+                    </form>
+                    <br>
+                    <h3>
+                        {% else %}
+                    </h3>
+                {% endif %}
+            {% else %}
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        <h2> You need to be logged in to see this page.</h2>
+    {% endif %}
+    <br><br>
+    <!--suppress JSUnresolvedFunction -->
+    <button class="medium" onclick="goBack()">Go Back</button>
+{% endblock %}

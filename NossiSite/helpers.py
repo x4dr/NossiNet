@@ -15,11 +15,11 @@ from flask import (
     Flask,
     send_from_directory,
 )
-from gamepack.Dice import DescriptiveError
 from markupsafe import Markup
 
 from Data import connect_db
-from NossiSite.base import app as defaultapp, log
+from NossiSite.base import app as defaultapp
+from gamepack.Dice import DescriptiveError
 
 
 def register(app: Flask = None):
@@ -73,18 +73,18 @@ def register(app: Flask = None):
         if request.endpoint == "/postreceive":  # postreceive does not use csrf
             setattr(request, "csrf_valid", True)
 
-    @app.errorhandler(Exception)
-    def internal_error(error: Exception):
-        if error.args and error.args[0] == "REDIR":
-            return error.args[1]
-        if type(error) is DescriptiveError:
-            flash(error.args[0])
-            log.exception("Handled Descriptive Error")
-            if request.url.endswith("/raw"):
-                return error.args[0]
-        flash("internal error. sorry", category="error")
-        log.exception("Unhandled internal error")
-        raise error from None
+    # @app.errorhandler(Exception)
+    # def internal_error(error: Exception):
+    #    if error.args and error.args[0] == "REDIR":
+    #        return error.args[1]
+    #    if type(error) is DescriptiveError:
+    #        flash(error.args[0])
+    #        log.exception("Handled Descriptive Error")
+    #        if request.url.endswith("/raw"):
+    #            return error.args[0]
+    #    flash("internal error. sorry", category="error")
+    #    log.exception("Unhandled internal error")
+    #    raise error from None
 
     @app.errorhandler(404)
     def page_not_found(e):
@@ -93,7 +93,7 @@ def register(app: Flask = None):
             return send_from_directory("static", p)
         if e:
             print("404:", request.url)
-        return render_template("404.html"), 404
+        return render_template("base/404.html"), 404
 
     @app.context_processor
     def inject_srs():

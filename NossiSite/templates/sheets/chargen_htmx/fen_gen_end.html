@@ -1,0 +1,22 @@
+{% macro render_dict(d) %}
+    <ul>
+        {% for key, value in d.items() %}
+            {% if key != 'stage' %}
+                {% set clean_key = key.replace('category_', '') %}
+                <li>
+                    <strong>{{ clean_key }}:</strong>
+                    {% if value is mapping %}
+                        {{ render_dict(value) }}
+                    {% else %}
+                        {{ value if value else '-' }}
+                    {% endif %}
+                </li>
+            {% endif %}
+        {% endfor %}
+    </ul>
+{% endmacro %}
+<div>
+    <p> This is the collected data:</p>
+    {{ render_dict(data) }}
+    <button></button>
+</div>

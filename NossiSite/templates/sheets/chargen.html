@@ -1,0 +1,21 @@
+{%- extends "base/layout.html" -%}
+{% block head %}
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="sheet.css") }}?v={{ restart_id }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="chargen.css") }}?v={{ restart_id }}">
+    <style>
+        .htmx-swapping {
+            opacity: 0;
+            transition: opacity 3000ms ease-out;
+        }
+
+        .htmx-settling {
+            opacity: 1;
+            transition: opacity 3000ms ease-in;
+        }
+    </style>
+    <script src="{{ url_for("static", filename="chargen.js") }}?v={{ restart_id }}"></script>
+
+{% endblock %}
+{% block body %}
+    <div id="question" hx-get="/chargen/htmx" class="centered-container" hx-trigger="load"></div>
+{% endblock %}

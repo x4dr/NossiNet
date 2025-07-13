@@ -1,0 +1,22 @@
+<form hx-post="/chargen" hx-trigger="submit" hx-target="#question" hx-swap="swap:0.3s" style="width: 50%">
+    <p>This is the start of the quick character editor. Lets start with your name.
+        The Categories and points can be left alone at this point.</p>
+    <div class="form-row">
+        <label for="name">Name</label>
+        <input id="name" type="text" class="textinput" name="name" value="{{ name }}" required>
+    </div>
+    <div class="form-row">
+        <label for="categories">Categories</label>
+        <input id="categories" type="text" class="textinput" name="categories" value="{{ categories }}" required>
+    </div>
+    <div class="form-row">
+        <label for="points">Points</label>
+        <input id="points" type="text" class="textinput" name="points" value="{{ points }}" required>
+    </div>
+    <input type="hidden" name="stage" value="1">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-row">
+        <button type="button" class="textbtn" onclick="location.href='/chargen/reset'">RESET</button>
+        <button type="submit" class="textbtn" style="width: fit-content">Next</button>
+    </div>
+</form>

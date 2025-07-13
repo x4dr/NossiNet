@@ -1,0 +1,385 @@
+<!--suppress JSUnresolvedVariable, JSUnresolvedFunction -->
+{% extends "base/layout.html" %}
+{% macro dots(val,max=5) -%}
+    {% if val is not defined %}
+        {% set val = 0 %}
+    {% endif %}
+    {% for i in range(val) -%}
+        ●
+    {%- endfor -%}
+    {%- for i in range(max-val) -%}
+        ○
+    {%- endfor %}
+{%- endmacro %}
+
+{% macro chooser(name, value, max=5) -%}
+    <label for="{{ name }}_0"></label>
+    <input type="radio" name="{{ name }}" id="{{ name }}_0" style="display: none" value="0">
+    {% for count in range(1,max + 1) -%}{%- if loop.index0 > 1 and loop.index0 % 10 == 0 -%}
+        <br>{%- endif -%}<input
+            style="width: 10px" type="radio" name="{{ name }}"
+            value="{{ count|string }}" id="{{ name }}_{{ count|string }}"{% if value == count -%}
+            checked {%- endif %} xmlns="http://www.w3.org/1999/html"><label onmousedown="resetDot(this)"
+                                                                            onclick="return false"
+                                                                            style="user-select: none;"
+                                                                            for="{{ name }}_{{ count|string }}"
+    >&nbsp</label>{%- endfor %}
+{%- endmacro %}
+
+{% block title %}
+    {%- if character.Meta.Name -%}
+        <title>{{ character.Meta.Name }}</title>
+    {%- else -%}
+        <title>Charactersheet</title>
+    {%- endif -%}
+{% endblock %}
+
+{% block head %}
+    <script>
+        $(document).ready(function () {
+            $('form input').on('keypress', function (e) {
+                return e.which !== 13;
+            });
+
+            const namespace = '/character';
+
+            const socket = io.connect('https://' + document.domain + ':' + location.port + namespace);
+
+
+            socket.on('connect', function () {
+                socket.emit('ClientServerEvent', {data: 'accessing character {{ character.Meta.Name }}'})
+            });
+
+            socket.on('DotUpdate', function (msg) {
+                const a = msg.data.split("§");
+                const arr = a[0].split("&");
+                for (let i = 0; i < arr.length; i++) {
+                    const btn = document.getElementById(arr[i]);
+                    btn.checked = true;
+                }
+            });
+
+            $('form#spendable').onsubmit = function () {
+                setTimeout(function () {
+                    let message_data = $('form#spendable').serialize();
+                    socket.emit('NoteDots', {data: message_data});
+                }, 100); //to wait for the dot to be saved
+                return false;
+            }
+        });
+
+        function resetDot(el) {
+            el = el.control; //want the actual control of the label
+            if ($(el).is(':checked')) {
+                $("#" + el.name + "_0").prop("checked", true);
+            } else {
+                $(("#" + el.id)).prop("checked", true);
+
+            }
+            $('form#spendable').submit();
+            return false
+        }
+
+    </script>
+
+{% endblock %}
+{% block body %}
+
+
+    <table class="dark dividedtable">
+        <tr>
+            <td colspan="6" style="text-align: center; font-size: 1.5em" class="medium">
+                {%- if character.Meta.Name -%}
+                    Charactersheet&nbspfor&nbsp{{ character.Meta.Name }}
+                {%- else -%}
+                    Charactersheet&nbspfor&nbspUnnamed&nbspCharacter
+                {%- endif -%}</td>
+        </tr>
+        <tr>
+            <td style="text-align: right; ">Name:</td>
+            <td style="text-align: left; ">{{ character.Meta.Name }}</td>
+            <td style="text-align: right; ">Nature:</td>
+            <td style="text-align: left; ">{{ character.Meta.Nature }}</td>
+            <td style="text-align: right; ">Generation:</td>
+            <td style="text-align: left; ">{{ character.Meta.Generation }}</td>
+        </tr>
+        <tr>
+            <td style="text-align: right; ">Player:</td>
+            <td style="text-align: left; ">{{ character.Meta.Player }}</td>
+            <td style="text-align: right; ">Demeanor:</td>
+            <td style="text-align: left; ">{{ character.Meta.Demeanor }}</td>
+            <td style="text-align: right; ">Haven:</td>
+            <td style="white-space: nowrap; text-align: left; ">{{ character.Meta.Haven }}</td>
+        <tr>
+            <td style="text-align: right; overflow: hidden; width: 1px; ">Chronicle:</td>
+            <td style="text-align: left; ">{{ character.Meta.Chronicle }}</td>
+            <td style="text-align: right; ">Clan:</td>
+            <td style="text-align: left; ">{{ character.Meta.Clan }}</td>
+            <td style="text-align: right; ">Concept:</td>
+            <td style="white-space: nowrap; text-align: left; ">{{ character.Meta.Concept }}</td>
+        </tr>
+    </table>
+    <br>
+    <table>
+        <tr>
+            <td colspan="6" style="text-align: center;" class="medium">Attributes</td>
+        </tr>
+        <tr>
+            <td colspan="2" style="text-align: center; width: 33%;" class="dark">Physical</td>
+            <td colspan="2" style="text-align: center; width: 34%;" class="dark">Social</td>
+            <td colspan="2" style="text-align: center; width: 33%;" class="dark">Mental</td>
+        </tr>
+    </table>
+    <table>
+        <tr>
+            <td style="text-align: right; ">Strength:</td>
+            <td style="text-align: Left; ">{{ dots(character.Attributes.Strength,5) }}</td>
+            d>
+            <td style="text-align: right; ">Charisma:</td>
+            <td style="text-align: Left; ">{{ dots(character.Attributes.Charisma) }}</td>
+            <td style="text-align: right; ">Perception:</td>
+            <td style="text-align: Left; ">{{ dots(character.Attributes.Perception) }}</td>
+        </tr>
+        <tr>
+            <td style="text-align: right; ">Dexterity:</td>
+            <td style="text-align: Left; ">{{ dots(character.Attributes.Dexterity) }}</td>
+            <td style="text-align: right; ">Manipulation:</td>
+            <td style="text-align: Left; ">{{ dots(character.Attributes.Manipulation) }}</td>
+            <td style="text-align: right; ">Intelligence:</td>
+            <td style="text-align: Left; ">{{ dots(character.Attributes.Intelligence) }}</td>
+        </tr>
+        <tr>
+            <td style="text-align: right; ">Stamina:</td>
+            <td style="text-align: Left; ">{{ dots(character.Attributes.Stamina) }}</td>
+            <td style="text-align: right; ">Appearance:</td>
+            <td style="text-align: Left; ">{{ dots(character.Attributes.Appearance) }}</td>
+            <td style="text-align: right; ">Wits:</td>
+            <td style="text-align: Left; ">{{ dots(character.Attributes.Wits) }}</td>
+        </tr>
+    </table>
+    <br>
+    <table>
+        <tr>
+            <td colspan="6" style="text-align: center;" class="medium">Abilities</td>
+        </tr>
+        <tr>
+            <td colspan="2" style="text-align: center; width: 33%;" class="dark">Talents</td>
+            <td colspan="2" style="text-align: center; width: 34%;" class="dark">Skills</td>
+            <td colspan="2" style="text-align: center; width: 33%;" class="dark">Knowledges</td>
+        </tr>
+    </table>
+    <table>
+        <tr>
+            <td style="text-align: right; ">Alertness:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Talents.Alertness) }}</td>
+            <td style="text-align: right; ">AnimalKen:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Skills.AnimalKen) }}</td>
+            <td style="text-align: right; ">Academics:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Knowledges.Academics) }}</td>
+
+        </tr>
+        <tr>
+            <td style="text-align: right; ">Athletics:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Talents.Athletics) }}</td>
+            <td style="text-align: right; ">Crafts:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Skills.Crafts) }}</td>
+            <td style="text-align: right; ">Computer:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Knowledges.Computer) }}</td>
+
+        </tr>
+        <tr>
+            <td style="text-align: right;overflow: hidden; width: 1px; ">Brawl:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Talents.Brawl) }}</td>
+            <td style="text-align: right; ">Drive:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Skills.Drive) }}</td>
+            <td style="text-align: right; ">Finance:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Knowledges.Finance) }}</td>
+
+        </tr>
+        <tr>
+            <td style="text-align: right; ">Dodge:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Talents.Dodge) }}</td>
+            <td style="text-align: right; ">Etiquette:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Skills.Etiquette) }}</td>
+            <td style="text-align: right; ">Investigation:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Knowledges.Investigation) }}</td>
+
+        </tr>
+        <tr>
+            <td style="text-align: right;">Empathy:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Talents.Empathy) }}</td>
+            <td style="text-align: right; ">Firearms:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Skills.Firearms) }}</td>
+            <td style="text-align: right; ">Law:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Knowledges.Law) }}</td>
+
+        </tr>
+        <tr>
+            <td style="text-align: right; ">Expression:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Talents.Expression) }}</td>
+            <td style="text-align: right; ">Melee:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Skills.Melee) }}</td>
+            <td style="text-align: right; ">Linguistics:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Knowledges.Linguistics) }}</td>
+
+        </tr>
+        <tr>
+            <td style="text-align: right; ">Intimidation:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Talents.Intimidation) }}</td>
+            <td style="text-align: right; ">Performance:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Skills.Performance) }}</td>
+            <td style="text-align: right; ">Medicine:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Knowledges.Medicine) }}</td>
+
+        </tr>
+        <tr>
+            <td style="text-align: right; ">Leadership:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Talents.Leadership) }}</td>
+            <td style="text-align: right; ">Security:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Skills.Security) }}</td>
+            <td style="text-align: right; ">Occult:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Knowledges.Occult) }}</td>
+
+        </tr>
+        <tr>
+            <td style="text-align: right; ">Streetwise:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Talents.Streetwise) }}</td>
+            <td style="text-align: right; ">Stealth:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Skills.Stealth) }}</td>
+            <td style="text-align: right; ">Politics:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Knowledges.Politics) }}</td>
+
+        </tr>
+        <tr>
+            <td style="text-align: right; ">Subterfuge:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Talents.Subterfuge) }}</td>
+            <td style="text-align: right; ">Survival:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Skills.Survival) }}</td>
+            <td style="text-align: right; ">Science:</td>
+            <td style="text-align: Left; ">{{ dots(character.Abilities.Knowledges.Science) }}</td>
+
+        </tr>
+    </table>
+    <table>
+        <tr>
+            <td colspan="6" style="text-align: center;" class="medium">Advantages</td>
+        </tr>
+        <tr>
+            <td colspan="2" style="text-align: center; width: 33%;" class="dark">Backgrounds</td>
+            <td colspan="2" style="text-align: center; width: 34%;" class="dark">Disciplines</td>
+            <td colspan="2" style="text-align: center; width: 33%;" class="dark">Virtues</td>
+        </tr>
+        {% for bgvdscp in character.BGVDSCP_combined %}
+            <tr>
+                {% if bgvdscp.Background %}
+                    <td>{{ bgvdscp.Background }}</td>
+                    <td>{{ dots(bgvdscp.Background_Value) }}</td>
+                {% else %}
+                    <td colspan="2">&nbsp</td>
+                {% endif %}
+                {% if bgvdscp.Discipline %}
+                    <td>{{ bgvdscp.Discipline }}</td>
+                    <td>{{ dots(bgvdscp.Discipline_Value) }}</td>
+                {% else %}
+                    <td colspan="2">&nbsp</td>
+                {% endif %}
+                {% if bgvdscp.Virtue %}
+                    <td>{{ bgvdscp.Virtue }}</td>
+                    <td>{{ dots(bgvdscp.Virtue_Value) }}</td>
+                {% else %}
+                    <td colspan="2">&nbsp</td>
+                {% endif %}
+            </tr>
+        {% endfor %}
+
+    </table>
+    <form id="spendable" name="spendable">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <table>
+            <tr>
+
+                <td colspan="2" style="text-align: center; width: 33%;" class="medium">Merits/Flaws</td>
+                <td colspan="2" style="text-align: center; width: 34%;" class="medium">Humanity</td>
+                <td colspan="2" style="text-align: center; width: 33%;" class="medium">Gear</td>
+            </tr>
+
+            <tr>
+                <td rowspan="999" colspan="2">
+                    <pre>{{ character.Meta.Merits }}</pre>
+                </td>
+                <td colspan="2">&nbsp</td>
+                <td rowspan="999" colspan="2">
+                    <pre>{{ character.Meta.Gear }}</pre>
+                </td>
+
+            </tr>
+            <tr>
+                <td colspan="2" style="font-weight: bolder; align-self: center;
+         letter-spacing: 3px">{{ dots(character.Special.Humanity,10) }}</td>
+            </tr>
+            <tr>
+                <td colspan="2">&nbsp</td>
+            </tr>
+
+            <tr>
+                <td colspan="2" style="text-align: center; width: 34%;" class="medium">Willpower</td>
+
+            </tr>
+            <tr>
+                <td colspan="2">&nbsp;</td>
+
+            </tr>
+            <tr>
+                <td colspan="2" style="font-weight: bolder; align-self: center;
+         letter-spacing: 3px">{{ chooser("Willpower", character.Special.Willpower,character.Special.Willmax) }}</td>
+
+            </tr>
+            <tr>
+                <td colspan="2">&nbsp</td>
+            </tr>
+            <tr>
+                <td colspan="2" style="text-align: center; width: 34%;" class="medium">Blood</td>
+
+            </tr>
+            <tr>
+                <td colspan="2">&nbsp</td>
+            </tr>
+            <tr>
+                <td colspan="2" style="font-weight: bolder; align-self: center;
+         letter-spacing: 3px">{{ chooser("Bloodpool", character.Special.Bloodpool,character.Special.Bloodmax) }}</td>
+
+            </tr>
+            <tr>
+                <td colspan="2">&nbsp</td>
+            </tr>
+        </table>
+    </form>
+
+    <div>
+        {% if oldsheet %}
+            <form action="{{ url_for("views.del_sheet") }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input title="sheetnum" hidden name="sheetnum" value="{{ oldsheet }}">
+                <input type="submit" style="float: right" class="dark" value="delete">
+            </form>
+
+            <form action="{{ url_for("views.res_sheet") }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input title="sheetnum" hidden name="sheetnum" value="{{ oldsheet }}">
+                <input type="submit" style="float: right" class="dark" value="swap out">
+            </form>
+        {% elif own %}
+            <form action="{{ url_for("views.modify_sheet") }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="submit" class="dark bigbtn" value="EDIT">
+            </form>
+        {% endif %}
+    </div><br>
+    <div>
+        <pre>{{ character.Meta.Notes }}</pre>
+    </div>
+    <br>
+    <a href="{{ url_for("views.menu_oldsheets") }}">History</a>
+
+
+{% endblock %}

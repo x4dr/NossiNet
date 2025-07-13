@@ -1,0 +1,58 @@
+{% extends "base/layout.html" %}
+{% block head %}
+    <script>
+        function resize_input_to_content(input) {
+            let w = input.value.length;
+            if (w < 10) {
+                w = 10;
+            }
+
+            input.style.width = w + "ch";
+        }
+
+        document.addEventListener("DOMContentLoaded", function (event) {
+            let inputs = document.getElementsByClassName("resize_at_start");
+            for (let i = 0; i < inputs.length; i++) {
+                resize_input_to_content(inputs[i]);
+            }
+        });
+
+    </script>
+
+{% endblock %}
+{% block body %}
+    <h2>{{ heading }}</h2>
+    {% if "discord" in heading %}
+        <div>Your Discord account (identified by its number) will be able to
+            remote control your Nosferatunet Account
+        </div>
+    {% else %}
+        <div> What would you like {{ x }} to be?"</div>
+    {% endif %}
+    <form action="{{ url_for("views.config", x=config) }}" method=post>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <dl>
+            <dt>
+            <dd><label>config
+                <input class="dark resize_at_start" type=text oninput="resize_input_to_content(this)"
+                       name="configuration" value="{{ curval }}">
+            </label>
+                <input class=dark type=submit value=Save>
+        </dl>
+    </form>
+    {%- if heading == "unconfirmed_discord_link" %}
+        <form class="bright" action="{{ url_for("views.config", x=config) }}" method=post>
+            <label for="confirm">&nbsp;Confirm that this discord account is yours</label>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="confirm" value="{{ curval }}">
+            <input class=dark type=submit value=Confirm>
+        </form>
+    {% endif %}
+    <form action="{{ url_for("views.config", x=config) }}" method=post>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="hidden" name="delete" value="true">
+        <input class=dark type=submit value=Delete>
+    </form>
+
+
+{% endblock %}
