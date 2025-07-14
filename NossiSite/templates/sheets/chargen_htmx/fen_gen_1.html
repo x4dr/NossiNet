@@ -10,8 +10,8 @@
                 {{ points[i] }}</div>
         {% endfor %}
     </div>
-
-    <input type="hidden" name="order" id="order-input">
+    <!--{{ items|safe }}-->
+    <input type="hidden" name="order" id="order-input" value={{ ",".join(items) }}>
     <input type="hidden" name="stage" value="2">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div style="display: flex; width: 100%; gap: 1em">

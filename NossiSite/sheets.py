@@ -94,7 +94,7 @@ def get_attributes(system, heading):
 
 
 @views.route("/chargen/reset", methods=["GET"])
-@views.route("/chargen", methods=["GET"])
+@views.route("/chargen/", methods=["GET"])
 def chargen():
     username = session.get("user", "")
     if not username:

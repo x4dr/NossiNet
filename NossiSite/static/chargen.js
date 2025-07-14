@@ -1,55 +1,48 @@
 document.addEventListener("DOMContentLoaded", () => {
-    let isProcessing = false;
 
-    document.body.addEventListener('htmx:beforeRequest', () => {
-        isProcessing = true
-    });
-    document.body.addEventListener('htmx:afterRequest', () => {
-        isProcessing = false
-    });
     document.body.addEventListener("htmx:afterSwap", () => {
         let savedRects = new Map();
         let current_element_order = [];
         let items = [];
 
-        function updateDesc(event) {
-            const input = event.target;
-            const val = input.value;
-            const heading = input.closest('.grid-container2')?.dataset.heading?.toLowerCase();
-            if (!val || !heading) return;
-
-            const datalist = document.getElementById(input.getAttribute('list'));
-            const option = Array.from(datalist.options)
-                .find(o => o.value.toLowerCase() === val.toLowerCase());
-            const desc = option?.dataset.desc;
-
-            const target = document.querySelector('#explanation');
-            target.style.transition = 'opacity 0.2s ease';
-            target.style.opacity = 0;
-            setTimeout(() => {
-                target.innerHTML = `<h3>${val}</h3>${desc || 'No Description Available!'}`;
-                target.style.opacity = 1;
-            }, 300);
-        }
-
         function waitForTransitions(elements) {
             return Promise.all(elements.map(el => {
                 return new Promise(resolve => {
-                    const onEnd = () => {
+                    const computed = getComputedStyle(el);
+                    const durations = computed.transitionDuration.split(',').map(s => parseFloat(s.trim()) || 0);
+                    const delays = computed.transitionDelay.split(',').map(s => parseFloat(s.trim()) || 0);
+                    const maxDuration = Math.max(...durations);
+                    const maxDelay = Math.max(...delays);
+                    const totalTime = (maxDuration + maxDelay) * 1000; // ms
+
+                    if (totalTime === 0) {
+                        resolve();
+                        return;
+                    }
+
+                    let resolved = false;
+
+                    const onEnd = (e) => {
+                        if (e.target !== el) return; // ignore events from child elements
+                        if (resolved) return;
+                        resolved = true;
                         el.removeEventListener('transitionend', onEnd);
+                        clearTimeout(timer);
                         resolve();
                     };
 
-                    // If there's no active transition, resolve immediately
-                    const computed = getComputedStyle(el);
-                    const duration = parseFloat(computed.transitionDuration) || 0;
-                    if (duration === 0) {
+                    el.addEventListener('transitionend', onEnd);
+
+                    // Fallback: resolve after expected max transition time + small buffer
+                    const timer = setTimeout(() => {
+                        if (resolved) return;
+                        resolved = true;
+                        el.removeEventListener('transitionend', onEnd);
                         resolve();
-                    } else {
-                        el.addEventListener('transitionend', onEnd);
-                    }
+                    }, totalTime + 50);
                 });
             }));
+
         }
 
         function animateVisualReorder(container, newOrder) {
@@ -84,7 +77,6 @@ document.addEventListener("DOMContentLoaded", () => {
             container.addEventListener('dragend', async e => {
                 if (!draggedItem) return;
                 draggedItem.classList.remove('dragging');
-
                 if (!current_element_order.length) {
                     draggedItem = null;
                     return;
@@ -94,7 +86,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 current_element_order.forEach(el => {
                     el.style.transform = '';
                 });
-
                 // Get all children
                 const allChildren = Array.from(container.children);
 
@@ -114,11 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 draggedItem = null;
                 items = Array.from(container.querySelectorAll('.draggable-item'));
 
-                items.forEach((el, i) => {
-                    savedRects.set(i, el.getBoundingClientRect());
-                });
             });
-
 
             container.addEventListener('dragover', e => {
                 e.preventDefault();
@@ -251,7 +238,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             let newValue;
             if (e.target.classList.contains('active')) {
-                newValue = 0;
+                newValue = index;
             } else {
                 newValue = index + 1;
             }
@@ -310,20 +297,9 @@ document.addEventListener("DOMContentLoaded", () => {
             input.addEventListener('focus', updateDesc);
             input.addEventListener('input', updateDesc);
         });
-        document.querySelectorAll('.textbtn').forEach(button => {
-            button.removeEventListener('click', onTextBtnClick);
-            button.addEventListener('click', onTextBtnClick);
-        });
+
     });
 
-    function onTextBtnClick(evt) {
-        if (isProcessing) {
-            evt.preventDefault();
-            document.body.addEventListener('htmx:afterRequest', () => {
-                htmx.trigger(evt.target, 'click');
-            }, {once: true});
-        }
-    }
 
     function updateShowpoints(el, current) {
         const max = parseInt(el.dataset.max, 10);
@@ -364,6 +340,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
             container.style.setProperty('--per-row', perRow);
         });
+    }
+
+    function updateDesc(event) {
+        const input = event.target;
+        const val = input.value;
+        const heading = input.closest('.grid-container2')?.dataset.heading?.toLowerCase();
+        if (!val || !heading) return;
+
+        const datalist = document.getElementById(input.getAttribute('list'));
+        const option = Array.from(datalist.options)
+            .find(o => o.value.toLowerCase() === val.toLowerCase());
+        const desc = option?.dataset.desc;
+
+        const target = document.querySelector('#explanation');
+        target.style.transition = 'opacity 0.2s ease';
+        target.style.opacity = 0;
+        setTimeout(() => {
+            target.innerHTML = `<h3>${val}</h3>${desc || 'No Description Available!'}`;
+            target.style.opacity = 1;
+        }, 300);
     }
 
 
