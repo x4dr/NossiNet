@@ -18,7 +18,7 @@
             {% set heading = cat.heading %}
             {% set points = cat.points %}
             {% set fields = cat.fields %}
-            {% include "sheets/chargen_htmx/gen_cat.html" %}
+            {% include "sheets/chargen_htmx/gen_cat_skills.html" %}
         {% endfor %}
     </div>
     <form class="button-row">
@@ -29,7 +29,8 @@
                 hx-target="#question">Back
         </button>
         <button type="button" class="textbtn"
-                id="stage-3-button"
+                hx-post="/chargen"
+                hx-vals='{"stage": 3}'
                 hx-target="#question">Next
         </button>
     </form>

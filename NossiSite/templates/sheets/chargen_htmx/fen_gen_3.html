@@ -1,46 +1,32 @@
-<form hx-post="/chargen" hx-trigger="submit" hx-target="#question" hx-swap="swap:0.3s" style="width: 50%">
-    <p>Please enter your character details below. New Rows will be provided once necessary. Doubleclick for
-        suggestions.</p>
-
-    <datalist id="detail-options">
-        {% for item in character_details %}
-            <option value="{{ item }}">
-        {% endfor %}
-    </datalist>
-    <div id="details"
-         hx-get="/add-detail-row"
-         hx-trigger="load"
-         hx-target="#details"
-         hx-swap="beforeend"
-         class="grid-container-2">
-        {% for k,v in prefill.items() %}
-            <input list="detail-options"
-                   name="key"
-                   class="detail-name textinput"
-                   placeholder="Detail name"
-                   aria-label="description detail name"
-                   autocomplete="off"
-                   value="{{ k }}">
-
-            <input name="value"
-                   class="textinput"
-                   placeholder="Value"
-                   aria-label="description detail"
-                   autocomplete="off"
-                   value="{{ v }}">
+<div class="grid-wrapper">
+    <p style="text-align: center;">
+        Assign points to Attributes in your Categories! <br>
+        You start with 1 point and then every second skill level gives you another point.
+        0 in an attribute means you are disabled in some way and generally fail rolls including this attribute.
+    </p>
+    <!-- {{ categories|safe }} --->
+    <div class="grid-container-x">
+        {% for cat in categories %}
+            {% set heading = cat.heading %}
+            {% set points = cat.points %}
+            {% set attributes = cat.attributes %}
+            {% include "sheets/chargen_htmx/gen_cat_attributes.html" %}
         {% endfor %}
     </div>
-
-    <input type="hidden" name="stage" value="4">
-
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-    <div class="button-row">
+    <form class="button-row">
+        <input type="hidden" value="{{ csrf_token() }}" name="csrf_token">
         <button type="button" class="textbtn"
                 hx-post="/chargen"
-                hx-vals='{"stage": 1}'
+                hx-vals='{"stage": 2}'
                 hx-target="#question">Back
         </button>
-        <button type="submit" class="textbtn" style="width: fit-content">Next</button>
+        <button type="button" class="textbtn"
+                hx-post="/chargen"
+                hx-vals='{"stage": 5}'
+                hx-target="#question">Next
+        </button>
+    </form>
+
+    <div hx-swap="outerHTML" hx-get="/specific/endworld/descriptions/attributes" hx-trigger="load"> loading rules...
     </div>
-</form>
+</div>

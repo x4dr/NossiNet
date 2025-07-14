@@ -3,6 +3,39 @@
     <script src="{{ url_for("static", filename="live_edit.js") }}?v={{ restart_id }}"></script>
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="live_edit.css") }}?v={{ restart_id }}">
     <script>
+        function highlightClosestHeadingFromFragment() {
+            const frag = decodeURIComponent(location.hash.slice(1));
+            if (!frag) return;
+
+            const headings = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6'));
+            let best = null;
+            let bestScore = 0;
+
+            function similarity(a, b) {
+                a = a.toLowerCase();
+                b = b.toLowerCase();
+                const common = a.split('').filter(c => b.includes(c)).length;
+                return (2 * common) / (a.length + b.length);
+            }
+
+            for (const h of headings) {
+                const score = similarity(frag, h.textContent);
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = h;
+                }
+            }
+
+            if (best && bestScore > 0.5) {
+                best.scrollIntoView({behavior: 'smooth', block: 'center'});
+                best.style.transition = 'background-color 0.9s ease';
+                best.style.backgroundColor = 'var(--highlight-color)';
+                setTimeout(() => {
+                    best.style.backgroundColor = '';
+                }, 2000);
+            }
+        }
+
         window.addEventListener("click", function (e) {
             const x = e.clientX, y = e.clientY, mouselement = document.elementFromPoint(x, y);
             if (mouselement.classList.contains("category"))
@@ -26,6 +59,9 @@
                 el.style.setProperty('--glitch-duration-2', `${(5 + Math.random() * 5).toFixed(2)}s`);
                 el.style.setProperty('--glitch-delay', `${(Math.random() * 10).toFixed(2)}s`);
             });
+
+
+            highlightClosestHeadingFromFragment();
         });
 
     </script>
@@ -44,7 +80,16 @@
 {% endblock %}
 
 {% block body %}
-
+    {% set tags_lower = tags | map('lower') | list %}
+    {% if 'pbta' in tags_lower %}
+        <a href="/pbta/{{ wiki }}">
+            <button class="textbtn metanav">show sheet</button>
+        </a>
+    {% elif 'character' in tags_lower %}
+        <a href="/fensheet/{{ wiki }}">
+            <button class="textbtn metanav">show sheet</button>
+        </a>
+    {% endif %}
     <div class="wiki editable" id="wikibody" style="word-wrap:break-word;border:1px solid">{{ body|safe }}
         <br> {#dangerous body has to be cleaned before being sent here#}
     </div>

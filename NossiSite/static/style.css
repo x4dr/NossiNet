@@ -5,24 +5,24 @@ body {
 }
 
 .page {
-color: var(--primary-color);
-width: 90%;
-margin: 1em auto;
-border: 3px solid var(--secondary-color);
-padding: 0.8em;
-background: var(--background-color);
+    color: var(--primary-color);
+    width: 90%;
+    margin: 1em auto;
+    border: 3px solid var(--secondary-color);
+    padding: 0.8em;
+    background: var(--background-color);
 }
 
-.page a:not([class]){
-color: var(--accent-color)
+.page a:not([class]) {
+    color: var(--accent-color)
 }
 
 hr {
-  border: none;
-  height: 2px;
-  background: linear-gradient(to right, var(--secondary-color), var(--midground-color) );
-  color: transparent;
-  margin: 1em 0;
+    border: none;
+    height: 2px;
+    background: linear-gradient(to right, var(--secondary-color), var(--midground-color));
+    color: transparent;
+    margin: 1em 0;
 }
 
 .metanavcontainer {
@@ -86,18 +86,17 @@ hr {
 }
 
 
-.hiding{
+.hiding {
     height: 0 !important;
-    overflow:hidden;
+    overflow: hidden;
     transition: 1s;
 }
 
-.nothiding{
+.nothiding {
     overflow: hidden;
     transition: 1s;
     height: inherit
 }
-
 
 
 #TopButton {
@@ -114,10 +113,12 @@ hr {
     transition: opacity 0.3s;
     visibility: hidden;
 }
+
 #TopButton.show {
     opacity: 1; /* Show when scrolled */
     visibility: visible;
 }
+
 #TopButton.show:not(:hover) {
     opacity: 0.3;
 }
@@ -152,7 +153,7 @@ hr {
 }
 
 .entry-headline {
-margin-bottom: 0px;
+    margin-bottom: 0px;
 }
 
 .tooltiptext {
@@ -177,75 +178,127 @@ margin-bottom: 0px;
 }
 
 .hiderbox {
-visibility:hidden;
-position:absolute;
+    visibility: hidden;
+    position: absolute;
 }
 
 
 @keyframes expand {
-  0% {
-    height: 0;
-    text-shadow: 0 0 0 var(--secondary-color);
-    transform: scaleY(0);
-  }
-  1% {
-    height: auto;
-    transform: scaleY(0);
-  }
-  60% {
-    height: auto;
-    text-shadow: 0 30px 5px var(--background-color);
-    transform: scaleY(0.9) translateY(-30px);
-  }
-  98% {
-    text-shadow: 0 0 1px var(--secondary-color);
-    transform: scaleY(1.01) translateY(1px);
-  }
-  100% {
-    text-shadow: 0 0 0 var(--primary-color);
-    transform: scaleY(1) translateY(0);
-  }
+    0% {
+        height: 0;
+        text-shadow: 0 0 0 var(--secondary-color);
+        transform: scaleY(0);
+    }
+    1% {
+        height: auto;
+        transform: scaleY(0);
+    }
+    60% {
+        height: auto;
+        text-shadow: 0 30px 5px var(--background-color);
+        transform: scaleY(0.9) translateY(-30px);
+    }
+    98% {
+        text-shadow: 0 0 1px var(--secondary-color);
+        transform: scaleY(1.01) translateY(1px);
+    }
+    100% {
+        text-shadow: 0 0 0 var(--primary-color);
+        transform: scaleY(1) translateY(0);
+    }
 }
 
 
-
 .content {
-  overflow: hidden;
-  transform-origin: top;
-  animation-fill-mode: forwards;
-  whitespace:pre;
+    overflow: hidden;
+    transform-origin: top;
+    animation-fill-mode: forwards;
+    whitespace: pre;
 
 }
 
 .hiderbox:checked ~ .content {
-  animation: expand 0.5s ease forwards;
+    animation: expand 0.5s ease forwards;
 }
-.hiderbox:not(:checked) ~ .content{
-  height: 0;
-  transform: scaleY(0);
+
+.hiderbox:not(:checked) ~ .content {
+    height: 0;
+    transform: scaleY(0);
 }
 
 .hiderbox:checked ~ .content .bordered {
-  border: 1px solid var(--primary-color);
+    border: 1px solid var(--primary-color);
 }
 
 .hiderbox:checked ~ h2::before {
-content:"-"
+    content: "-"
 }
+
 .hiderbox:not(:checked) ~ h2::before {
-content:"+"
+    content: "+"
 }
 
 input:focus-visible {
-outline:var(--tertiary-color);
+    outline: var(--tertiary-color);
 }
 
-.textinput  {
-background: var(--background-color);
-border: 1px solid var(--tertiary-color);
-color: var(--primary-color);
+.textinput {
+    background: var(--background-color);
+    border: 1px solid var(--tertiary-color);
+    color: var(--primary-color);
 }
 
-.textinput:focus-visible{
-outline: 2px solid var(--secondary-color);
+.textinput:focus-visible {
+    outline: 2px solid var(--secondary-color);
+}
+
+.active, .collapsible:hover {
+    background-color: #311;
+}
+
+
+.bigbtn {
+    position: absolute;
+    width: 100%;
+    height: 100px;
+    font-size: 48px;
+}
+
+.single_line_form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    align-content: center;
+}
+
+.add-entry {
+    font-size: 0.9em;
+    border-bottom: 1px solid var(--background-color);
+}
+
+.chatbox {
+    position: relative;
+    width: 95%;
+    text-align: left;
+    margin-bottom: 25px;
+    padding: 10px;
+    background: var(--background-color);
+    height: 320px;
+    white-space: pre-wrap;
+    border: 1px solid var(--primary-color);
+    overflow: auto;
+}
+
+.heading {
+    font-size: 24px;
+    border: 1px solid var(--tertiary-color);
+    text-align: center;
+    background-color: var(--midground-color);
+}
+
+.subheading {
+    font-size: 20px;
+    border: 1px solid var(--midground-color);
+    text-align: center;
+    background: linear-gradient(to top, var(--midground-color), var(--background-color));
 }

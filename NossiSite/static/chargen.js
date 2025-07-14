@@ -1,9 +1,36 @@
 document.addEventListener("DOMContentLoaded", () => {
+    let isProcessing = false;
 
+    document.body.addEventListener('htmx:beforeRequest', () => {
+        isProcessing = true
+    });
+    document.body.addEventListener('htmx:afterRequest', () => {
+        isProcessing = false
+    });
     document.body.addEventListener("htmx:afterSwap", () => {
         let savedRects = new Map();
         let current_element_order = [];
         let items = [];
+
+        function updateDesc(event) {
+            const input = event.target;
+            const val = input.value;
+            const heading = input.closest('.grid-container2')?.dataset.heading?.toLowerCase();
+            if (!val || !heading) return;
+
+            const datalist = document.getElementById(input.getAttribute('list'));
+            const option = Array.from(datalist.options)
+                .find(o => o.value.toLowerCase() === val.toLowerCase());
+            const desc = option?.dataset.desc;
+
+            const target = document.querySelector('#explanation');
+            target.style.transition = 'opacity 0.2s ease';
+            target.style.opacity = 0;
+            setTimeout(() => {
+                target.innerHTML = `<h3>${val}</h3>${desc || 'No Description Available!'}`;
+                target.style.opacity = 1;
+            }, 300);
+        }
 
         function waitForTransitions(elements) {
             return Promise.all(elements.map(el => {
@@ -150,11 +177,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const input = document.createElement('input');
             input.type = 'text';
-            input.name = `field_${index}`;
-            input.id = `field_${index}`;
-            input.list = `${heading}_skills`
+            input.name = 'skill';
+            input.setAttribute('list', `${heading}_skills`);
             input.className = 'textinput skill-input';
-
+            input.addEventListener('focus', updateDesc);
+            input.addEventListener('input', updateDesc);
 
             inputCell.appendChild(input);
 
@@ -173,7 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Hidden input to hold selected value
             const hiddenInput = document.createElement('input');
             hiddenInput.type = 'hidden';
-            hiddenInput.name = `val_${index}`;
+            hiddenInput.name = 'value';
             hiddenInput.value = '0';
             numInput.appendChild(hiddenInput);
 
@@ -198,7 +225,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
-        document.addEventListener('input', e => {
+        document.addEventListener('change', e => {
             if (e.target.classList.contains('skill-input')) {
                 ensureTrailingRowPerGrid();
             }
@@ -230,7 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             const input = container.querySelector('input[type="hidden"]');
             input.value = newValue;
-            input.dispatchEvent(new Event('change'));
+            input.dispatchEvent(new Event('change', {bubbles: true}));
 
             btns.forEach((btn, i) => btn.classList.toggle('active', i < newValue));
             const form = container.closest('.skill-form');
@@ -277,51 +304,26 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
-        document.querySelectorAll('.skill-form').forEach(form => {
-            form.addEventListener('htmx:configRequest', e => {
-                e.preventDefault();
-                sendAllSkillForms();
-            });
-        });
-
-        const btn = document.querySelector('button[id="stage-3-button"]');
-        if (btn) {
-            btn.onclick = e => {
-                sendAllSkillForms({stage: 3});
-                return false;
-            };
-        }
-
         balanceGrid('.grid-container-x');
 
         document.querySelectorAll('input[list]').forEach(input => {
-            const updateDesc = () => {
-                const val = input.value;
-                const heading = input.closest('.grid-container2')?.dataset.heading?.toLowerCase();
-                if (!val || !heading) return;
-
-                const datalist = document.getElementById(input.getAttribute('list'));
-                const option = Array.from(datalist.options)
-                    .find(o => o.value.toLowerCase() === val.toLowerCase());
-                const desc = option?.dataset.desc;
-
-                const target = document.querySelector('#explanation');
-                target.style.transition = 'opacity 0.2s ease';
-                target.style.opacity = 0;
-                setTimeout(() => {
-                    if (desc) {
-                        target.innerHTML = `<h3>${val}</h3>${desc}`;
-                    } else {
-                        target.innerHTML = `<h3>${val}</h3>No Description Available!`;
-                    }
-                    target.style.opacity = 1;
-                }, 300);
-            };
-
             input.addEventListener('focus', updateDesc);
             input.addEventListener('input', updateDesc);
         });
+        document.querySelectorAll('.textbtn').forEach(button => {
+            button.removeEventListener('click', onTextBtnClick);
+            button.addEventListener('click', onTextBtnClick);
+        });
     });
+
+    function onTextBtnClick(evt) {
+        if (isProcessing) {
+            evt.preventDefault();
+            document.body.addEventListener('htmx:afterRequest', () => {
+                htmx.trigger(evt.target, 'click');
+            }, {once: true});
+        }
+    }
 
     function updateShowpoints(el, current) {
         const max = parseInt(el.dataset.max, 10);

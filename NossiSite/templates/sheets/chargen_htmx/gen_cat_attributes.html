@@ -1,0 +1,25 @@
+{% macro num_button(max_buttons, val) %}
+    <div class="num-input">
+        {%- for i in range(max_buttons) -%}
+            <button type="button"
+                    {%- if i < val %} class="active"{% endif %}></button>
+        {%- endfor -%}
+        <input type="hidden" name="value" value="{{ val }}">
+    </div>
+{% endmacro %}
+<form hx-post="/chargen/" hx-trigger="change, input delay:1s"
+      hx-swap="none" class="skill-form">
+    <h2 data-max="{{ points }}" class="showpoints">{{ heading }}</h2>
+    <div class="grid-container2" data-heading="{{ heading }}">
+        {% for attr in attributes %}
+            <label class="input-cell">
+                <span class="sr-only">Attribute Name {{ loop.index }}</span>
+                <input type="text" name="attribute" value="{{ attr[0] }}" readonly class="textinput" autocomplete="off">
+            </label>
+            {{- num_button(5, attr[1]) -}}
+        {% endfor %}
+    </div>
+
+    <input type="hidden" name="heading" value="{{ heading }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>

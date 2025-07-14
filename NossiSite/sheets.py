@@ -1,5 +1,4 @@
 import html
-import json
 import time
 from pathlib import Path
 
@@ -28,11 +27,12 @@ from NossiSite.socks import (
 )
 from gamepack.Dice import DescriptiveError
 from gamepack.FenCharacter import FenCharacter
-from gamepack.MDPack import MDObj
+from gamepack.MDPack import MDObj, MDTable
 from gamepack.PBTACharacter import PBTACharacter
 from gamepack.WikiCharacterSheet import WikiCharacterSheet
 from gamepack.WikiPage import WikiPage
 
+lm = LocalMarkdown()
 views = Blueprint("sheets", __name__)
 ordinals = [
     "primary",
@@ -59,7 +59,7 @@ def ewsheet(c):
 
 @views.route("/skills/<system>/<heading>")
 def get_skills(system, heading):
-    print("received skill request for ", system, heading)
+    print("received skill request for", system, heading)
 
     def flatten_skills(node):
         if hasattr(node, "children") and node.children:
@@ -73,12 +73,24 @@ def get_skills(system, heading):
     page = system + "/descriptions/" + heading.lower() + "skills"
     skills = WikiPage.load_locate(page).md()
     skills = flatten_skills(skills)
-    skills = {
-        x.header: html.escape(LocalMarkdown.process(x.plaintext, page)) for x in skills
-    }
+    n = {}
+    for x in skills:
+        key = x.header
+        value = html.escape(lm.process(x.plaintext, page))
+        n[key] = value
+    skills = n
     options = "\n".join(f'<option value="{s}" data-desc="{skills[s]}">' for s in skills)
     options = f'<datalist id="{heading}_skills">{options}</datalist>'
+    print("replying with", len(skills))
     return Response(options, mimetype="text/html")
+
+
+def get_attributes(system, heading):
+    page = system + "/descriptions/attributes"
+    md = WikiPage.load_locate(page).md()
+    attributes = md.children.get("Attributes")
+    attributes = (attributes.tables or [MDTable([], [])])[0]
+    return attributes.column(heading, ["", "", ""])
 
 
 @views.route("/chargen/reset", methods=["GET"])
@@ -100,7 +112,8 @@ def chargen_htmx():
     username = session.get("user", "")
     if not username:
         return redirect(url_for("login"))
-    match int(session.get("character_gen", {}).get("stage", 0)):
+    gen = session.get("character_gen", {})
+    match int(gen.get("stage", 0)):
         case 0:
             return render_template(
                 "sheets/chargen_htmx/fen_gen_0.html",
@@ -109,14 +122,17 @@ def chargen_htmx():
                 points="12, 10, 8, 6, 4",
             )
         case 1:
-            items = [
-                x.strip().strip(",")
-                for x in session["character_gen"].get("categories", "error").split(", ")
-                if x
-            ]
+            try:
+                items = [x.strip() for x in gen["order"].split(",")]
+            except KeyError:
+                items = [
+                    x.strip().strip(",")
+                    for x in gen.get("categories", "error").split(", ")
+                    if x
+                ]
             points = [
                 x.strip().strip(",")
-                for x in session["character_gen"].get("points", "error").split(", ")
+                for x in gen.get("points", "error").split(", ")
                 if x
             ]
             return render_template(
@@ -126,30 +142,48 @@ def chargen_htmx():
                 points=points,
             )
         case 2:
-            order: list[str] = session["character_gen"].get("order", "").split(",")
-            points = session["character_gen"].get("points", "").split(",")
+            order: list[str] = gen.get("order", "").split(",")
+            points = gen.get("points", "").split(",")
             categories = []
-            for c in session["character_gen"]["categories"].split(","):
+            for c in gen["categories"].split(","):
                 c = c.strip()
                 i = order.index(c)
                 p = points[i]
                 fields = []
                 try:
-                    for k, v in (
-                        session["character_gen"].get("category_" + c, {}).items()
-                    ):
-                        fields.append([k, v])
+                    for k, v in gen.get("skills", {}).get(c, {}).items():
+                        fields.append([k, int(v)])
                 except AttributeError:
                     fields = [["", 0]]
 
                 categories.append({"heading": c, "points": p, "fields": fields})
 
             return render_template(
-                "sheets/chargen_htmx/fen_gen_2.html", categories=categories, system="ew"
+                "sheets/chargen_htmx/fen_gen_2.html",
+                categories=categories,
+                system="endworld",
             )
         case 3:
+            categories = []
+            for c in gen["categories"].split(","):
+                c = c.strip()
+                p = sum(int(x) for x in gen.get("skills", {}).get(c, {}).values())
+                p = 1 + (p // 2)
+                attributes = get_attributes("endworld", c)
+                attributes = [
+                    (x, int(gen.get("attributes", {}).get(c, {}).get(x, 1)))
+                    for x in attributes
+                ]
+                categories.append({"heading": c, "points": p, "attributes": attributes})
             return render_template(
                 "sheets/chargen_htmx/fen_gen_3.html",
+                categories=categories,
+                system="endworld",
+            )
+
+        case 4:
+            return render_template(
+                "sheets/chargen_htmx/fen_gen_4.html",
                 character_details=[
                     "archetype",
                     "background",
@@ -160,16 +194,16 @@ def chargen_htmx():
                     "vice",
                     "category",
                 ],
-                prefill=session["character_gen"].get("desc", {}),
+                prefill=gen.get("desc", {}),
             )
         case _:
-            session["character_gen"]["stage"] = 1
+            gen["stage"] = 1
             return (
                 "",
                 204,
                 {
                     "HX-Redirect": "/edit_from_chargen/"
-                    + session["character_gen"]["name"]
+                    + gen["name"].lower().replace(" ", "")
                 },
             )
 
@@ -180,23 +214,38 @@ def chargen_htmx():
 @views.route("/edit_from_chargen/<name>")
 def edit_from_chargen(name):
     path = Path("character") / name
-    data = session["character_gen"]
+    gen = session["character_gen"]
     try:
         p = WikiPage.load(path)
     except DescriptiveError:
-        p = WikiPage(data["name"], [], "", [], {})
+        p = WikiPage(gen["name"], [], "", [], {})
     c = FenCharacter.from_md(p.body)
-    for cat in data["categories"].split(","):
+    default_headings = {
+        "Attributes": {"Attribute": "Value"},
+        "Skills": {"Skill": "Value"},
+    }
+    category_headings = {}
+    for cat in gen["categories"].split(","):
         cat = cat.strip()
-        c.Categories[cat] = data["category_" + cat]
-    for k, v in data.get("desc", {}).items():
+        c.Categories[cat] = {
+            "Attributes": gen["attributes"].get(cat, {}),
+            "Skills": gen["skills"].get(cat, {}),
+        }
+        category_headings[cat] = default_headings
+    c.Character["name"] = gen["name"]
+
+    c.headings_used = {"categories": category_headings}
+    for k, v in gen.get("desc", {}).items():
         c.Character[k] = v
-    c.Character["name"] = session["character_gen"]["name"]
+
     p.body = c.to_md()
+    p.tags.add(gen.get("system", "endworld"))
+    p.tags.add(session["user"])
+    p.tags.add("Character")
     entry = dict(
         author=session["user"],
         id=path,
-        title=p.title or session["character_gen"]["name"],
+        title=p.title or gen["name"],
         tags=" ".join(p.tags),
         text=p.body,
     )
@@ -213,28 +262,33 @@ def handle_chargen():
     data = {k: v for k, v in list(request.form.lists())}
     if "csrf_token" in data:
         data.pop("csrf_token")
-    # print("received:", data)
+    print("received:", data)
+    gen = session["character_gen"]
     for k, v in data.items():
         if len(v) != 1:
-            if k not in ["key", "value"]:
+            if k not in ["key", "value", "skill", "attribute"]:
                 raise ValueError("only keyvalue, not", k)
             if k == "key":
-                session["character_gen"]["desc"] = session["character_gen"].get(
-                    "desc", {}
-                )
+                gen["desc"] = gen.get("desc", {})
                 for i, key in enumerate(v):
                     if not key:
                         continue
-                    session["character_gen"]["desc"][key] = data["value"][i]
+                    gen["desc"][key] = data["value"][i]
+            if k in ("skill", "attribute"):
+                section = gen.setdefault(k + "s", {})
+                heading = data["heading"][0]
+                section_for_heading = section.setdefault(heading, {})
+                for i, key in enumerate(v):
+                    if not key:
+                        continue
+                    section_for_heading[key] = data["value"][i]
             continue
         else:
             v = v[0]
-
-        if k.startswith("category_"):
-            v = json.loads(v)
-        session["character_gen"][k] = v
-        # print("setting", k, v)
+        gen[k] = v
+        print("setting", k, v)
         session.modified = True
+    print(gen)
     return chargen_htmx()
 
 
@@ -423,7 +477,7 @@ def fensheet(c):
             context=c,
             userconf=u,
             infolet=infolet_filler(c),
-            md=lambda x: LocalMarkdown.process(x, page=charsh),
+            md=lambda x: lm.process(x, page=charsh),
             extract=infolet_extractor,
             owner=(
                 u.get("character_sheet", None)
@@ -440,13 +494,13 @@ def fensheet(c):
 
 def infolet_filler(context):
     def wrap(s):
-        return LocalMarkdown.fill_infolet(s, context)
+        return lm.fill_infolet(s, context)
 
     return wrap
 
 
 def infolet_extractor(x):
-    m = LocalMarkdown.infolet_re.match(str(x))
+    m = lm.infolet_re.match(str(x))
     if not m:
         return str(x)
     return m.group("name")

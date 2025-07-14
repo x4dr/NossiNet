@@ -2,13 +2,14 @@
 @import url('https://fonts.cdnfonts.com/css/open-dyslexic');
 
 body {
-  font-family: 'Open-Dyslexic', sans-serif;
+    font-family: 'Open-Dyslexic', sans-serif;
 }
 
-h1, h2, h3, strong, a {
-  font-family: 'Orbitron', sans-serif;
-  color: var(--primary-color)
+h1, h2, h3, strong {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--primary-color)
 }
+
 
 #wikibody {
     color: var(--secondary-color);

@@ -3,66 +3,81 @@ table, th, td {
     border-collapse: collapse;
     table-layout: fixed;
 }
+
 td:before {
     content: '';
     display: block;
     width: 2em;
 }
+
 img {
     max-width: 100%;
     height: auto;
 }
+
 .wiki {
     padding: 6px
 }
+
 .indextable {
     width: 100%;
     border: 0;
     border-collapse: collapse;
 }
+
 .indextable, .indextable td, .indextable th {
     border: 0;
 }
+
 .indextable th,
 .indextable td {
     padding: 3px 5px;
 }
+
 .indextable td:before {
     content: none;
     width: 0;
 }
-.indextable tr:hover{
+
+.indextable tr:hover {
     background: #004000;
 }
+
 .indextable td:hover {
     font-weight: bold;
     background: #005839;
 }
+
 .tdcontainer {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     overflow: hidden;
 }
+
 .tdcontainer > * {
     flex: 1;
     min-width: 0;
-    height: 100%
-;
+    height: 100%;
 }
+
 .tdcontainer > *:first-child {
-    margin-left:0;
+    margin-left: 0;
 }
+
 .tdcontainer > *:last-child {
-    margin-right:0;
+    margin-right: 0;
 }
+
 .wikilink:visited {
-    color : var(--secondary-color)
+    color: var(--secondary-color)
 }
+
 .wikilink:link {
     text-decoration: none;
-    color : var(--primary-color)
+    color: var(--primary-color)
 }
+
 .clock-container {
     margin: 5px;
     position: relative;
@@ -78,6 +93,7 @@ img {
     min-width: 50px;
     box-sizing: border-box;
 }
+
 .segment {
     position: absolute;
     width: 100%;
@@ -87,9 +103,11 @@ img {
     transition: transform 0.5s;
     z-index: 1;
 }
+
 .segment.active {
     background-color: var(--secondary-color);
 }
+
 .line {
     position: absolute;
     width: 2px;
@@ -100,11 +118,13 @@ img {
     transform-origin: 50% 0%;
     z-index: 2;
 }
+
 .cooldown {
     position: relative;
     filter: grayscale(100%);
     animation: cooldown 5s ease forwards;
 }
+
 .clock-container.cooldown {
     animation: rotatecd 5s ease forwards;
 }
@@ -128,6 +148,7 @@ img {
     overflow: visible;
     display: inline;
 }
+
 .glitch::before {
     white-space: nowrap;
     animation: glitchTop var(--glitch-duration-1, 11.1s) infinite steps(1, end) var(--glitch-delay, 10s);
@@ -140,43 +161,128 @@ img {
 }
 
 @keyframes glitchTop {
-    0%   { clip-path: inset(0 0 70% 0); transform:translate(2px,0) }
-    1%  { clip-path: inset(15% 0 30% 0%); }
-    2%  { clip-path: inset(50% 0 45% 0); transform:translate(-6px,0)  }
-    3.5%  { clip-path: inset(70% 0 0% 0); transform:translate(3px,-2px) }
-    4.5%  { clip-path: inset(70% 0 30% 0); transform:translate(3px,-20px) }
-    44%   { clip-path: inset(60% 0 0% 0); transform:translate(-1px,0); }
-    45%  { clip-path: inset(30% 0 15% 0%); filter: hue-rotate(10deg) saturate(2);}
-    46%  { clip-path: inset(40% 0 55% 0); transform:translate(6px,0); filter: hue-rotate(30deg) saturate(2);}
-    47%  { clip-path: inset(0% 0 50% 0); transform:translate(-1px,-1px); filter: hue-rotate(40deg) saturate(3);}
-    55%  { clip-path: inset(50% 0 50% 0); transform:translate(-0px,0px); filter: hue-rotate(0deg) saturate(1);}
-    100% { clip-path: inset(100% 0% 0% 0); }
+    0% {
+        clip-path: inset(0 0 70% 0);
+        transform: translate(2px, 0)
+    }
+    1% {
+        clip-path: inset(15% 0 30% 0%);
+    }
+    2% {
+        clip-path: inset(50% 0 45% 0);
+        transform: translate(-6px, 0)
+    }
+    3.5% {
+        clip-path: inset(70% 0 0% 0);
+        transform: translate(3px, -2px)
+    }
+    4.5% {
+        clip-path: inset(70% 0 30% 0);
+        transform: translate(3px, -20px)
+    }
+    44% {
+        clip-path: inset(60% 0 0% 0);
+        transform: translate(-1px, 0);
+    }
+    45% {
+        clip-path: inset(30% 0 15% 0%);
+        filter: hue-rotate(10deg) saturate(2);
+    }
+    46% {
+        clip-path: inset(40% 0 55% 0);
+        transform: translate(6px, 0);
+        filter: hue-rotate(30deg) saturate(2);
+    }
+    47% {
+        clip-path: inset(0% 0 50% 0);
+        transform: translate(-1px, -1px);
+        filter: hue-rotate(40deg) saturate(3);
+    }
+    55% {
+        clip-path: inset(50% 0 50% 0);
+        transform: translate(-0px, 0px);
+        filter: hue-rotate(0deg) saturate(1);
+    }
+    100% {
+        clip-path: inset(100% 0% 0% 0);
+    }
 }
 
 @keyframes glitchBottom {
-    0%   { clip-path: inset(90% 0 90% 0); }
-    1%   { clip-path: inset(3% 0 70% 0); transform:translate(-2px,-3px); filter: hue-rotate(-30deg) saturate(2);}
-    5%   { clip-path: inset(60% 0 0% 0); transform:translate(2px,0); filter: hue-rotate(-15deg) saturate(4);}
-    8%   { clip-path: inset(40% 0 60% 0); filter: hue-rotate(-10deg) saturate(1); }
-    12%  { clip-path: inset(45% 0 50% ); transform:translate(-2px,0); filter: hue-rotate(+40deg) saturate(0.5); }
-    14%  { clip-path: inset(30% 0 30% ); transform:translate(2px,3px); filter: hue-rotate(+40deg) saturate(0.5); }
-    15%  { clip-path: inset(90% 0 90% 0); }
-    100% { clip-path: inset(50% 0 50% 0); }
+    0% {
+        clip-path: inset(90% 0 90% 0);
+    }
+    1% {
+        clip-path: inset(3% 0 70% 0);
+        transform: translate(-2px, -3px);
+        filter: hue-rotate(-30deg) saturate(2);
+    }
+    5% {
+        clip-path: inset(60% 0 0% 0);
+        transform: translate(2px, 0);
+        filter: hue-rotate(-15deg) saturate(4);
+    }
+    8% {
+        clip-path: inset(40% 0 60% 0);
+        filter: hue-rotate(-10deg) saturate(1);
+    }
+    12% {
+        clip-path: inset(45% 0 50%);
+        transform: translate(-2px, 0);
+        filter: hue-rotate(+40deg) saturate(0.5);
+    }
+    14% {
+        clip-path: inset(30% 0 30%);
+        transform: translate(2px, 3px);
+        filter: hue-rotate(+40deg) saturate(0.5);
+    }
+    15% {
+        clip-path: inset(90% 0 90% 0);
+    }
+    100% {
+        clip-path: inset(50% 0 50% 0);
+    }
 }
 
 
 @keyframes cooldown {
-    0%   { filter: grayscale(100%); transform: scale(90%); }
-    90%  { filter: grayscale(100%); transform: scale(95%); }
-    95%  { filter: saturate(120%); transform: scale(105%); }
-    100% { filter: saturate(100%); transform: scale(100%); }
+    0% {
+        filter: grayscale(100%);
+        transform: scale(90%);
+    }
+    90% {
+        filter: grayscale(100%);
+        transform: scale(95%);
+    }
+    95% {
+        filter: saturate(120%);
+        transform: scale(105%);
+    }
+    100% {
+        filter: saturate(100%);
+        transform: scale(100%);
+    }
 }
-@keyframes rotatecd{
-    0%   { filter: grayscale(100%); transform: scale(90%) rotate(-5deg); }
-    90%  { filter: grayscale(100%); transform: scale(95%) rotate(720deg); }
-    95%  { filter: saturate(120%); transform: scale(105%) rotate(720deg); }
-    100% { filter: saturate(100%); transform: scale(100%) rotate(720deg); }
+
+@keyframes rotatecd {
+    0% {
+        filter: grayscale(100%);
+        transform: scale(90%) rotate(-5deg);
+    }
+    90% {
+        filter: grayscale(100%);
+        transform: scale(95%) rotate(720deg);
+    }
+    95% {
+        filter: saturate(120%);
+        transform: scale(105%) rotate(720deg);
+    }
+    100% {
+        filter: saturate(100%);
+        transform: scale(100%) rotate(720deg);
+    }
 }
+
 @keyframes pulse {
     0% {
         transform: translate(-50%, -50%) scale(1);
@@ -186,4 +292,8 @@ img {
         transform: translate(-50%, -50%) scale(1.5);
         opacity: 0;
     }
+}
+
+.missing {
+    color: var(--warn-color);
 }

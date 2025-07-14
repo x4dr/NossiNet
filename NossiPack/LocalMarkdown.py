@@ -1,12 +1,15 @@
 import re
+from pathlib import Path
+from urllib.parse import urlparse
 
-from markdown import markdown
+from bs4 import BeautifulSoup
+from markdown import Markdown
 
 from NossiSite.base_ext import encode_id
 from NossiSite.helpers import srs
 from gamepack.Dice import DescriptiveError
 from gamepack.Item import Item
-from gamepack.MDPack import traverse_md, MDObj
+from gamepack.MDPack import traverse_md, MDObj, MDChecklist
 from gamepack.WikiPage import WikiPage
 
 
@@ -29,7 +32,8 @@ class LocalMarkdown:
         re.IGNORECASE | re.DOTALL,
     )
     infolet_re = re.compile(r"\[!q:(?P<name>.*?)]", re.IGNORECASE)
-    checkbox_re = re.compile(r"(?!)")  # MDChecklist.CHECKBOX_PATTERN
+    checkbox_re = MDChecklist.CHECKBOX_PATTERN
+    missinglinks = {}
 
     @classmethod
     def transclude(cls, match: re.Match):
@@ -160,15 +164,16 @@ class LocalMarkdown:
             text,
         )
 
-    @classmethod
-    def markdown(cls, text: str) -> str:
-        return markdown(text, extensions=cls.extensions)
+    def __init__(self):
+        self._markdown = Markdown(extensions=self.extensions)
 
-    @classmethod
-    def process(cls, text: str, page: str) -> str:
-        text, hidespans = cls.pre_process(text, page)
-        text = cls.markdown(text)
-        text = cls.post_process(text, hidespans)
+    def markdown(self, text: str) -> str:
+        return self._markdown.convert(text)
+
+    def process(self, text: str, page: str) -> str:
+        text, hidespans = self.pre_process(text, page)
+        text = self.markdown(text)
+        text = self.post_process(text, hidespans, page)
         return text
 
     @classmethod
@@ -196,8 +201,9 @@ class LocalMarkdown:
         return done + processed + text[end:], len(done) + len(processed)
 
     @classmethod
-    def post_process(cls, text, hidespans):
+    def post_process(cls, text, hidespans, page):
         text = cls.glitch(text)
+        text = cls.checklinks(text, page)
         text = cls.re_links.sub(r'<a href="/wiki/\g<2>"> \g<1> </a>', text)
         pos = 0
         for s in hidespans:
@@ -263,6 +269,49 @@ class LocalMarkdown:
                 itemspage.body = itemsmd.to_md()
                 itemspage.save_low_prio("automatically added item")
         return cls.inline_load(infolet)
+
+    @classmethod
+    def checklinks(cls, html, page):
+        soup = BeautifulSoup(html, "html.parser")
+        for a in soup.find_all("a", href=True):
+            href = a["href"]
+            parsed = urlparse(href)
+            if not parsed.scheme and not href.startswith("#"):
+                target = href.rsplit("#")[0]
+                if target:
+                    location = WikiPage.locate(target)
+                    if location:
+                        location = location.with_suffix("").as_posix()
+                else:
+                    location = "?"
+                if location != target:
+                    # noinspection PyTypeChecker
+                    a["class"] = a.get("class", []) + ["missing"]
+                    WikiPage.locate(target)
+                    p = Path(page)
+                    try:
+                        relative = p.relative_to(WikiPage.wikipath())
+                    except ValueError:
+
+                        relative = p
+
+                    relative = relative.with_suffix("").as_posix()
+
+                    cls.missinglinks[
+                        f"https://127.0.0.1:5000/edit/{relative}#{a.get_text()}"
+                    ] = {
+                        "href": a["href"],
+                        "text": a.get_text(strip=True),
+                        "context": a.find_parent(["p", "li", "div", "section"]),
+                        "heading": a.find_previous(
+                            ["h1", "h2", "h3", "h4", "h5", "h6"]
+                        ),
+                    }
+
+                else:
+                    a["href"] = "/wiki/" + a["href"]
+
+        return str(soup)
 
     @classmethod
     def inline_load(cls, text: str) -> str:

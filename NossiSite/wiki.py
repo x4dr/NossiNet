@@ -30,6 +30,7 @@ from gamepack.WikiPage import WikiPage
 
 WikiPage.set_wikipath(Path.home() / "wiki")
 wikistamp = [0.0]
+lm = LocalMarkdown()
 
 chara_objects = {}
 mdlinks = re.compile(r"<a href=\"(.*?)\".*?</a")
@@ -93,20 +94,26 @@ def wiki_index(path="."):
 @views.route("/bytag/")
 @views.route("/bytag/<tag>")
 def tagsearch(tag=None):
-    r = WikiPage.wikindex()
-    t = WikiPage.gettags()
-    r = (
-        [x for x in r if tag in t[x.as_posix().replace(x.name, x.stem)]]
-        if tag
-        else [x for x in r if not t[x.as_posix().replace(x.name, x.stem)]]
-    )
+    files = WikiPage.wikindex()
+    tags_by_name = WikiPage.gettags()
+    results = []
+
+    for path in files:
+        name = path.as_posix().replace(path.name, path.stem)
+        tags_of_page = tags_by_name.get(name, [])
+        if (tag is None and not tags_of_page) or (tag in tags_of_page):
+            results.append(path)
+
     return render_template(
         "wiki/wikindex.html",
         current_path=None,
         parent=None,
         subdirs=[],
-        entries=[x.with_suffix("").as_posix() for x in r],
-        tags=t,
+        entries=[
+            x.relative_to(WikiPage.wikipath()).with_suffix("").as_posix()
+            for x in results
+        ],
+        tags=tags_by_name,
     )
 
 
@@ -213,13 +220,15 @@ def wikipage(page=None):
         page = page.lower()
         page = page.strip(".").replace("/.", "/")  # remove hidden directory-dots
         p = WikiPage.locate(page)
-        if p.as_posix()[:-3] != page:
-            return redirect(url_for("wiki.wikipage", page=p.as_posix()[:-3]))
+        if p is None:
+            raise FileNotFoundError
+        if p.with_suffix("").as_posix() != page:
+            return redirect(url_for("wiki.wikipage", page=p.with_suffix("")))
         loaded_page = WikiPage.load_locate(page)
     except (DescriptiveError, FileNotFoundError) as e:
         if (
             isinstance(e, DescriptiveError)
-            and str(e.args[0]) != page + ".md not found in wiki."
+            and str(e.args[0]) != page + "not found in wiki."
         ):
             raise
         if session.get("logged_in"):
@@ -232,7 +241,7 @@ def wikipage(page=None):
         return redirect(url_for("views.login"))
     if not raw:
         body = bleach.clean(loaded_page.body)
-        body = LocalMarkdown().process(body, page=page)
+        body = lm.process(body, page=page)
         return render_template(
             "wiki/wikipage.html",
             title=loaded_page.title,
@@ -260,6 +269,8 @@ def editwiki(page=None):
             return redirect(url_for("wiki.wikipage", page=Path(page).stem))
         (WikiPage.wikipath() / Path(page)).touch()  # create
         p = WikiPage.locate(page)
+    if p is None:
+        p = Path(page).with_suffix(".md")
     if p.as_posix()[:-3] != page:
         return redirect(url_for("wiki.wikipage", page=p))
     if request.method == "GET":
@@ -292,6 +303,7 @@ def editwiki(page=None):
                 page.body = request.form["text"]
                 page.links = mdlinks.findall(markdown.markdown(request.form["text"]))
             except DescriptiveError:
+                p = p.as_posix().lower()
                 page = WikiPage(
                     title=request.form["title"],
                     tags=request.form["tags"].split(" "),
@@ -378,7 +390,7 @@ def searchwiki():
     length = len(key)
     for w in WikiPage.wikindex():
         loaded_page = WikiPage.load(w)
-        w = w.stem
+        w = w.relative_to(WikiPage.wikipath()).with_suffix("")
         if key in loaded_page.title.lower():
             matches.append((w, loaded_page.title, "title"))
         for tag in loaded_page.tags:
@@ -505,7 +517,7 @@ def live_edit():
     else:
         flash("Unauthorized, so ... no.", "error")
     if not wiki:
-        return redirect(url_for("wiki.fensheet", c=formdata["context"]))
+        return redirect(url_for("sheet.fensheet", c=formdata["context"]))
     else:
         return redirect(url_for("wiki.wikipage", page=context))
 
@@ -534,7 +546,7 @@ def specific(a, parse_md=None):
     else:
         article = article[article.find("\n") * hide_headline :]
     if parse_md:
-        return Markup(LocalMarkdown.process(article, page=a[0]))
+        return Markup(lm.process(article, page=a[0]))
     return article
 
 

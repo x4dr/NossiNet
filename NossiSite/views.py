@@ -278,7 +278,7 @@ def charsheet():
     u = ul.loaduserbyname(session.get("user"))
     configchar = u.config("character_sheet", None)
     if configchar:
-        return redirect(url_for("wiki.fensheet", c=configchar))
+        return redirect(url_for("sheets.fensheet", c=configchar))
     sheet = u.getsheet().getdictrepr()
     if sheet["Type"] == "OWOD":
         return render_template("sheets/vampsheet.html", character=sheet, own=True)

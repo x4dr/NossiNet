@@ -18,6 +18,48 @@
     {% endblock %}
 {% endif %}
 {% block body %}
+    <script>
+        function highlightClosestTextInTextarea(textarea) {
+            const frag = decodeURIComponent(location.hash.slice(1));
+            if (!frag) return;
+
+            const text = textarea.value;
+            let bestIndex = -1;
+            let bestScore = 0;
+
+            function similarity(a, b) {
+                a = a.toLowerCase();
+                b = b.toLowerCase();
+                const common = a.split('').filter(c => b.includes(c)).length;
+                return (2 * common) / (a.length + b.length);
+            }
+
+            for (let i = 0; i <= text.length - frag.length; i++) {
+                const segment = text.slice(i, i + frag.length);
+                const score = similarity(frag, segment);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestIndex = i;
+                }
+            }
+
+            if (bestIndex >= 0 && bestScore > 0.5) {
+                textarea.focus();
+                setTimeout(() => {
+                    textarea.setSelectionRange(bestIndex + 1, bestIndex + 1 + frag.length);
+                    // Scroll to selection start line roughly:
+                    const lineHeight = 16; // adjust if needed
+                    const lines = textarea.value.substr(0, bestIndex).split('\n').length;
+                    textarea.scrollTop = (lines - 1) * lineHeight;
+                }, 10);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const textarea = document.querySelector('textarea');
+            highlightClosestTextInTextarea(textarea);
+        });
+    </script>
     {% if session.logged_in %}
         {% if mode=="blog" %}
             <form action="{{ url_for("views.editentries", x=entry.id) }}" method=post class=edit-entry>

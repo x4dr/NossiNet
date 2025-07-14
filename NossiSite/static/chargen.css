@@ -201,3 +201,25 @@ form {
 #explanation.htmx-after-swap {
     opacity: 1;
 }
+
+table {
+    border-collapse: collapse;
+    text-align: center;
+}
+
+th {
+    border-bottom: 2px solid var(--tertiary-color);
+    padding-bottom: 0.3em;
+}
+
+thead {
+    border-bottom: 2px solid var(--tertiary-color);
+}
+
+td, th {
+    padding: 0.5em;
+}
+
+col {
+    border-left: 1px solid var(--tertiary-color);
+}
