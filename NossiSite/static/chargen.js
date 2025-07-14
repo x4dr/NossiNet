@@ -74,7 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
 
-            container.addEventListener('dragend', async e => {
+            container.addEventListener('dragend', async () => {
                 if (!draggedItem) return;
                 draggedItem.classList.remove('dragging');
                 if (!current_element_order.length) {
@@ -149,12 +149,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 bar.style.setProperty('--bar-scale', scale);
             });
             const form = document.getElementById('order-submit-button').form;
-            form.addEventListener('submit', e => {
+            form.addEventListener('submit', () => {
                 const hidden = form.querySelector('input[name="order"]');
                 hidden.value = current_element_order.map(el => el.textContent.trim()).join(',');
             });
 
-            const grid = document.getElementById('criteria-grid');
+
         }
 
         function createFieldRow(index, heading, grid) {
@@ -257,45 +257,39 @@ document.addEventListener("DOMContentLoaded", () => {
             el.onclick = numinput_handle;
         });
 
-        let lastSentAll = {data: null};
+        balanceGrid('.grid-container-x');
 
-        function sendAllSkillForms(extraParams = {}) {
-            let allCategories = {};
-            document.querySelectorAll('.skill-form').forEach(f => {
-                const heading = "category_" + f.querySelector('input[name="heading"]').value;
-                const inputs = f.querySelectorAll('.skill-input');
-                const result = {};
+        function validateDuplicates(input) {
+            const form = input.form;
+            if (!form) return;
 
-                inputs.forEach(input => {
-                    const name = input.value.trim();
-                    if (!name) return;
-                    const valInput = input.closest('.input-cell').nextElementSibling.querySelector('input[type="hidden"]');
-                    result[name] = parseInt(valInput?.value || "0");
-                });
+            const inputs = [...form.querySelectorAll('input[list]')];
+            const values = inputs.map(i => i.value.trim().toLowerCase());
+            const counts = values.reduce((acc, v) => {
+                if (!v) return acc;
+                acc[v] = (acc[v] || 0) + 1;
+                return acc;
+            }, {});
 
-                allCategories[heading] = JSON.stringify(result);
-            });
-
-            Object.assign(allCategories, extraParams);
-
-            const serializedAll = JSON.stringify(allCategories);
-            if (lastSentAll.data === serializedAll) return;
-            lastSentAll.data = serializedAll;
-
-            allCategories.csrf_token = document.querySelector('input[name="csrf_token"]')?.value;
-
-            htmx.ajax('POST', '/chargen', {
-                values: allCategories,
-                swap: extraParams.stage ? 'innerHTML' : 'none',
-                target: '#question'
+            inputs.forEach(i => {
+                const val = i.value.trim().toLowerCase();
+                if (val && counts[val] > 1) {
+                    i.classList.add('error');
+                } else {
+                    i.classList.remove('error');
+                }
             });
         }
 
-        balanceGrid('.grid-container-x');
-
         document.querySelectorAll('input[list]').forEach(input => {
-            input.addEventListener('focus', updateDesc);
-            input.addEventListener('input', updateDesc);
+            if (!input._listenersAdded) {
+                input.addEventListener('focus', updateDesc);
+                input.addEventListener('input', e => {
+                    updateDesc(e);
+                    validateDuplicates(input);
+                });
+                input._listenersAdded = true;
+            }
         });
 
     });

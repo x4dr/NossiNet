@@ -223,3 +223,9 @@ td, th {
 col {
     border-left: 1px solid var(--tertiary-color);
 }
+
+.error {
+    transition: background-color 1s;
+    background-color: var(--warn-color);
+    color: var(--background-color);
+}
