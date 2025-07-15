@@ -519,7 +519,7 @@ def live_edit():
     else:
         flash("Unauthorized, so ... no.", "error")
     if not wiki:
-        return redirect(url_for("sheet.fensheet", c=formdata["context"]))
+        return redirect(url_for("sheets.sheet", c=formdata["context"]))
     else:
         return redirect(url_for("wiki.wikipage", page=context))
 

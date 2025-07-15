@@ -18,16 +18,19 @@
 <div>
     <p> This is the collected data:</p>
     {{ render_dict(data) }}
-    <div class="button-row">
-        <button type="button" class="textbtn"
-                hx-post="/chargen"
-                hx-vals='{"stage": "descriptions"}'
-                hx-target="#question">Back
-        </button>
-        <button type="button" class="textbtn"
-                hx-post="/chargen"
-                hx-vals='{"stage": "edit"}'
-                hx-target="#question">Edit
-        </button>
-    </div>
+    <form>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="button-row">
+            <button type="button" class="textbtn"
+                    hx-post="/chargen"
+                    hx-vals='{"stage": "descriptions"}'
+                    hx-target="#question">Back
+            </button>
+            <button type="button" class="textbtn"
+                    hx-post="/chargen"
+                    hx-vals='{"stage": "edit"}'
+                    hx-target="#question">Edit
+            </button>
+        </div>
+    </form>
 </div>

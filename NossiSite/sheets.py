@@ -278,7 +278,9 @@ def edit_from_chargen(name):
     c.headings_used = {"categories": category_headings}
     for k, v in gen.get("desc", {}).items():
         c.Character[k] = v
-
+    if gen["system"] == "endworld":
+        for k, v in gen["attributes"]["Core Stats"].items():
+            c.Character[k] = v
     p.body = c.to_md()
     p.tags.add(gen.get("system", "endworld"))
     p.tags.add(session["user"])
