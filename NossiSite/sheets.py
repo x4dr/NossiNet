@@ -89,7 +89,7 @@ def get_attributes(system, heading):
 def chargen():
     username = session.get("user", "")
     if not username:
-        session["returnto"] = url_for("views.chargen")
+        session["returnto"] = url_for("sheets.chargen")
         return redirect(url_for("views.login"))
     if "character_gen" not in session or request.path.endswith("/reset"):
         session["character_gen"] = {"stage": "start"}
@@ -114,7 +114,7 @@ def charactergen_stage(stage, system=None):
 def chargen_htmx():
     username = session.get("user", "")
     if not username:
-        session["returnto"] = url_for("views.chargen")
+        session["returnto"] = url_for("sheets.chargen")
         return redirect(url_for("login"))
 
     gen = session.setdefault("character_gen", {})
