@@ -18,5 +18,16 @@
 <div>
     <p> This is the collected data:</p>
     {{ render_dict(data) }}
-    <button></button>
+    <div class="button-row">
+        <button type="button" class="textbtn"
+                hx-post="/chargen"
+                hx-vals='{"stage": "descriptions"}'
+                hx-target="#question">Back
+        </button>
+        <button type="button" class="textbtn"
+                hx-post="/chargen"
+                hx-vals='{"stage": "edit"}'
+                hx-target="#question">Edit
+        </button>
+    </div>
 </div>

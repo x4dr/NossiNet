@@ -6,14 +6,23 @@
         <input id="name" type="text" class="textinput" name="name" value="{{ name }}" required>
     </div>
     <div class="form-row">
+        <label for="system">System</label>
+        <select id="system" class="textinput" name="system" required
+                hx-on:change="document.querySelectorAll('.toggled-row').forEach(e => e.style.display = (this.value === 'pbta' ? 'none' : ''))">
+            <option value="endworld" {% if system == "endworld" %}selected{% endif %}>Endworld</option>
+            <option value="fen" {% if system == "fen" %}selected{% endif %}>Fen</option>
+            <option value="pbta" {% if system == "pbta" %}selected{% endif %}>Powered by the Apocalypse</option>
+        </select>
+    </div>
+    <div class="form-row toggled-row" id="categories-row">
         <label for="categories">Categories</label>
         <input id="categories" type="text" class="textinput" name="categories" value="{{ categories }}" required>
     </div>
-    <div class="form-row">
+    <div class="form-row toggled-row" id="points-row">
         <label for="points">Points</label>
         <input id="points" type="text" class="textinput" name="points" value="{{ points }}" required>
     </div>
-    <input type="hidden" name="stage" value="1">
+    <input type="hidden" name="stage" value="prio">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="form-row">
         <button type="button" class="textbtn" onclick="location.href='/chargen/reset'">RESET</button>

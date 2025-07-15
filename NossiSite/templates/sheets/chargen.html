@@ -1,7 +1,10 @@
 {%- extends "base/layout.html" -%}
 {% block head %}
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="sheet.css") }}?v={{ restart_id }}">
+
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="chargen.css") }}?v={{ restart_id }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="glitch.css") }}?v={{ restart_id }}">
+    <script src="{{ url_for("static", filename="glitch.js") }}?v={{ restart_id }}"></script>
     <style>
         .htmx-swapping {
             opacity: 0;
@@ -14,6 +17,7 @@
         }
     </style>
     <script src="{{ url_for("static", filename="chargen.js") }}?v={{ restart_id }}"></script>
+
 
 {% endblock %}
 {% block body %}

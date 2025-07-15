@@ -2,12 +2,12 @@ import pickle
 import sqlite3
 from typing import Union, List, Dict
 
-from frozendict import frozendict
 from flask import flash
-from gamepack.Dice import DescriptiveError
+from frozendict import frozendict
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from NossiPack.VampireCharacter import VampireCharacter
+from gamepack.Dice import DescriptiveError
 
 __author__ = "maric"
 
@@ -38,7 +38,6 @@ class User:
 
         self.funds = funds
         self.sheet = "unused"
-        self.sheetid = sheet
         self._loadedsheet = None
         self.oldsheets = {}
         self.admin = admin

@@ -1,5 +1,4 @@
 import html
-import time
 from pathlib import Path
 
 from flask import (
@@ -26,6 +25,7 @@ from NossiSite.socks import (
     broadcast,
 )
 from gamepack.Dice import DescriptiveError
+from gamepack.EWCharacter import EWCharacter
 from gamepack.FenCharacter import FenCharacter
 from gamepack.MDPack import MDObj, MDTable
 from gamepack.PBTACharacter import PBTACharacter
@@ -46,15 +46,6 @@ ordinals = [
     "nonary",
     "denary",
 ]
-
-
-@views.route("/ew/<path:c>")
-def ewsheet(c):
-    try:
-        char = WikiCharacterSheet.load_locate(c)
-        return render_template("sheets/ewsheet.html", character=char.char, c=c)
-    except DescriptiveError:
-        return render_template("sheets/chargen.html", charname=Path(c).stem)
 
 
 @views.route("/skills/<system>/<heading>")
@@ -98,117 +89,167 @@ def get_attributes(system, heading):
 def chargen():
     username = session.get("user", "")
     if not username:
+        session["returnto"] = url_for("views.chargen")
         return redirect(url_for("views.login"))
     if "character_gen" not in session or request.path.endswith("/reset"):
-        session["character_gen"] = {"stage": 0}
+        session["character_gen"] = {"stage": "start"}
         return redirect(url_for("sheets.chargen"))
     else:
         print("request to chargen:", session["character_gen"])
     return render_template("sheets/chargen.html")
 
 
+stage_handlers = {}
+
+
+def charactergen_stage(stage, system=None):
+    def decorator(func):
+        stage_handlers[stage] = func
+        return func
+
+    return decorator
+
+
 @views.route("/chargen/htmx", methods=["GET"])
 def chargen_htmx():
     username = session.get("user", "")
     if not username:
+        session["returnto"] = url_for("views.chargen")
         return redirect(url_for("login"))
-    gen = session.get("character_gen", {})
-    match int(gen.get("stage", 0)):
-        case 0:
-            return render_template(
-                "sheets/chargen_htmx/fen_gen_0.html",
-                name=session.get("character_gen", {}).get("name", ""),
-                categories="Physical, Mental, Social, Ability, Special",
-                points="12, 10, 8, 6, 4",
-            )
-        case 1:
-            try:
-                items = [x.strip() for x in gen["order"].split(",")]
-            except KeyError:
-                items = [
-                    x.strip().strip(",")
-                    for x in gen.get("categories", "error").split(", ")
-                    if x
-                ]
-            points = [
-                x.strip().strip(",")
-                for x in gen.get("points", "error").split(", ")
-                if x
-            ]
-            return render_template(
-                "sheets/chargen_htmx/fen_gen_1.html",
-                ordinals=ordinals,
-                items=items,
-                points=points,
-            )
-        case 2:
-            order: list[str] = gen.get("order", "").split(",")
-            points = gen.get("points", "").split(",")
-            categories = []
-            for c in gen["categories"].split(","):
-                c = c.strip()
-                i = order.index(c)
-                p = points[i]
-                fields = []
-                try:
-                    for k, v in gen.get("skills", {}).get(c, {}).items():
-                        fields.append([k, int(v)])
-                except AttributeError:
-                    fields = [["", 0]]
 
-                categories.append({"heading": c, "points": p, "fields": fields})
+    gen = session.setdefault("character_gen", {})
+    stage = gen.get("stage", "start")
+    handler = stage_handlers.get(stage, stage_handlers["?"])
+    return handler(gen)
 
-            return render_template(
-                "sheets/chargen_htmx/fen_gen_2.html",
-                categories=categories,
-                system="endworld",
-            )
-        case 3:
-            categories = []
-            for c in gen["categories"].split(","):
-                c = c.strip()
-                p = sum(int(x) for x in gen.get("skills", {}).get(c, {}).values())
-                p = 1 + (p // 2)
-                attributes = get_attributes("endworld", c)
-                attributes = [
-                    (x, int(gen.get("attributes", {}).get(c, {}).get(x, 1)))
-                    for x in attributes
-                ]
-                categories.append({"heading": c, "points": p, "attributes": attributes})
-            return render_template(
-                "sheets/chargen_htmx/fen_gen_3.html",
-                categories=categories,
-                system="endworld",
-            )
 
-        case 4:
-            return render_template(
-                "sheets/chargen_htmx/fen_gen_4.html",
-                character_details=[
-                    "archetype",
-                    "background",
-                    "age",
-                    "appearance",
-                    "alias",
-                    "player",
-                    "vice",
-                    "category",
-                ],
-                prefill=gen.get("desc", {}),
-            )
-        case _:
-            gen["stage"] = 1
-            return (
-                "",
-                204,
-                {
-                    "HX-Redirect": "/edit_from_chargen/"
-                    + gen["name"].lower().replace(" ", "")
-                },
-            )
+@charactergen_stage("start")
+def chargen_start(state: dict):
+    return render_template(
+        "sheets/chargen_htmx/char_gen_start.html",
+        name=state.get("name", ""),
+        categories="Physical, Mental, Social, Ability, Special",
+        points="12, 10, 8, 6, 4",
+        system=state.get("system"),
+    )
 
-    print("no stage found:  " + session.get("character_gen", {}).get("stage", "0"))
-    return str(session.get("character_gen", 0))
+
+@charactergen_stage("prio")
+def chargen_priority(state: dict):
+    try:
+        items = [x.strip() for x in state["order"].split(",")]
+    except KeyError:
+        items = [
+            x.strip().strip(",")
+            for x in state.get("categories", "error").split(", ")
+            if x
+        ]
+    points = [
+        x.strip().strip(",") for x in state.get("points", "error").split(", ") if x
+    ]
+    return render_template(
+        "sheets/chargen_htmx/char_gen_prio.html",
+        ordinals=ordinals,
+        items=items,
+        points=points,
+        system=state.get("system"),
+    )
+
+
+@charactergen_stage("core")
+def chargen_corestats(state: dict):
+    heading = "Core Stats"
+    attributes = ["Resistance", "Fate", "Affinity"]
+    attributes = [
+        (x, int(state.get("attributes", {}).get(heading, {}).get(x, 1)))
+        for x in attributes
+    ]
+    return render_template(
+        "sheets/chargen_htmx/char_gen_core.html",
+        heading=heading,
+        attributes=attributes,
+        points=10,
+        system=state.get("system"),
+    )
+
+
+@charactergen_stage("skills")
+def chargen_skills(state: dict):
+    order: list[str] = state.get("order", "").split(",")
+    points = state.get("points", "").split(",")
+    categories = []
+    for c in state["categories"].split(","):
+        c = c.strip()
+        i = order.index(c)
+        p = points[i]
+        fields = []
+        try:
+            for k, v in state.get("skills", {}).get(c, {}).items():
+                fields.append([k, int(v)])
+        except AttributeError:
+            fields = [["", 0]]
+
+        categories.append({"heading": c, "points": p, "fields": fields})
+
+    return render_template(
+        "sheets/chargen_htmx/char_gen_skills.html",
+        categories=categories,
+        system="endworld",
+    )
+
+
+@charactergen_stage("attributes")
+def chargen_attributes(state: dict):
+    categories = []
+    for c in state["categories"].split(","):
+        c = c.strip()
+        p = sum(int(x) for x in state.get("skills", {}).get(c, {}).values())
+        p = 1 + (p // 2)
+        attributes = get_attributes("endworld", c)
+        attributes = [
+            (x, int(state.get("attributes", {}).get(c, {}).get(x, 1)))
+            for x in attributes
+        ]
+        categories.append({"heading": c, "points": p, "attributes": attributes})
+    return render_template(
+        "sheets/chargen_htmx/char_gen_attributes.html",
+        categories=categories,
+        system="endworld",
+    )
+
+
+@charactergen_stage("descriptions")
+def chargen_descriptions(state: dict):
+    return render_template(
+        "sheets/chargen_htmx/char_gen_desc.html",
+        character_details=[
+            "archetype",
+            "background",
+            "age",
+            "appearance",
+            "alias",
+            "player",
+            "vice",
+            "category",
+        ],
+        prefill=state.get("desc", {}),
+    )
+
+
+@charactergen_stage("end")
+def chargen_end(state: dict):
+    return render_template("sheets/chargen_htmx/char_gen_end.html", data=state)
+
+
+@charactergen_stage("?")
+def chardgen_htmx(state: dict):
+    state["stage"] = "start"
+    session.modified = True
+    return (
+        "",
+        204,
+        {"HX-Redirect": "/edit_from_chargen/" + state["name"].lower().replace(" ", "")},
+    )
 
 
 @views.route("/edit_from_chargen/<name>")
@@ -277,7 +318,9 @@ def handle_chargen():
             if k in ("skill", "attribute"):
                 section = gen.setdefault(k + "s", {})
                 heading = data["heading"][0]
-                section_for_heading = section.setdefault(heading, {})
+                section[heading] = {}
+                section_for_heading = section[heading]
+
                 for i, key in enumerate(v):
                     if not key:
                         continue
@@ -290,12 +333,6 @@ def handle_chargen():
         session.modified = True
     print(gen)
     return chargen_htmx()
-
-
-@views.route("/pbta/<path:c>")
-def pbtasheet(c):
-    char = WikiCharacterSheet.load_locate(c)
-    return render_template("sheets/pbtasheet.html", character=char.char, c=c)
 
 
 @views.route("/preview_move/<context>/<name>")
@@ -362,19 +399,19 @@ def make_checkbox(context, name, checked):
 
 @views.route("/update_move/<context>/<name>", methods=["GET", "POST"])
 def update_move(context, name):
-    sheet = WikiCharacterSheet.load_locate(context)
+    s = WikiCharacterSheet.load_locate(context)
     username = session.get("user", "")
-    assert isinstance(sheet.char, PBTACharacter)
+    assert isinstance(s.char, PBTACharacter)
     res = False
-    if sheet.tagcheck(username):
-        for move in sheet.char.moves:
+    if s.tagcheck(username):
+        for move in s.char.moves:
             if move[0] == name:
                 if request.method == "POST":
                     move[1] = not move[1]
                 res = move[1]
             break
-        sheet.body = sheet.char.to_md()
-        sheet.save_low_prio(f"moves updated by {username}")
+        s.body = s.char.to_md()
+        s.save_low_prio(f"moves updated by {username}")
     return make_checkbox(context, name, res)
 
 
@@ -385,11 +422,11 @@ def update_notes():
 
     notes = request.form.get("notes")  # Ensure your textarea has name="notes"
 
-    sheet = WikiCharacterSheet.load_locate(context)
-    if sheet.tagcheck(username):
-        sheet.char.notes = notes
-        sheet.body = sheet.char.to_md()
-        sheet.save_low_prio(f"notes updated by {username}")
+    s = WikiCharacterSheet.load_locate(context)
+    if s.tagcheck(username):
+        s.char.notes = notes
+        s.body = s.char.to_md()
+        s.save_low_prio(f"notes updated by {username}")
     return notes
 
 
@@ -460,36 +497,24 @@ def change_sheet_clock(name: str, page: str, delta: str):
     return "", 204
 
 
-@views.route("/fensheet/<path:c>")
-def fensheet(c):
-    username = session.get("user", "")
+@views.route("/sheet/<path:c>")
+def sheet(c):
     try:
-        time0 = time.time()
-        char = WikiCharacterSheet.load_locate(c)
-        if char is None:
-            return redirect(url_for("wiki.tagsearch", tag="character"))
-        u = User(username).configs()
-        time1 = time.time()
-        charsh = u.get("character_sheet", None)
-        body = render_template(
-            "sheets/fensheet.html",
-            character=char.char,
-            context=c,
-            userconf=u,
-            infolet=infolet_filler(c),
-            md=lambda x: lm.process(x, page=charsh),
-            extract=infolet_extractor,
-            owner=(
-                u.get("character_sheet", None)
-                if WikiPage.locate(c) == WikiPage.locate(charsh)
-                else ""
-            ),
-        )
-        time2 = time.time()
-        return body + f"<!---load: {time1 - time0} render: {time2 - time1}--->"
+        if s := WikiCharacterSheet.load_locate(c):
+            return s.render()
+        flash("Error: not found. Create Character?")
+        session.setdefault("character_gen", {})["stage"] = "start"
+        session["character_gen"]["name"] = c
+        return redirect(url_for("sheets.chargen"))
     except DescriptiveError as e:
         flash("Error with character sheet:\n" + e.args[0])
-        return redirect(url_for("views.showsheet", name=c))
+        return redirect(url_for("wiki.wikipage", page=c))
+
+
+@views.route("/pbta/<path:c>")
+@views.route("/fensheet/<path:c>")
+def oldsheet(c):
+    return redirect(url_for("sheets.sheet", c=c))
 
 
 def infolet_filler(context):
@@ -504,3 +529,35 @@ def infolet_extractor(x):
     if not m:
         return str(x)
     return m.group("name")
+
+
+@WikiCharacterSheet.renderer(EWCharacter)
+@WikiCharacterSheet.renderer(FenCharacter)
+def fensheet_render(self: WikiCharacterSheet):
+    if self is None:
+        return redirect(url_for("wiki.tagsearch", tag="character"))
+
+    username = session.get("user", "")
+    u = User(username).configs()
+    charsh = u.get("character_sheet", None)
+    path = self.file.relative_to(self.wikipath())
+    return render_template(
+        "sheets/fensheet.html",
+        character=self.char,
+        context=path,
+        userconf=u,
+        infolet=infolet_filler(path),
+        md=lambda x: lm.process(
+            x, page=self.file.relative_to(WikiPage.wikipath()).as_posix()
+        ),
+        extract=infolet_extractor,
+        owner=(charsh if WikiPage.locate(path) == WikiPage.locate(charsh) else ""),
+    )
+
+
+@WikiCharacterSheet.renderer(PBTACharacter)
+def pbta_render(self: WikiCharacterSheet):
+    path = self.file.relative_to(self.wikipath())
+    return render_template(
+        "sheets/pbtasheet.html", character=self.char, c=path.as_posix()
+    )

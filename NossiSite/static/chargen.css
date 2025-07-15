@@ -24,6 +24,7 @@ form {
 .textinput {
     flex: 1;
     padding: 4px 6px;
+    background-color: var(--shade-color);
 }
 
 .textbtn {

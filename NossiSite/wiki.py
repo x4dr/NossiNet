@@ -26,6 +26,7 @@ from NossiSite.helpers import checklogin
 from gamepack.Dice import DescriptiveError
 from gamepack.FenCharacter import FenCharacter
 from gamepack.MDPack import traverse_md, MDObj
+from gamepack.WikiCharacterSheet import WikiCharacterSheet
 from gamepack.WikiPage import WikiPage
 
 WikiPage.set_wikipath(Path.home() / "wiki")
@@ -224,7 +225,7 @@ def wikipage(page=None):
             raise FileNotFoundError
         if p.with_suffix("").as_posix() != page:
             return redirect(url_for("wiki.wikipage", page=p.with_suffix("")))
-        loaded_page = WikiPage.load_locate(page)
+        loaded_page = WikiCharacterSheet.load_locate(page)
     except (DescriptiveError, FileNotFoundError) as e:
         if (
             isinstance(e, DescriptiveError)
@@ -248,6 +249,7 @@ def wikipage(page=None):
             tags=loaded_page.tags,
             body=body,
             wiki=page,
+            sheet_available=loaded_page.char is not None,
             css=(
                 url_for("static", filename="wikimecha.css")
                 if "endworld" in page

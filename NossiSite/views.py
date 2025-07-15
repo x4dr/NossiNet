@@ -25,6 +25,7 @@ from NossiSite import ALLOWED_TAGS
 from NossiSite.base import log
 from NossiSite.helpers import checklogin
 from gamepack.Dice import DescriptiveError
+from gamepack.WikiCharacterSheet import WikiCharacterSheet
 
 views = Blueprint("views", __name__)
 
@@ -278,14 +279,11 @@ def charsheet():
     u = ul.loaduserbyname(session.get("user"))
     configchar = u.config("character_sheet", None)
     if configchar:
-        return redirect(url_for("sheets.fensheet", c=configchar))
-    sheet = u.getsheet().getdictrepr()
-    if sheet["Type"] == "OWOD":
-        return render_template("sheets/vampsheet.html", character=sheet, own=True)
-    error = "unrecognized sheet format"
-    return render_template(
-        "sheets/vampsheet.html", character=sheet, error=error, own=True
-    )
+        char = WikiCharacterSheet.load_locate(configchar)
+        if hasattr(char, "render"):
+            return char.render()
+        return redirect(url_for("sheets.sheet", c=configchar))
+    return redirect(url_for("sheets.chargen"))
 
 
 @views.route("/showsheet/<name>")

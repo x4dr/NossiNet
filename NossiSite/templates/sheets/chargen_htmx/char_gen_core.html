@@ -1,0 +1,30 @@
+<div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+    <form hx-post="/chargen" hx-trigger="submit" hx-target="#question" hx-swap="swap:0.3s">
+        <div class="grid-container-2" style="justify-content: space-around;">
+            <input type="hidden" name="stage" value="skills">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="grid-container-x">
+                {% include "sheets/chargen_htmx/gen_cat_attributes.html" %}
+            </div>
+        </div>
+        <div class="button-row">
+            <button type="button" class="textbtn"
+                    hx-post="/chargen"
+                    hx-vals='{"stage": "prio"}'
+                    hx-target="#question"
+                    style="flex: 1">Back
+            </button>
+            <button type="submit" class="textbtn" style="flex: 1">Next</button>
+        </div>
+    </form>
+
+    <!-- Full-width rule section below -->
+    <div style="width: 100%; margin-top: 2em;">
+        <a href="/wiki/{{ system }}/character_generation#Core%20Stats"><h3>Core Stats</h3></a>
+        <div hx-swap="innerHTML" hx-target="this"
+             hx-get="/specific/{{ system }}/character_generation:core%20stats:-"
+             hx-trigger="load">
+            loading {{ system }} rules...
+        </div>
+    </div>
+</div>

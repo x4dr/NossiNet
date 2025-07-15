@@ -348,10 +348,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const desc = option?.dataset.desc;
 
         const target = document.querySelector('#explanation');
-        target.style.transition = 'opacity 0.2s ease';
+        target.style.transition = 'opacity 0.5s ease';
         target.style.opacity = 0;
         setTimeout(() => {
-            target.innerHTML = `<h3>${val}</h3>${desc || 'No Description Available!'}`;
+            target.innerHTML = `<a href="/wiki/${heading}skills"><h3>${val}</h3></a>${desc || 'No Description Available!'}`;
             target.style.opacity = 1;
         }, 300);
     }

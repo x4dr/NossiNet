@@ -1,0 +1,37 @@
+<div>
+    <div style="display: flex; justify-content: center;">
+        <form hx-post="/chargen" hx-trigger="submit" hx-target="#question" hx-swap="swap:0.3s" style="max-width: 50%">
+            <label><b class="glitch" data-text="Grab">Drag</b> the categories to set their priority and assign
+                points.</label>
+            <div class="grid-container3">
+                {% for i in range(items|length) %}
+                    <div class="label">{{ ordinals[i].capitalize() }}</div>
+                    <div class="draggable-item textbtn narrowish" draggable="true"
+                         data-value="{{ items[i] }}">{{ items[i] }}</div>
+                    <div class="value">
+                        <div class="bar" style="--bar-scale: 1;"></div>
+                        {{ points[i] }}</div>
+                {% endfor %}
+            </div>
+            <input type="hidden" name="order" id="order-input" value={{ ",".join(items) }}>
+            <input type="hidden" name="stage" value="{% if system=="endworld" %}core{% else %}skills{% endif %}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div style="display: flex; width: 100%; gap: 1em">
+                <button type="button" class="textbtn"
+                        hx-post="/chargen"
+                        hx-vals='{"stage": "start"}'
+                        hx-target="#question"
+                        style="flex:auto">Back
+                </button>
+                <button id="shuffle-button" type="button" class="textbtn" style="flex:auto">Shuffle</button>
+                <button type="submit" id="order-submit-button" class="textbtn" style="flex:auto">Next</button>
+            </div>
+        </form>
+    </div>
+
+    <a href="/wiki/{{ system }}/character_generation#Categories"><h3>Categories</h3></a>
+    <div hx-swap="innerHTML" hx-get="/specific/{{ system }}//character_generation:categories:-" hx-trigger="load">
+        loading {{ system }} rules...
+    </div>
+
+</div>
