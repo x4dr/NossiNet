@@ -15,7 +15,7 @@ from flask import (
 from markupsafe import Markup
 
 from NossiPack.LocalMarkdown import LocalMarkdown
-from NossiPack.User import User
+from NossiPack.User import User, Config
 from NossiSite.base_ext import decode_id
 from NossiSite.socks import (
     generate_clock,
@@ -290,6 +290,7 @@ def edit_from_chargen(name):
         tags=" ".join(p.tags),
         text=p.body,
     )
+    Config.save(session["user"], "character_sheet", path.as_posix())
     return render_template("base/edit_entry.html", mode="wiki", wiki=path, entry=entry)
 
 
