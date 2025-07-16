@@ -1,6 +1,7 @@
 <form hx-post="/chargen" hx-trigger="submit" hx-target="#question" hx-swap="swap:0.33s">
-    <p>This is the start of the quick character editor. Lets start with your name.
-        The Categories and points can be left alone at this point.</p>
+    <p>This is the start of the <span class="glitch" data-text="slow">quick</span> character editor. Let's start with
+        your name.
+        The categories and points can be left alone at this point, if you are not making your own rules.</p>
     <div class="form-row">
         <label for="name">Name</label>
         <input id="name" type="text" class="textinput" name="name" value="{{ name }}" required>
@@ -30,4 +31,13 @@
     </div>
 </form>
 
-<div id="rules">test :)</div>
+
+<a href="/wiki/endworld/character_generation">
+    <h2 class="glitch" data-text="Synthetic  Awakening<">Character Generation</h2>
+</a>
+<div> Down here you can find (hopefully) relevant wikipages to the current step. For right now, the entire character
+    generation document.
+    You don't need to read _EVERYTHING_ but you should roughly know what is in these pages or have guidance to create
+    a character.
+</div>
+<div hx-trigger="load" hx-swap="innerHTML" hx-get="/specific/endworld/character_generation:-"></div>
