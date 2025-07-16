@@ -1,4 +1,3 @@
-import html
 from pathlib import Path
 
 from flask import (
@@ -10,7 +9,7 @@ from flask import (
     redirect,
     url_for,
     flash,
-    Response,
+    jsonify,
 )
 from markupsafe import Markup
 
@@ -51,6 +50,9 @@ ordinals = [
 @views.route("/skills/<system>/<heading>")
 def get_skills(system, heading):
     print("received skill request for", system, heading)
+    if system == "context":
+        system = session["character_gen"]["system"]
+        print("context:", system)
 
     def flatten_skills(node):
         if hasattr(node, "children") and node.children:
@@ -61,19 +63,24 @@ def get_skills(system, heading):
             ]
         return [node]
 
-    page = system + "/descriptions/" + heading.lower() + "skills"
-    skills = WikiPage.load_locate(page).md()
-    skills = flatten_skills(skills)
-    n = {}
-    for x in skills:
-        key = x.header
-        value = html.escape(lm.process(x.plaintext, page))
-        n[key] = value
-    skills = n
-    options = "\n".join(f'<option value="{s}" data-desc="{skills[s]}">' for s in skills)
-    options = f'<datalist id="{heading}_skills">{options}</datalist>'
-    print("replying with", len(skills))
-    return Response(options, mimetype="text/html")
+    if system == "endworld" and heading.lower() == "detail":
+        return jsonify(
+            {
+                "archetype": "the core role or narrative type your character embodies",
+                "background": "a term/less than a sentence summary of your character's history or origin",
+                "age": "either how old you look or how long you have been alive",
+                "appearance": "a quick description",
+                "alias": "any nickname, street name?",
+                "player": "you",
+                "vice": "for roleplay purposes",
+                "category": "see the wiki :)",
+            }
+        )
+
+    page = f"{system}/descriptions/{heading.lower()}skills"
+    skills = flatten_skills(WikiPage.load_locate(page).md())
+    result = {x.header: lm.process(x.plaintext, page) for x in skills}
+    return jsonify(result)
 
 
 def get_attributes(system, heading):
@@ -118,6 +125,7 @@ def chargen_htmx():
         return redirect(url_for("login"))
 
     gen = session.setdefault("character_gen", {})
+    gen["name"] = gen.get("name", "").rsplit("/")[-1]
     stage = gen.get("stage", "start")
     handler = stage_handlers.get(stage, stage_handlers["?"])
     return handler(gen)
@@ -222,16 +230,6 @@ def chargen_attributes(state: dict):
 def chargen_descriptions(state: dict):
     return render_template(
         "sheets/chargen_htmx/char_gen_desc.html",
-        character_details=[
-            "archetype",
-            "background",
-            "age",
-            "appearance",
-            "alias",
-            "player",
-            "vice",
-            "category",
-        ],
         prefill=state.get("desc", {}),
     )
 

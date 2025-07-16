@@ -7,7 +7,7 @@
         <input type="hidden" name="value" value="{{ val }}">
     </div>
 {% endmacro %}
-<form hx-post="/chargen/" hx-trigger="change, input delay:1s"
+<form hx-post="/chargen/" autocomplete="off" hx-trigger="change, input delay:1s"
       hx-swap="none" class="skill-form">
     <h2 data-max="{{ points }}" class="showpoints">{{ heading }}</h2>
 
@@ -18,7 +18,7 @@
             <label class="input-cell">
                 <span class="sr-only">Skill Name {{ i + 1 }}</span>
                 <input type="text" name="skill" list="{{ heading }}_skills"
-                       value="{{ f[0] }}" class="textinput skill-input" autocomplete="off">
+                       value="{{ f[0] }}" class="textinput skill-input" data-heading="{{ heading }}">
             </label>
             {{- num_button(3, f[1]) -}}
 

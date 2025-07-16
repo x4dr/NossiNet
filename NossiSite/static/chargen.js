@@ -1,9 +1,17 @@
 document.addEventListener("DOMContentLoaded", () => {
+    document.body.addEventListener("htmx:beforeSwap", () => {
+        document.querySelectorAll('.smoothtransition').forEach(el => {
+            el.style.gridTemplateRows = '0fr';
+        });
 
-    document.body.addEventListener("htmx:afterSwap", () => {
+    });
+    document.body.addEventListener("htmx:afterSwap", async e => {
         let savedRects = new Map();
         let current_element_order = [];
         let items = [];
+        document.querySelectorAll('.smoothtransition').forEach(el => {
+            el.style.gridTemplateRows = '1fr';
+        });
 
         function waitForTransitions(elements) {
             return Promise.all(elements.map(el => {
@@ -73,14 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 draggedItem.classList.add('dragging');
             });
 
-
-            container.addEventListener('dragend', async () => {
-                if (!draggedItem) return;
-                draggedItem.classList.remove('dragging');
-                if (!current_element_order.length) {
-                    draggedItem = null;
-                    return;
-                }
+            async function savestate() {
                 await waitForTransitions(current_element_order);
                 // Clean up styles
                 current_element_order.forEach(el => {
@@ -104,6 +105,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 draggedItem = null;
                 items = Array.from(container.querySelectorAll('.draggable-item'));
+            }
+
+
+            container.addEventListener('dragend', async () => {
+                if (!draggedItem) return;
+                draggedItem.classList.remove('dragging');
+                if (!current_element_order.length) {
+                    draggedItem = null;
+                    return;
+                }
+                await savestate();
 
             });
 
@@ -128,7 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 animateVisualReorder(container, newOrder);
             });
-            document.getElementById("shuffle-button").addEventListener("click", () => {
+            document.getElementById("shuffle-button").addEventListener("click", async () => {
 
                 const container = document.querySelector('.grid-container3');
                 const items = Array.from(container.querySelectorAll('.draggable-item'));
@@ -139,6 +151,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
                 }
                 animateVisualReorder(container, shuffled);
+
+                await savestate();
+
             });
             const bars = [...document.querySelectorAll('.value .bar')];
             const points = bars.map(bar => parseFloat(bar.parentElement.textContent.trim()));
@@ -156,8 +171,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         }
+        const optionscache = {}; // global cache
 
-        function createFieldRow(index, heading, grid) {
+        async function getOptions(heading, system = 'context') {
+            if (!optionscache[heading]) {
+                const res = await fetch(`/skills/${system}/${heading}`);
+
+                const data = await res.json();
+                optionscache[heading] = {
+                    keys: Object.keys(data),
+                    descriptions: data
+                };
+            }
+            return optionscache[heading];
+        }
+
+        async function createFieldRow(index, heading, grid) {
             // Create input cell
             const inputCell = document.createElement('div');
             inputCell.className = 'input-cell';
@@ -165,11 +194,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const input = document.createElement('input');
             input.type = 'text';
             input.name = 'skill';
-            input.setAttribute('list', `${heading}_skills`);
+
             input.className = 'textinput skill-input';
             input.addEventListener('focus', updateDesc);
-            input.addEventListener('input', updateDesc);
-
+            input.addEventListener("change", updateDesc)
             inputCell.appendChild(input);
 
 
@@ -196,29 +224,59 @@ document.addEventListener("DOMContentLoaded", () => {
             grid.appendChild(numInput);
         }
 
-        function ensureTrailingRowPerGrid() {
+        async function ensureTrailingRowPerGrid() {
             const grids = new Set();
             document.querySelectorAll('.skill-input').forEach(input => {
                 const parentGrid = input.closest('.grid-container2');
                 if (parentGrid) grids.add(parentGrid);
             });
 
-            grids.forEach(grid => {
-                const inputs = grid.querySelectorAll('.skill-input');
-                const last = inputs[inputs.length - 1];
-                if (last && last.value.trim() !== '') {
-                    createFieldRow(inputs.length, grid.dataset.heading, grid);
+            for (const grid of grids) {
+                let inputs = [...grid.querySelectorAll('.skill-input')];
+
+                // Remove empty inputs except keep at least 3 rows
+                for (let i = inputs.length - 1; i >= 0; i--) {
+                    const input = inputs[i];
+                    if (input.value.trim() === '') {
+                        // If we have more than 3 rows, remove this empty row
+                        if (inputs.length > 3) {
+                            const cell = input.closest('.input-cell');
+                            if (!cell) alert('No input-cell found for input');
+
+                            const numCell = cell.nextElementSibling;
+                            cell.remove();
+                            if (!numCell || !numCell.classList.contains('num-input')) {
+                                alert('Expected num-input sibling not found after input-cell removal');
+                            } else {
+                                numCell.remove();
+                            }
+                            inputs.splice(i, 1); // update inputs array
+                        }
+                    }
                 }
-            });
+
+                inputs = [...grid.querySelectorAll('.skill-input')];
+                while (inputs.length < 3) {
+                    await createFieldRow(inputs.length, grid.dataset.heading, grid);
+                    inputs = [...grid.querySelectorAll('.skill-input')];
+                }
+
+                // Ensure exactly 1 empty row at the end
+                const last = inputs[inputs.length - 1];
+                if (last.value.trim() !== '') {
+                    await createFieldRow(inputs.length, grid.dataset.heading, grid);
+                }
+            }
+            await setupSkillInputs()
         }
 
-        document.addEventListener('change', e => {
+        document.addEventListener('change', async e => {
             if (e.target.classList.contains('skill-input')) {
-                ensureTrailingRowPerGrid();
+                await ensureTrailingRowPerGrid();
             }
         });
 
-        ensureTrailingRowPerGrid(); // in case last one is already filled
+        ensureTrailingRowPerGrid().then();
 
         function recalculate_points(formEl) {
             const total = [...formEl.querySelectorAll('.num-input')].reduce((sum, input) => {
@@ -263,7 +321,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const form = input.form;
             if (!form) return;
 
-            const inputs = [...form.querySelectorAll('input[list]')];
+            const inputs = [...form.querySelectorAll('.skill-input')]
             const values = inputs.map(i => i.value.trim().toLowerCase());
             const counts = values.reduce((acc, v) => {
                 if (!v) return acc;
@@ -281,16 +339,67 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
-        document.querySelectorAll('input[list]').forEach(input => {
-            if (!input._listenersAdded) {
-                input.addEventListener('focus', updateDesc);
-                input.addEventListener('input', e => {
-                    updateDesc(e);
-                    validateDuplicates(input);
-                });
-                input._listenersAdded = true;
+        async function setupSkillInputs() {
+            const inputs = [...document.querySelectorAll('.skill-input')];
+            for (const input of inputs) {
+                if (!input._listenersAdded) {
+                    input.addEventListener('focus', async e => {
+                        await updateDesc(e);
+                    });
+                    input.addEventListener('change', async e => {
+                        await updateDesc(e);
+                        validateDuplicates(input);
+                    });
+                    const grid = input.closest('.grid-container2');
+
+
+                    if (!grid._used) grid._used = [];
+                    grid._used.length = 0;
+                    grid._used.push(
+                        ...[...grid.querySelectorAll('.skill-input')]
+                            .map(inp => inp.value)
+                            .filter(v => v)
+                    );
+
+                    const heading = grid.dataset.heading;
+                    const options = await getOptions(heading);
+                    autocomplete(input, options.keys, grid._used);
+                    input._listenersAdded = true;
+                }
             }
-        });
+        }
+
+        async function updateDesc(event) {
+            const input = event.target;
+            const val = input.value;
+            const grid = input.closest('.grid-container2') || input.closest('.grid-container-2');
+            const heading = grid.dataset.heading?.toLowerCase();
+            if (!val || !heading) return;
+            const used = grid._used;
+            used.length = 0;
+            used.push(
+                ...[...grid.querySelectorAll('.skill-input')]
+                    .map(inp => inp.value)
+                    .filter(v => v)
+            );
+            const option = await getOptions(heading);
+            const desc = option.descriptions[val];
+            const target = document.querySelector('#explanation');
+            target.style.transition = 'opacity 0.3s ease';
+            target.style.opacity = 0;
+            setTimeout(() => {
+                target.innerHTML = `<a href="/wiki/${heading}skills#${val}"><h3>${val}</h3></a>${desc || '<div>No Description Available!</div>'}`;
+                target.style.opacity = 1;
+            }, 500);
+        }
+
+        for (const inp of document.querySelectorAll('.detail-name')) {
+            const grid = inp.closest('.grid-container-2');
+            if (!grid._used) grid._used = [];
+            const options = await getOptions("detail");
+            autocomplete(inp, options.keys, grid._used);
+            inp.addEventListener("change", updateDesc)
+        }
 
     });
 
@@ -334,26 +443,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             container.style.setProperty('--per-row', perRow);
         });
-    }
-
-    function updateDesc(event) {
-        const input = event.target;
-        const val = input.value;
-        const heading = input.closest('.grid-container2')?.dataset.heading?.toLowerCase();
-        if (!val || !heading) return;
-
-        const datalist = document.getElementById(input.getAttribute('list'));
-        const option = Array.from(datalist.options)
-            .find(o => o.value.toLowerCase() === val.toLowerCase());
-        const desc = option?.dataset.desc;
-
-        const target = document.querySelector('#explanation');
-        target.style.transition = 'opacity 0.5s ease';
-        target.style.opacity = 0;
-        setTimeout(() => {
-            target.innerHTML = `<a href="/wiki/${heading}skills"><h3>${val}</h3></a>${desc || 'No Description Available!'}`;
-            target.style.opacity = 1;
-        }, 300);
     }
 
 

@@ -2,6 +2,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    flex-direction: column;
 }
 
 form {
@@ -124,10 +125,44 @@ form {
 
 }
 
+.num-input button:focus-visible {
+    outline: 2px solid var(--primary-color);
+}
+
 .num-input button.active {
     background: var(--secondary-color);
     border-color: var(--tertiary-color);
 }
+
+.input-cell {
+    position: relative;
+    display: inline-block;
+}
+
+.autocomplete-items {
+    position: absolute;
+    border: 1px solid var(--tertiary-color);
+    z-index: 1;
+    top: 100%;
+    left: 0;
+    right: 0;
+
+}
+
+.autocomplete-items div {
+    padding: 10px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out, color 0.3s ease-in-out, transform 0.3s ease-out, opacity 0.2s linear;
+    background-color: var(--background-color);
+    border-bottom: 1px solid var(--primary-color);
+    color: var(--secondary-color);
+}
+
+.autocomplete-items .autocomplete-active {
+    background-color: var(--secondary-color);
+    color: var(--background-color);
+}
+
 
 .grid-container-x {
     display: grid;
@@ -229,4 +264,53 @@ col {
     transition: background-color 1s;
     background-color: var(--warn-color);
     color: var(--background-color);
+}
+
+.swoosh-out {
+    animation: swooshOut 3000ms forwards;
+}
+
+.swoosh-in {
+    animation: swooshIn 3000ms;
+}
+
+@keyframes swooshOut {
+    to {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+}
+
+@keyframes swooshIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.fadeout.htmx-swapping {
+    opacity: 0;
+}
+
+.fadein.htmx-added {
+    opacity: 0;
+}
+
+.fadein {
+    opacity: 1;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.smoothtransition {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 0.3s ease-in-out;
+}
+
+.smoothinner {
+    overflow: hidden;
 }

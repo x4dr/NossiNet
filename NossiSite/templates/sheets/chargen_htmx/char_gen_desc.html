@@ -1,27 +1,21 @@
-<form hx-post="/chargen" hx-trigger="submit" hx-target="#question" hx-swap="swap:0.3s" style="width: 50%">
+<form id="current_question" hx-post="/chargen" hx-trigger="submit" hx-target="#question" hx-swap="swap:0.33s">
     <p>Please enter your character details below. New Rows will be provided once necessary. Doubleclick for
         suggestions.</p>
-
-    <datalist id="detail-options">
-        {% for item in character_details %}
-            <option value="{{ item }}">
-        {% endfor %}
-    </datalist>
     <div id="details"
          hx-get="/add-detail-row"
          hx-trigger="load"
          hx-target="#details"
          hx-swap="beforeend"
-         class="grid-container-2">
+         class="grid-container-2"
+         hx-params="none"
+         data-heading="details">
         {% for k,v in prefill.items() %}
-            <input list="detail-options"
-                   name="key"
+            <input name="key"
                    class="detail-name textinput"
                    placeholder="Detail name"
                    aria-label="description detail name"
                    autocomplete="off"
                    value="{{ k }}">
-
             <input name="value"
                    class="textinput"
                    placeholder="Value"
@@ -38,9 +32,13 @@
     <div class="button-row">
         <button type="button" class="textbtn"
                 hx-post="/chargen"
-                hx-vals='{"stage": "end"}'
+                hx-vals='{"stage": "attributes"}'
+                hx-swap="swap:0.33s"
                 hx-target="#question">Back
         </button>
         <button type="submit" class="textbtn" style="width: fit-content">Next</button>
     </div>
 </form>
+<div id="rules">
+
+</div>

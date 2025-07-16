@@ -49,7 +49,6 @@ window.addEventListener("load", () => {
             const textdiv = editfield.querySelector("textarea");
             const olddata = editfield.querySelector("[name='original']");
             const closebutton = editfield.querySelector("[name='closebutton']");
-            console.log(olddata, closebutton, textdiv, overlay, editfield)
             editfield.className = "editfield"
             editfield.classList.add("activeedit");
             textdiv.value = reply["data"];

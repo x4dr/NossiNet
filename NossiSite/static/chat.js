@@ -1,8 +1,8 @@
 function chat_main() {
-    let socket = io.connect(location.protocol+'//' + document.domain + ':' + location.port + '/chat');
+    let socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + '/chat');
     socket.on('message', function (msg) {
         let box = document.querySelector('#chatbox');
-        let div =  document.createElement('div');
+        let div = document.createElement('div');
         div.innerHTML = msg.data;
         box.appendChild(div);
         box.scrollTop = box.scrollHeight;
@@ -26,7 +26,6 @@ function chat_main() {
     let prevCommand = [];
     let commandCount = 0;
     let keyCount = 0;
-
 
 
     document.querySelector('#messageform').addEventListener('submit', function (event) {
@@ -92,7 +91,6 @@ function chat_main() {
 if (document.readyState !== 'loading') {
     chat_main();
 } else {
-    console.log('document was not ready, place code here');
     document.addEventListener('DOMContentLoaded', function () {
         chat_main();
     });
