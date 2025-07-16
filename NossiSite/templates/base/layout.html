@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="mul">
+<html lang="mul" hx-ext="ws">
 <head>
     <meta name="viewport" content="width=device-width">
     <meta name="description" content="NosferatuNetwork by Maric
@@ -14,8 +14,15 @@
     {% endblock %}
     <link rel="stylesheet" type="text/css" href="{{ url_for("views.theme") }}?v={{ restart_id }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename='style.css') }}?v={{ restart_id }}">
-    <script src="https://cdn.jsdelivr.net/npm/htmx.org"></script>
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js"
+            integrity="sha384-Akqfrbj/HpNVo8k11SXBb6TlBWmXXlYQrCSqEWmyKJe+hDm3Z/B2WVG4smwBkRVm"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/htmx-ext-ws@2.0.2"
+            integrity="sha384-0RHpPqZ4QLJXG/ALtieEL/G+NuAI98LYSkT9s6FgciveUhAdo/6wab5NU1tm2Bxs"
+            crossorigin="anonymous"></script>
+
     <script type="text/javascript" charset="utf-8">
+        htmx.logAll();
         window.addEventListener("load", () => {
             const hiders = document.getElementsByClassName('hider');
             for (let i = 0; i < hiders.length; i++) {

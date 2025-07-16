@@ -24,12 +24,12 @@ from NossiSite.socks import (
     broadcast,
 )
 from gamepack.Dice import DescriptiveError
-from gamepack.EWCharacter import EWCharacter
 from gamepack.FenCharacter import FenCharacter
 from gamepack.MDPack import MDObj, MDTable
 from gamepack.PBTACharacter import PBTACharacter
 from gamepack.WikiCharacterSheet import WikiCharacterSheet
 from gamepack.WikiPage import WikiPage
+from gamepack.endworld.EWCharacter import EWCharacter
 
 lm = LocalMarkdown()
 views = Blueprint("sheets", __name__)
@@ -336,8 +336,9 @@ def handle_chargen():
     return chargen_htmx()
 
 
-@views.route("/preview_move/<context>/<name>")
-def preview_move(context, name):
+@views.route("/preview_move/<path:context>")
+def preview_move(context):
+    context, name = context.rsplit("/", 1)
     page = WikiPage.load_locate(context)  # Load the wiki page
     md_obj = MDObj.from_md(page.body)  # Convert to Markdown object
     result = md_obj.search_children(name)  # Search for the name
@@ -560,5 +561,5 @@ def fensheet_render(self: WikiCharacterSheet):
 def pbta_render(self: WikiCharacterSheet):
     path = self.file.relative_to(self.wikipath())
     return render_template(
-        "sheets/pbtasheet.html", character=self.char, c=path.as_posix()
+        "sheets/pbtasheet.html", character=self.char, c=path.with_suffix("").as_posix()
     )

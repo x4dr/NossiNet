@@ -1,6 +1,8 @@
 import json
+import string
 import subprocess
 import time
+from random import SystemRandom
 
 import bleach
 from flask import (
@@ -22,7 +24,7 @@ from Data import connect_db
 from NossiPack.User import Userlist, User, Config
 from NossiPack.VampireCharacter import VampireCharacter
 from NossiSite import ALLOWED_TAGS
-from NossiSite.base import log
+from NossiSite.base import log, app
 from NossiSite.helpers import checklogin
 from gamepack.Dice import DescriptiveError
 from gamepack.WikiCharacterSheet import WikiCharacterSheet
@@ -104,6 +106,9 @@ def theme_editor():
 @views.route("/savetheme", methods=["POST"])
 def save_theme():
     username = session.get("user", "")
+    app.jinja_env.globals["restart_id"] = "".join(
+        SystemRandom().choice(string.hexdigits) for _ in range(4)
+    )
     if not username:
         flash("not logged in", "error")
         return (

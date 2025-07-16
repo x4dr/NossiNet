@@ -14,8 +14,8 @@ from gamepack.MDPack import (
     table_remove,
     table_row_edit,
 )
-from gamepack.Mecha import Mecha
 from gamepack.WikiPage import WikiPage
+from gamepack.endworld.Mecha import Mecha
 from tests.NossiTestCase import NossiTestCase
 
 

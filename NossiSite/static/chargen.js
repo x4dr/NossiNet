@@ -245,6 +245,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
                             const numCell = cell.nextElementSibling;
                             cell.remove();
+                            if (input._autocompleteList) {
+                                removeAutocompleteList(input._autocompleteList);
+                                input._autocompleteList = null;
+                            }
                             if (!numCell || !numCell.classList.contains('num-input')) {
                                 alert('Expected num-input sibling not found after input-cell removal');
                             } else {

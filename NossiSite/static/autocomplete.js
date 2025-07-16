@@ -46,6 +46,7 @@ function makeActive(x) {
 }
 
 function buildAutocompleteList(arr, inp) {
+    document.querySelectorAll('.autocomplete-items').forEach(removeAutocompleteList);
     const container = document.createElement("div");
     container.className = "autocomplete-items";
     for (const val of arr) {

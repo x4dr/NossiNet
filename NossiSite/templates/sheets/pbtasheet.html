@@ -1,9 +1,4 @@
-<!doctype html>
-<html lang="en">
-<script src="https://cdn.jsdelivr.net/npm/htmx.org@1.9.3"
-        integrity="sha384-lVb3Rd/Ca0AxaoZg5sACe8FJKF0tnUgR2Kd7ehUOG5GCcROv5uBIZsOqovBAcWua"
-        crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/htmx.org/dist/ext/ws.js"></script>
+{%- extends "base/layout.html" -%}
 {% block head %}
     <link rel="stylesheet" type="text/css" href="{{ url_for("views.theme") }}?v={{ restart_id }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="wiki.css") }}?v={{ restart_id }}">
@@ -13,7 +8,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Tillana:wght@400;500;600;700;800&display=swap"
           rel="stylesheet">
-
     {%- block title -%}
         {%- if character.Name -%}
             <title>{{ character.Name }}</title>
