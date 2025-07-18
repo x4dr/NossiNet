@@ -256,11 +256,6 @@ input:focus-visible {
     outline: 2px solid var(--secondary-color);
 }
 
-.active, .collapsible:hover {
-    background-color: #311;
-}
-
-
 .bigbtn {
     position: absolute;
     width: 100%;

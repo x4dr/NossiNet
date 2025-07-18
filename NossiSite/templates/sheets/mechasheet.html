@@ -1,0 +1,199 @@
+{% extends "base/layout.html" %}
+{% block head %}
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename='mecha.css') }}?v={{ restart_id }}">
+{% endblock %}
+{% block body %}
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            document.body.addEventListener('htmx:afterSettle', () => {
+
+                document.querySelectorAll('[data-cyberlabel]:not([data-cyberlabel-initialized])')
+                    .forEach(target => {
+                        target.setAttribute('data-cyberlabel-initialized', '');
+
+                        const label = document.createElement('div');
+                        label.className = 'cyber-label';
+                        label.textContent = target.getAttribute('data-cyberlabel');
+                        document.body.appendChild(label);
+
+                        // Create SVG inside label
+                        const svgNS = 'http://www.w3.org/2000/svg';
+                        const svg = document.createElementNS(svgNS, 'svg');
+                        svg.style.position = 'absolute';
+                        svg.style.top = '0';
+                        svg.style.left = '0';
+                        svg.style.width = '100%';
+                        svg.style.height = '100%';
+                        svg.style.pointerEvents = 'none';
+                        label.appendChild(svg);
+
+                        function showLabel() {
+                            const targetRect = target.getBoundingClientRect();
+                            const centerX = window.innerWidth / 2;
+                            const offset = Math.random() * 80 + 40;
+                            const bias = targetRect.left + targetRect.width / 2 < centerX ? -1 : 1;
+                            const angle = Math.random() > 0.5 ? 30 : 60;
+                            const radians = angle * (Math.PI / 180);
+                            const dx = Math.cos(radians) * offset * bias;
+                            const dy = Math.sin(radians) * offset;
+
+                            const labelX = targetRect.left + targetRect.width / 2 + dx;
+                            const labelY = targetRect.top + targetRect.height / 2 - dy;
+
+                            label.style.left = `${labelX}px`;
+                            label.style.top = `${labelY}px`;
+                            label.classList.add('visible');
+
+                            requestAnimationFrame(() => {
+                                const labelRect = label.getBoundingClientRect();
+                                const targetCenter = {
+                                    x: targetRect.left + targetRect.width / 2,
+                                    y: targetRect.top + targetRect.height / 2,
+                                };
+
+                                // Clear previous SVG lines
+                                svg.innerHTML = '';
+
+                                const fromTop = labelRect.top > targetCenter.y;
+
+                                // Calculate points relative to label (label top-left is 0,0)
+                                const labelCenterX = labelRect.width / 2;
+                                const labelLineY = fromTop ? 0 : labelRect.height;
+
+                                const horizStartX = labelCenterX;
+                                const horizEndX = labelCenterX + 20 * bias;
+
+                                // Horizontal line (overline or underline)
+                                const horizLine = document.createElementNS(svgNS, 'line');
+                                horizLine.setAttribute('x1', horizStartX);
+                                horizLine.setAttribute('y1', labelLineY);
+                                horizLine.setAttribute('x2', horizEndX);
+                                horizLine.setAttribute('y2', labelLineY);
+                                horizLine.setAttribute('stroke', '#0ff');
+                                horizLine.setAttribute('stroke-width', '2');
+                                svg.appendChild(horizLine);
+
+                                // Diagonal line (from horizontal line end to target center relative to label)
+                                const targetX = targetCenter.x - labelRect.left;
+                                const targetY = targetCenter.y - labelRect.top;
+
+                                const diagLine = document.createElementNS(svgNS, 'line');
+                                diagLine.setAttribute('x1', horizEndX);
+                                diagLine.setAttribute('y1', labelLineY);
+                                diagLine.setAttribute('x2', targetX);
+                                diagLine.setAttribute('y2', targetY);
+                                diagLine.setAttribute('stroke', '#0ff');
+                                diagLine.setAttribute('stroke-width', '2');
+                                svg.appendChild(diagLine);
+                                label.appendChild(svg);
+                            });
+                        }
+
+                        function hideLabel() {
+                            label.classList.remove('visible');
+                        }
+
+                        target.addEventListener('mouseenter', showLabel);
+                        target.addEventListener('mouseleave', hideLabel);
+                    });
+            });
+        });
+    </script>
+    <h3>Movement</h3>
+    <div class="system-row">
+        {% for energy in mech.Movement.values() %}
+            <div hx-get="{{ url_for("sheets.mecha_sys", m=identifier, s="movement", n=energy.name) }}"
+                 hx-swap="innerHTML"
+                 hx-trigger="load"
+            ></div>
+        {% endfor %}
+    </div>
+
+    <h3>Energy</h3>
+    <div class="system-row">
+        {% for energy in mech.Energy.values() %}
+            <div hx-get="{{ url_for("sheets.mecha_sys", m=identifier, s="energy", n=energy.name) }}"
+                 hx-swap="innerHTML"
+                 hx-trigger="load"
+            ></div>
+        {% endfor %}
+
+    </div>
+
+    <div hx-get="{{ url_for("sheets.energy_meter", m=identifier) }}"
+         hx-swap="innerHTML"
+         hx-trigger="load, htmx:afterSettle from:.system-row">
+    </div>
+
+    <button data-cyberlabel="ENGAGE">Engage</button>
+    <div data-cyberlabel="CORE MODULE">banana</div>
+
+
+    <h3>Heat</h3>
+    <div style="display: grid; grid-template-columns: repeat(6, 1fr);">
+        <div>Name</div>
+        <div>Capacity</div>
+        <div>Passive</div>
+        <div>Active</div>
+        <div>Flux</div>
+        <div>Current</div>
+        {% for heat in mech.Heat.values() %}
+            <div>{{ heat.name }}</div>
+            <div>{{ heat.capacity }}</div>
+            <div>{{ heat.passive }}</div>
+            <div>{{ heat.active }}</div>
+            <div>{{ heat.flux }}</div>
+            <div>{{ heat.current }}</div>
+        {% endfor %}
+    </div>
+    <h3>Offensive</h3>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr);">
+        <div>Name</div>
+        <div>Energy</div>
+        <div>Mass</div>
+        <div>Amount</div>
+        {% for weapon in mech.Offensive.values() %}
+            <div>{{ weapon.name }}</div>
+            <div>{{ weapon.energy }}</div>
+            <div>{{ weapon.mass }}</div>
+            <div>{{ weapon.amount }}</div>
+        {% endfor %}
+    </div>
+    <h3>Defensive</h3>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr);">
+        <div>Name</div>
+        <div>Energy</div>
+        <div>Mass</div>
+        <div>Amount</div>
+        {% for defense in mech.Defensive.values() %}
+            <div>{{ defense.name }}</div>
+            <div>{{ defense.energy }}</div>
+            <div>{{ defense.mass }}</div>
+            <div>{{ defense.amount }}</div>
+        {% endfor %}
+    </div>
+    <h3>Support</h3>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr);">
+        <div>Name</div>
+        <div>Energy</div>
+        <div>Mass</div>
+        <div>Amount</div>
+        {% for support in mech.Support.values() %}
+            <div>{{ support.name }}</div>
+            <div>{{ support.energy }}</div>
+            <div>{{ support.mass }}</div>
+            <div>{{ support.amount }}</div>
+        {% endfor %}
+    </div>
+    <h3>Seal</h3>
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr);">
+        <div>Name</div>
+        <div>Level</div>
+        {% for seal in mech.Seal.values() %}
+            <div>{{ seal.name }}</div>
+            <div>{{ seal.level }}</div>
+        {% endfor %}
+    </div>
+
+
+{% endblock %}

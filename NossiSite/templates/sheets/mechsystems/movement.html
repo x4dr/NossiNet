@@ -1,0 +1,32 @@
+<div class="system-box-wide {% if system.is_active() %} active{% endif %}{% if system.is_disabled() %} inactive{% endif %}"
+     id="movement-{{ system.name|b64e }}"
+     oncontextmenu="return false;">
+
+    <div hx-get="{{ url_for('sheets.mecha_use', m=identifier, s='movement', n=system.name|b64e ) }}"
+         hx-swap="outerHTML"
+         hx-trigger="click from:#movement-{{ system.name|b64e }}"
+         hx-target="#movement-{{ system.name|b64e }}"
+         style="display: none;"></div>
+
+    <div hx-get="{{ url_for('sheets.mecha_use', m=identifier, s='movement', n=system.name|b64e ) }}?use=disable"
+         hx-swap="outerHTML"
+         hx-trigger="contextmenu from:#movement-{{ system.name|b64e }}"
+         hx-target="#movement-{{ system.name|b64e }}"
+         style="display: none;"></div>
+
+    <span class="stat-heading">{{ system.name }}</span>
+    <div class="stat-box"><span class="stat-label">ET: {{ system.energy * system.amount }}</span><span
+            class="tooltip-text">Total Energy cost after scaling</span></div>
+    <div class="stat-box"><span class="stat-label">H: {{ system.heat* system.amount }}</span><span
+            class="tooltip-text">Total Heat generated after scaling<</span></div>
+    <div class="stat-box"><span class="stat-label">T: {{ system.thrust }}</span><span
+            class="tooltip-text">Thrust</span></div>
+    <div class="stat-box"><span class="stat-label">A: {{ system.anchor }}</span><span
+            class="tooltip-text">Anchor: static friction </span></div>
+    <div class="stat-box"><span class="stat-label">D: {{ system.dynamics }}</span><span
+            class="tooltip-text">Dynamics: ability to avoid speed based friction</span></div>
+    <div class="stat-box"><span class="stat-label">M: {{ system.mass * system.amount }}</span><span
+            class="tooltip-text">Mass</span></div>
+    <div class="stat-box"><span class="stat-label">X: {{ system.amount }}</span><span
+            class="tooltip-text">scaling factor</span></div>
+</div>

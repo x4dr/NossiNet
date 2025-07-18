@@ -40,7 +40,7 @@ class TestViews(NossiTestCase):
             "text\n",
             [],
             {},
-        ).save(WikiPage.locate("unittest"), "unittest")
+        ).save("unittest", WikiPage.locate("unittest"))
         self.render_templates = False
         app = self.create_app()
         helpers.register(app)

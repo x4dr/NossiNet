@@ -18,18 +18,13 @@ from flask import (
 from markupsafe import Markup
 
 from Data import connect_db
-from NossiSite.base import app as defaultapp
+from NossiSite.base import app as defaultapp, log
 from gamepack.Dice import DescriptiveError
 
 
 def register(app: Flask = None):
     if app is None:
         app = defaultapp
-
-    @app.after_request
-    def add_header(response):
-        response.cache_control.max_age = 5
-        return response
 
     @app.template_filter("quoted")
     def quoted(s):
@@ -73,18 +68,18 @@ def register(app: Flask = None):
         if request.endpoint == "/postreceive":  # postreceive does not use csrf
             setattr(request, "csrf_valid", True)
 
-    # @app.errorhandler(Exception)
-    # def internal_error(error: Exception):
-    #    if error.args and error.args[0] == "REDIR":
-    #        return error.args[1]
-    #    if type(error) is DescriptiveError:
-    #        flash(error.args[0])
-    #        log.exception("Handled Descriptive Error")
-    #        if request.url.endswith("/raw"):
-    #            return error.args[0]
-    #    flash("internal error. sorry", category="error")
-    #    log.exception("Unhandled internal error")
-    #    raise error from None
+    @app.errorhandler(Exception)
+    def internal_error(error: Exception):
+        if error.args and error.args[0] == "REDIR":
+            return error.args[1]
+        if type(error) is DescriptiveError:
+            flash(error.args[0])
+            log.exception("Handled Descriptive Error")
+            if request.url.endswith("/raw"):
+                return error.args[0]
+        flash("internal error. sorry", category="error")
+        log.exception("Unhandled internal error")
+        raise error from None
 
     @app.errorhandler(404)
     def page_not_found(e):

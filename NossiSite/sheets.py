@@ -10,6 +10,7 @@ from flask import (
     url_for,
     flash,
     jsonify,
+    abort,
 )
 from markupsafe import Markup
 
@@ -29,6 +30,7 @@ from gamepack.MDPack import MDObj, MDTable
 from gamepack.PBTACharacter import PBTACharacter
 from gamepack.WikiCharacterSheet import WikiCharacterSheet
 from gamepack.WikiPage import WikiPage
+from gamepack.endworld import Mecha
 from gamepack.endworld.EWCharacter import EWCharacter
 
 lm = LocalMarkdown()
@@ -45,6 +47,10 @@ ordinals = [
     "nonary",
     "denary",
 ]
+TEMPLATE_MAP = {
+    "energy": "sheets/mechsystems/energy.html",
+    "movement": "sheets/mechsystems/movement.html",
+}
 
 
 @views.route("/skills/<system>/<heading>")
@@ -334,6 +340,84 @@ def handle_chargen():
         session.modified = True
     print(gen)
     return chargen_htmx()
+
+
+@views.route("/mechtest", methods=["GET", "POST"])
+def mechtest():
+    mech = WikiCharacterSheet.load_locate("mechtest").char
+    return render_template("sheets/mechasheet.html", mech=mech, identifier="mechtest")
+
+
+def generate_meter_segments(fills, colors, total, names):
+    segments = []
+    bottom = 0
+    for i, fill in enumerate(fills):
+        color = colors[i % len(colors)]
+        percent = (100 * (fill + bottom)) / total
+        if percent <= 100:
+            segments.append({"fill": percent, "color": color})
+        else:
+            segments.append({"fill": 100, "color": "var(--warn-color)"})
+        segments[-1]["name"] = names[i]
+        bottom += fill
+    return segments
+
+
+@views.route("/mecha_use/<s>/<n>/<path:m>")
+def mecha_use(s: str, n: str, m):
+    use = request.args.get("use") or 0
+    n = decode_id(n)
+
+    mech_sheet: WikiCharacterSheet = WikiCharacterSheet.load_locate(m, cache=False)
+    mech: Mecha = mech_sheet.char
+
+    syscat = mech.systems.get(s.capitalize())
+    sys = syscat.get(n)
+    sys.use(use)
+
+    mech_sheet.save_low_prio(session["user"])
+
+    template = TEMPLATE_MAP.get(s.lower())
+    if not template:
+        abort(404)
+
+    return render_template(template, system=sys, identifier=m)
+
+
+@views.route("/mecha_sys/<s>/<n>/<path:m>")
+def mecha_sys(s: str, n: str, m):
+    m_sheet = WikiCharacterSheet.load_locate(m)
+    mech: Mecha = m_sheet.char
+    syscat = mech.systems.get(s.capitalize())
+    sys = syscat.get(n)
+    template = TEMPLATE_MAP.get(s.lower())
+    print("system", m, s, n, m_sheet.increment)
+    if not template:
+        abort(404)
+
+    return render_template(template, system=sys, identifier=m)
+
+
+@views.route("/mech_energy_meter/<path:m>")
+def energy_meter(m):
+    m_sheet = WikiCharacterSheet.load_locate(m)
+    mech: Mecha = m_sheet.char
+    current_max = mech.energy_budget()
+    overall_max = mech.energy_total()
+    print("energymeter for ", m, m_sheet.increment)
+    systems, active = mech.energy_allocation()
+    print([(x.name, x.energy) for x in systems])
+    fills = [x.energy for x in systems]
+    colors = ["var(--secondary-color)", "var(--primary-color)"]
+    segments = generate_meter_segments(
+        fills, colors, current_max, [x.name for x in systems]
+    )
+    return render_template(
+        "sheets/mechsystems/bar.html",
+        segments=segments,
+        name=m.rsplit("/")[-1],
+        maximum=100 * current_max / overall_max,
+    )
 
 
 @views.route("/preview_move/<path:context>")
