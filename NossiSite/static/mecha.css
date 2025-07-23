@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron&display=swap');
+@import url('https://fonts.cdnfonts.com/css/open-dyslexic');
+
 .stat-box {
     position: relative;
     display: inline-block;
@@ -92,7 +95,7 @@
 .fill {
     position: absolute;
     height: 100%;
-    left: 0;
+    left: var(--offset);
     width: var(--fill);
     background-color: var(--color);
     transition: all 0.5s ease, background-color 5s ease;
@@ -138,34 +141,97 @@
     }
 }
 
-.cyber-label {
+.cyberlabel-wrapper {
     position: absolute;
-    color: #0ff;
-    font-family: 'Orbitron', sans-serif;
-    white-space: nowrap;
+    left: 0;
+    top: 0;
+    z-index: 3;
     pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    text-shadow: 0 0 2px #0ff, 0 0 4px #0ff;
-    z-index: 10000;
+    color: var(--accent-color);
+
+    transition: none;
 }
 
-.cyber-label.visible {
-    opacity: 1;
+.cyberlabel-label {
+    position: absolute;
+    font: 800 22px Orbitron;
+    white-space: nowrap;
+    z-index: 2;
+    pointer-events: none;
+    color: var(--accent-color);
+    text-shadow: 0 0 8px var(--background-color),
+    0 0 16px var(--background-color),
+    0 0 32px var(--background-color),
+    0 0 64px var(--background-color);
+    box-shadow: 0 0 8px 20px var(--background-color),
 }
 
-.cyber-svg {
-    position: fixed;
+.cyberlabel-svg {
+    position: absolute;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
+    z-index: 1;
     pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    z-index: 9999;
+    color: var(--accent-color);
+    stroke: var(--accent-color);
+    stroke-width: 2;
 }
 
-.cyber-svg.visible {
+@keyframes glitchFadeIn {
+    0% {
+        opacity: 1;
+        filter: none;
+        transform: translate(0, 0);
+    }
+    20% {
+        opacity: 1;
+        filter: drop-shadow(2px 0 red) drop-shadow(-2px 0 cyan);
+        transform: translate(-2px, 0);
+    }
+    40% {
+        filter: drop-shadow(-2px 0 red) drop-shadow(2px 0 cyan);
+        transform: translate(2px, 0);
+    }
+    60%, 100% {
+        opacity: 1;
+        filter: none;
+        transform: translate(0, 0);
+    }
+}
+
+@keyframes glitchFadeOut {
+    0% {
+        opacity: 1;
+        filter: none;
+        transform: translate(0, 0);
+    }
+    40% {
+        filter: drop-shadow(-2px 0 red) drop-shadow(2px 0 cyan);
+        transform: translate(2px, 0);
+    }
+    60% {
+        opacity: 0;
+        filter: none;
+        transform: translate(0, 0);
+    }
+    100% {
+        opacity: 0;
+        filter: none;
+        transform: translate(0, 0);
+    }
+}
+
+.hoverparent:hover .cyberlabel-wrapper {
+    display: block;
     opacity: 1;
+}
+
+.hoverparent:not(:hover) .cyberlabel-wrapper {
+    opacity: 0;
+}
+
+.hoverparent {
+    position: relative;
 }

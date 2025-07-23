@@ -47,10 +47,10 @@ ordinals = [
     "nonary",
     "denary",
 ]
-TEMPLATE_MAP = {
-    "energy": "sheets/mechsystems/energy.html",
-    "movement": "sheets/mechsystems/movement.html",
-}
+
+
+def system_map(selection):
+    return f"sheets/mechsystems/{selection}.html"
 
 
 @views.route("/skills/<system>/<heading>")
@@ -353,12 +353,14 @@ def generate_meter_segments(fills, colors, total, names):
     bottom = 0
     for i, fill in enumerate(fills):
         color = colors[i % len(colors)]
-        percent = (100 * (fill + bottom)) / total
-        if percent <= 100:
-            segments.append({"fill": percent, "color": color})
-        else:
-            segments.append({"fill": 100, "color": "var(--warn-color)"})
-        segments[-1]["name"] = names[i]
+        percent = (100 * fill) / total
+        offset = (100 * bottom) / total
+        if offset + percent > 100:
+            percent = 100 - offset
+            color = "var(--warn-color)"
+        segments.append(
+            {"fill": percent, "color": color, "offset": offset, "name": names[i]}
+        )
         bottom += fill
     return segments
 
@@ -377,7 +379,7 @@ def mecha_use(s: str, n: str, m):
 
     mech_sheet.save_low_prio(session["user"])
 
-    template = TEMPLATE_MAP.get(s.lower())
+    template = system_map(s.lower())
     if not template:
         abort(404)
 
@@ -390,7 +392,7 @@ def mecha_sys(s: str, n: str, m):
     mech: Mecha = m_sheet.char
     syscat = mech.systems.get(s.capitalize())
     sys = syscat.get(n)
-    template = TEMPLATE_MAP.get(s.lower())
+    template = system_map(s.lower())
     print("system", m, s, n, m_sheet.increment)
     if not template:
         abort(404)

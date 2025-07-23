@@ -48,24 +48,31 @@ def togglelock(matrix: list[int], position: int) -> (list[int], list[int]):
     return matrix, pos
 
 
-@views.route("/lock")
-def lock():
-    f = [0] * 25
-    for i, x in enumerate(randommatrix(25)):
+@views.route("/lock/<int:sides>")
+def lock(sides=5):
+    if sides > 50:
+        sides = 50
+    f = [0] * int(sides**2)
+    for i, x in enumerate(randommatrix(sides**2)):
         if x:
             f, _ = togglelock(f, i)
     session["lock"] = f
-    return render_template("misc/lock.html", field=f)
+    return render_template("misc/lock.html", sidelen=sides, field=f)
 
 
-@views.route("/lock/<int:pos>")
+@views.route("/lockclick/<int:pos>")
 def lockinteract(pos: int):
     if "lock" not in session:
         return redirect(url_for("extra.lock"))
+
     f = session["lock"]
+    if pos >= len(f):
+        return redirect(url_for("extra.lock"))
     f, p = togglelock(f, pos)
     session["lock"] = f
-    return render_template("misc/lockfield.html", field=f, toupdate=p)
+    return render_template(
+        "misc/lockfield.html", field=f, sidelen=int(len(f) ** 0.5), toupdate=p
+    )
 
 
 @views.route("/setfromsource/")

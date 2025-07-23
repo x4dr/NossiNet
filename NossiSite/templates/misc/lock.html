@@ -27,11 +27,12 @@
 {% block body %}
     <div class="divTable">
         <div class="divTableBody">
-            {% for i in range(5) %}
+            {% for i in range(sidelen) %}
                 <div class="divTableRow">
-                    {% for j in range(5) %}
-                        <div class="divTableCell" id="cell-{{ i*5 + j }}" hx-swap-oob="true" hx-get="/lock/{{ i*5+j }}"
-                             style="background: {% if field[i*5 + j] -%}
+                    {% for j in range(sidelen) %}
+                        <div class="divTableCell" id="cell-{{ i*sidelen + j }}" hx-swap-oob="true"
+                             hx-get="/lockclick/{{ i*sidelen+j }}"
+                             style="background: {% if field[i*sidelen + j] -%}
                                  #10a010{% else -%}
                                  #000866{% endif %}"></div>
                     {% endfor %}
