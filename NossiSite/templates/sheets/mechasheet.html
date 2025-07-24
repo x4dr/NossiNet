@@ -1,290 +1,12 @@
 {% extends "base/layout.html" %}
 {% block head %}
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename='mecha.css') }}?v={{ restart_id }}">
+    <script src="{{ url_for("static", filename="mechasheet.js") }}?v={{ restart_id }}"></script>
 {% endblock %}
 {% block body %}
 
     <script>
-        function checkCollision(r1, r2) {
-            return !(r2.left > r1.right ||
-                r2.right < r1.left ||
-                r2.top > r1.bottom ||
-                r2.bottom < r1.top);
-        }
 
-        function findNonCollidingPosition(targetCenterX, targetCenterY, targetHeight, labelWidth, labelHeight, placedRects) {
-            const anglesDeg = [30, 60];
-            const quadrantDirections = {
-                'top-left': {vx: -1, vy: -1},
-                'top-right': {vx: 1, vy: -1},
-                'bottom-left': {vx: -1, vy: 1},
-                'bottom-right': {vx: 1, vy: 1},
-            };
-            const maxRadius = 100;
-            const stepRadius = 10;
-            const candidates = [];
-
-            for (const quadrant in quadrantDirections) {
-                const dir = quadrantDirections[quadrant];
-                for (const angleDeg of anglesDeg) {
-                    const angleRad = angleDeg * Math.PI / 180;
-
-                    for (let radius = targetHeight + 30; radius <= maxRadius; radius += stepRadius) {
-                        const verticalOffset = dir.vy * radius;
-                        const horizontalOffset = dir.vx * radius / Math.tan(angleRad);
-                        const x = targetCenterX + horizontalOffset - labelWidth / 2;
-                        const y = targetCenterY + verticalOffset - labelHeight / 2;
-
-                        const labelRect = {left: x, right: x + labelWidth, top: y, bottom: y + labelHeight};
-
-                        if (!placedRects.some(r => checkCollision(r, labelRect))) {
-                            candidates.push({x, y});
-                        }
-                    }
-                }
-            }
-
-            if (candidates.length === 0) {
-                // fallback random position within radius range
-                const angle = Math.random() * 2 * Math.PI;
-                const radius = targetHeight + 30 + Math.random() * (maxRadius - (targetHeight + 30));
-                const x = targetCenterX + radius * Math.cos(angle) - labelWidth / 2;
-                const y = targetCenterY + radius * Math.sin(angle) - labelHeight / 2;
-                return {x, y};
-            }
-
-            // random pick from candidates
-            return candidates[Math.floor(Math.random() * candidates.length)];
-        }
-
-        function findNonCollidingPosition(targetCenterX, targetCenterY, targetHeight, labelWidth, labelHeight, placedRects) {
-            const anglesDeg = [30, 60];
-            const quadrantDirections = {
-                'top-left': {vx: -1, vy: -1},
-                'top-right': {vx: 1, vy: -1},
-                'bottom-left': {vx: -1, vy: 1},
-                'bottom-right': {vx: 1, vy: 1},
-            };
-            const maxRadius = 100;
-            const stepRadius = 10;
-            const candidates = [];
-
-            for (const quadrant in quadrantDirections) {
-                const dir = quadrantDirections[quadrant];
-                for (const angleDeg of anglesDeg) {
-                    const angleRad = angleDeg * Math.PI / 180;
-
-                    for (let radius = targetHeight + 30; radius <= maxRadius; radius += stepRadius) {
-                        const verticalOffset = dir.vy * radius;
-                        const horizontalOffset = dir.vx * radius / Math.tan(angleRad);
-                        const x = targetCenterX + horizontalOffset - labelWidth / 2;
-                        const y = targetCenterY + verticalOffset - labelHeight / 2;
-
-                        const labelRect = {left: x, right: x + labelWidth, top: y, bottom: y + labelHeight};
-
-                        if (!placedRects.some(r => checkCollision(r, labelRect))) {
-                            candidates.push({x, y});
-                        }
-                    }
-                }
-            }
-
-            if (candidates.length === 0) {
-                // fallback random position within radius range
-                const angle = Math.random() * 2 * Math.PI;
-                const radius = targetHeight + 30 + Math.random() * (maxRadius - (targetHeight + 30));
-                const x = targetCenterX + radius * Math.cos(angle) - labelWidth / 2;
-                const y = targetCenterY + radius * Math.sin(angle) - labelHeight / 2;
-                return {x, y};
-            }
-
-            // random pick from candidates
-            return candidates[Math.floor(Math.random() * candidates.length)];
-        }
-
-        function findNonCollidingPosition(targetCenterX, targetCenterY, targetHeight, labelWidth, labelHeight, placedRects) {
-            const anglesDeg = [30, 60];
-            const quadrantDirections = {
-                'top-left': {vx: -1, vy: -1},
-                'top-right': {vx: 1, vy: -1},
-                'bottom-left': {vx: -1, vy: 1},
-                'bottom-right': {vx: 1, vy: 1},
-            };
-            const maxRadius = 100;
-            const stepRadius = 10;
-            const candidates = [];
-
-            for (const quadrant in quadrantDirections) {
-                const dir = quadrantDirections[quadrant];
-                for (const angleDeg of anglesDeg) {
-                    const angleRad = angleDeg * Math.PI / 180;
-
-                    for (let radius = targetHeight + 30; radius <= maxRadius; radius += stepRadius) {
-                        const verticalOffset = dir.vy * radius;
-                        const horizontalOffset = dir.vx * radius / Math.tan(angleRad);
-                        const x = targetCenterX + horizontalOffset - labelWidth / 2;
-                        const y = targetCenterY + verticalOffset - labelHeight / 2;
-
-                        const labelRect = {left: x, right: x + labelWidth, top: y, bottom: y + labelHeight};
-
-                        if (!placedRects.some(r => checkCollision(r, labelRect))) {
-                            candidates.push({x, y});
-                        }
-                    }
-                }
-            }
-
-            if (candidates.length === 0) {
-                // fallback random position within radius range
-                const angle = Math.random() * 2 * Math.PI;
-                const radius = targetHeight + 30 + Math.random() * (maxRadius - (targetHeight + 30));
-                const x = targetCenterX + radius * Math.cos(angle) - labelWidth / 2;
-                const y = targetCenterY + radius * Math.sin(angle) - labelHeight / 2;
-                return {x, y};
-            }
-
-            // random pick from candidates
-            return candidates[Math.floor(Math.random() * candidates.length)];
-        }
-
-
-        function renderCyberlabels() {
-            document.querySelectorAll('.cyberlabel-wrapper').forEach(el => el.remove());
-            const placedLabels = [];
-
-            document.querySelectorAll('[data-cyberlabel]').forEach((target, index) => {
-                const labelText = target.getAttribute('data-cyberlabel');
-                target.setAttribute('data-cyberlabel-initialized', 'true');
-
-                const style = window.getComputedStyle(target);
-                const targetWidth = parseFloat(style.width);
-                const targetHeight = parseFloat(style.height);
-
-                const targetCenterX = targetWidth / 2;
-                const targetCenterY = targetHeight / 2;
-
-                let labelX = parseFloat(target.getAttribute('data-cyberlabel-x'));
-                let labelY = parseFloat(target.getAttribute('data-cyberlabel-y'));
-
-                const label = document.createElement('div');
-                label.className = 'cyberlabel-label';
-                label.textContent = labelText;
-                label.style.position = 'absolute';
-
-                if (isNaN(labelX) || isNaN(labelY)) {
-                    // Temporary add label invisibly to get its size
-                    label.style.visibility = 'hidden';
-                    target.appendChild(label);
-
-                    const labelWidth = label.offsetWidth;
-                    const labelHeight = label.offsetHeight;
-
-                    const pos = findNonCollidingPosition(targetCenterX, targetCenterY, targetHeight, labelWidth, labelHeight, placedLabels);
-
-                    labelX = pos.x;
-                    labelY = pos.y;
-
-                    target.setAttribute('data-cyberlabel-x', labelX);
-                    target.setAttribute('data-cyberlabel-y', labelY);
-
-                    label.style.visibility = '';
-                } else {
-                    const labelWidth = label.offsetWidth;
-                    const labelHeight = label.offsetHeight;
-                    placedLabels.push({
-                        left: labelX,
-                        right: labelX + labelWidth,
-                        top: labelY,
-                        bottom: labelY + labelHeight
-                    });
-                }
-
-                label.style.left = `${labelX}px`;
-                label.style.top = `${labelY}px`;
-                target.appendChild(label);
-
-                const labelRect = {
-                    left: labelX,
-                    right: labelX + label.offsetWidth,
-                    top: labelY,
-                    bottom: labelY + label.offsetHeight,
-                };
-
-                // Calculate bounding box covering target center and label
-                const minX = Math.min(targetCenterX, labelRect.left);
-                const maxX = Math.max(targetCenterX, labelRect.right);
-                const minY = Math.min(targetCenterY, labelRect.top);
-                const maxY = Math.max(targetCenterY, labelRect.bottom);
-
-                const svgWidth = maxX - minX;
-                const svgHeight = maxY - minY;
-
-// Adjust coordinates relative to SVG container
-                const relativeTargetX = targetCenterX - minX;
-                const relativeTargetY = targetCenterY - minY;
-
-// Decide overline or underline based on label position relative to target center Y
-                const useOverline = labelRect.top > targetCenterY;
-                const lineY = useOverline ? labelRect.top - minY : labelRect.bottom - minY;
-                const x1 = labelRect.left - minX;
-                const x2 = labelRect.right - minX;
-
-// Closest end of the label line to the target center
-                const startX = Math.abs(relativeTargetX - x1) < Math.abs(relativeTargetX - x2) ? x1 : x2;
-
-                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                svg.classList.add('cyberlabel-svg');
-                svg.setAttribute('width', svgWidth);
-                svg.setAttribute('height', svgHeight);
-                svg.style.position = 'absolute';
-                svg.style.left = `${minX}px`;
-                svg.style.top = `${minY}px`;
-                svg.style.pointerEvents = 'none';
-                svg.style.zIndex = '1';
-
-                const bar = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                bar.setAttribute('x1', x1);
-                bar.setAttribute('y1', lineY);
-                bar.setAttribute('x2', x2);
-                bar.setAttribute('y2', lineY);
-                bar.setAttribute('stroke-width', '2');
-                bar.setAttribute('stroke', 'currentColor');
-
-                const connector = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                connector.setAttribute('x1', startX);
-                connector.setAttribute('y1', lineY);
-                connector.setAttribute('x2', relativeTargetX);
-                connector.setAttribute('y2', relativeTargetY);
-                connector.setAttribute('stroke-width', '2');
-                connector.setAttribute('stroke', 'currentColor');
-
-                svg.appendChild(bar);
-                svg.appendChild(connector);
-
-// Wrap label and svg
-                const wrapper = document.createElement('div');
-                wrapper.className = 'cyberlabel-wrapper';
-                wrapper.style.position = 'absolute';
-                wrapper.style.left = '0';
-                wrapper.style.top = '0';
-                wrapper.style.zIndex = '3';
-
-                wrapper.appendChild(svg);
-                wrapper.appendChild(label);
-                target.appendChild(wrapper);
-                target.parentElement.classList.add('hoverparent');
-            });
-        }
-
-
-        window.addEventListener('DOMContentLoaded', () => {
-            window.addEventListener('resize', renderCyberlabels);
-            document.body.addEventListener('htmx:afterSettle', () => {
-                renderCyberlabels();
-            });
-
-            renderCyberlabels();
-        });
     </script>
     <h3>Movement</h3>
     <div class="system-row">
@@ -321,43 +43,31 @@
             ></div>
         {% endfor %}
     </div>
+
     <h3>Offensive</h3>
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr);">
-        <div>Name</div>
-        <div>Energy</div>
-        <div>Mass</div>
-        <div>Amount</div>
-        {% for weapon in mech.Offensive.values() %}
-            <div>{{ weapon.name }}</div>
-            <div>{{ weapon.energy }}</div>
-            <div>{{ weapon.mass }}</div>
-            <div>{{ weapon.amount }}</div>
+    <div class="system-row">
+        {% for system in mech.Offensive.values() %}
+            <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='offensive', n=system.name) }}"
+                 hx-swap="innerHTML"
+                 hx-trigger="load"></div>
         {% endfor %}
     </div>
+
     <h3>Defensive</h3>
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr);">
-        <div>Name</div>
-        <div>Energy</div>
-        <div>Mass</div>
-        <div>Amount</div>
-        {% for defense in mech.Defensive.values() %}
-            <div>{{ defense.name }}</div>
-            <div>{{ defense.energy }}</div>
-            <div>{{ defense.mass }}</div>
-            <div>{{ defense.amount }}</div>
+    <div class="system-row">
+        {% for system in mech.Defensive.values() %}
+            <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='defensive', n=system.name) }}"
+                 hx-swap="innerHTML"
+                 hx-trigger="load"></div>
         {% endfor %}
     </div>
+
     <h3>Support</h3>
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr);">
-        <div>Name</div>
-        <div>Energy</div>
-        <div>Mass</div>
-        <div>Amount</div>
-        {% for support in mech.Support.values() %}
-            <div>{{ support.name }}</div>
-            <div>{{ support.energy }}</div>
-            <div>{{ support.mass }}</div>
-            <div>{{ support.amount }}</div>
+    <div class="system-row">
+        {% for system in mech.Support.values() %}
+            <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='support', n=system.name) }}"
+                 hx-swap="innerHTML"
+                 hx-trigger="load"></div>
         {% endfor %}
     </div>
     <h3>Seal</h3>

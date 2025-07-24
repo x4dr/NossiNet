@@ -84,7 +84,7 @@
     margin-top: 20px;
     margin-bottom: 20px;
     height: 40px;
-    transform: scaleY(0.1);
+    transform: scaleY(1);
     transition: all 0.5s;
 }
 

@@ -50,6 +50,9 @@ ordinals = [
 
 
 def system_map(selection):
+    if selection in ["offensive", "defensive", "support"]:
+        selection = "generic"
+
     return f"sheets/mechsystems/{selection}.html"
 
 
@@ -373,7 +376,7 @@ def mecha_use(s: str, n: str, m):
     mech_sheet: WikiCharacterSheet = WikiCharacterSheet.load_locate(m, cache=False)
     mech: Mecha = mech_sheet.char
 
-    syscat = mech.systems.get(s.capitalize())
+    syscat = mech.get_syscat(s.capitalize())
     sys = syscat.get(n)
     sys.use(use)
 
