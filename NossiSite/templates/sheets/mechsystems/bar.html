@@ -1,9 +1,9 @@
 <div id="energymeter" class="meter" style="--max: {{ maximum }}%;">
     <div id="background-bar-{{ name }}" class="background-bar"></div>
     {% for segment in segments %}
-        <div id="{{ name }}-bar-{{ loop.index0 }}" class="fill"
+        <div id="{{ name }}-bar-{{ segment.name | b64e }}" class="fill"
              data-cyberlabel="{{ segment.name }}"
-             style="--fill: {{ segment.fill }}%; --color: {{ segment.color }}; --offset: {{ segment.offset }}%; z-index: {{ 50 - loop.index0 }};">
+             style="--fill: {{ segment.fill }}%; --color: {{ segment.color }}; --offset: {{ segment.offset }}%;">
         </div>
     {% endfor %}
 </div>
