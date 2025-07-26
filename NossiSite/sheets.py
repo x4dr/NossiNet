@@ -118,7 +118,7 @@ def chargen():
 stage_handlers = {}
 
 
-def charactergen_stage(stage, system=None):
+def charactergen_stage(stage):
     def decorator(func):
         stage_handlers[stage] = func
         return func
@@ -345,9 +345,9 @@ def handle_chargen():
     return chargen_htmx()
 
 
-@views.route("/mechtest", methods=["GET", "POST"])
-def mechtest():
-    mech = WikiCharacterSheet.load_locate("mechtest").char
+@WikiCharacterSheet.renderer(Mecha)
+def mech_sheet(self: WikiCharacterSheet):
+    mech = self.char
     return render_template("sheets/mechasheet.html", mech=mech, identifier="mechtest")
 
 
@@ -368,19 +368,36 @@ def generate_meter_segments(fills, colors, total, names):
     return segments
 
 
+# unused for now
+def generate_heat_segments(mech: Mecha):
+    sinks = []
+    fluxmax = mech.fluxmax()
+    for sys in mech.Heat.values():
+        current = sys.current
+        heatmax = sys.capacity
+        percent = (100 * current) / heatmax
+        print(percent)
+    # if percent > 100:
+    #     percent = 100
+    #     color = "var(--warn-color)"
+    # sinks.append({"fill": percent, "color": color, "name": names[i]})
+
+    return {"sinks": sinks, "fluxmax": fluxmax}
+
+
 @views.route("/mecha_use/<s>/<n>/<path:m>")
 def mecha_use(s: str, n: str, m):
     use = request.args.get("use") or 0
     n = decode_id(n)
 
-    mech_sheet: WikiCharacterSheet = WikiCharacterSheet.load_locate(m, cache=False)
-    mech: Mecha = mech_sheet.char
+    m_sheet: WikiCharacterSheet = WikiCharacterSheet.load_locate(m, cache=False)
+    mech: Mecha = m_sheet.char
 
     syscat = mech.get_syscat(s.capitalize())
     sys = syscat.get(n)
     sys.use(use)
 
-    mech_sheet.save_low_prio(session["user"])
+    m_sheet.save_low_prio(session["user"])
 
     template = system_map(s.lower())
     if not template:
@@ -425,16 +442,31 @@ def energy_meter(m):
     )
 
 
+@views.route("/mech_heat_ui/<path:m>")
+def mech_heat_ui(m):
+    m_sheet = WikiCharacterSheet.load_locate(m)
+    mech: Mecha = m_sheet.char
+    total_flux = mech.fluxmax()
+    heatsys = [x for x in mech.Heat.values()]
+    print("heat systems:", heatsys)
+    return render_template(
+        "sheets/mechsystems/heat_ui.html",
+        systems=heatsys,
+        max_flux=total_flux,
+        identifier=m,
+    )
+
+
 @views.route("/preview_move/<path:context>")
 def preview_move(context):
     context, name = context.rsplit("/", 1)
-    page = WikiPage.load_locate(context)  # Load the wiki page
-    md_obj = MDObj.from_md(page.body)  # Convert to Markdown object
-    result = md_obj.search_children(name)  # Search for the name
+    page = WikiPage.load_locate(context)
+    md_obj = MDObj.from_md(page.body)
+    result = md_obj.search_children(name)
     if not result:
-        page = WikiPage.load_locate("pbtamoves")  # Load the wiki page
-        md_obj = MDObj.from_md(page.body)  # Convert to Markdown object
-        result = md_obj.search_children(name)  # Search for the name
+        page = WikiPage.load_locate("pbtamoves")
+        md_obj = MDObj.from_md(page.body)
+        result = md_obj.search_children(name)
     if not result:
         return "Not Found"
     result.level = None
