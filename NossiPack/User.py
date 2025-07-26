@@ -25,7 +25,6 @@ class User:
         password="",
         passwordhash=None,
         funds=0,
-        sheet=None,
         admin="",
     ):
         self.username = username.strip().upper()
@@ -70,10 +69,6 @@ class User:
             self._loadedsheet = sheet
         return sheet
 
-    def serialize_old_sheets(self):
-        self.transition_oldsheets()
-        return "LEGACY"
-
     def loadoldsheets(self) -> Dict[int, VampireCharacter]:
         db = self.connect_db()
         res = db.execute(
@@ -89,9 +84,7 @@ class User:
 
     def savetodb(self):
         db = self.connect_db()
-        self.transition_oldsheets()
         if self._loadedsheet:
-            self.sheetid = self.savesheet(self._loadedsheet, self.sheetid)
             self._loadedsheet = None  # clear to load from db next time
         d = dict(
             username=self.username,
@@ -179,24 +172,6 @@ class User:
     def sheetpublic(self):
         return "public" in self.getsheet().meta["Notes"][:22]
 
-    def transition_oldsheets(self):
-        o: VampireCharacter
-        for i, o in self.oldsheets.items():
-            if i < 0:
-                self.savesheet(o)
-        self.oldsheets = {}
-        if isinstance(self.sheetid, int):
-            return  # reference instead
-
-        if self.sheetid:
-            sheet = self.getsheet()
-            if not isinstance(sheet, VampireCharacter):
-                print("LEGACY CHARACTER!", sheet.getdictrepr())
-                flash(f"LEGACY CHAR FROM {self.username}@{sheet.timestamp}")
-                sheet = VampireCharacter.from_character(sheet)
-                sheet.legacy_convert()
-            self.sheetid = self.savesheet(sheet)
-
     @classmethod
     def load(cls, username):
         db = cls.connect_db()
@@ -212,7 +187,6 @@ class User:
             username=row[0],
             passwordhash=row[1],
             funds=row[2],
-            sheet=row[3],
             admin=row[4],
         )
 
