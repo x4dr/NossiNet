@@ -90,7 +90,7 @@ class User:
             username=self.username,
             pwhash=self.pw_hash,
             funds=self.funds,
-            sheet=self.sheetid or 0,
+            sheet=0,
             admin=self.admin,
         )
         db.execute(
