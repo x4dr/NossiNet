@@ -1,6 +1,7 @@
 import json
 import re
 import subprocess
+import threading
 import time
 from pathlib import Path
 from urllib import parse
@@ -52,8 +53,11 @@ views = Blueprint("wiki", __name__)
 
 @views.after_app_request
 def update(response):
-    if not WikiPage.wikicache:
+    def refresh():
         WikiPage.updatewikicache()
+
+    if not WikiPage.wikicache or time.time() - WikiPage.wikistamp > 15 * 60:
+        threading.Thread(target=refresh, daemon=True).start()
     return response
 
 

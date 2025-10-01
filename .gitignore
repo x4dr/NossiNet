@@ -13,3 +13,5 @@
 /*.gz
 /tests/NN.db
 /tests/logs/
+*/__pycache__/
+*.pem
