@@ -3,6 +3,7 @@
     content: "_";
     opacity: 0;
 }
+
 .editable:empty:not(:hover) {
     background: #f0f;
     opacity: 0.05;
@@ -15,9 +16,8 @@
 }
 
 .editable::before {
-    box-shadow:
-            inset 0 0 10px -5px var(--shade-color),
-            inset 0 0 10px -5px var(--shade-color);
+    box-shadow: inset 0 0 10px -5px var(--shade-color),
+    inset 0 0 10px -5px var(--shade-color);
     transition: 1s;
     position: absolute;
     top: 100%;
@@ -30,9 +30,8 @@
 }
 
 .editable:hover::before {
-    box-shadow:
-            inset 10px 10px 10px -5px var(--highlight-color),
-            inset -10px -10px 10px -5px var(--highlight-color);
+    box-shadow: inset 10px 10px 10px -5px var(--highlight-color),
+    inset -10px -10px 10px -5px var(--highlight-color);
     transition: 0.1s;
     position: absolute;
     top: 100%;
@@ -52,13 +51,13 @@
     height: 80%;
     width: 95%;
     white-space: pre-wrap;
-    transition:0.1s;
+    transition: 0.1s;
     font-size: larger;
     clear: both;
 }
 
 .table_input {
-    transition:0.1s;
+    transition: 0.1s;
     background: black;
     color: var(--secondary-color);
 
@@ -70,10 +69,10 @@
     height: 100%;
     width: 100%;
     z-index: -1;
-    background: rgba(50,60,55,0.8);
-    transition:0.5s;
-    top:0;
-    left:0;
+    background: rgba(50, 60, 55, 0.8);
+    transition: 0.5s;
+    top: 0;
+    left: 0;
 }
 
 .editfield {
@@ -92,10 +91,10 @@
     transition: 0.5s;
 }
 
-.editfield  form {
+.editfield form {
     display: flex;
-    flex-direction: column;  /* Stack items vertically */
-    align-items: center;     /* Center items horizontally */
+    flex-direction: column; /* Stack items vertically */
+    align-items: center; /* Center items horizontally */
     gap: 10px;
 
 }
@@ -113,17 +112,18 @@
     display: inline-block;
     transition: 0.5s;
     padding: 10px;
+    max-height: 95vh;
+    overflow: scroll;
 }
 
 
-
-.bottombutton{
+.bottombutton {
     margin: 10px;
 }
 
-#editform{
+#editform {
     width: 100%;
-    height:100%;
+    height: 100%;
 }
 
 .activeedit {
@@ -149,6 +149,6 @@
 }
 
 .message {
-background: var(--background-color);
-color: var(--primary-color)
+    background: var(--background-color);
+    color: var(--primary-color)
 }
