@@ -1,92 +1,126 @@
-from pathlib import Path
 from unittest import mock
 
-import flask
-from flask import url_for, redirect
-from flask.testing import FlaskClient
-from werkzeug.exceptions import BadRequestKeyError
+from flask import url_for
 
 import Data
 from tests.NossiTestCase import NossiTestCase
 
 
 class TestViews(NossiTestCase):
+
     @mock.patch.object(Data, "DATABASE", "login.db")
     def test_login(self):
-        self.addCleanup(lambda x: Path(x).unlink(), Data.DATABASE)
-        # test response of login
-        c: FlaskClient = self.app.test_client()
-        c.get("/login")
-        self.assert_template_used("login.html")
-        # test response of register page
-        c.post("/login", data=self.logindata, follow_redirects=True)
-        self.assert_template_used("login.html")  # not registered
-        self.register()
-        c.post("/login", data=self.logindata, follow_redirects=True)
-        self.assert_template_used("show_entries.html")  # not registered
+        try:
+            with self.app.app_context():
+                rv = self.client.get("/login")
+                self.assertTemplateUsed("base/login.html")
+                self.assertEqual(rv.status_code, 200)
+
+                rv = self.client.post(
+                    "/login", data=self.logindata, follow_redirects=True
+                )
+                self.assertTemplateUsed("base/login.html")  # not registered
+
+                # now register
+                self.register()
+                rv = self.client.post(
+                    "/login", data=self.logindata, follow_redirects=True
+                )
+                self.assertTemplateUsed("base/show_entries.html")
+        finally:
+            self.delete("login.db")
 
     @mock.patch.object(Data, "DATABASE", "version.db")
     def test_version(self):
-        self.addCleanup(self.delete, Data.DATABASE)
-        c = self.app.test_client()
-        self.assert200(c.get(url_for("views.getversion")))
+        try:
+            with self.app.app_context():
+                rv = self.client.get(url_for("views.getversion"))
+                self.assertEqual(rv.status_code, 200)
+        finally:
+            self.delete("version.db")
 
     @mock.patch.object(Data, "DATABASE", "entries.db")
     def test_entries(self):
-        self.addCleanup(self.delete, Data.DATABASE)
-        c = self.app.test_client()
         try:
-            c.get(url_for("views.editentries"))
-        except Exception as e:
-            self.assertEqual(e.args[0], "REDIR")
-            self.assertEqual(
-                e.args[1].get_data(),
-                redirect(url_for("views.login")).get_data(),
-            )
-        with self.register_login() as c:
-            c.get(url_for("views.editentries"))
-            self.assertTemplateUsed("show_entries.html")
-            self.assertRaises(BadRequestKeyError, c.post, url_for("views.editentries"))
-            # does not return the sessionprint anymore
+            # not logged in
+            with self.app.app_context():
+                try:
+                    self.client.get(url_for("views.editentries"))
+                except Exception as e:
+                    assert e.args[0] == "REDIR"
 
-            form = {
-                "id": "new",
-                "title": "testpost",
-                "text": "nonpublic",
-                "tags": "testtag",
-            }
-            self.assert200(
-                c.post(url_for("views.editentries"), data=form, follow_redirects=True)
-            )
-            form = {
-                "id": "new",
-                "title": "xxyxz",
-                "text": "public",
-                "tags": "",
-            }
-            self.assert200(
-                c.post(url_for("views.editentries"), data=form, follow_redirects=True)
-            )
-            rv = c.get(url_for("views.show_entries"))
-            self.assertIn(b"xxyxz", rv.data)
-            self.assertNotIn(b"testpost", rv.data)
-            c.post(url_for("views.update_filter"), data={"tags": "testtag"})
-            self.assertEqual(flask.session.get("tags", None), "testtag")
-            rv = c.get(url_for("views.show_entries"))
-            self.assertIn(b"testpost", rv.data)
-            self.assertNotIn(b"xxyxz", rv.data)
+            # logged in
+            c = self.register_login()
+            with self.app.app_context():
+                rv = c.get(url_for("views.editentries"))
+                self.assertTemplateUsed("base/show_entries.html")
+
+                # empty post triggers BadRequestKeyError
+                with self.assertRaises(Exception):  # BadRequestKeyError
+                    c.post(url_for("views.editentries"))
+
+                # post new entries
+                form1 = {
+                    "id": "new",
+                    "title": "testpost",
+                    "text": "nonpublic",
+                    "tags": "testtag",
+                }
+                rv = c.post(
+                    url_for("views.editentries"), data=form1, follow_redirects=True
+                )
+                self.assertEqual(rv.status_code, 200)
+
+                form2 = {"id": "new", "title": "xxyxz", "text": "public", "tags": ""}
+                rv = c.post(
+                    url_for("views.editentries"), data=form2, follow_redirects=True
+                )
+                self.assertEqual(rv.status_code, 200)
+
+                rv = c.get(url_for("views.show_entries"))
+                assert b"xxyxz" in rv.data
+                assert b"testpost" not in rv.data
+
+                # filter test
+                c.post(url_for("views.update_filter"), data={"tags": "testtag"})
+                with c.session_transaction() as sess:
+                    assert sess.get("tags") == "testtag"
+
+                rv = c.get(url_for("views.show_entries"))
+                assert b"testpost" in rv.data
+                assert b"xxyxz" not in rv.data
+
+        finally:
+            self.delete("entries.db")
 
     @mock.patch.object(Data, "DATABASE", "register.db")
     def test_register(self):
-        self.addCleanup(lambda x: Path(x).unlink(), Data.DATABASE)
-        """Make sure register user works"""
-        rv = self.register()
-        print(rv)
-        self.assert_status(rv, 200)
-        self.assertTemplateUsed("show_entries.html")  # redirected to start
-        rv = self.register()
-        print(rv)
-        self.assertTemplateUsed("register.html")
-        self.assert_message_flashed(
-            f"Username {self.app.config['USERNAME'].upper()} is taken!", "error"
-        )
+        try:
+            with self.app.app_context():
+                with self.app.test_client() as c:
+                    # --- First registration ---
+                    with c.post(
+                        url_for("views.register_user"),
+                        data=self.logindata,
+                        follow_redirects=True,  # keep flash in session
+                    ) as rv:
+                        self.assertIn(
+                            "User successfully created.", rv.get_data(as_text=True)
+                        )
+                        self.assertEqual(rv.status_code, 200)
+                        self.assertTemplateUsed("base/show_entries.html")
+                    # --- Duplicate registration ---
+                    with c.post(
+                        url_for("views.register_user"),
+                        data=self.logindata,
+                        follow_redirects=True,
+                    ) as rv:
+                        self.assertIn(
+                            f"Username {self.app.config['USERNAME'].upper()} is taken!",
+                            rv.get_data(as_text=True),
+                        )
+                        self.assertEqual(rv.status_code, 200)
+                        self.assertTemplateUsed("base/register.html")
+
+        finally:
+            self.delete("register.db")

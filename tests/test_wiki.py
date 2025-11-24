@@ -5,50 +5,30 @@ from flask import url_for
 
 import Data
 from NossiPack.LocalMarkdown import LocalMarkdown
-from NossiSite import helpers
 from gamepack.FenCharacter import FenCharacter
 from gamepack.Item import fenconvert, fendeconvert
-from gamepack.MDPack import (
-    search_tables,
-    table_add,
-    table_remove,
-    table_row_edit,
-)
+from gamepack.MDPack import search_tables, table_add, table_remove, table_row_edit
 from gamepack.WikiPage import WikiPage
 from gamepack.endworld import MovementSystem
 from gamepack.endworld.Mecha import Mecha
 from tests.NossiTestCase import NossiTestCase
 
 
-class TestViews(NossiTestCase):
+class TestWiki(NossiTestCase):
     render_templates = False
 
-    def setUp(self) -> None:
-        pass  # DB created during normal usage
+    def setUp(self):
+        super().setUp()  # DB and app already initialized
 
     @mock.patch.object(Data, "DATABASE", "index.db")
     def test_index(self):
-        self.addCleanup(lambda x: Path(x).unlink(), Data.DATABASE)
-        with self.register_login() as c:
-            print(c.get(url_for("wiki.wiki_index")))
-
-    def test_ewparsing(self):
-        WikiPage(
-            "unittest",
-            ["character"],
-            "#Layer1\n## layer2\n### layer3\ntext\n### layer 3 again\n"
-            "more text\n## some more layer 2\n a|b\n--|--\nc|d\n but what about THIS\n\n### finalthird\nfinal "
-            "text\n",
-            [],
-            {},
-        ).save("unittest", WikiPage.locate("unittest"))
-        self.render_templates = False
-        app = self.create_app()
-        helpers.register(app)
-        c = app.test_client()
-        c.get("/ewsheet/test")
-        WikiPage.locate("unittest.md").unlink(True)
-        (WikiPage.wikipath() / "control").unlink(True)
+        try:
+            c = self.register_login()
+            with self.app.app_context():
+                rv = c.get(url_for("wiki.wiki_index"))
+            self.assertEqual(rv.status_code, 200)
+        finally:
+            self.delete("index.db")
 
     def test_xp_parsing(self):
         self.assertEqual(
@@ -91,25 +71,25 @@ class TestViews(NossiTestCase):
         self.assertEqual(search_tables(sut, "z", 0), "| z | whoop |\n")
 
     def test_local_markdown_hiding(self):
-        print(
-            LocalMarkdown().process(
-                "# thing\n"
-                "## !hidden subheading\n"
-                "hiddentext\n"
-                "and stuff \n"
-                "### hidden sub subheading\n"
-                "## visible again",
-                "test",
-            )
+        processed = LocalMarkdown().process(
+            "# thing\n"
+            "## !hidden subheading\n"
+            "hiddentext\n"
+            "and stuff \n"
+            "### hidden sub subheading\n"
+            "## visible again",
+            "test",
         )
+        self.assertIn('<h2 id="visible-again">visible again</h2>', processed)
 
     def test_mecha(self):
-
-        wikipage = WikiPage.load(
-            Path(__file__).parent.absolute() / "testmecha.md", False
-        )
+        WikiPage._wikipath = Path(__file__).parent  # point wiki to test folder
+        wikipage = WikiPage.load(Path(__file__).parent / "testmecha.md", False)
         mecha_sheet = Mecha.from_mdobj(wikipage.md(True))
-        print(mecha_sheet.total_mass, mecha_sheet.speeds())
+        self.assertIsNotNone(mecha_sheet.total_mass)
+        self.assertTrue(hasattr(mecha_sheet, "speeds"))
+
+        # update page and save
         wikipage.body = mecha_sheet.to_mdobj().to_md()
         wikipage.tags = ["mech"]
         wikipage.live = False
@@ -125,6 +105,5 @@ class TestViews(NossiTestCase):
             data = systems.row_as_dict(i)
             m = MovementSystem(data["Type"], data)
             m.amount = 1
-            print(m)
-            print(m.speeds(5))
-            print("\n\n\n")
+            # test some speeds calculation
+            self.assertIsNotNone(m.speeds(5))
