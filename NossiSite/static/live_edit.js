@@ -149,8 +149,8 @@ window.addEventListener("load", () => {
 
     let mouseX = 0, mouseY = 0;
     document.addEventListener("mousemove", ev => {
-        mouseX = ev.pageX;
-        mouseY = ev.pageY;
+        mouseX = ev.clientX;
+        mouseY = ev.clientY;
     });
 
     let fadeLightning = false;
@@ -159,7 +159,7 @@ window.addEventListener("load", () => {
 // utilities
     function center(el) {
         const r = el.getBoundingClientRect();
-        return [(r.left + r.right) / 2 + scrollX, (r.top + r.bottom) / 2 + scrollY];
+        return [(r.left + r.right) / 2, (r.top + r.bottom) / 2];
     }
 
     function lengthBasedSegments(x1, y1, x2, y2) {
