@@ -66,7 +66,7 @@
                 {% set notfirstsection = loop.index0 %}
                 {%- for vk,vv in v.items() -%}
                     <tr class="tablebody">
-                        <td>&nbsp;{{ infolet(vk | remove_leading_underscore) | safe }}</td>
+                        <td class="connectable">&nbsp;{{ infolet(vk | remove_leading_underscore) | safe }}</td>
                         <td class="tooltip" style="text-align: right; width: 1%">
                             {%- if not notfirstsection
                                     or (vv|remove_leading_underscore|int(-1) != -1
@@ -172,13 +172,12 @@
     </div>
     {%- for key,data in character.Meta.items() -%}
         {% set r = srs() %}
-        <div name="{{ key }}-meta">
+        <div id="{{ key }}-meta">
             <input type="checkbox" class="hiderbox" id="{{ r }}">
             <label class="sheetheading" for="{{ r }}" data-for="{{ r }}">{{ key }} </label>
-            <div id="{{ r }}" class="content"
-            ">
-            {{ treepart(data,3, key, key) }}
-        </div>
+            <div id="{{ r }}" class="content">
+                {{ treepart(data,3, key, key) }}
+            </div>
         </div>
     {%- endfor -%}
     <div>
@@ -219,4 +218,6 @@
         </form>
     </div>
     <div class="overlay" id="overlay"></div>
+    <svg id="conn-svg"
+         style="position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:9999"></svg>
 {%- endblock -%}

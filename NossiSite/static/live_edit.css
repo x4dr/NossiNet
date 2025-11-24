@@ -152,3 +152,7 @@
     background: var(--background-color);
     color: var(--primary-color)
 }
+
+.connectable.selected {
+    outline: 3px solid deepskyblue
+}

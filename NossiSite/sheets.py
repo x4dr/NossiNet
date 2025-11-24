@@ -1,5 +1,7 @@
+from collections import defaultdict
 from pathlib import Path
 
+import requests
 from flask import (
     render_template,
     Blueprint,
@@ -15,7 +17,8 @@ from flask import (
 from markupsafe import Markup
 
 from NossiPack.LocalMarkdown import LocalMarkdown
-from NossiPack.User import User, Config
+from NossiPack.User import User, Config, Userlist
+from NossiSite import chat
 from NossiSite.base_ext import decode_id
 from NossiSite.helpers import checklogin
 from NossiSite.socks import (
@@ -404,6 +407,40 @@ def mecha_use(s: str, n: str, m):
         abort(404)
 
     return render_template(template, system=mech.get_syscat(s).get(n), identifier=m)
+
+
+@views.route("/doroll", methods=["POST"])
+def doroll():
+    checklogin()
+    ul = Userlist()
+    u = ul.loaduserbyname(session.get("user"))
+    configchar = u.config("character_sheet", None)
+    c: FenCharacter = WikiCharacterSheet.load_locate(configchar).char
+    attributes = [0]
+    skills = [0, 0]
+    vals = defaultdict(int)
+    data = request.get_json() or []
+    for cat in c.Categories.values():
+        for item in data:
+            for stat_index, val_type in enumerate(cat.keys()):
+                if item in cat[val_type]:
+                    print(item, "in ", cat[val_type], "valtype", val_type)
+                    if stat_index:  # second type is skills
+                        skills.append(item)
+                    else:  # first type is attributes
+                        attributes.append(item)
+                    vals[item] = cat[val_type][item]
+    wh = chat.data.get("webhook")
+    if not wh:
+        raise ValueError("no webhook")
+    message_data = {
+        "content": f"{attributes[-1]}, {skills[-1]} {skills[-2]}@5\n"
+        f"{vals[attributes[-1]]}, {vals[skills[-1]]} {vals[skills[-2]]}@5",
+        "username": session["user"],
+    }
+    requests.post(wh, json=message_data)
+
+    return jsonify({"status": "ok"})
 
 
 @views.route("/mecha_sys/<s>/<n>/<path:m>")
