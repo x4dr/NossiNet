@@ -17,6 +17,7 @@ from markupsafe import Markup
 from NossiPack.LocalMarkdown import LocalMarkdown
 from NossiPack.User import User, Config
 from NossiSite.base_ext import decode_id
+from NossiSite.helpers import checklogin
 from NossiSite.socks import (
     generate_clock,
     generate_line,
@@ -387,15 +388,14 @@ def generate_heat_segments(mech: Mecha):
 
 @views.route("/mecha_use/<s>/<n>/<path:m>")
 def mecha_use(s: str, n: str, m):
+    checklogin()
     use = request.args.get("use") or 0
     n = decode_id(n)
 
     m_sheet: WikiCharacterSheet = WikiCharacterSheet.load_locate(m, cache=False)
     mech: Mecha = m_sheet.char
 
-    syscat = mech.get_syscat(s.capitalize())
-    sys = syscat.get(n)
-    sys.use(use)
+    mech.use_system(s, n, use)
 
     m_sheet.save_low_prio(session["user"])
 
@@ -403,7 +403,7 @@ def mecha_use(s: str, n: str, m):
     if not template:
         abort(404)
 
-    return render_template(template, system=sys, identifier=m)
+    return render_template(template, system=mech.get_syscat(s).get(n), identifier=m)
 
 
 @views.route("/mecha_sys/<s>/<n>/<path:m>")
@@ -447,12 +447,13 @@ def mech_heat_ui(m):
     m_sheet = WikiCharacterSheet.load_locate(m)
     mech: Mecha = m_sheet.char
     total_flux = mech.fluxmax()
+    current_flux = mech.heatflux
     heatsys = [x for x in mech.Heat.values()]
-    print("heat systems:", heatsys)
     return render_template(
         "sheets/mechsystems/heat_ui.html",
         systems=heatsys,
         max_flux=total_flux,
+        current_flux=current_flux,
         identifier=m,
     )
 

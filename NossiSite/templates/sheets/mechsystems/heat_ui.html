@@ -1,13 +1,13 @@
-<div id="heatmeter" class="meter" style="--max: {{ maximum }}%;">
+<div class="heatmeter" style="--max: {{ maximum }}%;">
     <div id="background-bar-{{ name }}" class="background-bar"></div>
-    {% for sink in sinks %}
-        <div id="{{ name }}-bar-{{ sink.name | b64e }}" class="fill"
-             data-cyberlabel="{{ sink.name }}"
-             style="--fill: {{ sink.fill }}%; --color: {{ sink.color }}; --offset: {{ sink.offset }}%;">
+    {% for sys in systems %}
+        <div id="heat-bar-{{ sys.name | b64e }}" class="fill"
+             data-cyberlabel="{{ sys.name }}"
+             style="--fill: {{ sys.current }}; --color: {{ sys.color }}; --offset: {{ sys.offset }}%;">
         </div>
     {% endfor %}
 </div>
 
 <div id="current-heat-flux" class="flux-display">
-    <span>Current Heat Flux: <span id="flux-value">{{ current_flux }}</span> W</span>
+    <span>Current Heat Flux: <span id="flux-value">{{ current_flux }}</span>/{{ max_flux }}</span>
 </div>

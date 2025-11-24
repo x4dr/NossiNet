@@ -15,6 +15,7 @@ from gamepack.MDPack import (
     table_row_edit,
 )
 from gamepack.WikiPage import WikiPage
+from gamepack.endworld import MovementSystem
 from gamepack.endworld.Mecha import Mecha
 from tests.NossiTestCase import NossiTestCase
 
@@ -91,7 +92,7 @@ class TestViews(NossiTestCase):
 
     def test_local_markdown_hiding(self):
         print(
-            LocalMarkdown.process(
+            LocalMarkdown().process(
                 "# thing\n"
                 "## !hidden subheading\n"
                 "hiddentext\n"
@@ -113,3 +114,17 @@ class TestViews(NossiTestCase):
         wikipage.tags = ["mech"]
         wikipage.live = False
         wikipage.save_overwrite("", "")
+
+    def test_speed(self):
+        WikiPage._wikipath = Path("~/wiki").expanduser()
+        wikipage = WikiPage.load(Path("endworld/mecha/systems/movement.md"))
+        systems = wikipage.md().children["Movement Systems"].tables[0]
+        for i in range(2, len(systems.rows)):
+            if systems.rows[i][2].strip() == "":
+                continue
+            data = systems.row_as_dict(i)
+            m = MovementSystem(data["Type"], data)
+            m.amount = 1
+            print(m)
+            print(m.speeds(5))
+            print("\n\n\n")
