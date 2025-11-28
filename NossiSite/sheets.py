@@ -406,7 +406,9 @@ def mecha_use(s: str, n: str, m):
     if not template:
         abort(404)
 
-    return render_template(template, system=mech.get_syscat(s).get(n), identifier=m)
+    return render_template(
+        template, system=mech.get_syscat(s.title()).get(n), identifier=m
+    )
 
 
 @views.route("/doroll", methods=["POST"])

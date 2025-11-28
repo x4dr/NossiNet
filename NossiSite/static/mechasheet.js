@@ -4,6 +4,13 @@ function makelabels() {
     const elements = [...document.querySelectorAll("[data-cyberlabel]")];
 
     nodes = elements.map((el, i) => {
+        const fill = parseFloat(getComputedStyle(el).getPropertyValue('--fill')) || 0;
+
+        if (fill === 0) {
+            el.remove();
+            return null;
+        }
+
         const label = document.createElement("div");
         label.className = "cyber-label";
         label.innerText = el.dataset.cyberlabel;
@@ -45,7 +52,7 @@ function makelabels() {
             vx: 0,
             vy: 0
         };
-    });
+    }).filter(n => n);;
 
     for (let i = 0; i < 50; i++) {
         applyForces();

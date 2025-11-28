@@ -10,51 +10,66 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Python environment
-        uses: actions/setup-python@v4
+
+      - name: Setup Python 3.14
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.11.2"
-      - name: Setup VENV
+          python-version: "3.14"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Sync environment
         run: |
           git submodule update --init --recursive
-          python3 -m venv .venv
-          . .venv/bin/activate
-          pip install -r requirements.txt
-      - name: set up the wiki environment
+          uv sync --frozen
+
+      - name: Set up the wiki environment
         run: |
           git clone https://github.com/x4dr/Fen.git ~/wiki
+
       - name: Run unittests/coverage
         run: |
-          . .venv/bin/activate
-          pip install coverage
-          coverage run --source . --omit "*venv/*" -m unittest discover --verbose tests
-          coverage report -m -i --fail-under=80 --skip-covered --skip-empty | tee report.txt
-          coverage xml
+          uv add --dev coverage
+          uv run coverage run --source . --omit "*venv/*" -m unittest discover --verbose tests
+          uv run coverage report -m -i --fail-under=80 --skip-covered --skip-empty | tee report.txt
+          uv run coverage xml
+
       - name: Upload Coverage Report
         uses: actions/upload-artifact@v4
         with:
           name: coverage_report
           path: report.txt
+
       - name: Coveralls Parallel
         uses: coverallsapp/github-action@v2
         with:
-          flag-name: run-linux-py311
+          flag-name: run-linux-py314
           parallel: true
 
 
-
-  Lint:
-    name: Pre-Commit Hooks that should have been run by committer
+  lint:
+    name: Pre-Commit Hooks
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "3.11.2"
-    - name: set PY
-      run: echo "PY=$(python --version --version | sha256sum | cut -d' ' -f1)" >> $GITHUB_ENV
-    - uses: actions/cache@v3
-      with:
-        path: ~/.cache/pre-commit
-        key: pre-commit|${{ env.PY }}|${{ hashFiles('.pre-commit-config.yaml') }}
-    - uses: pre-commit/action@v3.0.0
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Sync environment
+        run: uv sync --frozen
+
+      - name: Set PY
+        run: echo "PY=$(python --version | sha256sum | cut -d' ' -f1)" >> $GITHUB_ENV
+
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit|${{ env.PY }}|${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - uses: pre-commit/action@v3.0.0
