@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Setup Python 3.14
         uses: actions/setup-python@v5
@@ -28,13 +30,10 @@ jobs:
           key: uv-${{ runner.os }}-py314-${{ hashFiles('uv.lock') }}
 
       - name: Sync environment
-        run: |
-          git submodule update --init --recursive
-          uv sync --frozen
+        run: uv sync --frozen
 
       - name: Set up the wiki environment
-        run: |
-          git clone https://github.com/x4dr/Fen.git ~/wiki
+        run: git clone https://github.com/x4dr/Fen.git ~/wiki
 
       - name: Run unittests/coverage
         run: |
@@ -54,7 +53,6 @@ jobs:
         with:
           flag-name: run-linux-py314
           parallel: true
-
 
   lint:
     name: Pre-Commit Hooks
