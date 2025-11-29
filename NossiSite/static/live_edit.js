@@ -266,15 +266,13 @@ window.addEventListener("load", () => {
                 },
                 body: JSON.stringify(picked.map(x => x.textContent.trim()))
             }).then(res => {
-                if (!res.ok) throw new Error(`Server error: ${res.status}`);
+                if (!res.ok) return res.json().then(errData => {
+                    throw new Error(errData.message);
+                });
                 return res.json();
             })
-                .then(data => {
-                    console.log("Server response:", data);
-                })
-                .catch(err => {
-                    alert("Failed to send selection: " + err.message);
-                });
+                .then(data => console.log("Server response:", data))
+                .catch(err => alert("Failed: " + err.message));
 
             fadeLightning = true;
             fadeStart = performance.now();

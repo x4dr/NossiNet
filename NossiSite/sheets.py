@@ -426,7 +426,6 @@ def doroll():
         for item in data:
             for stat_index, val_type in enumerate(cat.keys()):
                 if item in cat[val_type]:
-                    print(item, "in ", cat[val_type], "valtype", val_type)
                     if stat_index:  # second type is skills
                         skills.append(item)
                     else:  # first type is attributes
@@ -434,9 +433,14 @@ def doroll():
                     vals[item] = cat[val_type][item]
     wh = chat.data.get("webhook")
     if not wh:
-        raise ValueError("no webhook")
-    if not sum(attributes + skills):
-        raise ValueError("no valid selection")
+        return (
+            jsonify(
+                {"status": "error", "message": "webhook not working on the server"}
+            ),
+            500,
+        )
+    if not (int(vals[attributes[-1]]) + int(vals[skills[-1]]) + int(vals[skills[-2]])):
+        return jsonify({"status": "error", "message": "no valid selection"}), 400
     message_data = {
         "content": f"{attributes[-1]}, {skills[-1]} {skills[-2]}@5\n"
         f"{vals[attributes[-1]]}, {vals[skills[-1]]} {vals[skills[-2]]}@5",
