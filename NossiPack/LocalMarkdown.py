@@ -55,7 +55,7 @@ class LocalMarkdown:
                 level = len(heading.strip()) - len(heading.strip().lstrip("#"))
             else:
                 level = len(old_heading.strip()) - len(old_heading.strip().lstrip("#"))
-            return f"{'#'*(level+1)}{bracketed} {heading}\n{newtext}"
+            return f"{'#' * (level + 1)}{bracketed} {heading}\n{newtext}"
         elif bracketed:
             return f"#!\n{newtext}"
         return f"{newtext}"
@@ -87,7 +87,7 @@ class LocalMarkdown:
         newlines = []
         for line in newtext.splitlines(keepends=True):
             if line.strip().startswith("#"):
-                line = f"{'#'*current_level}{line.lstrip()}"
+                line = f"{'#' * current_level}{line.lstrip()}"
             newlines.append(line)
 
         newtext = "".join(newlines)

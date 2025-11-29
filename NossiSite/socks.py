@@ -212,6 +212,6 @@ def generate_line(
         boxes += f"""<div class="gauge-box {status}""
                  hx-get="/{endpoint}/{encode_id(name)}/{encode_id(page)}/{incdec}"
                  hx-trigger="click"
-                 style="--bouncedelay:{i/total}">
+                 style="--bouncedelay:{i / total}">
                 </div>"""
     return f'<div class="gauge {"" if initial else "cooldown"}" id={encode_id(name)}-{encode_id(page)}>{boxes}</div>'
