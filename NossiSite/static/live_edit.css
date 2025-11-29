@@ -154,5 +154,5 @@
 }
 
 .connectable.selected {
-    outline: 3px solid deepskyblue
+    outline: 3px solid var(--accent-color)
 }

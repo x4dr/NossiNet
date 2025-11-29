@@ -1,6 +1,7 @@
 window.addEventListener("load", () => {
     const csrf_token = document.querySelector('meta[name="csrf-token"]').content;
-
+    const accentColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--accent-color').trim();
     let lock_edit_content = false;
     window.get_edit_content =
         (con, ref) => {
@@ -87,7 +88,7 @@ window.addEventListener("load", () => {
             input.className = "bright"
             input.style.padding = "5px";
             input.style.alignContent = "center";
-            input.style.color = "#007000";
+            input.style.color = getComputedStyle(document.documentElement).getPropertyValue('--text-color');
             input.name = "header_" + i;
             cell.appendChild(input);
             header_row.appendChild(cell);
@@ -180,7 +181,7 @@ window.addEventListener("load", () => {
         }
         const poly = document.createElementNS(NS, "polyline");
         poly.setAttribute("points", points.join(" "));
-        poly.setAttribute("stroke", "deepskyblue");
+        poly.setAttribute("stroke", accentColor);
         poly.setAttribute("stroke-width", "2");
         poly.setAttribute("fill", "none");
         poly.setAttribute("stroke-linecap", "round");
@@ -261,7 +262,7 @@ window.addEventListener("load", () => {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').content
+                    "X-CSRFToken": csrf_token
                 },
                 body: JSON.stringify(picked.map(x => x.textContent.trim()))
             }).then(res => {

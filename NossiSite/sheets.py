@@ -435,6 +435,8 @@ def doroll():
     wh = chat.data.get("webhook")
     if not wh:
         raise ValueError("no webhook")
+    if not sum(attributes + skills):
+        raise ValueError("no valid selection")
     message_data = {
         "content": f"{attributes[-1]}, {skills[-1]} {skills[-2]}@5\n"
         f"{vals[attributes[-1]]}, {vals[skills[-1]]} {vals[skills[-2]]}@5",
