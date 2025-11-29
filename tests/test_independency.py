@@ -1,42 +1,32 @@
-import importlib.util
-import re
+import importlib
+import sys
 from pathlib import Path
-from typing import List
-from unittest import TestCase, mock
-from unittest.mock import Mock
 
-import requests
+import pytest
+
+ROOT = Path(__file__).parent.parent.resolve()
+sys.path.insert(0, str(ROOT))
+BLACKLIST = [".venv"]
 
 
-class TestIndependency(TestCase):
-    modules: List[Path] = []
+def all_module_names():
+    modules = set()
+    for subdir in ["NossiPack", "NossiSite", "NossiInterface"]:
+        for py_file in (ROOT / subdir).rglob("*.py"):
+            if any(b in py_file.parts for b in BLACKLIST):
+                continue
 
-    @classmethod
-    def setUpClass(cls) -> None:
-        fileblacklist = ["setup.py"]
-        patternblacklist = [r".*/\.?venv/.*"]
-        cls.modules = []
-        candidates = list(Path(__file__).parent.glob("../NossiPack/**/*.py"))
-        candidates += list(Path(__file__).parent.glob("../NossiSite/**/*.py"))
-        candidates += list(Path(__file__).parent.glob("../NossiInterface/**/*.py"))
-        candidates = [x.absolute() for x in candidates if x.name not in fileblacklist]
-        for pattern in patternblacklist:
-            for m in candidates:
-                if not re.match(pattern, m.as_posix()):
-                    cls.modules.append(m.absolute())
+            if py_file.name == "__init__.py":
+                module_name = ".".join(py_file.parent.relative_to(ROOT).parts)
+            else:
+                module_name = ".".join(py_file.with_suffix("").relative_to(ROOT).parts)
 
-    @mock.patch.object(
-        requests, "get", Mock(return_value=Mock(status_code=200, id="hi"))
-    )
-    def test_loadability(self):
-        """establish that each module is loadable and has no circular reference issues"""
-        for module in TestIndependency.modules:
-            if module.stem in ["extra", "views", "chat", "wiki"]:
-                continue  # these don't need to be individually loadable, as they register endpoints and collide
+            modules.add(module_name)
 
-            with self.subTest(msg=f"Loading {module.as_posix()[3:-3]} "):
-                spec = importlib.util.spec_from_file_location(
-                    module.parent.stem + "." + module.stem, module
-                )
-                foo = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(foo)
+    return sorted(modules)
+
+
+@pytest.mark.parametrize("module_name", all_module_names())
+def test_module_importable(module_name):
+    """Each module should import successfully."""
+    importlib.import_module(module_name)
