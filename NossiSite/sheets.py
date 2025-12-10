@@ -405,10 +405,10 @@ def mecha_use(s: str, n: str, m):
     template = system_map(s.lower())
     if not template:
         abort(404)
-
-    return render_template(
-        template, system=mech.get_syscat(s.title()).get(n), identifier=m
-    )
+    system = mech.get_syscat(s.title()).get(n)
+    if not system:
+        raise Exception()
+    return render_template(template, system=system, identifier=m)
 
 
 @views.route("/doroll", methods=["POST"])
@@ -461,6 +461,8 @@ def mecha_sys(s: str, n: str, m):
     print("system", m, s, n, m_sheet.increment)
     if not template:
         abort(404)
+    if not sys:
+        abort(404)
 
     return render_template(template, system=sys, identifier=m)
 
@@ -471,9 +473,9 @@ def energy_meter(m):
     mech: Mecha = m_sheet.char
     current_max = mech.energy_budget()
     overall_max = mech.energy_total()
-    print("energymeter for ", m, m_sheet.increment)
+    # print("energymeter for ", m, m_sheet.increment)
     systems, active = mech.energy_allocation()
-    print([(x.name, x.energy) for x in systems])
+    # print([(x.name, x.energy) for x in systems])
     fills = [x.energy for x in systems]
     colors = ["var(--secondary-color)", "var(--primary-color)"]
     segments = generate_meter_segments(

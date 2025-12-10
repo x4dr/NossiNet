@@ -17,7 +17,7 @@
     <span class="stat-heading">{{ system.name }}</span>
     <div class="stat-box"><span class="stat-label">ET: {{ system.energy * system.amount }}</span><span
             class="tooltip-text">Total Energy cost after scaling</span></div>
-    <div class="stat-box"><span class="stat-label">H: {{ system.heat* system.amount }}</span><span
+    <div class="stat-box"><span class="stat-label">H: {{ system.heats["heat0"] * system.amount }}</span><span
             class="tooltip-text">Total Heat generated after scaling<</span></div>
     <div class="stat-box"><span class="stat-label">T: {{ system.thrust }}</span><span
             class="tooltip-text">Thrust</span></div>

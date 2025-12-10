@@ -188,3 +188,76 @@
     transition: opacity 0.3s;
     opacity: 1;
 }
+
+/* plot */
+.axis {
+    stroke: var(--primary-color);
+    stroke-width: 2;
+}
+
+.grid {
+    stroke: var(--secondary-color);
+    opacity: 0.2;
+    stroke-dasharray: 4 4;
+}
+
+.curve {
+    stroke: var(--curve-color);
+    fill: none;
+    transition: stroke 0.15s, filter 0.15s, opacity 0.15s;
+}
+
+.curve-label {
+    fill: var(--curve-color);
+    cursor: pointer;
+    user-select: none;
+}
+
+.curve-group:hover .curve,
+.curve-group.active .curve {
+    stroke: var(--primary-color);
+    filter: drop-shadow(0 0 6px var(--primary-color));
+}
+
+.curve-group:hover .curve-label,
+.curve-group.active .curve-label {
+    fill: var(--primary-color);
+}
+
+.curve-group.hidden {
+    opacity: 0.15;
+}
+
+.curve-hit {
+    pointer-events: stroke;
+}
+
+.cursor-line {
+    stroke: var(--primary-color);
+    stroke-width: 1;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.tooltip rect {
+    fill: var(--background-color);
+    opacity: 0.85;
+}
+
+.tooltip text {
+    fill: var(--accent-color);
+    font-size: 12px;
+}
+
+/* draw-in animation */
+.animated {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: draw 3s ease-in-out forwards;
+}
+
+@keyframes draw {
+    to {
+        stroke-dashoffset: 0;
+    }
+}

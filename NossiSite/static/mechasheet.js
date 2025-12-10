@@ -52,7 +52,8 @@ function makelabels() {
             vx: 0,
             vy: 0
         };
-    }).filter(n => n);;
+    }).filter(n => n);
+    ;
 
     for (let i = 0; i < 50; i++) {
         applyForces();
@@ -247,4 +248,113 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+
+});
+
+function init_speed_graph(root = document) {
+    const svg = root.querySelector("#speed-graph");
+    if (!svg) return;
+
+    const cursor = svg.querySelector("#cursor-line");
+    const tooltip = svg.querySelector("#tooltip");
+    const title = svg.querySelector("#tooltip-title");
+    const value = svg.querySelector("#tooltip-value");
+
+    const margin = 40;
+    const graph_w = svg.viewBox.baseVal.width - 2 * margin;
+    const max_time = parseFloat(svg.dataset.maxTime);
+
+    svg.onmousemove = ev => {
+        const pt = svg.createSVGPoint();
+        pt.x = ev.clientX;
+        pt.y = ev.clientY;
+        const c = pt.matrixTransform(svg.getScreenCTM().inverse());
+
+        if (c.x < margin || c.x > margin + graph_w) {
+            tooltip.setAttribute("visibility", "hidden");
+            cursor.setAttribute("visibility", "hidden");
+            return;
+        }
+
+        cursor.setAttribute("visibility", "visible");
+        cursor.setAttribute("x1", c.x);
+        cursor.setAttribute("x2", c.x);
+
+        const t = (c.x - margin) / graph_w * max_time;
+        const out = [];
+
+        svg.querySelectorAll(".curve-group").forEach(g => {
+            if (g.classList.contains("hidden")) return;
+
+            const name = g.dataset.name;
+            const speeds = JSON.parse(g.dataset.speeds);
+
+            const keys = Object.keys(speeds).map(Number).sort((a, b) => a - b);
+
+            let k0 = keys[0];
+            let k1 = keys[keys.length - 1];
+
+            // find the segment that contains t
+            for (let i = 0; i < keys.length - 1; i++) {
+                if (t >= keys[i] && t <= keys[i + 1]) {
+                    k0 = keys[i];
+                    k1 = keys[i + 1];
+                    break;
+                }
+            }
+            if (t >= keys[keys.length - 1]) {
+                const lastVal = speeds[keys[keys.length - 1]];
+                out.push(`${name}: ${lastVal.toFixed(2)}`);
+                return;
+            }
+            const v0 = speeds[k0];
+            const v1 = speeds[k1];
+            const ratio = (t - k0) / (k1 - k0);
+            const v = v0 + (v1 - v0) * ratio;
+
+            out.push(`${name}: ${v.toFixed(2)}`);
+        });
+
+
+        const offsetX = 12; // SVG units
+        const offsetY = -4;
+
+        tooltip.setAttribute("transform", `translate(${c.x + offsetX},${c.y + offsetY})`);
+        const rect = tooltip.getBoundingClientRect();
+        let dx = 0, dy = 0;
+        if (rect.right > window.innerWidth) dx = window.innerWidth - rect.right;
+        if (rect.top < 0) dy = -rect.top;
+        tooltip.setAttribute("transform", `translate(${c.x + offsetX + dx},${c.y + offsetY + dy})`);
+        tooltip.setAttribute("visibility", "visible");
+        title.textContent = `t = ${t.toFixed(2)} s`;
+        value.innerHTML = "";
+        out.forEach((line, i) => {
+            const tsp = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+            tsp.setAttribute("x", 12);          // relative to tooltip <text>
+            tsp.setAttribute("dy", i === 0 ? "1.2em" : "1.2em");
+            tsp.textContent = line;
+            value.appendChild(tsp);
+        });
+    };
+
+    svg.onmouseleave = () => {
+        tooltip.setAttribute("visibility", "hidden");
+        cursor.setAttribute("visibility", "hidden");
+    };
+
+    svg.querySelectorAll(".legend-item").forEach(label => {
+        label.onclick = () => {
+            const g = label.closest(".curve-group");
+            g.classList.toggle("hidden");
+            g.classList.toggle("active");
+        };
+    });
+}
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    init_speed_graph(document);
+    document.body.addEventListener("htmx:afterSwap", e => {
+        init_speed_graph(e.target);
+    });
 });
