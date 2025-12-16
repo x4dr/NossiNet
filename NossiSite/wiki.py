@@ -449,7 +449,7 @@ def live_edit_get_table(res, a):
     mdo = MDObj.from_md(res)
     for step in a:
         mdo = mdo.children[step]
-    if mdo.tables is None:
+    if not mdo.tables:
         return {"data": "", "type": "error"}
 
     return {"data": mdo.tables[0].to_simple(), "type": "table"}
