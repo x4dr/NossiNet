@@ -4,6 +4,7 @@ import subprocess
 import threading
 import time
 from pathlib import Path
+from typing import Optional
 from urllib import parse
 
 import bleach
@@ -123,7 +124,7 @@ def tagsearch(tag=None):
 
 
 @views.route("/wikiadmin/<path:page>", methods=["GET", "POST"])
-def adminwiki(page: str = None):
+def adminwiki(page: str):
     path: Path = (WikiPage.wikipath() / page).with_suffix(".md")
     if request.method == "GET":
         backlinks = [
@@ -141,12 +142,15 @@ def adminwiki(page: str = None):
         )
         info = (info.stdout or bytes()).decode("utf-8")
         try:
+            loaded_page = WikiPage.load_locate(page)
+            if not loaded_page:
+                abort(404)
             return render_template(
                 "wiki/adminwiki.html",
                 page=page,
                 links=WikiPage.getlinks().get(page, []),
                 backlinks=backlinks,
-                wordcount=len(WikiPage.load_locate(page).body.split()),
+                wordcount=len(loaded_page.body.split()),
                 last_edited=info,
             )
         except DescriptiveError as e:
@@ -164,11 +168,16 @@ def adminwiki(page: str = None):
             path.relative_to(WikiPage.wikipath()).as_posix() in k
             or k in path.relative_to(WikiPage.wikipath()).as_posix()
         ):
-            WikiPage.reload_cache(WikiPage.locate(k))
-    WikiPage.reload_cache(WikiPage.locate(path))
+            if loc := WikiPage.locate(k):
+                WikiPage.reload_cache(loc)
+    if loc := WikiPage.locate(path):
+        WikiPage.reload_cache(loc)
     if "delete" in request.form:
-        n = (WikiPage.wikipath() / n).with_suffix(".md")
-        if n != path:
+        if n is None:
+            flash("Invalid page name.", "error")
+            return redirect(url_for("wiki.adminwiki", page=page))
+        n_path = (WikiPage.wikipath() / n).with_suffix(".md")
+        if n_path != path:
             flash("Type in the page name to delete it.", "error")
             return redirect(url_for("wiki.adminwiki", page=page))
         with (WikiPage.wikipath() / "control").open("a+") as h:
@@ -187,6 +196,9 @@ def adminwiki(page: str = None):
         WikiPage.updatewikicache()
         return redirect(url_for("wiki.wiki_index"))
     if "move" in request.form:
+        if n is None:
+            flash("Invalid target name.", "error")
+            return redirect(url_for("wiki.adminwiki", page=page))
         with (WikiPage.wikipath() / "control").open("a+") as h:
             h.write(
                 f"{session['user']} moved {path.relative_to(WikiPage.wikipath())} to {n}.\n"
@@ -200,16 +212,16 @@ def adminwiki(page: str = None):
         )
         flash(f"Moved {path.relative_to(WikiPage.wikipath())} to {n}.", "warning")
         WikiPage.updatewikicache()
-        return redirect(url_for("wiki.adminwiki", page=n))
+        return redirect(url_for("wiki.adminwiki", page=n.as_posix()))
     abort(400)
 
 
 @views.route("/wiki", methods=["GET", "POST"])
 @views.route("/wiki/", methods=["GET", "POST"])
 @views.route("/wiki/<path:page>", methods=["GET", "POST"])
-def wikipage(page=None):
+def wikipage(page: Optional[str] = None):
     raw = request.url.endswith("/raw")
-    if raw:
+    if raw and page:
         page = page[:-4]
     if page is None:
         page = request.form.get("n", None)
@@ -222,14 +234,18 @@ def wikipage(page=None):
         else:
             abort(400)
     try:
-        page = page.lower()
-        page = page.strip(".").replace("/.", "/")  # remove hidden directory-dots
-        p = WikiPage.locate(page)
+        page_lower = page.lower()
+        page_lower = page_lower.strip(".").replace(
+            "/.", "/"
+        )  # remove hidden directory-dots
+        p = WikiPage.locate(page_lower)
         if p is None:
             raise FileNotFoundError
-        if p.with_suffix("").as_posix() != page:
-            return redirect(url_for("wiki.wikipage", page=p.with_suffix("")))
-        loaded_page = WikiCharacterSheet.load_locate(page)
+        if p.with_suffix("").as_posix() != page_lower:
+            return redirect(url_for("wiki.wikipage", page=p.with_suffix("").as_posix()))
+        loaded_page = WikiCharacterSheet.load_locate(page_lower)
+        if not loaded_page:
+            raise FileNotFoundError
     except (DescriptiveError, FileNotFoundError) as e:
         if (
             isinstance(e, DescriptiveError)
@@ -264,27 +280,29 @@ def wikipage(page=None):
 
 
 @views.route("/edit/<path:page>", methods=["GET", "POST"])
-def editwiki(page=None):
+def editwiki(page: str):
     checklogin()
-    page = page.lower()
+    page_lower = page.lower()
     try:
-        p = WikiPage.locate(page)
+        p = WikiPage.locate(page_lower)
     except FileNotFoundError:
         # check if the page is eligible for creation
-        if not (WikiPage.wikipath() / Path(page).parent).exists():
-            return redirect(url_for("wiki.wikipage", page=Path(page).stem))
-        (WikiPage.wikipath() / Path(page)).touch()  # create
-        p = WikiPage.locate(page)
+        if not (WikiPage.wikipath() / Path(page_lower).parent).exists():
+            return redirect(url_for("wiki.wikipage", page=Path(page_lower).stem))
+        (WikiPage.wikipath() / Path(page_lower)).touch()  # create
+        p = WikiPage.locate(page_lower)
     if p is None:
-        p = Path(page).with_suffix(".md")
-    if p.as_posix()[:-3] != page:
-        return redirect(url_for("wiki.wikipage", page=p))
+        p = Path(page_lower).with_suffix(".md")
+    if p.as_posix()[:-3] != page_lower:
+        return redirect(url_for("wiki.wikipage", page=p.as_posix()[:-3]))
     if request.method == "GET":
         try:
             author = ""
             ident = (page,)
             try:
                 loaded_page = WikiPage.load(p)
+                if not loaded_page:
+                    return wikipage(page)
             except DescriptiveError:
                 return wikipage(page)
             entry = dict(
@@ -303,24 +321,29 @@ def editwiki(page=None):
         if request.form.get("wiki", None) is not None:
             log.info(f"saving wiki file {request.form['wiki']}")
             try:
-                page = WikiPage.load(p)
-                page.title = request.form["title"]
-                page.tags = request.form["tags"].split(" ")
-                page.body = request.form["text"]
-                page.links = mdlinks.findall(markdown.markdown(request.form["text"]))
+                loaded_page = WikiPage.load(p)
+                if not loaded_page:
+                    raise DescriptiveError("Page not found")
+                loaded_page.title = request.form["title"]
+                loaded_page.tags = set(request.form["tags"].split(" "))
+                loaded_page.body = request.form["text"]
+                loaded_page.links = mdlinks.findall(
+                    markdown.markdown(request.form["text"])
+                )
+                page_to_save = loaded_page
             except DescriptiveError:
-                p = p.as_posix().lower()
-                page = WikiPage(
+                p_str = p.as_posix().lower()
+                page_to_save = WikiPage(
                     title=request.form["title"],
                     tags=request.form["tags"].split(" "),
                     body=request.form["text"],
                     links=mdlinks.findall(markdown.markdown(request.form["text"])),
                     meta={},
-                    file=WikiPage.wikipath() / p,
+                    file=WikiPage.wikipath() / p_str,
                 )
 
-            page.save_overwrite(session["user"])
-            flash(f"Saved {page.title.strip() or p}.")
+            page_to_save.save_overwrite(session["user"])
+            flash(f"Saved {page_to_save.title.strip() or p}.")
         return redirect(url_for("wiki.wikipage", page=request.form.get("wiki", None)))
     return abort(405)
 
@@ -374,11 +397,11 @@ def ddos(costs="0, 15, 35, 60, 100", penalty="0, 0, 0, 50, 100", width=3):
 @views.route("/costcalc/<inputstring>/<width>")
 @views.route("/costcalc/<inputstring>")
 def fen_calc(inputstring: str, width=3):
+    res = FenCharacter.cost_calc(inputstring, width)
+    if isinstance(res, int):
+        return str(res), 200, {"Content-Type": "text/plain; charset=utf-8"}
     return (
-        "\n".join(
-            ", ".join(str(y) for y in line)
-            for line in FenCharacter.cost_calc(inputstring, width)
-        ),
+        "\n".join(", ".join(str(y) for y in line) for line in res),
         200,
         {"Content-Type": "text/plain; charset=utf-8"},
     )
@@ -396,12 +419,14 @@ def searchwiki():
     length = len(key)
     for w in WikiPage.wikindex():
         loaded_page = WikiPage.load(w)
-        w = w.relative_to(WikiPage.wikipath()).with_suffix("")
+        if not loaded_page:
+            continue
+        w_rel = w.relative_to(WikiPage.wikipath()).with_suffix("")
         if key in loaded_page.title.lower():
-            matches.append((w, loaded_page.title, "title"))
+            matches.append((w_rel, loaded_page.title, "title"))
         for tag in loaded_page.tags:
             if key in tag.lower():
-                matches.append((w, loaded_page.title, f"tag: {tag}"))
+                matches.append((w_rel, loaded_page.title, f"tag: {tag}"))
         p = 0
         while loaded_page.body[p:]:
             m = loaded_page.body[p:].lower().find(key)
@@ -409,12 +434,13 @@ def searchwiki():
                 break
             matches.append(
                 (
-                    w,
+                    w_rel,
                     loaded_page.title,
-                    f"{loaded_page.body[max(p + m - pre, 0):p + m + pos + length]}",
+                    f"{loaded_page.body[max(p + m - pre, 0) : p + m + pos + length]}",
                 )
             )
             p += m + 1
+
     return render_template(
         "wiki/search_results.html", results=matches, start=pre, end=pre + length
     )
@@ -426,7 +452,10 @@ def live_edit_get(formdata):
     if not a:
         a = [formdata["percentage"]]
     t = parse.unquote(formdata.get("type", "text"))
-    res: str = WikiPage.load_locate(formdata["context"]).body
+    loaded_page = WikiPage.load_locate(formdata["context"])
+    if not loaded_page:
+        return {"data": "", "type": "error"}
+    res: str = loaded_page.body
     if t == "text":
         return live_edit_get_text(res, a)
     if t == "table":
@@ -466,15 +495,19 @@ def live_edit_write_text(formdata, context):
     old = formdata["original"].replace("\r\n", "\n")
     new = formdata["new"].replace("\r\n", "\n")
     if not old == new:
-        context = WikiPage.locate(context)
-        log.info(f"livereplacing {context}")
-        page = WikiPage.load(context)
+        loc = WikiPage.locate(context)
+        if not loc:
+            return
+        log.info(f"livereplacing {loc}")
+        page = WikiPage.load(loc)
+        if not page:
+            return
         page.body = page.body.replace("\r\n", "\n")
         if old not in page.body:
             if old[:-1] in page.body:
                 old = old[:-1]
             else:
-                log.error(f"live replace didn't match {context}")
+                log.error(f"live replace didn't match {loc}")
         page.body = page.body.replace(old, new, 1)
         page.save_overwrite(session.get("user"))
     else:
@@ -482,8 +515,12 @@ def live_edit_write_text(formdata, context):
 
 
 def live_edit_write_table(formdata, context):
-    context = WikiPage.locate(context)
-    page = WikiPage.load(context)
+    loc = WikiPage.locate(context)
+    if not loc:
+        return
+    page = WikiPage.load(loc)
+    if not page:
+        return
     md = page.md()
     path = json.loads(formdata["path"])
     t = md
@@ -500,9 +537,9 @@ def live_edit_write_table(formdata, context):
         _, row, col = k.split("_")
         t.update_cell(int(row), int(col), v)
     t.headers = [x[1] for x in formdata.items() if x[0].startswith("header_")]
-    md = md.to_md()
-    if md != page.body:
-        page.body = md
+    md_text = md.to_md()
+    if md_text != page.body:
+        page.body = md_text
         page.save_overwrite(session.get("user"))
 
 
@@ -544,7 +581,10 @@ def specific(a, parse_md=None):
     else:
         hide_headline = 0
 
-    article: str = WikiPage.load_locate(a[0]).body
+    loaded_page = WikiPage.load_locate(a[0])
+    if not loaded_page:
+        return "not found", 404
+    article: str = loaded_page.body
     for seek in a[1:]:
         article = traverse_md(article, seek)
     if not article:

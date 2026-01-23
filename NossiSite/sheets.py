@@ -1,5 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
+from typing import cast, List, Tuple, Any
 
 import requests
 from flask import (
@@ -17,7 +18,7 @@ from flask import (
 from markupsafe import Markup
 
 from NossiPack.LocalMarkdown import LocalMarkdown
-from NossiPack.User import User, Config, Userlist
+from NossiPack.User import Config, Userlist
 from NossiSite import chat
 from NossiSite.base_ext import decode_id
 from NossiSite.helpers import checklogin
@@ -30,12 +31,12 @@ from NossiSite.socks import (
 )
 from gamepack.Dice import DescriptiveError
 from gamepack.FenCharacter import FenCharacter
-from gamepack.MDPack import MDObj, MDTable
+from gamepack.MDPack import MDObj
 from gamepack.PBTACharacter import PBTACharacter
 from gamepack.WikiCharacterSheet import WikiCharacterSheet
 from gamepack.WikiPage import WikiPage
 from gamepack.endworld import Mecha
-from gamepack.endworld.EWCharacter import EWCharacter
+from NossiSite.renderers import render_sheet
 
 lm = LocalMarkdown()
 views = Blueprint("sheets", __name__)
@@ -98,17 +99,25 @@ def get_skills(system, heading):
         )
 
     page = f"{system}/descriptions/{heading.lower()}skills"
-    skills = flatten_skills(WikiPage.load_locate(page).md())
+    p = WikiPage.load_locate(page)
+    if not p:
+        return jsonify({})
+    skills = flatten_skills(p.md())
     result = {x.header: lm.process(x.plaintext, page) for x in skills}
     return jsonify(result)
 
 
 def get_attributes(system, heading):
     page = system + "/descriptions/attributes"
-    md = WikiPage.load_locate(page).md()
+    p = WikiPage.load_locate(page)
+    if not p:
+        return ["", "", ""]
+    md = p.md()
     attributes = md.children.get("Attributes")
-    attributes = (attributes.tables or [MDTable([], [])])[0]
-    return attributes.column(heading, ["", "", ""])
+    if attributes and attributes.tables:
+        attributes_table = attributes.tables[0]
+        return attributes_table.column(heading, ["", "", ""])
+    return ["", "", ""]
 
 
 @views.route("/chargen/reset", methods=["GET"])
@@ -274,9 +283,8 @@ def chardgen_htmx(state: dict):
 def edit_from_chargen(name):
     path = Path("character") / name
     gen = session["character_gen"]
-    try:
-        p = WikiPage.load(path)
-    except DescriptiveError:
+    p = WikiPage.load(path)
+    if not p:
         p = WikiPage(gen["name"], [], "", [], {})
     c = FenCharacter.from_md(p.body)
     default_headings = {
@@ -356,12 +364,6 @@ def handle_chargen():
     return chargen_htmx()
 
 
-@WikiCharacterSheet.renderer(Mecha)
-def mech_sheet(self: WikiCharacterSheet):
-    mech = self.char
-    return render_template("sheets/mechasheet.html", mech=mech, identifier="mechtest")
-
-
 def generate_meter_segments(fills, colors, total, names):
     segments = []
     bottom = 0
@@ -379,19 +381,16 @@ def generate_meter_segments(fills, colors, total, names):
     return segments
 
 
-# unused for now
+# Unused for now
 def generate_heat_segments(mech: Mecha):
     sinks = []
     fluxmax = mech.fluxmax()
-    for sys in mech.Heat.values():
+    for sys_any in mech.Heat.values():
+        sys: Any = sys_any
         current = sys.current
         heatmax = sys.capacity
         percent = (100 * current) / heatmax
         print(percent)
-    # if percent > 100:
-    #     percent = 100
-    #     color = "var(--warn-color)"
-    # sinks.append({"fill": percent, "color": color, "name": names[i]})
 
     return {"sinks": sinks, "fluxmax": fluxmax}
 
@@ -403,8 +402,10 @@ def mecha_use(s: str, n: str, m):
     use = request.args.get("use") or 0
     n = decode_id(n)
 
-    m_sheet: WikiCharacterSheet = WikiCharacterSheet.load_locate(m, cache=False)
-    mech: Mecha = m_sheet.char
+    m_sheet = WikiCharacterSheet.load_locate(m, cache=False)
+    if m_sheet is None or not isinstance(m_sheet.char, Mecha):
+        abort(404)
+    mech = m_sheet.char
 
     mech.use_system(s, n, use)
 
@@ -414,9 +415,10 @@ def mecha_use(s: str, n: str, m):
     template = system_map(s.lower())
     if not template:
         abort(404)
-    system = mech.get_syscat(s.title()).get(n)
+    syscat = mech.get_syscat(s.title())
+    system = syscat.get(n)
     if not system:
-        raise Exception()
+        abort(404)
     return render_template(template, system=system, identifier=m, sys_category=s)
 
 
@@ -424,11 +426,26 @@ def mecha_use(s: str, n: str, m):
 def doroll():
     checklogin()
     ul = Userlist()
-    u = ul.loaduserbyname(session.get("user"))
+    username = session.get("user")
+    if not username:
+        abort(401)
+    u = ul.loaduserbyname(username)
+    if not u:
+        abort(404)
     configchar = u.config("character_sheet", None)
-    c: FenCharacter = WikiCharacterSheet.load_locate(configchar).char
-    attributes = [0]
-    skills = [0, 0]
+    if not configchar:
+        return (
+            jsonify({"status": "error", "message": "no character sheet configured"}),
+            400,
+        )
+
+    m_sheet = WikiCharacterSheet.load_locate(str(configchar))
+    if not m_sheet or not isinstance(m_sheet.char, FenCharacter):
+        return jsonify({"status": "error", "message": "no valid character sheet"}), 404
+
+    c = m_sheet.char
+    attributes = ["0"]
+    skills = ["0", "0"]
     vals = defaultdict(int)
     data = request.get_json() or []
     for cat in c.Categories.values():
@@ -439,7 +456,7 @@ def doroll():
                         skills.append(item)
                     else:  # first type is attributes
                         attributes.append(item)
-                    vals[item] = cat[val_type][item]
+                    vals[item] = int(cat[val_type][item])
     wh = chat.data.get("webhook")
     if not wh:
         return (
@@ -463,11 +480,14 @@ def doroll():
 @views.route("/mecha_sys/<s>/<n>/<path:m>")
 def mecha_sys(s: str, n: str, m):
     m_sheet = WikiCharacterSheet.load_locate(m)
-    mech: Mecha = m_sheet.char
-    syscat = mech.systems.get(s.capitalize())
+    if not m_sheet or not isinstance(m_sheet.char, Mecha):
+        abort(404)
+    mech = m_sheet.char
+    syscat = mech.get_syscat(s.capitalize())
+    if not syscat:
+        abort(404)
     sys = syscat.get(n)
     template = system_map(s.lower())
-    print("system", m, s, n, m_sheet.increment)
     if not template:
         abort(404)
     if not sys:
@@ -479,12 +499,12 @@ def mecha_sys(s: str, n: str, m):
 @views.route("/mech_energy_meter/<path:m>")
 def energy_meter(m):
     m_sheet = WikiCharacterSheet.load_locate(m)
-    mech: Mecha = m_sheet.char
+    if not m_sheet or not isinstance(m_sheet.char, Mecha):
+        abort(404)
+    mech = m_sheet.char
     current_max = mech.energy_budget()
     overall_max = mech.energy_total()
-    # print("energymeter for ", m, m_sheet.increment)
     systems, active = mech.energy_allocation()
-    # print([(x.name, x.energy) for x in systems])
     fills = [x.energy for x in systems]
     colors = ["var(--secondary-color)", "var(--primary-color)"]
     segments = generate_meter_segments(
@@ -501,10 +521,12 @@ def energy_meter(m):
 @views.route("/mech_heat_ui/<path:m>")
 def mech_heat_ui(m):
     m_sheet = WikiCharacterSheet.load_locate(m)
-    mech: Mecha = m_sheet.char
+    if not m_sheet or not isinstance(m_sheet.char, Mecha):
+        abort(404)
+    mech = m_sheet.char
     total_flux = mech.fluxmax()
     current_flux = mech.heatflux
-    heatsys = [x for x in mech.Heat.values()]
+    heatsys = list(mech.Heat.values())
     return render_template(
         "sheets/mechasheet_htmx/heat_ui.html",
         systems=heatsys,
@@ -517,20 +539,24 @@ def mech_heat_ui(m):
 @views.route("/mecha_sys_classic/<s>/<n>/<path:m>")
 def mecha_sys_classic(s: str, n: str, m):
     m_sheet = WikiCharacterSheet.load_locate(m)
-    mech: Mecha = m_sheet.char
+    if not m_sheet or not isinstance(m_sheet.char, Mecha):
+        abort(404)
+    mech = m_sheet.char
     template = system_map_classic(s.lower())
     if not template:
         abort(404)
     system = mech.get_syscat(s.capitalize()).get(n)
     if not system:
-        raise Exception()
+        abort(404)
     return render_template(template, system=system, identifier=m)
 
 
 @views.route("/mech_energy_meter_classic/<path:m>")
 def energy_meter_classic(m):
     m_sheet = WikiCharacterSheet.load_locate(m)
-    mech: Mecha = m_sheet.char
+    if not m_sheet or not isinstance(m_sheet.char, Mecha):
+        abort(404)
+    mech = m_sheet.char
     current_max = mech.energy_budget()
     overall_max = mech.energy_total()
     systems, active = mech.energy_allocation()
@@ -548,23 +574,30 @@ def energy_meter_classic(m):
 
 
 @views.route("/preview_move/<path:context>")
-def preview_move(context):
-    context, name = context.rsplit("/", 1)
-    page = WikiPage.load_locate(context)
+def preview_move(context: str):
+    context_part, name = context.rsplit("/", 1)
+    page = WikiPage.load_locate(context_part)
+    if not page:
+        abort(404)
     md_obj = MDObj.from_md(page.body)
     result = md_obj.search_children(name)
     if not result:
         page = WikiPage.load_locate("pbtamoves")
-        md_obj = MDObj.from_md(page.body)
-        result = md_obj.search_children(name)
+        if page:
+            md_obj = MDObj.from_md(page.body)
+            result = md_obj.search_children(name)
     if not result:
         return "Not Found"
-    result.level = None
+    result.level = 0
     preview_content = Markup(result.to_md(False))
+
+    c_val = context_part
+    if page and page.file:
+        c_val = page.file.stem
 
     return render_template_string(
         "<a href=/wiki/{{c|urlencode }}#{{ name|urlencode }}><b>{{header}}:</b> {{ preview_content }}</a>",
-        c=page.file.stem,
+        c=c_val,
         name=name,
         preview_content=preview_content,
         header=result.header.title(),
@@ -572,21 +605,15 @@ def preview_move(context):
 
 
 @views.route("/checkbox/<name>/<path:context>", methods=["GET", "POST"])
-def checkbox(context, name):
+def checkbox(context: str, name: str):
     page = WikiPage.load_locate(context)
-    #    username = session.get("user", "")
+    if not page:
+        abort(404)
     md = page.md()
-    checklists = md.search_checklist_with_path(name)
-    for path in checklists:
-        current = md
-        for p in path:
-            current = current.children[p]
-        for li in md.checklists:
-            val = li.get(name)
-            if val is not None:
-                checked = "checked" if val else ""
-                text = li.get(name, {}).get("text", name)
-                return make_checkbox(context, text, checked)
+    for item_text, checked in md.all_checklists:
+        if item_text == name:
+            return make_checkbox(context, name, "checked" if checked else "")
+    return ""
 
 
 def make_checkbox(context, name, checked):
@@ -613,19 +640,22 @@ def make_checkbox(context, name, checked):
 @views.route("/update_move/<context>/<name>", methods=["GET", "POST"])
 def update_move(context, name):
     s = WikiCharacterSheet.load_locate(context)
+    if not s or not isinstance(s.char, PBTACharacter):
+        abort(404)
     username = session.get("user", "")
-    assert isinstance(s.char, PBTACharacter)
     res = False
     if s.tagcheck(username):
-        for move in s.char.moves:
+        char = s.char
+        moves = cast(List[Tuple[str, bool]], char.moves)
+        for i, move in enumerate(moves):
             if move[0] == name:
                 if request.method == "POST":
-                    move[1] = not move[1]
-                res = move[1]
-            break
-        s.body = s.char.to_md()
+                    moves[i] = (name, not move[1])
+                res = moves[i][1]
+                break
+        s.body = char.to_md()
         s.save_low_prio(f"moves updated by {username}")
-    return make_checkbox(context, name, res)
+    return make_checkbox(context, name, "checked" if res else "")
 
 
 @views.route("/pbta-update-notes", methods=["POST"])
@@ -633,12 +663,18 @@ def update_notes():
     context = request.args["c"]
     username = session.get("user", "")
 
-    notes = request.form.get("notes")  # Ensure your textarea has name="notes"
+    notes = request.form.get("notes") or ""
 
     s = WikiCharacterSheet.load_locate(context)
-    if s.tagcheck(username):
-        s.char.notes = notes
-        s.body = s.char.to_md()
+    if s and s.tagcheck(username):
+        char = s.char
+        if isinstance(char, PBTACharacter):
+            char.notes = notes
+        elif isinstance(char, FenCharacter):
+            char.Notes = MDObj.from_md(notes)
+        else:
+            return notes
+        s.body = char.to_md()
         s.save_low_prio(f"notes updated by {username}")
     return notes
 
@@ -649,6 +685,7 @@ def _generate_clock(
     active: int, total: int, name="", page="", endpoint="changeclock", initial=False
 ):
     generate_clock(active, total, name, page, endpoint, initial)
+    return "", 204
 
 
 @views.route("/line/<int:active>/<int:total>/<name>/page")
@@ -657,6 +694,7 @@ def _generate_line(
     active: int, total: int, name="", page="", endpoint="changeline", initial=False
 ):
     generate_line(active, total, name, page, endpoint, initial)
+    return "", 204
 
 
 @views.route("/changeline/<name>/<page>/<delta>")
@@ -673,7 +711,9 @@ def change_clock(name: str, page: str, delta: str):
         broadcast_elements.append(
             BroadcastElement(name, page, "wiki", element_type, False)
         )
-        WikiPage.load_locate(page).change_clock(name, int(delta)).save_low_prio("clock")
+        p = WikiPage.load_locate(page)
+        if p:
+            p.change_clock(name, int(delta)).save_low_prio("clock")
         broadcast.set()
     return "", 204
 
@@ -693,17 +733,21 @@ def change_sheet_clock(name: str, page: str, delta: str):
             BroadcastElement(name, page, "sheet", element_type, False)
         )
         charpage = WikiCharacterSheet.load_locate(page)
-        if charpage.tagcheck(username):
-            char: PBTACharacter = charpage.char
+        if charpage and charpage.tagcheck(username):
+            char = charpage.char
+            if not isinstance(char, PBTACharacter):
+                return "", 204
             if name.startswith("item-"):
                 for item in char.inventory:
                     if item.name == name[5:]:
                         item.count += int(delta)
                         break
             else:
-                char.health[name.title()][char.current_headings[0].title()] = (
-                    char.health_get(name)[0] + int(delta)
-                )
+                h_val = char.health.get(name.title())
+                if isinstance(h_val, dict):
+                    h_val[char.current_headings[0].title()] = char.health_get(name)[
+                        0
+                    ] + int(delta)
             charpage.save_low_prio(f"active element used by {username}")
             broadcast.set()
             charpage.body = char.to_md()
@@ -714,7 +758,10 @@ def change_sheet_clock(name: str, page: str, delta: str):
 def sheet(c):
     try:
         if s := WikiCharacterSheet.load_locate(c):
-            return s.render()
+            rendered = render_sheet(s)
+            if rendered:
+                return rendered
+            return redirect(url_for("wiki.wikipage", page=c))
         flash("Error: not found. Create Character?")
         session.setdefault("character_gen", {})["stage"] = "start"
         session["character_gen"]["name"] = c
@@ -727,6 +774,8 @@ def sheet(c):
 @views.route("/sheet/<path:m>/unmodified")
 def sheet_unmodified(m):
     m_sheet = WikiCharacterSheet.load_locate(m)
+    if not m_sheet or not isinstance(m_sheet.char, Mecha):
+        abort(404)
     return render_template(
         "sheets/mechasheet_classic.html", mech=m_sheet.char, identifier=m
     )
@@ -736,49 +785,3 @@ def sheet_unmodified(m):
 @views.route("/fensheet/<path:c>")
 def oldsheet(c):
     return redirect(url_for("sheets.sheet", c=c))
-
-
-def infolet_filler(context):
-    def wrap(s):
-        return lm.fill_infolet(s, context)
-
-    return wrap
-
-
-def infolet_extractor(x):
-    m = lm.infolet_re.match(str(x))
-    if not m:
-        return str(x)
-    return m.group("name")
-
-
-@WikiCharacterSheet.renderer(EWCharacter)
-@WikiCharacterSheet.renderer(FenCharacter)
-def fensheet_render(self: WikiCharacterSheet):
-    if self is None:
-        return redirect(url_for("wiki.tagsearch", tag="character"))
-
-    username = session.get("user", "")
-    u = User(username).configs()
-    charsh = u.get("character_sheet", None)
-    path = self.file.relative_to(self.wikipath())
-    return render_template(
-        "sheets/fensheet.html",
-        character=self.char,
-        context=path,
-        userconf=u,
-        infolet=infolet_filler(path),
-        md=lambda x: lm.process(
-            x, page=self.file.relative_to(WikiPage.wikipath()).as_posix()
-        ),
-        extract=infolet_extractor,
-        owner=(charsh if WikiPage.locate(path) == WikiPage.locate(charsh) else ""),
-    )
-
-
-@WikiCharacterSheet.renderer(PBTACharacter)
-def pbta_render(self: WikiCharacterSheet):
-    path = self.file.relative_to(self.wikipath())
-    return render_template(
-        "sheets/pbtasheet.html", character=self.char, c=path.with_suffix("").as_posix()
-    )
