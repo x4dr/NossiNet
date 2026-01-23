@@ -1,0 +1,43 @@
+<div class="system-card movement-card {% if system.is_active() %}state-active{% elif system.is_disabled() %}state-disabled{% else %}state-offline{% endif %}"
+        id="system-{{ system.name|b64e }}">
+
+        <div class="card-header">
+                <span class="system-name">{{ system.name }}</span>
+                <div class="card-controls">
+                        <div class="card-controls">
+                                <button class="control-btn"
+                                        hx-get="{{ url_for('sheets.mecha_use', m=identifier, s=sys_category, n=system.name|b64e, use='') }}"
+                                        hx-target="#system-{{ system.name|b64e }}" hx-swap="outerHTML">
+                                        {% if system.is_active() %}OFF{% else %}ON{% endif %}
+                                </button>
+                                <button class="control-btn btn-cycle"
+                                        hx-get="{{ url_for('sheets.mecha_use', m=identifier, s=sys_category, n=system.name|b64e, use='cycle') }}"
+                                        hx-target="#system-{{ system.name|b64e }}" hx-swap="outerHTML"
+                                        title="Cycle Availability">↻</button>
+                        </div>
+                </div>
+        </div>
+
+        <div class="stats-grid">
+                <div class="stat-item tooltip-wrapper">
+                        <span class="stat-label">Thrust</span>
+                        <span class="stat-value">{{ system.thrust }}</span>
+                        <span class="tooltip">Total Thrust Output</span>
+                </div>
+                <div class="stat-item tooltip-wrapper">
+                        <span class="stat-label">Dynamics</span>
+                        <span class="stat-value">{{ system.dynamics }}</span>
+                        <span class="tooltip">Maneuverability and Speed Dynamics</span>
+                </div>
+                <div class="stat-item tooltip-wrapper">
+                        <span class="stat-label">Energy</span>
+                        <span class="stat-value">{{ system.energy * system.amount }}</span>
+                        <span class="tooltip">Total Energy Cost</span>
+                </div>
+                <div class="stat-item tooltip-wrapper">
+                        <span class="stat-label">Heat</span>
+                        <span class="stat-value">{{ system.heats["heat0"] * system.amount }}</span>
+                        <span class="tooltip">Running Heat</span>
+                </div>
+        </div>
+</div>

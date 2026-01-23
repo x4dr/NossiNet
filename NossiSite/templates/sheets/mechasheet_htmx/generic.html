@@ -1,0 +1,39 @@
+<div class="system-card {% if system.is_active() %}state-active{% elif system.is_disabled() %}state-disabled{% else %}state-offline{% endif %}"
+    id="system-{{ system.name|b64e }}">
+
+    <div class="card-header">
+        <span class="system-name">{{ system.name }}</span>
+        <div class="card-controls">
+            <button class="control-btn"
+                hx-get="{{ url_for('sheets.mecha_use', m=identifier, s=sys_category, n=system.name|b64e, use='') }}"
+                hx-target="#system-{{ system.name|b64e }}" hx-swap="outerHTML">
+                {% if system.is_active() %}DEACTIVATE{% else %}ACTIVATE{% endif %}
+            </button>
+            <button class="control-btn btn-cycle"
+                hx-get="{{ url_for('sheets.mecha_use', m=identifier, s=sys_category, n=system.name|b64e, use='cycle') }}"
+                hx-target="#system-{{ system.name|b64e }}" hx-swap="outerHTML" title="Cycle Availability">
+                ↻
+            </button>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-item tooltip-wrapper">
+            <span class="stat-label">Energy</span>
+            <span class="stat-value">{{ system.amount * system.energy }}</span>
+            <span class="tooltip">Total Energy (Scaled)</span>
+        </div>
+        <div class="stat-item tooltip-wrapper">
+            <span class="stat-label">Mass</span>
+            <span class="stat-value">{{ system.amount * system.mass }}</span>
+            <span class="tooltip">Total Mass (Scaled)</span>
+        </div>
+        {% for hname, hval in system.heats.items() %}
+        <div class="stat-item tooltip-wrapper">
+            <span class="stat-label">Heat ({{ hname }})</span>
+            <span class="stat-value">{{ hval }}</span>
+            <span class="tooltip">Heat generated when using {{ hname }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>

@@ -1,71 +1,295 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron&display=swap');
-@import url('https://fonts.cdnfonts.com/css/open-dyslexic');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@400;700&display=swap');
 
-.stat-box {
-    position: relative;
+:root {
+    --bg-dark: var(--background-color);
+    --card-bg: rgba(10, 18, 10, 0.8);
+    --primary: var(--primary-color);
+    --secondary: var(--secondary-color);
+    --accent: var(--accent-color);
+    --danger: var(--warn-color);
+    --success: var(--primary-color);
+    --warning: #ffaa00;
+    /* Keeping as is for now, or use primary? User said only named pieces. I'll stick to primary or accent */
+    --text-main: #e0e6ed;
+    --text-dim: #94a3b8;
+    --glass-border: var(--tertiary-color);
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 20px;
+}
+
+h1,
+h2,
+h3 {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+h3 {
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: 10px;
+    margin-top: 40px;
     display: inline-block;
 }
 
-.tooltip-text {
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    white-space: nowrap;
-    visibility: hidden;
-    opacity: 0;
-    background-color: var(--midground-color);
-    transition: opacity 0.5s;
+/* V3 Comm Center Layout */
+.comm-center-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 0;
+    min-height: 100vh;
+    background: #020408;
+    border: 1px solid var(--tertiary-color);
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+    margin: 0 auto;
+}
+
+/* Navigation Rail */
+.nav-rail {
+    background: rgba(10, 15, 20, 0.95);
+    border-right: 1px solid var(--tertiary-color);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+}
+
+.nav-item {
+    padding: 20px;
+    cursor: pointer;
+    border-left: 4px solid transparent;
+    transition: all 0.3s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-item.active {
+    background: rgba(var(--primary-rgb), 0.1);
+    border-left-color: var(--primary-color);
+}
+
+.nav-icon {
+    font-size: 1.5em;
+    margin-bottom: 5px;
+}
+
+.nav-label {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9em;
+    font-weight: bold;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+}
+
+.nav-item.active .nav-label {
+    color: var(--primary-color);
+    text-shadow: 0 0 5px var(--primary-color);
+}
+
+.nav-summary {
+    font-size: 0.75em;
+    color: #666;
+    margin-top: 5px;
+}
+
+.nav-summary .highlight {
+    color: var(--secondary-color);
+    font-weight: bold;
+}
+
+/* Main Screen Area */
+.main-screen {
+    background: #000000;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    border-radius: 0 8px 8px 0;
+}
+
+.screen-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--tertiary-color);
+    padding-bottom: 15px;
+    margin-bottom: 30px;
+}
+
+.screen-header h2 {
+    margin: 0;
+    font-size: 1.5em;
+    color: var(--primary-color);
+}
+
+/* ... (View Panels & Dashboard Sections omitted - kept same for brevity if no changes, but here we replace all related) */
+.view-panel {
+    display: none;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.view-panel.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dashboard-section {
+    background: rgba(10, 10, 10, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+/* System Card Refinement */
+.system-card {
+    background: var(--card-bg);
+    border: 1px solid var(--tertiary-color);
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+/* Visual States */
+.state-active {
+    border-color: var(--primary-color);
+    /* Reduced glow */
+    box-shadow: inset 0 0 5px rgba(var(--primary-rgb), 0.2);
+}
+
+.state-offline {
+    background: rgba(10, 10, 10, 0.9);
+    border-color: #333;
+    filter: brightness(0.8);
+}
+
+.state-disabled {
+    background: #000;
+    border-color: #222;
+    filter: grayscale(1) brightness(0.4);
     pointer-events: none;
-    border: 1px solid var(--primary-color);
+    /* Mostly read-only look */
 }
 
-.stat-box:hover .tooltip-text {
-    visibility: visible;
-    opacity: 1;
+/* Re-enable pointer events for controls specifically if needed, but cycle button handles interaction */
+.state-disabled .card-controls {
+    pointer-events: auto;
 }
 
-.stat-heading {
-    white-space: nowrap;
-    grid-column: 1 / -1;
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 4px;
+}
+
+.system-name {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: bold;
+    font-size: 0.85em;
+    color: var(--primary-color);
+    /* Removed text-shadow */
+}
+
+.control-btn {
+    background: #222;
+    border: 1px solid #444;
+    color: #ccc;
+    padding: 2px 8px;
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: 0.7em;
+    font-family: 'Inter', sans-serif;
+    text-transform: uppercase;
+}
+
+.control-btn:hover {
+    background: #333;
+    border-color: #666;
+    color: #fff;
+}
+
+/* Stats Box Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.stat-item {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 4px;
+    border-radius: 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .stat-label {
-    white-space: nowrap;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.65em;
+    color: #888;
+    text-transform: uppercase;
+    margin-bottom: 2px;
 }
 
-
-.active {
-    background-color: var(--highlight-color);
+.stat-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9em;
+    color: var(--text-main);
+    font-weight: bold;
 }
 
-.inactive {
-    background-color: var(--highlight-color);
-    filter: saturate(0%);
+.state-active .stat-value {
+    color: var(--primary-color);
 }
 
-.system-box-narrow {
-    display: grid;
-    grid-template-columns: repeat(2, min-content);
-    gap: 4px;
-    border: 1px solid var(--tertiary-color);
+/* Segmented Meter Bar (Restored Classic) */
+.meter {
+    position: relative;
+    max-width: var(--max, 100%);
+    margin-top: 37px;
+    margin-bottom: 37px;
+    height: 6px;
+    background: #111;
+    border-radius: 2px;
+    border: 1px solid #444;
+    transition: all 0.5s;
+    width: 100%;
 }
 
-.system-box-wide {
-    display: grid;
-    grid-template-columns: repeat(3, min-content);
-    gap: 4px;
-    border: 1px solid var(--tertiary-color);
-}
-
-.system-row {
-    display: flex;
-    gap: 16px; /* space between system boxes */
-    flex-wrap: wrap; /* wrap to next line if needed */
-}
-
-.system-row .htmx-request {
-    visibility: hidden;
+.meter:hover {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    height: 40px;
 }
 
 .background-bar {
@@ -73,25 +297,9 @@
     bottom: 0;
     width: 100%;
     height: 100%;
-    background: var(--midground-color);
+    background: rgba(255, 255, 255, 0.05);
     z-index: 0;
     transition: all 0.5s;
-}
-
-.meter {
-    position: relative;
-    max-width: var(--max, 100%);;
-    margin-top: 37px;
-    margin-bottom: 37px;
-    height: 6px;
-
-    transition: all 0.5s;
-}
-
-.meter:hover {
-    margin-top: 20px;
-    margin-bottom: 20px;
-    height: 40px;
 }
 
 .fill {
@@ -101,64 +309,19 @@
     width: var(--fill);
     background-color: var(--color);
     transition: all 0.5s ease, background-color 5s ease;
-    border-right: 3px solid var(--midground-color);
+    border-right: 3px solid #000;
 }
 
-.htmx-swapping,
-.htmx-settling,
-.htmx-request {
-    position: relative;
-    opacity: 1;
-    pointer-events: none;
-    cursor: progress;
-}
-
-.system-row .htmx-swapping::after,
-.system-row .htmx-settling::after,
-.system-row .htmx-request::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: repeating-linear-gradient(
-            45deg,
-            rgba(0, 255, 0, 0.5),
-            rgba(0, 255, 255, 0.4) 6px,
-            transparent 4px,
-            transparent 8px
-    );
-    animation: scan 1s linear infinite;
-    z-index: 10;
-    pointer-events: none;
-}
-
-@keyframes scan {
-    from {
-        background-position: 0 0;
-    }
-    to {
-        background-position: 1000px 1000px;
-    }
-}
-
+/* Cyber Labels & Lines (Restored Classic) */
 .cyber-label {
     position: absolute;
-    font: 800 22px Orbitron;
+    font: 800 22px 'Orbitron', sans-serif;
     white-space: nowrap;
     z-index: 100 !important;
     pointer-events: none;
     color: var(--accent-color);
-    text-shadow: 0 0 8px var(--background-color),
-    0 0 6px var(--background-color),
-    0 0 12px var(--background-color),
-    0 0 16px var(--background-color),
-    0 0 24px var(--background-color),
-    0 0 32px var(--background-color),
-    0 0 64px var(--background-color);
+    text-shadow: 0 0 8px #000, 0 0 16px #000;
 }
-
 
 .cyber-line {
     position: absolute;
@@ -170,7 +333,6 @@
 }
 
 .cyber-line line {
-    color: var(--accent-color);
     stroke: var(--accent-color);
     stroke-width: 2;
 }
@@ -189,7 +351,13 @@
     opacity: 1;
 }
 
-/* plot */
+/* Graph Restoration (Classic Styles) */
+svg#speed-graph {
+    background: #050505;
+    border: 1px solid #333;
+    width: 100%;
+}
+
 .axis {
     stroke: var(--primary-color);
     stroke-width: 2;
@@ -211,6 +379,8 @@
     fill: var(--curve-color);
     cursor: pointer;
     user-select: none;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
 }
 
 .curve-group:hover .curve,
@@ -222,6 +392,7 @@
 .curve-group:hover .curve-label,
 .curve-group.active .curve-label {
     fill: var(--primary-color);
+    font-weight: bold;
 }
 
 .curve-group.hidden {
@@ -240,7 +411,7 @@
 }
 
 .tooltip rect {
-    fill: var(--background-color);
+    fill: #000;
     opacity: 0.85;
 }
 
@@ -249,7 +420,7 @@
     font-size: 12px;
 }
 
-/* draw-in animation */
+/* Draw-in animation */
 .animated {
     stroke-dasharray: 1;
     stroke-dashoffset: 1;
@@ -260,4 +431,33 @@
     to {
         stroke-dashoffset: 0;
     }
+}
+
+/* Tooltips */
+.tooltip-wrapper {
+    position: relative;
+}
+
+.tooltip-wrapper .tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 5px;
+    background: #000;
+    color: #fff;
+    padding: 4px 8px;
+    border: 1px solid #666;
+    font-size: 0.75em;
+    white-space: nowrap;
+    z-index: 1000;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+
+.tooltip-wrapper:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
 }

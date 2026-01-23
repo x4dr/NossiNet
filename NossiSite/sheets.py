@@ -57,7 +57,14 @@ def system_map(selection):
     if selection in ["offensive", "defensive", "support"]:
         selection = "generic"
 
-    return f"sheets/mechsystems/{selection}.html"
+    return f"sheets/mechasheet_htmx/{selection}.html"
+
+
+def system_map_classic(selection):
+    if selection in ["offensive", "defensive", "support"]:
+        selection = "generic"
+
+    return f"sheets/mechsystems_classic/{selection}.html"
 
 
 @views.route("/skills/<system>/<heading>")
@@ -391,7 +398,8 @@ def generate_heat_segments(mech: Mecha):
 
 @views.route("/mecha_use/<s>/<n>/<path:m>")
 def mecha_use(s: str, n: str, m):
-    checklogin()
+    if m != "mechtest":
+        checklogin()
     use = request.args.get("use") or 0
     n = decode_id(n)
 
@@ -400,7 +408,8 @@ def mecha_use(s: str, n: str, m):
 
     mech.use_system(s, n, use)
 
-    m_sheet.save_low_prio(session["user"])
+    if m != "mechtest":
+        m_sheet.save_low_prio(session["user"])
 
     template = system_map(s.lower())
     if not template:
@@ -408,7 +417,7 @@ def mecha_use(s: str, n: str, m):
     system = mech.get_syscat(s.title()).get(n)
     if not system:
         raise Exception()
-    return render_template(template, system=system, identifier=m)
+    return render_template(template, system=system, identifier=m, sys_category=s)
 
 
 @views.route("/doroll", methods=["POST"])
@@ -464,7 +473,7 @@ def mecha_sys(s: str, n: str, m):
     if not sys:
         abort(404)
 
-    return render_template(template, system=sys, identifier=m)
+    return render_template(template, system=sys, identifier=m, sys_category=s)
 
 
 @views.route("/mech_energy_meter/<path:m>")
@@ -482,7 +491,7 @@ def energy_meter(m):
         fills, colors, current_max, [x.name for x in systems]
     )
     return render_template(
-        "sheets/mechsystems/bar.html",
+        "sheets/mechasheet_htmx/bar.html",
         segments=segments,
         name=m.rsplit("/")[-1],
         maximum=100 * current_max / overall_max,
@@ -497,11 +506,44 @@ def mech_heat_ui(m):
     current_flux = mech.heatflux
     heatsys = [x for x in mech.Heat.values()]
     return render_template(
-        "sheets/mechsystems/heat_ui.html",
+        "sheets/mechasheet_htmx/heat_ui.html",
         systems=heatsys,
         max_flux=total_flux,
         current_flux=current_flux,
         identifier=m,
+    )
+
+
+@views.route("/mecha_sys_classic/<s>/<n>/<path:m>")
+def mecha_sys_classic(s: str, n: str, m):
+    m_sheet = WikiCharacterSheet.load_locate(m)
+    mech: Mecha = m_sheet.char
+    template = system_map_classic(s.lower())
+    if not template:
+        abort(404)
+    system = mech.get_syscat(s.capitalize()).get(n)
+    if not system:
+        raise Exception()
+    return render_template(template, system=system, identifier=m)
+
+
+@views.route("/mech_energy_meter_classic/<path:m>")
+def energy_meter_classic(m):
+    m_sheet = WikiCharacterSheet.load_locate(m)
+    mech: Mecha = m_sheet.char
+    current_max = mech.energy_budget()
+    overall_max = mech.energy_total()
+    systems, active = mech.energy_allocation()
+    fills = [x.energy for x in systems]
+    colors = ["var(--secondary-color)", "var(--primary-color)"]
+    segments = generate_meter_segments(
+        fills, colors, current_max, [x.name for x in systems]
+    )
+    return render_template(
+        "sheets/mechsystems_classic/bar.html",
+        segments=segments,
+        name=m.rsplit("/")[-1],
+        maximum=100 * current_max / overall_max,
     )
 
 
@@ -680,6 +722,14 @@ def sheet(c):
     except DescriptiveError as e:
         flash("Error with character sheet:\n" + e.args[0])
         return redirect(url_for("wiki.wikipage", page=c))
+
+
+@views.route("/sheet/<path:m>/unmodified")
+def sheet_unmodified(m):
+    m_sheet = WikiCharacterSheet.load_locate(m)
+    return render_template(
+        "sheets/mechasheet_classic.html", mech=m_sheet.char, identifier=m
+    )
 
 
 @views.route("/pbta/<path:c>")

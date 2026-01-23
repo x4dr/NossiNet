@@ -1,0 +1,40 @@
+<div class="system-card heat-card {% if system.is_active() %}state-active{% elif system.is_disabled() %}state-disabled{% else %}state-offline{% endif %}"
+    id="system-{{ system.name|b64e }}">
+
+    <div class="card-header">
+        <span class="system-name">{{ system.name }}</span>
+        <div class="card-controls">
+            <button class="control-btn"
+                hx-get="{{ url_for('sheets.mecha_use', m=identifier, s=sys_category, n=system.name|b64e, use='') }}"
+                hx-target="#system-{{ system.name|b64e }}" hx-swap="outerHTML">
+                {% if system.is_active() %}OFF{% else %}ON{% endif %}
+            </button>
+            <button class="control-btn btn-cycle"
+                hx-get="{{ url_for('sheets.mecha_use', m=identifier, s=sys_category, n=system.name|b64e, use='cycle') }}"
+                hx-target="#system-{{ system.name|b64e }}" hx-swap="outerHTML" title="Cycle Availability">↻</button>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-item tooltip-wrapper">
+            <span class="stat-label">Capacity</span>
+            <span class="stat-value">{{ system.capacity }}</span>
+            <span class="tooltip">Total Heat Capacity</span>
+        </div>
+        <div class="stat-item tooltip-wrapper">
+            <span class="stat-label">Flux</span>
+            <span class="stat-value">{{ system.flux }}</span>
+            <span class="tooltip">Heat Flux (Cooling Rate)</span>
+        </div>
+        <div class="stat-item tooltip-wrapper">
+            <span class="stat-label">Current</span>
+            <span class="stat-value">{{ system.current }}</span>
+            <span class="tooltip">Current Heat Level</span>
+        </div>
+        <div class="stat-item tooltip-wrapper">
+            <span class="stat-label">Dissipation</span>
+            <span class="stat-value">{{ system.passive }}</span>
+            <span class="tooltip">Passive Heat Dissipation</span>
+        </div>
+    </div>
+</div>

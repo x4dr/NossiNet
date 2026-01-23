@@ -1,0 +1,21 @@
+<div class="heat-ui-container">
+    <div id="heatmeter" class="meter-container" style="--max: 100%;">
+        {% for sys in systems %}
+        <div class="meter-fill tooltip-wrapper" style="width: {{ sys.current }}%; background-color: var(--danger);"
+            data-name="{{ sys.name }}">
+            <span class="tooltip">{{ sys.name }}: {{ sys.current|round(1) }}% capacity</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div id="current-heat-flux" class="flux-display">
+        <div class="flux-meter">
+            <span class="flux-label">Heat Flux</span>
+            <div class="flux-bar-container">
+                <div class="flux-bar-fill"
+                    style="width: {{ (current_flux / max_flux * 100) if max_flux > 0 else 0 }}%;"></div>
+            </div>
+            <span class="flux-value">{{ current_flux|round(1) }} / {{ max_flux|round(1) }}</span>
+        </div>
+    </div>
+</div>
