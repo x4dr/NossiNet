@@ -2,6 +2,8 @@ let nodes = []
 
 function makelabels() {
     const elements = [...document.querySelectorAll("[data-cyberlabel]")];
+    
+    // Clear existing nodes to prevent accumulation on re-init
     nodes = [];
 
     // Group elements by their parent container (e.g., .meter)
@@ -29,7 +31,7 @@ function makelabels() {
             svgLayer.innerHTML = ""; // Clear old lines
         }
 
-        // Remove old labels from this container
+        // Remove old labels from this container to prevent duplicates
         container.querySelectorAll(".cyber-label").forEach(l => l.remove());
 
         const segments = elements.filter(el => el.parentElement === container);
