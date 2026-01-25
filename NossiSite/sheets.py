@@ -1,12 +1,11 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import cast, List, Tuple, Any
+from typing import cast, Tuple, Any, Optional, Dict
 
 import requests
 from flask import (
     render_template,
     Blueprint,
-    render_template_string,
     request,
     session,
     redirect,
@@ -22,24 +21,115 @@ from NossiPack.User import Config, Userlist
 from NossiSite import chat
 from NossiSite.base_ext import decode_id
 from NossiSite.helpers import checklogin
-from NossiSite.socks import (
-    generate_clock,
-    generate_line,
-    broadcast_elements,
-    BroadcastElement,
-    broadcast,
-)
 from gamepack.Dice import DescriptiveError
 from gamepack.FenCharacter import FenCharacter
-from gamepack.MDPack import MDObj
-from gamepack.PBTACharacter import PBTACharacter
 from gamepack.WikiCharacterSheet import WikiCharacterSheet
 from gamepack.WikiPage import WikiPage
 from gamepack.endworld import Mecha
 from NossiSite.renderers import render_sheet
+from NossiSite.mecha_history import MechaEncounterManager
+
+
+def add_pending_event(m: str, event: Dict[str, Any]):
+    pending = session.setdefault("mecha_pending", {}).setdefault(m, [])
+    etype = event.get("type")
+    name = event.get("name")
+
+    if etype == "HEAT_ASSIGNMENT":
+        for existing in pending:
+            if (
+                existing.get("type") == "HEAT_ASSIGNMENT"
+                and existing.get("name") == name
+            ):
+                existing["amount"] = existing.get("amount", 0.0) + event.get(
+                    "amount", 0.0
+                )
+                if abs(existing["amount"]) < 0.001:
+                    pending.remove(existing)
+                session.modified = True
+                return
+    elif etype == "SPEED_TARGET":
+        for existing in pending:
+            if existing.get("type") == "SPEED_TARGET":
+                existing["value"] = event.get("value")
+                session.modified = True
+                return
+    elif etype == "SYSTEM_TOGGLE":
+        for i, existing in enumerate(pending):
+            if existing.get("type") == "SYSTEM_TOGGLE" and existing.get("name") == name:
+                pending.pop(i)
+                session.modified = True
+                return
+    elif etype == "MANUAL_HEAT":
+        for existing in pending:
+            if existing.get("type") == "MANUAL_HEAT":
+                existing["value"] = event.get("value")
+                session.modified = True
+                return
+
+    pending.append(event)
+    session.modified = True
+
+
+def load_mecha_state(
+    m: str,
+) -> Tuple[WikiCharacterSheet[Mecha], MechaEncounterManager, Optional[str]]:
+    m_sheet = WikiCharacterSheet.load_locate(m, cache=False)
+    if m_sheet is None or not isinstance(m_sheet.char, Mecha):
+        abort(404)
+
+    mech = cast(Mecha, m_sheet.char)
+    history_mgr = MechaEncounterManager(WikiPage.wikipath(), m)
+
+    # Get current encounter ID from session or latest
+    enc_session = session.get("mecha_encounter", {})
+    encounter_id = enc_session.get(m)
+    if not encounter_id:
+        encounter_id = history_mgr.get_latest_encounter_id()
+        if encounter_id:
+            enc_session[m] = encounter_id
+            session["mecha_encounter"] = enc_session
+            session.modified = True
+        else:
+            # Auto-start first encounter
+            encounter_id = history_mgr.start_new_encounter()
+            enc_session[m] = encounter_id
+            session["mecha_encounter"] = enc_session
+            session.modified = True
+
+    # Get playback turn from session
+    playback_session = session.get("mecha_playback_turn", {})
+    playback_turn = playback_session.get(m)
+    if playback_turn is None:
+        playback_turn = 0
+
+    if encounter_id:
+        log_data = history_mgr.load_encounter(encounter_id)
+        if log_data:
+            mech.replay(log_data.get("events", []), turn_limit=playback_turn)
+
+    # Apply pending session changes
+    pending = session.get("mecha_pending", {}).get(m, [])
+    for event in pending:
+        try:
+            mech.apply_event(event)
+        except Exception:
+            pass
+
+    return m_sheet, history_mgr, encounter_id
+
 
 lm = LocalMarkdown()
 views = Blueprint("sheets", __name__)
+
+
+@views.route("/debug/session")
+def debug_session():
+    from flask import current_app
+
+    return jsonify({"session_id": current_app.config.get("SESSION_ID", "not set")})
+
+
 ordinals = [
     "primary",
     "secondary",
@@ -70,10 +160,8 @@ def system_map_classic(selection):
 
 @views.route("/skills/<system>/<heading>")
 def get_skills(system, heading):
-    print("received skill request for", system, heading)
     if system == "context":
         system = session["character_gen"]["system"]
-        print("context:", system)
 
     def flatten_skills(node):
         if hasattr(node, "children") and node.children:
@@ -131,8 +219,7 @@ def chargen():
         session["character_gen"] = {"stage": "start"}
         return redirect(url_for("sheets.chargen"))
     else:
-        print("request to chargen:", session["character_gen"])
-    return render_template("sheets/chargen.html")
+        return render_template("sheets/chargen.html")
 
 
 stage_handlers = {}
@@ -332,7 +419,6 @@ def handle_chargen():
     data = {k: v for k, v in list(request.form.lists())}
     if "csrf_token" in data:
         data.pop("csrf_token")
-    print("received:", data)
     gen = session["character_gen"]
     for k, v in data.items():
         if len(v) != 1:
@@ -358,68 +444,8 @@ def handle_chargen():
         else:
             v = v[0]
         gen[k] = v
-        print("setting", k, v)
         session.modified = True
-    print(gen)
     return chargen_htmx()
-
-
-def generate_meter_segments(fills, colors, total, names):
-    segments = []
-    bottom = 0
-    for i, fill in enumerate(fills):
-        color = colors[i % len(colors)]
-        percent = (100 * fill) / total
-        offset = (100 * bottom) / total
-        if offset + percent > 100:
-            percent = 100 - offset
-            color = "var(--warn-color)"
-        segments.append(
-            {"fill": percent, "color": color, "offset": offset, "name": names[i]}
-        )
-        bottom += fill
-    return segments
-
-
-# Unused for now
-def generate_heat_segments(mech: Mecha):
-    sinks = []
-    fluxmax = mech.fluxmax()
-    for sys_any in mech.Heat.values():
-        sys: Any = sys_any
-        current = sys.current
-        heatmax = sys.capacity
-        percent = (100 * current) / heatmax
-        print(percent)
-
-    return {"sinks": sinks, "fluxmax": fluxmax}
-
-
-@views.route("/mecha_use/<s>/<n>/<path:m>")
-def mecha_use(s: str, n: str, m):
-    if m != "mechtest":
-        checklogin()
-    use = request.args.get("use") or 0
-    n = decode_id(n)
-
-    m_sheet = WikiCharacterSheet.load_locate(m, cache=False)
-    if m_sheet is None or not isinstance(m_sheet.char, Mecha):
-        abort(404)
-    mech = m_sheet.char
-
-    mech.use_system(s, n, use)
-
-    if m != "mechtest":
-        m_sheet.save_low_prio(session["user"])
-
-    template = system_map(s.lower())
-    if not template:
-        abort(404)
-    syscat = mech.get_syscat(s.title())
-    system = syscat.get(n)
-    if not system:
-        abort(404)
-    return render_template(template, system=system, identifier=m, sys_category=s)
 
 
 @views.route("/doroll", methods=["POST"])
@@ -477,20 +503,473 @@ def doroll():
     return jsonify({"status": "ok"})
 
 
+def generate_meter_segments(fills, colors, total, names):
+    if total <= 0:
+        return []
+    segments = []
+    bottom = 0
+    for i, fill in enumerate(fills):
+        color = colors[i % len(colors)]
+        percent = (100 * fill) / total
+        offset = (100 * bottom) / total
+        if offset + percent > 100:
+            percent = max(0, 100 - offset)
+            color = "var(--warn-color)"
+        segments.append(
+            {"fill": percent, "color": color, "offset": offset, "name": names[i]}
+        )
+        bottom += fill
+    return segments
+
+
+@views.route("/mecha_status_summary/<path:m>")
+def mecha_status_summary(m):
+    # Logic for status
+    status = "NOMINAL"
+    color = "var(--primary)"
+
+    # Check for overheat in latest turn summary
+    history_mgr = MechaEncounterManager(WikiPage.wikipath(), m)
+    encounter_id = session.get("mecha_encounter", {}).get(m)
+    if encounter_id:
+        log = history_mgr.load_encounter(encounter_id)
+        if log and log.get("events"):
+            # Find latest TURN_COMMIT
+            for event in reversed(log["events"]):
+                if event.get("type") == "TURN_COMMIT":
+                    if event.get("summary", {}).get("overheated"):
+                        status = "OVERHEAT"
+                        color = "var(--danger)"
+                    break
+
+    return Markup(
+        f"Status: <span class='highlight' style='color: {color};'>{status}</span>"
+    )
+
+
+@views.route("/mecha_movement_summary/<path:m>")
+def mecha_movement_summary(m):
+    m_sheet, _, _ = load_mecha_state(m)
+    mech = cast(Mecha, m_sheet.char)
+    return Markup(
+        f"Speed: <span class='highlight'>{round(mech.current_speed, 1)}</span> km/h"
+    )
+
+
+@views.route("/mecha_timeline/<path:m>")
+def mecha_timeline(m):
+    _, history_mgr, encounter_id = load_mecha_state(m)
+    if not encounter_id:
+        return "<p style='color: var(--text-dim); font-style: italic;'>No encounter history found.</p>"
+
+    latest = history_mgr.load_encounter(encounter_id)
+    if not latest:
+        return "<p style='color: var(--text-dim); font-style: italic;'>No encounter history found.</p>"
+
+    playback_turn = session.get("mecha_playback_turn", {}).get(m)
+
+    return render_template(
+        "sheets/mechasheet_htmx/timeline.html",
+        encounter=latest,
+        playback_turn=playback_turn,
+        identifier=m,
+    )
+
+
+@views.route("/mecha_energy_summary/<path:m>")
+def mecha_energy_summary(m):
+    m_sheet, _, _ = load_mecha_state(m)
+    mech = cast(Mecha, m_sheet.char)
+    return Markup(f"Output: <span class='highlight'>{mech.energy_output()}</span>")
+
+
+@views.route("/mecha_heat_summary/<path:m>")
+def mecha_heat_summary(m):
+    m_sheet, _, _ = load_mecha_state(m)
+    mech = cast(Mecha, m_sheet.char)
+    return Markup(
+        f"Flux: <span class='highlight'>{round(mech.fluxpool, 1)} / {round(mech.fluxpool_max(), 1)}</span>"
+    )
+
+
+@views.route("/mecha_start_encounter/<path:m>", methods=["POST"])
+def mecha_start_encounter(m):
+    history_mgr = MechaEncounterManager(WikiPage.wikipath(), m)
+    # Default name is the applied loadout
+    encounter_id = history_mgr.start_new_encounter(custom_name="Default")
+
+    session.setdefault("mecha_encounter", {})[m] = encounter_id
+    session.setdefault("mecha_pending", {})[m] = []
+    session.setdefault("mecha_playback_turn", {})[m] = 0
+    session.modified = True
+
+    return redirect(url_for("sheets.sheet", c=m))
+
+
+@views.route("/mecha_select_encounter/<path:m>/<id>", methods=["POST"])
+def mecha_select_encounter(m, id):
+    session.setdefault("mecha_encounter", {})[m] = id
+    session.setdefault("mecha_pending", {})[m] = []
+    # Reset playback turn so load_mecha_state finds the latest for this encounter
+    session.setdefault("mecha_playback_turn", {})[m] = None
+    session.modified = True
+
+    return redirect(url_for("sheets.sheet", c=m))
+
+
+@views.route("/mecha_rename_encounter/<path:m>/<id>", methods=["POST"])
+def mecha_rename_encounter(m, id):
+    new_name = request.form.get("new_encounter_name")
+    if new_name:
+        history_mgr = MechaEncounterManager(WikiPage.wikipath(), m)
+        history_mgr.rename_encounter(id, new_name)
+
+    return redirect(url_for("sheets.sheet", c=m))
+
+
+@views.route("/mecha_next_turn_view/<path:m>")
+def mecha_next_turn_view(m):
+    m_sheet, _, _ = load_mecha_state(m)
+    mech = cast(Mecha, m_sheet.char)
+    return render_template(
+        "sheets/mechasheet_htmx/next_turn_view.html", mech=mech, identifier=m
+    )
+
+
+def mecha_assign_heat(n, m):
+    if m != "mechtest":
+        checklogin()
+
+    amount = request.form.get("amount")
+    current_val = request.form.get("current_val")
+
+    n = decode_id(n)
+    m_sheet, _, _ = load_mecha_state(m)
+    mech = cast(Mecha, m_sheet.char)
+    sys = mech.Heat.get(n)
+    if not sys:
+        abort(404)
+
+    if current_val is not None:
+        try:
+            target_val = float(current_val)
+            delta = target_val - sys.current
+            if abs(delta) > 0.001:
+                add_pending_event(
+                    m, {"type": "HEAT_ASSIGNMENT", "name": n, "amount": delta}
+                )
+        except (ValueError, TypeError):
+            abort(400)
+    elif amount is not None:
+        try:
+            delta = float(amount)
+            if abs(delta) > 0.001:
+                add_pending_event(
+                    m, {"type": "HEAT_ASSIGNMENT", "name": n, "amount": delta}
+                )
+        except (ValueError, TypeError):
+            abort(400)
+
+    # Re-load state to reflect change in UI
+    m_sheet, _, _ = load_mecha_state(m)
+    mech = cast(Mecha, m_sheet.char)
+    sys = mech.Heat.get(n)
+    if not sys:
+        abort(404)
+
+    # Return the system fragment and trigger a refresh of the heat UI
+    return render_template(
+        "sheets/mechasheet_htmx/heat.html",
+        system=sys,
+        identifier=m,
+        sys_category="heat",
+    ), {"HX-Trigger": "resource-updated"}
+
+
+@views.route("/mecha_commit_turn/<path:m>", methods=["POST"])
+def mecha_commit_turn(m):
+    data = request.json
+    print(f"DEBUG: Processing commit for {m}: {data}")
+    if not data:
+        abort(400)
+
+    m_sheet, history_mgr, encounter_id = load_mecha_state(m)
+    if not encounter_id:
+        encounter_id = (
+            history_mgr.get_latest_encounter_id() or history_mgr.start_new_encounter()
+        )
+        session.setdefault("mecha_encounter", {})[m] = encounter_id
+
+    # 1. Truncate log if we are in the past
+    playback_session = session.get("mecha_playback_turn", {})
+    playback_turn = playback_session.get(m)
+    if playback_turn is not None:
+        history_mgr.truncate_log(encounter_id, playback_turn)
+
+    mech = cast(Mecha, m_sheet.char)
+
+    # 2. Add pending actions from the JSON data
+    # Speed
+    if data.get("speed") is not None:
+        event = {"type": "SPEED_TARGET", "value": data["speed"]}
+        history_mgr.log_event(encounter_id, event)
+        mech.apply_event(event)
+
+    # Loadout
+    if data.get("loadout"):
+        event = {"type": "LOADOUT_APPLY", "name": data["loadout"]}
+        print(f"DEBUG: Applying loadout rename: {data['loadout']} to {encounter_id}")
+        history_mgr.log_event(encounter_id, event)
+        mech.apply_event(event)
+        # Rename encounter to the applied loadout
+        history_mgr.rename_encounter(encounter_id, data["loadout"])
+
+    # Toggles
+    toggles = data.get("toggles", {})
+    for b64, state in toggles.items():
+        name = decode_id(b64)
+        event = {
+            "type": "SYSTEM_TOGGLE",
+            "name": name,
+            "state": "active" if state else "inactive",
+        }
+        history_mgr.log_event(encounter_id, event)
+        mech.apply_event(event)
+
+    # Heat assignments
+    heat = data.get("heat", {})
+    for b64, absolute_val in heat.items():
+        name = decode_id(b64)
+        sys = mech.Heat.get(name)
+        if sys:
+            delta = absolute_val - sys.current
+            if abs(delta) > 0.001:
+                event = {"type": "HEAT_ASSIGNMENT", "name": name, "amount": delta}
+                history_mgr.log_event(encounter_id, event)
+                mech.apply_event(event)
+
+    # 3. Process the turn transition
+    summary = mech.next_turn()
+    print(
+        f"DEBUG: Commit turn result: new_turn={mech.turn}, overheated={summary.get('overheated')}"
+    )
+
+    # 4. Log individual transition events first so they are replayed
+    for event in summary.get("events", []):
+        history_mgr.log_event(encounter_id, event)
+
+    # 5. Log the turn commit
+    history_mgr.log_event(
+        encounter_id,
+        {
+            "type": "TURN_COMMIT",
+            "turn": mech.turn,
+            "summary": summary,
+        },
+    )
+
+    # 6. Update session
+
+    session.setdefault("mecha_pending", {})[m] = []
+    session.setdefault("mecha_playback_turn", {})[m] = mech.turn
+
+    if summary.get("overheated"):
+        session.setdefault("mecha_modals", {}).setdefault(m, []).append(
+            {
+                "type": "OVERHEAT",
+                "target": next(
+                    (e["target"] for e in summary["events"] if e["type"] == "OVERHEAT"),
+                    None,
+                ),
+            }
+        )
+
+    session.modified = True
+
+    if m != "mechtest":
+        m_sheet.save_low_prio(session.get("user", "system"))
+    else:
+        m_sheet.save_low_prio("test-session")
+
+    return jsonify({"status": "ok", "turn": mech.turn})
+
+
+@views.route("/mecha_undo/<path:m>", methods=["POST"])
+def mecha_undo(m):
+    # 1. Try to undo pending changes first
+    pending = session.get("mecha_pending", {}).get(m, [])
+    if pending:
+        pending.pop()
+        session.modified = True
+        return "", 204, {"HX-Refresh": "true"}
+    else:
+        # 2. If no pending, move playback pointer back
+        playback_session = session.setdefault("mecha_playback_turn", {})
+        current_turn = playback_session.get(m)
+        if current_turn is None:
+            _, _, encounter_id = load_mecha_state(m)
+            current_turn = session.get("mecha_playback_turn", {}).get(m, 0)
+
+        if current_turn > 0:
+            session.setdefault("mecha_playback_turn", {})[m] = current_turn - 1
+            session.modified = True
+            return "", 204, {"HX-Refresh": "true"}
+
+    return "", 204
+
+
+@views.route("/mecha_redo/<path:m>", methods=["POST"])
+def mecha_redo(m):
+    m_sheet, history_mgr, encounter_id = load_mecha_state(m)
+    if not encounter_id:
+        return "", 204
+
+    log_data = history_mgr.load_encounter(encounter_id)
+    if not log_data:
+        return "", 204
+
+    max_turn = 0
+    for event in log_data.get("events", []):
+        if event.get("type") == "TURN_COMMIT":
+            max_turn = max(max_turn, event.get("turn", 0))
+
+    playback_session = session.setdefault("mecha_playback_turn", {})
+    current_turn = playback_session.get(m, max_turn)
+
+    if current_turn < max_turn:
+        playback_session[m] = current_turn + 1
+        session.modified = True
+        return "", 204, {"HX-Refresh": "true"}
+
+    return "", 204
+
+
+@views.route("/mecha_restore_state/<path:m>/<int:turn>", methods=["POST"])
+def mecha_restore_state(m, turn):
+    # Non-destructive: just move the pointer
+    playback_session = session.setdefault("mecha_playback_turn", {})
+    playback_session[m] = turn
+    session.modified = True
+
+    # Clear pending when jumping to a specific turn
+    session.setdefault("mecha_pending", {})[m] = []
+
+    return "", 204, {"HX-Refresh": "true"}
+
+
+@views.route("/mecha_next_turn/<path:m>", methods=["POST"])
+def mecha_next_turn(m):
+    if m != "mechtest":
+        checklogin()
+
+    m_sheet, history_mgr, encounter_id = load_mecha_state(m)
+    mech = cast(Mecha, m_sheet.char)
+
+    # 1. Start encounter if none exists
+    if not encounter_id:
+        encounter_id = history_mgr.start_new_encounter()
+        session.setdefault("mecha_encounter", {})[m] = encounter_id
+        session.modified = True
+
+    # 2. Truncate log if we are in the past (Clear Redo stack on commit)
+    playback_session = session.get("mecha_playback_turn", {})
+    playback_turn = playback_session.get(m)
+    if playback_turn is not None:
+        history_mgr.truncate_log(encounter_id, playback_turn)
+
+    # 3. Commit pending session changes to the log
+    pending = session.get("mecha_pending", {}).pop(m, [])
+    for event in pending:
+        history_mgr.log_event(encounter_id, event)
+    session.modified = True
+
+    # 4. Process the turn transition
+    summary = mech.next_turn()
+
+    # 5. Log the turn commit in encounter history
+    history_mgr.log_event(
+        encounter_id,
+        {
+            "type": "TURN_COMMIT",
+            "turn": mech.turn,
+            "summary": summary,
+            "events": summary.get("events", []),
+        },
+    )
+
+    # 6. Update playback pointer to the new turn
+    playback_session[m] = mech.turn
+    session["mecha_playback_turn"] = playback_session
+    session.modified = True
+
+    # 7. Save the mecha state (permanent changes like sectors/damage)
+    if m != "mechtest":
+        m_sheet.save_low_prio(session.get("user", "system"))
+    else:
+        m_sheet.save_low_prio("test-session")
+
+    # 8. Return a success response that triggers a page refresh
+    headers = {"HX-Refresh": "true"}
+    if summary.get("overheated"):
+        # We can't really do both HX-Refresh and a modal easily
+        # unless we redirect to a specific state.
+        # But maybe we can set a session flag for the modal to show on next load.
+        session.setdefault("mecha_modals", {}).setdefault(m, []).append(
+            {
+                "type": "OVERHEAT",
+                "target": next(
+                    (e["target"] for e in summary["events"] if e["type"] == "OVERHEAT"),
+                    None,
+                ),
+            }
+        )
+        session.modified = True
+
+    return "", 204, headers
+
+
+@views.route("/mecha_use/<s>/<n>/<path:m>", methods=["POST"])
+def mecha_use(s: str, n: str, m):
+    if m != "mechtest":
+        checklogin()
+    n = decode_id(n)
+
+    # Add to pending session changes
+    # Determine state for toggle
+    m_sheet, _, _ = load_mecha_state(m)
+    mech = cast(Mecha, m_sheet.char)
+    sys = mech.get_system(n)
+    if sys:
+        new_state = "inactive" if sys.is_active() or sys.is_booting() else "active"
+        add_pending_event(m, {"type": "SYSTEM_TOGGLE", "name": n, "state": new_state})
+
+    # Re-load state to reflect change in UI
+    m_sheet, _, _ = load_mecha_state(m)
+    mech = cast(Mecha, m_sheet.char)
+    syscat = mech.get_syscat(s.title())
+    system = syscat.get(n)
+    if not system:
+        abort(404)
+
+    template = system_map(s.lower())
+    return render_template(template, system=system, identifier=m, sys_category=s), {
+        "HX-Trigger": "resource-updated"
+    }
+
+
 @views.route("/mecha_sys/<s>/<n>/<path:m>")
 def mecha_sys(s: str, n: str, m):
-    m_sheet = WikiCharacterSheet.load_locate(m)
-    if not m_sheet or not isinstance(m_sheet.char, Mecha):
-        abort(404)
-    mech = m_sheet.char
+    n = decode_id(n)
+    m_sheet, _, _ = load_mecha_state(m)
+    mech = cast(Mecha, m_sheet.char)
     syscat = mech.get_syscat(s.capitalize())
     if not syscat:
         abort(404)
     sys = syscat.get(n)
+    if not sys:
+        abort(404)
     template = system_map(s.lower())
     if not template:
-        abort(404)
-    if not sys:
         abort(404)
 
     return render_template(template, system=sys, identifier=m, sys_category=s)
@@ -498,10 +977,8 @@ def mecha_sys(s: str, n: str, m):
 
 @views.route("/mech_energy_meter/<path:m>")
 def energy_meter(m):
-    m_sheet = WikiCharacterSheet.load_locate(m)
-    if not m_sheet or not isinstance(m_sheet.char, Mecha):
-        abort(404)
-    mech = m_sheet.char
+    m_sheet, _, _ = load_mecha_state(m)
+    mech = cast(Mecha, m_sheet.char)
     current_max = mech.energy_budget()
     overall_max = mech.energy_total()
     systems, active = mech.energy_allocation()
@@ -520,248 +997,56 @@ def energy_meter(m):
 
 @views.route("/mech_heat_ui/<path:m>")
 def mech_heat_ui(m):
-    m_sheet = WikiCharacterSheet.load_locate(m)
-    if not m_sheet or not isinstance(m_sheet.char, Mecha):
-        abort(404)
-    mech = m_sheet.char
-    total_flux = mech.fluxmax()
-    current_flux = mech.heatflux
+    m_sheet, _, _ = load_mecha_state(m)
+    mech = cast(Mecha, m_sheet.char)
+    total_flux = mech.fluxpool_max()
+    current_flux = mech.fluxpool
+    projected_flux = mech.projected_flux()
     heatsys = list(mech.Heat.values())
+
+    # Total heat capacity of the mech
+    total_capacity = sum(h.capacity for h in heatsys)
+    if total_capacity == 0:
+        total_capacity = 1  # avoid div by zero
+
+    fills = [h.current for h in heatsys]
+    colors = [
+        "var(--danger)",
+        "var(--warn-color)",
+        "var(--secondary-color)",
+        "var(--primary-color)",
+        "var(--accent)",
+    ]
+    names = [h.name for h in heatsys]
+
+    segments = generate_meter_segments(fills, colors, total_capacity, names)
+
     return render_template(
         "sheets/mechasheet_htmx/heat_ui.html",
         systems=heatsys,
         max_flux=total_flux,
         current_flux=current_flux,
+        projected_flux=projected_flux,
         identifier=m,
-    )
-
-
-@views.route("/mecha_sys_classic/<s>/<n>/<path:m>")
-def mecha_sys_classic(s: str, n: str, m):
-    m_sheet = WikiCharacterSheet.load_locate(m)
-    if not m_sheet or not isinstance(m_sheet.char, Mecha):
-        abort(404)
-    mech = m_sheet.char
-    template = system_map_classic(s.lower())
-    if not template:
-        abort(404)
-    system = mech.get_syscat(s.capitalize()).get(n)
-    if not system:
-        abort(404)
-    return render_template(template, system=system, identifier=m)
-
-
-@views.route("/mech_energy_meter_classic/<path:m>")
-def energy_meter_classic(m):
-    m_sheet = WikiCharacterSheet.load_locate(m)
-    if not m_sheet or not isinstance(m_sheet.char, Mecha):
-        abort(404)
-    mech = m_sheet.char
-    current_max = mech.energy_budget()
-    overall_max = mech.energy_total()
-    systems, active = mech.energy_allocation()
-    fills = [x.energy for x in systems]
-    colors = ["var(--secondary-color)", "var(--primary-color)"]
-    segments = generate_meter_segments(
-        fills, colors, current_max, [x.name for x in systems]
-    )
-    return render_template(
-        "sheets/mechsystems_classic/bar.html",
         segments=segments,
-        name=m.rsplit("/")[-1],
-        maximum=100 * current_max / overall_max,
+        total_capacity=total_capacity,
+        total_heat=sum(fills),
     )
-
-
-@views.route("/preview_move/<path:context>")
-def preview_move(context: str):
-    context_part, name = context.rsplit("/", 1)
-    page = WikiPage.load_locate(context_part)
-    if not page:
-        abort(404)
-    md_obj = MDObj.from_md(page.body)
-    result = md_obj.search_children(name)
-    if not result:
-        page = WikiPage.load_locate("pbtamoves")
-        if page:
-            md_obj = MDObj.from_md(page.body)
-            result = md_obj.search_children(name)
-    if not result:
-        return "Not Found"
-    result.level = 0
-    preview_content = Markup(result.to_md(False))
-
-    c_val = context_part
-    if page and page.file:
-        c_val = page.file.stem
-
-    return render_template_string(
-        "<a href=/wiki/{{c|urlencode }}#{{ name|urlencode }}><b>{{header}}:</b> {{ preview_content }}</a>",
-        c=c_val,
-        name=name,
-        preview_content=preview_content,
-        header=result.header.title(),
-    )
-
-
-@views.route("/checkbox/<name>/<path:context>", methods=["GET", "POST"])
-def checkbox(context: str, name: str):
-    page = WikiPage.load_locate(context)
-    if not page:
-        abort(404)
-    md = page.md()
-    for item_text, checked in md.all_checklists:
-        if item_text == name:
-            return make_checkbox(context, name, "checked" if checked else "")
-    return ""
-
-
-def make_checkbox(context, name, checked):
-    return render_template_string(
-        """<input type="checkbox"
-           class="checkbox{{cd}}"
-           id="checkbox-{{ name }}"
-           name="{{ name }}"
-           {% if checked %}checked{% endif %}
-           hx-post="/update_move/{{c|urlencode}}/{{name|urlencode}}"
-           hx-trigger="change"
-           hx-swap="outerHTML"
-           aria-checked="{{ 'true' if checked else 'false' }}"
-           role="checkbox"
-           hx-include="#csrf"
-           aria-labelledby="checkbox-{{ name }}-label">""",
-        name=name,
-        c=context,
-        checked=checked,
-        cd=" cooldown" if request.method == "POST" else "",
-    )
-
-
-@views.route("/update_move/<context>/<name>", methods=["GET", "POST"])
-def update_move(context, name):
-    s = WikiCharacterSheet.load_locate(context)
-    if not s or not isinstance(s.char, PBTACharacter):
-        abort(404)
-    username = session.get("user", "")
-    res = False
-    if s.tagcheck(username):
-        char = s.char
-        moves = cast(List[Tuple[str, bool]], char.moves)
-        for i, move in enumerate(moves):
-            if move[0] == name:
-                if request.method == "POST":
-                    moves[i] = (name, not move[1])
-                res = moves[i][1]
-                break
-        s.body = char.to_md()
-        s.save_low_prio(f"moves updated by {username}")
-    return make_checkbox(context, name, "checked" if res else "")
-
-
-@views.route("/pbta-update-notes", methods=["POST"])
-def update_notes():
-    context = request.args["c"]
-    username = session.get("user", "")
-
-    notes = request.form.get("notes") or ""
-
-    s = WikiCharacterSheet.load_locate(context)
-    if s and s.tagcheck(username):
-        char = s.char
-        if isinstance(char, PBTACharacter):
-            char.notes = notes
-        elif isinstance(char, FenCharacter):
-            char.Notes = MDObj.from_md(notes)
-        else:
-            return notes
-        s.body = char.to_md()
-        s.save_low_prio(f"notes updated by {username}")
-    return notes
-
-
-@views.route("/clock/<int:active>/<int:total>/<name>/page")
-@views.route("/clock/<int:active>/<int:total>")
-def _generate_clock(
-    active: int, total: int, name="", page="", endpoint="changeclock", initial=False
-):
-    generate_clock(active, total, name, page, endpoint, initial)
-    return "", 204
-
-
-@views.route("/line/<int:active>/<int:total>/<name>/page")
-@views.route("/line/<int:active>/<int:total>")
-def _generate_line(
-    active: int, total: int, name="", page="", endpoint="changeline", initial=False
-):
-    generate_line(active, total, name, page, endpoint, initial)
-    return "", 204
-
-
-@views.route("/changeline/<name>/<page>/<delta>")
-@views.route("/changeclock/<name>/<page>/<delta>")
-def change_clock(name: str, page: str, delta: str):
-    page = decode_id(page)
-    name = decode_id(name)
-    username = session.get("user", "")
-    if username:
-        if request.path.startswith("/changeline"):
-            element_type = "line"
-        else:
-            element_type = "round"
-        broadcast_elements.append(
-            BroadcastElement(name, page, "wiki", element_type, False)
-        )
-        p = WikiPage.load_locate(page)
-        if p:
-            p.change_clock(name, int(delta)).save_low_prio("clock")
-        broadcast.set()
-    return "", 204
-
-
-@views.route("/change_sheet_line/<name>/<page>/<delta>")
-@views.route("/change_sheet_clock/<name>/<page>/<delta>")
-def change_sheet_clock(name: str, page: str, delta: str):
-    page = decode_id(page)
-    username = session.get("user", "")
-    name = decode_id(name)
-    if username:
-        if request.path.startswith("/change_sheet_line"):
-            element_type = "line"
-        else:
-            element_type = "round"
-        broadcast_elements.append(
-            BroadcastElement(name, page, "sheet", element_type, False)
-        )
-        charpage = WikiCharacterSheet.load_locate(page)
-        if charpage and charpage.tagcheck(username):
-            char = charpage.char
-            if not isinstance(char, PBTACharacter):
-                return "", 204
-            if name.startswith("item-"):
-                for item in char.inventory:
-                    if item.name == name[5:]:
-                        item.count += int(delta)
-                        break
-            else:
-                h_val = char.health.get(name.title())
-                if isinstance(h_val, dict):
-                    h_val[char.current_headings[0].title()] = char.health_get(name)[
-                        0
-                    ] + int(delta)
-            charpage.save_low_prio(f"active element used by {username}")
-            broadcast.set()
-            charpage.body = char.to_md()
-    return "", 204
 
 
 @views.route("/sheet/<path:c>")
 def sheet(c):
     try:
-        if s := WikiCharacterSheet.load_locate(c):
+        s = WikiCharacterSheet.load_locate(c, cache=False)
+        if s:
+            if isinstance(s.char, Mecha):
+                s, _, _ = load_mecha_state(c)
+
             rendered = render_sheet(s)
             if rendered:
                 return rendered
             return redirect(url_for("wiki.wikipage", page=c))
+
         flash("Error: not found. Create Character?")
         session.setdefault("character_gen", {})["stage"] = "start"
         session["character_gen"]["name"] = c

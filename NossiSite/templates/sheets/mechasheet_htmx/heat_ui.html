@@ -1,21 +1,54 @@
 <div class="heat-ui-container">
-    <div id="heatmeter" class="meter-container" style="--max: 100%;">
-        {% for sys in systems %}
-        <div class="meter-fill tooltip-wrapper" style="width: {{ sys.current }}%; background-color: var(--danger);"
-            data-name="{{ sys.name }}">
-            <span class="tooltip">{{ sys.name }}: {{ sys.current|round(1) }}% capacity</span>
+    <script>
+        initHeatState("{{ identifier }}", {{ current_flux }}, {{ max_flux }});
+    </script>
+    <div id="heatmeter" class="meter" style="--max: 100%;">
+        <div class="background-bar"></div>
+        {% for segment in segments %}
+        <div id="heat-bar-{{ segment.name | b64e }}" class="fill" data-cyberlabel="{{ segment.name }}"
+            style="--fill: {{ segment.fill }}%; --color: {{ segment.color }}; --offset: {{ segment.offset }}%;">
         </div>
         {% endfor %}
     </div>
 
-    <div id="current-heat-flux" class="flux-display">
+    <div id="heat-forecast" style="margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 4px; border: 1px solid var(--tertiary-color);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span class="stat-label">NEXT TURN GENERATION FORECAST</span>
+            <span class="highlight" id="js-heat-forecast-val" style="color: {% if projected_flux > max_flux %}var(--danger){% else %}var(--primary){% endif %}; font-size: 1.2em;">
+                +{{ projected_flux|round(1) }} Flux
+            </span>
+        </div>
+        <div class="flux-bar-container" style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; position: relative;">
+            <div class="flux-bar-fill" id="js-heat-forecast-bar"
+                 style="width: {{ (projected_flux / max_flux * 100) if max_flux > 0 else (100 if projected_flux > 0 else 0) }}%; 
+                        background: {% if projected_flux > max_flux %}var(--danger){% else %}var(--primary){% endif %}; 
+                        height: 100%; transition: width 0.3s ease;"></div>
+            {% if projected_flux > max_flux %}
+            <div style="position: absolute; right: 0; top: 0; height: 100%; width: {{ ( (projected_flux - max_flux) / projected_flux * 100 ) if projected_flux > 0 else 0 }}%; background: rgba(255,255,255,0.2); pointer-events: none;"></div>
+            {% endif %}
+        </div>
+        <div id="js-heat-forecast-warning">
+            {% if projected_flux > max_flux %}
+            <p style="color: var(--danger); font-size: 0.8em; margin-top: 8px; font-style: italic;">
+                WARNING: Generation exceeds transfer capacity ({{ max_flux|round(1) }}). Overheat imminent!
+            </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div id="current-heat-flux" class="flux-display" style="margin-top: 20px;">
         <div class="flux-meter">
-            <span class="flux-label">Heat Flux</span>
-            <div class="flux-bar-container">
-                <div class="flux-bar-fill"
-                    style="width: {{ (current_flux / max_flux * 100) if max_flux > 0 else 0 }}%;"></div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
+                <span class="flux-label">FLUX POOL</span>
+                <span class="flux-value" style="font-family: 'Orbitron'; font-size: 1.1em;">{{ current_flux|round(1) }} / {{ max_flux|round(1) }}</span>
             </div>
-            <span class="flux-value">{{ current_flux|round(1) }} / {{ max_flux|round(1) }}</span>
+            <div class="flux-bar-container tooltip-wrapper" style="height: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--tertiary-color); border-radius: 2px;">
+                <div class="flux-bar-fill"
+                    style="width: {{ (current_flux / max_flux * 100) if max_flux > 0 else (100 if current_flux > 0 else 0) }}%; 
+                           background: {% if current_flux > max_flux %}var(--danger){% else %}var(--accent){% endif %}; 
+                           height: 100%;"></div>
+                <span class="tooltip">Heat ready to be moved into sinks/vents</span>
+            </div>
         </div>
     </div>
 </div>

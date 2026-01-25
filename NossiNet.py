@@ -1,5 +1,4 @@
 import logging.config
-import sys
 
 import Data
 from NossiSite import views, extra, webhook, helpers, chat, socks, wiki, sheets
@@ -28,7 +27,14 @@ if __name__ == "__main__":
 
     test = False
     try:
-        port = int(sys.argv[1])
+        import argparse
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument("port", type=int, nargs="?", default=5000)
+        parser.add_argument("--session-id", type=str, default="none")
+        args = parser.parse_args()
+        port = args.port
+        app.config["SESSION_ID"] = args.session_id
     except Exception:
         port = 5000
     app.run(
@@ -36,6 +42,7 @@ if __name__ == "__main__":
         debug=True,
         port=port,
         use_reloader=False,
+        threaded=True,
         ssl_context=("cert.pem", "key.pem") if not test else None,
     )
 

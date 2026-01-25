@@ -1,0 +1,108 @@
+<div id="overview-ui" style="display: flex; flex-direction: column; gap: 25px;">
+    <!-- Mission Parameters -->
+    <section class="dashboard-section mission-params" style="padding: 20px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 4px; box-shadow: 0 0 15px rgba(0,0,0,0.5);">
+        <h3 class="stat-heading" style="margin-top: 0; width: 100%; border-bottom: 1px solid var(--tertiary-color); padding-bottom: 10px; margin-bottom: 20px;">
+            MISSION PARAMETERS
+        </h3>
+        
+        <div class="control-grid" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px;">
+            <!-- Encounter Mgmt -->
+            <div class="control-group">
+                <div class="stat-label" style="color: var(--primary); margin-bottom: 8px;">ACTIVE ENCOUNTER LOG</div>
+                <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                    <select name="encounter_id" class="roll-input" style="flex-grow: 1; font-family: 'Orbitron'; background: #000; border-color: var(--primary); color: #fff;"
+                            hx-post="{{ url_for('sheets.mecha_select_encounter', m=identifier, id='PLACEHOLDER') }}"
+                            hx-target="body"
+                            hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
+                            onchange="this.setAttribute('hx-post', this.getAttribute('hx-post').replace('PLACEHOLDER', this.value))">
+                        {% set history_mgr = mech_history_mgr(identifier) %}
+                        {% for enc in history_mgr.list_encounters() %}
+                        <option value="{{ enc.id }}" {% if enc.id == current_encounter_id %}selected{% endif %}>{{ enc.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="cyber-button" hx-post="{{ url_for('sheets.mecha_start_encounter', m=identifier) }}" hx-target="body" hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}' 
+                            style="background: var(--secondary); color: #000;">NEW</button>
+                </div>
+                
+                <form hx-post="{{ url_for('sheets.mecha_rename_encounter', m=identifier, id=current_encounter_id) }}" hx-target="body" hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}' style="display: flex; gap: 8px;">
+                    <input type="text" name="new_encounter_name" class="roll-input" style="flex-grow: 1; border-style: dashed; background: transparent; height: 32px;" placeholder="Rename encounter...">
+                    <button type="submit" class="cyber-button" style="background: var(--primary); color: #000;">SAVE</button>
+                </form>
+...
+            <div class="system-row" style="flex-direction: column; gap: 10px;">
+                {% for system in mech.Movement.values() %}
+                <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='movement', n=system.name|b64e) }}"
+                    hx-swap="outerHTML" hx-trigger="load" hx-target="this"></div>
+                {% endfor %}
+                {% for system in mech.Support.values() %}
+                <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='support', n=system.name|b64e) }}"
+                    hx-swap="outerHTML" hx-trigger="load" hx-target="this"></div>
+                {% endfor %}
+            </div>
+
+
+            <!-- Loadout Mgmt -->
+            <div class="control-group">
+                <div class="stat-label" style="color: var(--secondary); margin-bottom: 8px;">SYSTEM LOADOUT</div>
+                <select name="loadout" class="roll-input" style="width: 100%; font-family: 'Orbitron'; background: #000; border-color: var(--secondary); color: var(--secondary);"
+                        onchange="onLoadoutChange(this)">
+                    <option value="" disabled selected>-- Select to Queue --</option>
+                    {% for name in mech.loadouts.keys() %}
+                    <option value="{{ name }}">{{ name }}</option>
+                    {% endfor %}
+                </select>
+                <div style="margin-top: 15px; font-size: 0.65em; opacity: 0.7; border-left: 2px solid var(--secondary); padding-left: 10px; font-style: italic;">
+                    Select a loadout to queue it for next turn. Toggles are transitive.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <section class="dashboard-section">
+            <h3 class="stat-heading">SECTOR STATUS</h3>
+            <div class="sector-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;">
+                {% for name, data in mech.Sectors.items() %}
+                <div class="sector-card {% if suggested_system and suggested_system in data.get('Malfunctions', '') %}suggested-target{% endif %}" 
+                     style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; border: 1px solid {% if suggested_system and suggested_system in data.get('Malfunctions', '') %}var(--danger){% else %}var(--tertiary-color){% endif %};">
+                    <div class="system-name">{{ name }}</div>
+                    <form hx-post="{{ url_for('sheets.mecha_update_sector', m=identifier, name=name) }}" hx-target="#overview-ui" hx-swap="outerHTML" hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'>
+                        <div class="stat-label">Damage: 
+                            <input type="number" name="damage" value="{{ data.get('Damage', 0) }}" class="roll-input" style="width: 40px;">
+                        </div>
+                        <div class="stat-label">Malfunctions:
+                            <input type="text" name="malfunctions" value="{{ data.get('Malfunctions', '') }}" class="roll-input" style="width: 100%; margin-top: 5px;" placeholder="None">
+                        </div>
+                        <button type="submit" class="control-btn" style="margin-top: 10px; width: 100%;">UPDATE</button>
+                    </form>
+                </div>
+                {% endfor %}
+                <div class="sector-card" style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; border: 1px dashed var(--tertiary-color);">
+                    <div class="system-name">ADD SECTOR</div>
+                    <form hx-post="{{ url_for('sheets.mecha_update_sector', m=identifier, name='NEW') }}" hx-target="#overview-ui" hx-swap="outerHTML" hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'>
+                        <input type="text" name="new_name" class="roll-input" style="width: 100%; margin-bottom: 5px;" placeholder="Sector Name">
+                        <button type="submit" class="control-btn" style="width: 100%;">ADD</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+        <section class="dashboard-section">
+            <h3 class="stat-heading">PROPULSION & UTILITY</h3>
+            <div class="system-row" style="flex-direction: column; gap: 10px;">
+                {% for system in mech.Movement.values() %}
+                <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='movement', n=system.name|b64e) }}"
+                    hx-swap="outerHTML" hx-trigger="load"></div>
+                {% endfor %}
+                {% for system in mech.Support.values() %}
+                <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='support', n=system.name|b64e) }}"
+                    hx-swap="outerHTML" hx-trigger="load"></div>
+                {% endfor %}
+            </div>
+            
+            <h3 class="stat-heading" style="margin-top: 20px;">ACTION PENALTIES</h3>
+            <div id="penalty-summary">
+                <p style="color: var(--text-dim); font-style: italic;">All systems nominal.</p>
+            </div>
+        </section>
+    </div>
+</div>

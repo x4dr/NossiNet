@@ -1,0 +1,19 @@
+<div id="speed-control-ui" style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 4px; border: 1px solid var(--tertiary-color);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+            <div class="stat-label">CURRENT SPEED</div>
+            <div class="stat-value" style="font-size: 2em; color: var(--primary);">{{ "%.1f"|format(mech.current_speed) }} <span style="font-size: 0.5em;">km/h</span></div>
+        </div>
+        <div style="text-align: right;">
+            <div class="stat-label">TARGET SPEED</div>
+            <div class="stat-value" style="font-size: 2em; color: var(--secondary);">{{ "%.1f"|format(mech.target_speed) }} <span style="font-size: 0.5em;">km/h</span></div>
+        </div>
+    </div>
+    
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <input type="range" name="speed" min="0" max="{{ [mech.current_top_speed(), 100]|max }}" step="1" value="{{ mech.target_speed }}" 
+               class="cyber-slider" oninput="this.nextElementSibling.value = this.value + ' km/h'; window.mechaState.pending.speed = parseFloat(this.value); updateSpeedUI(); updateNextTurnBreakdown();">
+        <output style="min-width: 80px; font-family: 'Orbitron'; color: var(--secondary);">{{ mech.target_speed|round|int }} km/h</output>
+        <span class="stat-label" style="font-size: 0.6em; opacity: 0.6;">(Queued for next turn)</span>
+    </div>
+</div>

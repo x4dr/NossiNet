@@ -1,19 +1,46 @@
-<div class="system-card energy-card {% if system.is_active() %}state-active{% elif system.is_disabled() %}state-disabled{% else %}state-offline{% endif %}"
+<div class="system-card energy-card {% if system.is_active() %}state-active{% elif system.is_disabled() %}state-disabled{% elif system.is_booting() %}state-booting{% else %}state-offline{% endif %}"
     id="system-{{ system.name|b64e }}">
-
     <div class="card-header">
-        <span class="system-name">{{ system.name }}</span>
+        <a href="{{ url_for('sheets.mecha_system_detail', m=identifier, s=sys_category, n=system.name|b64e) }}" 
+           class="system-name" style="text-decoration: none; cursor: pointer;">{{ system.name }}</a>
         <div class="card-controls">
-            <button class="control-btn"
-                hx-get="{{ url_for('sheets.mecha_use', m=identifier, s=sys_category, n=system.name|b64e, use='') }}"
-                hx-target="#system-{{ system.name|b64e }}" hx-swap="outerHTML">
-                {% if system.is_active() %}OFF{% else %}ON{% endif %}
+            <button class="control-btn" onclick="onSystemToggle('{{ system.name|b64e }}')">
+                {% if system.is_active() or system.is_booting() %}DEACTIVATE{% else %}ACTIVATE{% endif %}
             </button>
             <button class="control-btn btn-cycle"
-                hx-get="{{ url_for('sheets.mecha_use', m=identifier, s=sys_category, n=system.name|b64e, use='cycle') }}"
-                hx-target="#system-{{ system.name|b64e }}" hx-swap="outerHTML" title="Cycle Availability">↻</button>
+                hx-post="{{ url_for('sheets.mecha_use', m=identifier, s=sys_category, n=system.name|b64e, use='cycle') }}"
+                hx-target="#system-{{ system.name|b64e }}" hx-swap="outerHTML" title="Cycle Availability"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'>CYCLE</button>
         </div>
     </div>
+
+    {% if system.is_booting() %}
+    <div class="boot-progress-container">
+        <span class="boot-label">BOOTING... ({{ system.boot_progress }}/{{ system.activation_rounds }})</span>
+        <div class="boot-bar">
+            <div class="boot-fill" style="width: {{ (system.boot_progress / system.activation_rounds) * 100 }}%"></div>
+        </div>
+        
+        {% if system.breakpoints %}
+        <div class="roll-input-group">
+            <input type="number" name="roll" class="roll-input" placeholder="Roll" 
+                   value="{{ system.boot_roll if system.boot_roll is not none else '' }}"
+                   hx-post="{{ url_for('sheets.mecha_set_roll', m=identifier, s=sys_category, n=system.name|b64e) }}"
+                   hx-trigger="change" hx-target="#system-{{ system.name|b64e }}" hx-swap="outerHTML"
+                   hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'>
+            <span class="stat-label">Breakpoints:</span>
+            <div class="breakpoint-list">
+                {% for bp in system.breakpoints %}
+                <span class="breakpoint-item {% if system.boot_roll and system.boot_roll >= bp %}reached{% endif %}"
+                      onclick="this.previousElementSibling.previousElementSibling.value={{ bp }}; this.previousElementSibling.previousElementSibling.dispatchEvent(new Event('change'))">
+                    {{ bp }}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
 
     <div class="stats-grid">
         <div class="stat-item tooltip-wrapper">

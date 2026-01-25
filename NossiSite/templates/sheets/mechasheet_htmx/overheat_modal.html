@@ -1,0 +1,23 @@
+<div id="overheat-modal" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+    <div class="modal-content" style="background: var(--bg-dark); border: 2px solid var(--danger); padding: 30px; border-radius: 8px; max-width: 500px; text-align: center; box-shadow: 0 0 20px var(--danger);">
+        <h2 style="color: var(--danger); font-family: 'Orbitron'; margin-bottom: 20px;">CRITICAL OVERHEAT</h2>
+        <p style="color: var(--text-color); margin-bottom: 25px;">The mecha's heat dissipation systems were overwhelmed at the start of the turn.</p>
+        
+        <div style="background: rgba(255,0,0,0.1); padding: 15px; border-radius: 4px; border: 1px solid var(--danger); margin-bottom: 25px;">
+            <span class="stat-label">SUGGESTED DAMAGE:</span><br>
+            <span class="highlight" style="font-size: 1.2em; color: var(--secondary-color);">{{ target }}</span>
+        </div>
+        
+        <div style="display: flex; gap: 15px; justify-content: center;">
+            <button class="control-btn" style="background: var(--danger); color: white;" 
+                    hx-get="{{ url_for('sheets.mecha_overheat_redirect', m=m, target=target) }}" hx-target="#overview-ui"
+                    hx-post="{{ url_for('sheets.mecha_clear_modals', m=m) }}">
+                GO TO DAMAGE FORM
+            </button>
+            <button class="control-btn" hx-post="{{ url_for('sheets.mecha_clear_modals', m=m) }}" 
+                    onclick="document.getElementById('overheat-modal').remove();">
+                DISMISS
+            </button>
+        </div>
+    </div>
+</div>
