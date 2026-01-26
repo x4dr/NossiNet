@@ -66,6 +66,12 @@ def add_pending_event(m: str, event: Dict[str, Any]):
                 existing["value"] = event.get("value")
                 session.modified = True
                 return
+    elif etype == "SYSTEM_ROLL":
+        for existing in pending:
+            if existing.get("type") == "SYSTEM_ROLL" and existing.get("name") == name:
+                existing["value"] = event.get("value")
+                session.modified = True
+                return
 
     pending.append(event)
     session.modified = True
@@ -636,6 +642,7 @@ def mecha_next_turn_view(m):
     )
 
 
+@views.route("/mecha_assign_heat/<n>/<path:m>", methods=["POST"])
 def mecha_assign_heat(n, m):
     if m != "mechtest":
         checklogin()
@@ -747,6 +754,14 @@ def mecha_commit_turn(m):
                 event = {"type": "HEAT_ASSIGNMENT", "name": name, "amount": delta}
                 history_mgr.log_event(encounter_id, event)
                 mech.apply_event(event)
+
+    # System Rolls
+    rolls = data.get("rolls", {})
+    for b64, val in rolls.items():
+        name = decode_id(b64)
+        event = {"type": "SYSTEM_ROLL", "name": name, "value": val}
+        history_mgr.log_event(encounter_id, event)
+        mech.apply_event(event)
 
     # 3. Process the turn transition
     summary = mech.next_turn()
@@ -972,6 +987,64 @@ def mecha_sys(s: str, n: str, m):
     if not template:
         abort(404)
 
+    return render_template(template, system=sys, identifier=m, sys_category=s)
+
+
+@views.route("/mecha_system_detail/<path:m>/<s>/<n>")
+def mecha_system_detail(m, s, n):
+    if m != "mechtest":
+        checklogin()
+
+    n = decode_id(n)
+    m_sheet, _, _ = load_mecha_state(m)
+    mech = cast(Mecha, m_sheet.char)
+    syscat = mech.get_syscat(s.capitalize())
+    if not syscat:
+        abort(404)
+    sys = syscat.get(n)
+    if not sys:
+        abort(404)
+
+    from gamepack.WikiPage import WikiPage
+
+    base_page = WikiPage.load_locate(sys.name)
+
+    from NossiSite.sheet_helpers import infolet_filler, infolet_extractor
+
+    return render_template(
+        "sheets/mecha_system_detail.html",
+        system=sys,
+        identifier=m,
+        sys_category=s,
+        base_page=base_page,
+        infolet=infolet_filler(m),
+        extract=infolet_extractor,
+    )
+
+
+@views.route("/mecha_set_roll/<path:m>/<s>/<n>", methods=["POST"])
+def mecha_set_roll(m, s, n):
+    if m != "mechtest":
+        checklogin()
+
+    n = decode_id(n)
+    roll = request.form.get("roll")
+    if roll is not None:
+        try:
+            val = int(roll)
+            add_pending_event(m, {"type": "SYSTEM_ROLL", "name": n, "value": val})
+        except (ValueError, TypeError):
+            abort(400)
+
+    # Re-load state
+    m_sheet, _, _ = load_mecha_state(m)
+    mech = cast(Mecha, m_sheet.char)
+    syscat = mech.get_syscat(s.capitalize())
+    sys = syscat.get(n)
+    if not sys:
+        abort(404)
+
+    template = system_map(s.lower())
     return render_template(template, system=sys, identifier=m, sys_category=s)
 
 
