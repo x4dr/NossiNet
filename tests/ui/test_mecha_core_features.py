@@ -27,6 +27,16 @@ def setup_mecha(page: Page):
     page.wait_for_load_state("networkidle")
 
 
+def dismiss_overheat_modal(page: Page):
+    try:
+        # Wait a bit for HTMX to potentially load the modal
+        page.wait_for_selector("#overheat-modal", state="visible", timeout=3000)
+        page.locator("#overheat-modal button:has-text('DISMISS')").click()
+        page.wait_for_selector("#overheat-modal", state="hidden")
+    except Exception:
+        pass
+
+
 def test_speed_target_pending(page: Page):
     # Switch to Movement tab
     page.click("text=MOVEMENT")
@@ -44,15 +54,16 @@ def test_speed_target_pending(page: Page):
 
 
 def test_undo_redo_playback(page: Page):
-    # 1. Apply Default loadout
+    # 1. Apply Cool loadout
     page.click("text=OVERVIEW")
-    page.locator("select[name='loadout']").select_option("Default")
+    page.locator("select[name='loadout']").select_option("Cool")
 
     # 2. Advance to Turn 2 (we are at 1)
     page.click("text=NEXT TURN")
     page.evaluate("window.commitTurn()")
     page.wait_for_url("**/sheet/mechtest")
     page.wait_for_load_state("networkidle")
+    dismiss_overheat_modal(page)
 
     # 3. Advance to Turn 3
     page.click("text=MOVEMENT")
@@ -182,6 +193,7 @@ def test_new_encounter_naming(page: Page):
     page.evaluate("window.commitTurn()")
     page.wait_for_url("**/sheet/mechtest")
     page.wait_for_load_state("networkidle")
+    dismiss_overheat_modal(page)
 
     # 2. Verify name in selector
     page.wait_for_timeout(2000)

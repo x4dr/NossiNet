@@ -1048,6 +1048,77 @@ def mecha_set_roll(m, s, n):
     return render_template(template, system=sys, identifier=m, sys_category=s)
 
 
+@views.route("/mecha_update_sector/<path:m>/<name>", methods=["POST"])
+def mecha_update_sector(m, name):
+    if m != "mechtest":
+        checklogin()
+
+    m_sheet, _, _ = load_mecha_state(m)
+    mech = cast(Mecha, m_sheet.char)
+
+    if name == "NEW":
+        new_name = request.form.get("new_name")
+        if new_name:
+            mech.Sectors[new_name] = {"Damage": 0, "Malfunctions": ""}
+    else:
+        damage = request.form.get("damage")
+        malfunctions = request.form.get("malfunctions")
+        if name in mech.Sectors:
+            if damage is not None:
+                try:
+                    mech.Sectors[name]["Damage"] = int(damage)
+                except (ValueError, TypeError):
+                    pass
+            if malfunctions is not None:
+                mech.Sectors[name]["Malfunctions"] = malfunctions
+
+    if m != "mechtest":
+        m_sheet.save_low_prio(session.get("user", "system"))
+    else:
+        m_sheet.save_low_prio("test-session")
+
+    return render_template(
+        "sheets/mechasheet_htmx/overview_ui.html", mech=mech, identifier=m
+    )
+
+
+@views.route("/mecha_check_modals/<path:m>")
+def mecha_check_modals(m):
+    modals = session.get("mecha_modals", {}).get(m, [])
+    if not modals:
+        return "", 204
+
+    modal = modals[0]
+    if modal["type"] == "OVERHEAT":
+        return render_template(
+            "sheets/mechasheet_htmx/overheat_modal.html",
+            m=m,
+            target=modal.get("target"),
+        )
+
+    return "", 204
+
+
+@views.route("/mecha_clear_modals/<path:m>", methods=["POST"])
+def mecha_clear_modals(m):
+    if "mecha_modals" in session and m in session["mecha_modals"]:
+        session["mecha_modals"][m] = []
+        session.modified = True
+    return "", 204
+
+
+@views.route("/mecha_overheat_redirect/<path:m>/<target>")
+def mecha_overheat_redirect(m, target):
+    m_sheet, _, _ = load_mecha_state(m)
+    mech = cast(Mecha, m_sheet.char)
+    return render_template(
+        "sheets/mechasheet_htmx/overview_ui.html",
+        mech=mech,
+        identifier=m,
+        suggested_system=target,
+    )
+
+
 @views.route("/mech_energy_meter/<path:m>")
 def energy_meter(m):
     m_sheet, _, _ = load_mecha_state(m)

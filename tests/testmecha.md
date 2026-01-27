@@ -15,13 +15,13 @@ title: testmecha
 | Rails  | 100    | 3    | 200    | 0.001  | 1000     | 3    | 10     | [ ]     |
 
 ## Energy
-|                     | Energy | Mass | Amount | Enabled |
-|-------------------|------|----|------|-------|
-| baseloadreactor     | 50     | 5    | 1      | [ ]     |
-| peakload stage 1    | 20     | 5    | 1      | [ ]     |
-| peakload stage 2    | 20     | 5    | 1      | [ ]     |
-| backup generator    | 15     | 5    | 1      | [ ]     |
-| emergency generator | 10     | 5    | 1      | [ ]     |
+|                     | Energy | Mass | Amount | Heat | Enabled |
+|-------------------|------|----|------|----|-------|
+| baseloadreactor     | 50     | 5    | 1      | 10   | [ ]     |
+| peakload stage 1    | 20     | 5    | 1      | 5    | [ ]     |
+| peakload stage 2    | 20     | 5    | 1      | 5    | [ ]     |
+| backup generator    | 15     | 5    | 1      | 2    | [ ]     |
+| emergency generator | 10     | 5    | 1      | 1    | [ ]     |
 
 ## Heat
 |         | Energy | Mass | Amount | Heat | Capacity | Passive | Active | Flux | Current | Enabled |
@@ -55,10 +55,10 @@ title: testmecha
 # Loadouts
 
 ## Default
-[0], baseloadreactor, [10], Wheels, [15], Rails, [20], Vent, Coolant, Sink, Junk Armor, AutoGun, Coffee machine
+[0], baseloadreactor, [10], Wheels, [15], Rails, [20], Vent, Coolant, Sink, Junk Armor, [25], AutoGun, [30], Coffee machine, [35]
 
 ## FuelConserving
 [0], baseloadreactor, [10], Wheels, [15], Vent, Coolant, Junk Armor, [20]
 
 ## Cool
-[0], baseloadreactor, [10], Vent, Coolant, Sink, [15]
+[0], baseloadreactor, [10], Vent, Coolant, [15], Sink, [20]
