@@ -6,7 +6,7 @@
 
 <svg viewBox="0 0 {{ svg_w }} {{ svg_h }}" width="100%" height="{{ svg_h }}" id="speed-graph"
     data-max-time="{{ max_time }}" data-max-speed="{{ max_speed }}">
-    
+
     <!-- Grid Lines -->
     {% for i in range(13) %}
     <line x1="{{ margin + i/12 * graph_w }}" y1="{{ margin }}" x2="{{ margin + i/12 * graph_w }}"
@@ -19,32 +19,35 @@
 
     <!-- Axes -->
     <line x1="{{ margin }}" y1="{{ margin }}" x2="{{ margin }}" y2="{{ svg_h - margin }}" class="axis"></line>
-    <line x1="{{ margin }}" y1="{{ svg_h - margin }}" x2="{{ svg_w - margin }}" y2="{{ svg_h - margin }}" class="axis"></line>
+    <line x1="{{ margin }}" y1="{{ svg_h - margin }}" x2="{{ svg_w - margin }}" y2="{{ svg_h - margin }}" class="axis">
+    </line>
 
     <!-- Curves -->
     {% for mname, data in speeds.items() %}
-    <g class="curve-group" data-name="{{ mname }}" data-speeds='{{ data.speeds | tojson }}' style="--curve-color: var(--{% if loop.index0 % 3 == 0 %}primary{% elif loop.index0 % 3 == 1 %}secondary{% else %}accent{% endif %});">
+    <g class="curve-group" data-name="{{ mname }}" data-speeds='{{ data.speeds | tojson }}'
+        style="--curve-color: var(--{% if loop.index0 % 3 == 0 %}primary{% elif loop.index0 % 3 == 1 %}secondary{% else %}accent{% endif %});">
         {% set points = [] %}
         {% set ns = namespace(last_x=margin, last_y=svg_h - margin) %}
         {% for t, v in data.speeds.items() %}
-            {% set x = margin + (t|float / max_time) * graph_w %}
-            {% set y = svg_h - margin - (v / max_speed) * graph_h %}
-            {% set _ = points.append(x|string + "," + y|string) %}
-            {% set ns.last_x = x %}
-            {% set ns.last_y = y %}
+        {% set x = margin + (t|float / max_time) * graph_w %}
+        {% set y = svg_h - margin - (v / max_speed) * graph_h %}
+        {% set _ = points.append(x|string + "," + y|string) %}
+        {% set ns.last_x = x %}
+        {% set ns.last_y = y %}
         {% endfor %}
         {# Extend to end of graph #}
-        {% if ns.last_x < margin + graph_w %}
-            {% set _ = points.append((margin + graph_w)|string + "," + ns.last_y|string) %}
-        {% endif %}
-        <polyline points="{{ points | join(' ') }}" class="curve" style="stroke: var(--curve-color);"></polyline>
+        {% if ns.last_x < margin + graph_w %} {% set _=points.append((margin + graph_w)|string + "," + ns.last_y|string)
+            %} {% endif %} <polyline points="{{ points | join(' ') }}" class="curve"
+            style="stroke: var(--curve-color);">
+            </polyline>
     </g>
     {% endfor %}
 
     <!-- Legend -->
     <g transform="translate({{ margin }}, {{ svg_h - 10 }})">
         {% for mname, data in speeds.items() %}
-        <g class="legend-item" transform="translate({{ loop.index0 * 150 }}, 0)" style="cursor: pointer; --curve-color: var(--{% if loop.index0 % 3 == 0 %}primary{% elif loop.index0 % 3 == 1 %}secondary{% else %}accent{% endif %});">
+        <g class="legend-item" transform="translate({{ loop.index0 * 150 }}, 0)" data-name="{{ mname }}"
+            style="cursor: pointer; transition: opacity 0.2s; --curve-color: var(--{% if loop.index0 % 3 == 0 %}primary{% elif loop.index0 % 3 == 1 %}secondary{% else %}accent{% endif %});">
             <rect width="12" height="12" fill="var(--curve-color)" rx="2"></rect>
             <text x="20" y="10" fill="var(--text-main)" font-size="12">{{ mname }}</text>
         </g>
@@ -52,10 +55,12 @@
     </g>
 
     <!-- Cursor & Tooltip -->
-    <line id="cursor-line" x1="0" y1="{{ margin }}" x2="0" y2="{{ svg_h - margin }}" class="cursor-line" visibility="hidden"></line>
-    <g id="tooltip" visibility="hidden">
-        <rect x="10" y="10" width="150" height="60" rx="4" fill="black" stroke="var(--tertiary-color)"></rect>
-        <text id="tooltip-title" x="20" y="30" font-weight="bold" fill="var(--primary)"></text>
-        <text id="tooltip-value" x="20" y="50" fill="var(--secondary)"></text>
+    <line id="cursor-line" x1="0" y1="{{ margin }}" x2="0" y2="{{ svg_h - margin }}" class="cursor-line"
+        visibility="hidden"></line>
+    <g id="tooltip" visibility="hidden" pointer-events="none">
+        <rect id="tooltip-bg" x="5" y="5" width="180" height="80" rx="3" fill="var(--bg-dark)" fill-opacity="0.95"
+            stroke="var(--tertiary)" stroke-width="1.5" />
+        <text id="tooltip-title" x="15" y="25" font-weight="bold" fill="var(--primary)" font-size="13"></text>
+        <text id="tooltip-value" x="15" y="45" fill="var(--secondary)" font-size="12"></text>
     </g>
 </svg>

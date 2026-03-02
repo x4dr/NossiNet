@@ -5,222 +5,117 @@
 {% endblock %}
 
 {% block body %}
-<div class="comm-center-layout">
-    <!-- Navigation Rail (Sidebar) -->
-    <nav class="nav-rail">
-        <div class="nav-item active" onclick="switchTab('overview', this)">
-            <div class="nav-label">OVERVIEW</div>
-            <div class="nav-summary" id="sidebar-status" hx-get="{{ url_for('sheets.mecha_status_summary', m=identifier) }}" hx-trigger="load, resource-updated from:body">
-                Status: <span class="highlight">NOMINAL</span>
-            </div>
-        </div>
-        <div class="nav-item" onclick="switchTab('movement', this)">
-            <div class="nav-label">MOVEMENT</div>
-            <div class="nav-summary" id="sidebar-speed" hx-get="{{ url_for('sheets.mecha_movement_summary', m=identifier) }}" hx-trigger="load, resource-updated from:body">
-                Speed: <span class="highlight">{{ "%.1f"|format(mech.current_speed) }}</span> km/h
-            </div>
-        </div>
-        <div class="nav-item" onclick="switchTab('energy', this)">
-            <div class="nav-label">ENERGY</div>
-            <div class="nav-summary" id="sidebar-energy" hx-get="{{ url_for('sheets.mecha_energy_summary', m=identifier) }}" hx-trigger="load, resource-updated from:body">
-                Output: <span class="highlight">{{ mech.energy_output() }}</span>
-            </div>
-        </div>
-        <div class="nav-item" onclick="switchTab('heat', this)">
-            <div class="nav-label">HEAT</div>
-            <div class="nav-summary" id="sidebar-heat" hx-get="{{ url_for('sheets.mecha_heat_summary', m=identifier) }}" hx-trigger="load, resource-updated from:body">
-                Flux: <span class="highlight">{{ mech.fluxpool|round(1) }} / {{ mech.fluxpool_max()|round(1) }}</span>
-            </div>
-        </div>
-        <div class="nav-item" onclick="switchTab('combat', this)">
-            <div class="nav-label">COMBAT</div>
-            <div class="nav-summary">
-                Systems: {{ mech.Offensive|length + mech.Defensive|length }}
-            </div>
-        </div>
-        <div class="nav-item" onclick="switchTab('nextturn', this)">
-            <div class="nav-label">NEXT TURN</div>
-            <div class="nav-summary">
-                Turn: <span class="highlight">{{ mech.turn }}</span>
-            </div>
-        </div>
-        <div class="nav-item" onclick="switchTab('timeline', this)">
-            <div class="nav-label">TIMELINE</div>
-            <div class="nav-summary">
-                Log: <span class="highlight" id="event-count">0</span>
-            </div>
-        </div>
-    </nav>
-
+<div class="comm-center-layout denser-layout">
     <!-- Main Display Area -->
     <main class="main-screen">
-        <div hx-get="{{ url_for('sheets.mecha_check_modals', m=identifier) }}" hx-trigger="load" hx-target="#overheat-modal-container" style="display:none;"></div>
+        <!-- Persistent Status Header -->
+        <div class="status-bar" hx-get="{{ url_for('sheets.mecha_status_summary', m=identifier) }}"
+            hx-trigger="load, resource-updated from:body" hx-swap="outerHTML">
+            <div class="status-item">SPEED: <span id="status-speed" class="highlight">{{
+                    "%.1f"|format(mech.current_speed) }}</span> km/h
+            </div>
+            <div class="status-item">POWER: <span id="status-power" class="highlight">{{ mech.energy_output() }}</span>
+            </div>
+            <div class="status-item">FLUX: <span id="status-flux" class="highlight">{{ mech.fluxpool|round(1) }} / {{
+                    mech.fluxpool_max()|round(1) }}</span></div>
+            <div class="status-item">TURN: <span id="status-turn" class="highlight">{{ mech.turn }}</span></div>
+        </div>
+
+        <!-- Top Navigation (Non-floating) -->
+        <nav class="nav-top">
+            <div class="nav-item active" onclick="switchTab('dashboard', this)">
+                <div class="nav-label">DASHBOARD</div>
+            </div>
+            <div class="nav-item" onclick="switchTab('thermal', this)">
+                <div class="nav-label">THERMAL & POWER</div>
+            </div>
+            <div class="nav-item" onclick="switchTab('combat', this)">
+                <div class="nav-label">COMBAT</div>
+            </div>
+            <div class="nav-item" onclick="switchTab('nextturn', this)">
+                <div class="nav-label">NEXT TURN</div>
+            </div>
+            <div class="nav-item" onclick="switchTab('timeline', this)">
+                <div class="nav-label">TIMELINE</div>
+            </div>
+        </nav>
+        <div hx-get="{{ url_for('sheets.mecha_check_modals', m=identifier) }}" hx-trigger="load"
+            hx-target="#overheat-modal-container" style="display:none;"></div>
         <script>
-            initMechaState("{{ identifier }}", {{ mech.turn }}, {{ mech.fluxpool }}, {{ mech.fluxpool_max() }});
+            initMechaState("{{ identifier }}", {{ mech.turn }}, {{ mech.fluxpool }}, {{ mech.fluxpool_max() }}, {{ mech.projected_cooling() }});
             {% for cat in ["Movement", "Energy", "Heat", "Offensive", "Defensive", "Support"] %}
-                {% for name, sys in mech.get_syscat(cat).items() %}
-                    {% set total_heat = (sys.heats.values()|sum) * sys.amount %}
-                    window.registerSystem("{{ name|b64e }}", "{{ name }}", "{{ cat|lower }}", {{ sys.current if cat == "Heat" else 0 }}, {{ sys.capacity if cat == "Heat" else 0 }}, {{ sys.flux if cat == "Heat" else 0 }}, {{ sys.energy * sys.amount }}, {{ total_heat }}, {{ 'true' if sys.is_active() or sys.is_booting() else 'false' }});
-                {% endfor %}
+            {% for name, sys in mech.get_syscat(cat).items() %}
+            {% set total_heat = (sys.heats.values() | sum) * sys.amount %}
+            window.registerSystem("{{ name|b64e }}", "{{ name }}", "{{ cat|lower }}", {{ sys.current if cat == "Heat" else 0 }}, {{ sys.capacity if cat == "Heat" else 0 }}, {{ sys.flux if cat == "Heat" else 0 }}, {{ sys.energy * sys.amount }}, {{ total_heat }}, {{ 'true' if sys.is_active() or sys.is_booting() else 'false' }});
             {% endfor %}
-            
+            {% endfor %}
+
             window.mechaState.loadouts = {
                 {% for name, systems in mech.loadouts.items() %}
-                "{{ name }}": [{% for s in systems %}"{{ s.name|b64e if s.systype is defined else '' }}"{% if not loop.last %}, {% endif %}{% endfor %}],
-                {% endfor %}
+            "{{ name }}": [{% for s in systems %}"{{ s.name|b64e if s.systype is defined else '' }}"{% if not loop.last %}, {% endif %} {% endfor %}],
+            {% endfor %}
             };
         </script>
         <div id="overheat-modal-container"></div>
+
+
         <header class="screen-header">
-            <h2 id="main-title">MECHA OVERVIEW</h2>
+            <h2 id="main-title">MECHA DASHBOARD</h2>
             <div class="screen-status">ONLINE</div>
         </header>
 
-        <!-- View: Overview -->
-        <div id="view-overview" class="view-panel active">
+        <!-- View: Dashboard (Overview + Movement) -->
+        <div id="view-dashboard" class="view-panel active">
             {% include "sheets/mechasheet_htmx/overview_ui.html" %}
+            <div style="margin-top: 30px;">
+                <h3 class="stat-heading">SPEED CONTROL</h3>
+                {% include "sheets/mechasheet_htmx/speed_control.html" %}
+                <!-- Movement Analysis Graph -->
+                <div class="graph-container"
+                    style="margin-top: 20px; background: rgba(0,0,0,0.1); border-radius: 4px; padding: 10px; border: 1px solid var(--tertiary-color);">
+                    <div hx-get="{{ url_for('sheets.mecha_movement_graph', m=identifier) }}"
+                        hx-trigger="load, resource-updated from:body" hx-swap="innerHTML">
+                        <div class="loading-placeholder"
+                            style="font-family: 'Orbitron'; font-size: 0.8em; color: var(--text-dim);">INITIATING
+                            PROPULSION ANALYSIS...</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- View: Movement -->
-        <div id="view-movement" class="view-panel">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <section class="dashboard-section">
-                    <h3 class="stat-heading">SPEED CONTROL</h3>
-                    {% include "sheets/mechasheet_htmx/speed_control.html" %}
-                    
-                    <h3 class="stat-heading" style="margin-top: 30px;">ACTIVE PROPULSION</h3>
-                    <div class="system-row" style="flex-direction: column; gap: 10px;">
-                        {% for system in mech.Movement.values() %}
-                    <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='movement', n=system.name|b64e) }}"
+        <!-- View: Thermal (Heat + Energy) -->
+        <div id="view-thermal" class="view-panel">
+            <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px;">
+                <div class="thermal-col-power">
+                    <section class="dashboard-section section-energy-meter">
+                        <h3 class="stat-heading">POWER GRID</h3>
+                        <div class="meter-container" hx-get="{{ url_for('sheets.energy_meter', m=identifier) }}"
+                            hx-swap="innerHTML" hx-trigger="load, resource-updated from:body" hx-target="this">
+                        </div>
+                    </section>
+                </div>
+                <div class="thermal-col-heat">
+                    <section class="dashboard-section">
+                        <h3 class="stat-heading">THERMAL REGULATION</h3>
+                        <div id="unified-heat-ui" hx-get="{{ url_for('sheets.mech_heat_ui', m=identifier) }}"
+                            hx-swap="innerHTML" hx-trigger="load, resource-updated from:body" hx-target="this">
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <section class="dashboard-section" style="margin-top: 20px;">
+                <h3 class="stat-heading">MAINTENANCE SYSTEMS</h3>
+                <div class="system-row">
+                    {% for energy in mech.Energy.values() %}
+                    <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='energy', n=energy.name|b64e) }}"
                         hx-swap="outerHTML" hx-trigger="load" hx-target="this"></div>
-
-                        {% endfor %}
-                    </div>
-                </section>
-                <section class="dashboard-section section-graph">
-                    <h3 class="stat-heading">Performance Graph</h3>
-                    {% set svg_w = 1000 %}
-                    {% set svg_h = 500 %}
-                    {% set margin = 40 %}
-                    {% set graph_w = svg_w - 2*margin %}
-                    {% set graph_h = svg_h - 2*margin %}
-                    {% set data = mech.speeds() %}
-                    {% set ns = namespace(max_time=1, max_speed=1) %}
-
-                    {% for _, sys in data.items() %}
-                        {% for t, v in sys.speeds.items() %}
-                            {% set ti = t|int %}{% if ti > ns.max_time %}{% set ns.max_time = ti %}{% endif %}
-                            {% if v > ns.max_speed %}{% set ns.max_speed = v %}{% endif %}
-                        {% endfor %}
                     {% endfor %}
-
-                    <svg viewBox="0 0 {{ svg_w }} {{ svg_h }}" width="100%" height="{{ svg_h }}" id="speed-graph"
-                        style="overflow: visible" data-max-time="{{ ns.max_time }}">
-
-                        <!-- GRID -->
-                        {% for i in range(0, 13) %}
-                        <line x1="{{ margin + i/12 * graph_w }}" y1="{{ margin }}" x2="{{ margin + i/12 * graph_w }}"
-                            y2="{{ svg_h - margin }}" class="grid"></line>
-
-                        <line x1="{{ margin }}" y1="{{ margin + i/10 * graph_h }}" x2="{{ svg_w - margin }}"
-                            y2="{{ margin + i/10 * graph_h }}" class="grid"></line>
-                        {% endfor %}
-                        
-                        {% set colors = ['#0055aa', '#00aa55', '#5500aa', '#55aa00', '#aa0055', '#aa5500'] %}
-                        {% for name, sys in data.items() %}
-                        <g class="curve-group" data-name="{{ name }}" data-speeds='{{ sys.speeds | tojson }}'
-                            style="--curve-color: {{ colors[loop.index0 % colors|length] }}">
-
-                            {% set last = namespace(x=0, y=0) %}
-                            {% set points = [] %}
-                            {% for t, v in sys.speeds.items() %}
-                                {% set last.x = margin + (t|int / ns.max_time) * graph_w %}
-                                {% set last.y = svg_h - margin - (v / ns.max_speed) * graph_h %}
-                                {% set _ = points.append((last.x, last.y)) %}
-                            {% endfor %}
-
-                            {% if last.x < margin + graph_w %}
-                                {% set _ = points.append((margin + graph_w, last.y)) %}
-                            {% endif %}
-
-                            {% set points_str = points | map("join", ",") | join(" ") %}
-                            <polyline class="curve-hit" fill="none" stroke="transparent" stroke-width="14"
-                                pathLength="1" points="{{ points_str }}">
-                            </polyline>
-                            <polyline class="curve animated" fill="none" stroke-width="2" pathLength="1"
-                                points="{{ points_str }}">
-                            </polyline>
-
-                            <text x="{{ margin + 10 }}" y="{{ margin + 20 + loop.index * 20 }}"
-                                class="curve-label legend-item">
-                                {{ name }} ({{ "%.1f"|format(sys.topspeed) }} km/h)
-                            </text>
-                        </g>
-                        {% endfor %}
-                        
-                        <line id="cursor-line" y1="{{ margin }}" y2="{{ svg_h - margin }}" x1="{{ margin }}"
-                            x2="{{ margin }}" class="cursor-line"></line>
-
-                        <g id="tooltip" visibility="hidden" class="tooltip">
-                            <rect x="0" y="0" width="1" height="1" rx="4" ry="4"></rect>
-                            <text x="0" y="0">
-                                <tspan id="tooltip-title" x="0" dy="1.2em"></tspan>
-                                <tspan id="tooltip-value" x="0" dy="1.2em"></tspan>
-                            </text>
-                        </g>
-                        
-                        <!-- AXES -->
-                        <line x1="{{ margin }}" y1="{{ svg_h - margin }}" x2="{{ svg_w - margin }}"
-                            y2="{{ svg_h - margin }}" class="axis"></line>
-
-                        <line x1="{{ margin }}" y1="{{ margin }}" x2="{{ margin }}" y2="{{ svg_h - margin }}"
-                            class="axis"></line>
-                    </svg>
-                </section>
-            </div>
-
-        </div>
-
-        <!-- View: Energy -->
-        <div id="view-energy" class="view-panel">
-            <section class="dashboard-section section-energy-meter">
-                <h3 class="stat-heading">Primary Reactor Output</h3>
-                <div style="margin-top: 20px;">
-                    <div hx-get="{{ url_for('sheets.energy_meter', m=identifier) }}" hx-swap="innerHTML"
-                        hx-trigger="load, resource-updated from:body" hx-target="this">
-                    </div>
+                    {% for heat in mech.Heat.values() %}
+                    <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='heat', n=heat.name|b64e) }}"
+                        hx-swap="outerHTML" hx-trigger="load" hx-target="this"></div>
+                    {% endfor %}
                 </div>
-            </section>
-            <section class="dashboard-section">
-                <h3 class="stat-heading">Generators & Batteries</h3>
-                <div class="system-row">
-                {% for energy in mech.Energy.values() %}
-                <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='energy', n=energy.name|b64e) }}"
-                    hx-swap="outerHTML" hx-trigger="load" hx-target="this"></div>
-                {% endfor %}
-
-                </div>
-            </section>
-        </div>
-
-        <!-- View: Heat -->
-        <div id="view-heat" class="view-panel">
-            <section class="dashboard-section">
-                <h3 class="stat-heading">SYSTEM TEMPERATURE</h3>
-                <div id="heat-ui-wrapper" hx-get="{{ url_for('sheets.mech_heat_ui', m=identifier) }}" hx-swap="innerHTML"
-                    hx-trigger="load, resource-updated from:body" hx-target="this">
-                </div>
-            </section>
-            <section class="dashboard-section">
-                <h3 class="stat-heading">Sinks & Vents</h3>
-                <div class="system-row">
-
-                {% for heat in mech.Heat.values() %}
-                <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='heat', n=heat.name|b64e) }}"
-                    hx-swap="outerHTML" hx-trigger="load" hx-target="this"></div>
-                {% endfor %}
-            </div>
-
             </section>
         </div>
 
@@ -230,28 +125,29 @@
                 <section class="dashboard-section">
                     <h3 class="stat-heading">Offensive</h3>
                     <div class="system-row">
-                    {% for system in mech.Offensive.values() %}
-                    <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='offensive', n=system.name|b64e) }}"
-                        hx-swap="outerHTML" hx-trigger="load" hx-target="this"></div>
-                    {% endfor %}
-                </div>
-            </section>
-            <section class="dashboard-section">
-                <h3 class="stat-heading">Defensive & Support</h3>
-                <div class="system-row">
-                    {% for system in mech.Defensive.values() %}
-                    <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='defensive', n=system.name|b64e) }}"
-                        hx-swap="outerHTML" hx-trigger="load" hx-target="this"></div>
-                    {% endfor %}
-                    {% for system in mech.Support.values() %}
-                    <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='support', n=system.name|b64e) }}"
-                        hx-swap="outerHTML" hx-trigger="load" hx-target="this"></div>
-                    {% endfor %}
+                        {% for system in mech.Offensive.values() %}
+                        <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='offensive', n=system.name|b64e) }}"
+                            hx-swap="outerHTML" hx-trigger="load" hx-target="this"></div>
+                        {% endfor %}
+                    </div>
+                </section>
+                <section class="dashboard-section">
+                    <h3 class="stat-heading">Defensive & Support</h3>
+                    <div class="system-row">
+                        {% for system in mech.Defensive.values() %}
+                        <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='defensive', n=system.name|b64e) }}"
+                            hx-swap="outerHTML" hx-trigger="load" hx-target="this"></div>
+                        {% endfor %}
+                        {% for system in mech.Support.values() %}
+                        <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='support', n=system.name|b64e) }}"
+                            hx-swap="outerHTML" hx-trigger="load" hx-target="this"></div>
+                        {% endfor %}
 
                     </div>
                     <div class="dashboard-section" style="margin-top: 20px">
                         <h3 class="stat-heading">Seals</h3>
-                        <div style="display: grid; grid-template-columns: 1fr auto; gap: 5px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px;">
+                        <div
+                            style="display: grid; grid-template-columns: 1fr auto; gap: 5px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px;">
                             <div class="stat-label">Name</div>
                             <div class="stat-label">Lvl</div>
                             {% for seal in mech.Seal.values() %}
@@ -265,7 +161,8 @@
         </div>
 
         <!-- View: Next Turn -->
-        <div id="view-nextturn" class="view-panel" hx-get="{{ url_for('sheets.mecha_next_turn_view', m=identifier) }}" hx-trigger="resource-updated from:body" hx-target="this">
+        <div id="view-nextturn" class="view-panel" hx-get="{{ url_for('sheets.mecha_next_turn_view', m=identifier) }}"
+            hx-trigger="resource-updated from:body" hx-target="this">
             {% include "sheets/mechasheet_htmx/next_turn_view.html" %}
         </div>
 
@@ -275,16 +172,39 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h3 class="stat-heading" style="margin: 0;">ENCOUNTER TIMELINE</h3>
                     <div style="display: flex; gap: 10px;">
-                        <button class="control-btn" hx-post="{{ url_for('sheets.mecha_undo', m=identifier) }}" hx-target="body" hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}' title="Undo">UNDO</button>
-                        <button class="control-btn" hx-post="{{ url_for('sheets.mecha_redo', m=identifier) }}" hx-target="body" hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}' title="Redo">REDO</button>
+                        <button class="control-btn" hx-post="{{ url_for('sheets.mecha_undo', m=identifier) }}"
+                            hx-target="body" hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
+                            title="Undo">UNDO</button>
+                        <button class="control-btn" hx-post="{{ url_for('sheets.mecha_redo', m=identifier) }}"
+                            hx-target="body" hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
+                            title="Redo">REDO</button>
                     </div>
                 </div>
-                <div id="timeline-content" hx-get="{{ url_for('sheets.mecha_timeline', m=identifier) }}" hx-trigger="load, turn-updated from:body" hx-target="this">
+                <div id="timeline-content" hx-get="{{ url_for('sheets.mecha_timeline', m=identifier) }}"
+                    hx-trigger="load, turn-updated from:body" hx-target="this">
                     <p style="color: var(--text-dim); font-style: italic;">Loading timeline...</p>
                 </div>
             </section>
         </div>
     </main>
+    <!-- Global Action Footer -->
+    <footer class="global-footer static-footer">
+        <div class="footer-heat-control">
+            <div class="stat-label">MANUAL HEAT</div>
+            <div style="display: flex; gap: 10px;">
+                <input type="number" id="global-manual-heat" class="roll-input" style="width: 80px;" placeholder="+/-">
+                <button class="cyber-button" style="background: var(--tertiary);"
+                    onclick="window.mechaState.pending.heat_manual = parseFloat(document.getElementById('global-manual-heat').value) || 0; updateNextTurnBreakdown();">SET</button>
+            </div>
+        </div>
+        <button class="commit-btn" onclick="commitTurn()">COMMIT TURN & TRANSITION</button>
+    </footer>
+
+    <!-- Scroll to Top Button -->
+    <button id="scroll-to-top" class="floating-btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
+        title="Scroll to Top">
+        ↑
+    </button>
 </div>
 
 <script>
@@ -294,10 +214,8 @@
         document.querySelectorAll('.view-panel').forEach(el => el.classList.remove('active'));
         document.getElementById('view-' + tabName).classList.add('active');
         const titles = {
-            'overview': 'MECHA OVERVIEW',
-            'movement': 'MOVEMENT ANALYSIS',
-            'energy': 'POWER GRID STATUS',
-            'heat': 'THERMAL REGULATION',
+            'dashboard': 'MECHA DASHBOARD',
+            'thermal': 'THERMAL & POWER',
             'combat': 'COMBAT SYSTEMS',
             'nextturn': 'TURN TRANSITION',
             'timeline': 'ENCOUNTER TIMELINE'

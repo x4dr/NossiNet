@@ -1,73 +1,89 @@
 <div class="timeline-container" style="display: flex; flex-direction: column; gap: 20px; padding: 10px;">
     {% set turns = [] %}
     {% set current_turn = namespace(events=[], summary=None, timestamp=None, turn=0) %}
-    
+
     {% for event in encounter.events %}
-        {% if event.type == 'TURN_COMMIT' %}
-            {% set _ = turns.append({
-                'turn': event.turn,
-                'timestamp': event.timestamp,
-                'summary': event.summary,
-                'events': current_turn.events | list
-            }) %}
-            {% set current_turn.events = [] %}
-        {% else %}
-            {% set msg = "" %}
-            {% if event.type == 'SYSTEM_TOGGLE' %}
-                {% set msg = "Toggle " ~ event.name ~ " to " ~ event.state %}
-            {% elif event.type == 'HEAT_ASSIGNMENT' %}
-                {% set msg = "Assign " ~ event.amount ~ " heat to " ~ event.name %}
-            {% elif event.type == 'SPEED_TARGET' %}
-                {% set msg = "Set Target Speed to " ~ event.value ~ " km/h" %}
-            {% elif event.type == 'MANUAL_HEAT' %}
-                {% set msg = "Manual Heat Adjustment: " ~ event.value %}
-            {% elif event.type == 'BOOT_ROLL' %}
-                {% set msg = "Roll for " ~ event.name ~ ": " ~ event.value %}
-            {% else %}
-                {% set msg = event.message or (event | tojson) %}
-            {% endif %}
-            {% set _ = current_turn.events.append({'type': event.type, 'message': msg}) %}
-        {% endif %}
+    {% if event.type == 'TURN_COMMIT' %}
+    {% set _ = turns.append({
+    'turn': event.turn,
+    'timestamp': event.timestamp,
+    'summary': event.summary,
+    'events': current_turn.events | list
+    }) %}
+    {% set current_turn.events = [] %}
+    {% else %}
+    {% set msg = "" %}
+    {% if event.type == 'SYSTEM_TOGGLE' %}
+    {% set msg = "Toggle " ~ event.name ~ " to " ~ event.state %}
+    {% elif event.type == 'HEAT_ASSIGNMENT' %}
+    {% set msg = "Assign " ~ event.amount ~ " heat to " ~ event.name %}
+    {% elif event.type == 'SPEED_TARGET' %}
+    {% set msg = "Set Target Speed to " ~ event.value ~ " km/h" %}
+    {% elif event.type == 'MANUAL_HEAT' %}
+    {% set msg = "Manual Heat Adjustment: " ~ event.value %}
+    {% elif event.type == 'BOOT_ROLL' %}
+    {% set msg = "Roll for " ~ event.name ~ ": " ~ event.value %}
+    {% else %}
+    {% set msg = event.message or (event | tojson) %}
+    {% endif %}
+    {% set _ = current_turn.events.append({'type': event.type, 'message': msg}) %}
+    {% endif %}
     {% endfor %}
 
     {% for turn in turns | reverse %}
     {% set is_active_turn = (playback_turn is not none and turn.turn|int == playback_turn|int) %}
     {% set is_future_turn = (playback_turn is not none and turn.turn|int > playback_turn|int) %}
-    <div class="timeline-turn {% if is_active_turn %}active-turn{% endif %}" 
-         style="border-left: 2px solid {% if is_active_turn %}var(--primary){% else %}var(--tertiary-color){% endif %}; padding-left: 20px; position: relative; {% if is_future_turn %}opacity: 0.5;{% endif %}">
-        <div class="turn-marker" style="position: absolute; left: -7px; top: 0; width: 12px; height: 12px; background: {% if is_active_turn %}var(--primary){% else %}var(--secondary){% endif %}; border-radius: 50%; border: 2px solid var(--bg-dark);"></div>
-        <div class="turn-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <span class="system-name" style="font-size: 1.1em; {% if is_active_turn %}color: var(--primary);{% endif %}">TURN {{ turn.turn }}</span>
+    <div class="timeline-turn {% if is_active_turn %}active-turn{% endif %}"
+        style="border-left: 2px solid {% if is_active_turn %}var(--primary){% else %}var(--tertiary-color){% endif %}; padding-left: 20px; position: relative; {% if is_future_turn %}opacity: 0.5;{% endif %}">
+        <div class="turn-marker"
+            style="position: absolute; left: -7px; top: 0; width: 12px; height: 12px; background: {% if is_active_turn %}var(--primary){% else %}var(--secondary){% endif %}; border-radius: 50%; border: 2px solid var(--bg-dark);">
+        </div>
+        <div class="turn-header"
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span class="system-name"
+                style="font-size: 1.1em; {% if is_active_turn %}color: var(--primary);{% endif %}">TURN {{ turn.turn
+                }}</span>
             <span class="stat-label">{{ turn.timestamp }}</span>
         </div>
         <div class="turn-events" style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px;">
             <div style="margin-bottom: 10px; text-align: right;">
                 {% if not is_active_turn %}
-                <button class="control-btn" hx-post="{{ url_for('sheets.mecha_restore_state', m=identifier, turn=turn.turn) }}" hx-target="body" hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'>JUMP TO HERE</button>
+                <button class="control-btn"
+                    hx-post="{{ url_for('sheets.mecha_restore_state', m=identifier, turn=turn.turn) }}" hx-target="body"
+                    hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'>JUMP TO HERE</button>
                 {% else %}
                 <span class="stat-label" style="color: var(--primary);">CURRENT POSITION</span>
                 {% endif %}
             </div>
             {% if turn.summary %}
-                <div class="event-item" style="margin-bottom: 5px;">
-                    <span class="stat-label">Heat Dissipated:</span> <span class="highlight">{{ turn.summary.thermals.values() | sum | round(1) if turn.summary.thermals else 0 }}</span>
-                </div>
-                <div class="event-item" style="margin-bottom: 5px;">
-                    <span class="stat-label">New Flux:</span> <span class="highlight">{{ turn.summary.new_flux | round(1) }}</span>
-                </div>
-                {% if turn.summary.booted_systems %}
-                <div class="event-item" style="margin-bottom: 5px; color: var(--primary);">
-                    <span class="stat-label">Systems Online:</span> {{ turn.summary.booted_systems | join(', ') }}
-                </div>
-                {% endif %}
+            <div class="event-item" style="margin-bottom: 5px;">
+                <span class="stat-label">Heat Dissipated:</span> <span class="highlight">{{
+                    turn.summary.dissipated | default(0) | round(1) }}</span>
+            </div>
+            <div class="event-item" style="margin-bottom: 5px;">
+                <span class="stat-label">New Flux:</span> <span class="highlight">{{ turn.summary.new_flux | default(0)
+                    | round(1) }}</span>
+            </div>
+            {% if turn.summary.new_speed is defined %}
+            <div class="event-item" style="margin-bottom: 5px;">
+                <span class="stat-label">New Speed:</span> <span class="highlight">{{ turn.summary.new_speed |
+                    default(0) | round(1) }}</span> km/h
+            </div>
             {% endif %}
-            
+            {% if turn.summary.booted_systems %}
+            <div class="event-item" style="margin-bottom: 5px; color: var(--primary);">
+                <span class="stat-label">Systems Online:</span> {{ turn.summary.booted_systems | join(', ') }}
+            </div>
+            {% endif %}
+            {% endif %}
+
             {% if turn.events %}
-                {% for event in turn.events %}
-                <div class="event-item" style="margin-bottom: 5px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 5px;">
-                    <span class="stat-label">[{{ event.type }}]</span> {{ event.message }}
-                </div>
-                {% endfor %}
+            {% for event in turn.events %}
+            <div class="event-item"
+                style="margin-bottom: 5px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 5px;">
+                <span class="stat-label">[{{ event.type }}]</span> {{ event.message }}
+            </div>
+            {% endfor %}
             {% endif %}
         </div>
     </div>

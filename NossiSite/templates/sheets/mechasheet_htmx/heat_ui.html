@@ -1,54 +1,109 @@
 <div class="heat-ui-container">
     <script>
-        initHeatState("{{ identifier }}", {{ current_flux }}, {{ max_flux }});
+        initHeatState("{{ identifier }}", {{ current_flux }}, {{ max_flux }}, {{ projected_cooling }});
     </script>
-    <div id="heatmeter" class="meter" style="--max: 100%;">
-        <div class="background-bar"></div>
-        {% for segment in segments %}
-        <div id="heat-bar-{{ segment.name | b64e }}" class="fill" data-cyberlabel="{{ segment.name }}"
-            style="--fill: {{ segment.fill }}%; --color: {{ segment.color }}; --offset: {{ segment.offset }}%;">
-        </div>
-        {% endfor %}
-    </div>
+    {% set max_val = [projected_gen, projected_cooling, 1] | max %}
 
-    <div id="heat-forecast" style="margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 4px; border: 1px solid var(--tertiary-color);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <span class="stat-label">NEXT TURN GENERATION FORECAST</span>
-            <span class="highlight" id="js-heat-forecast-val" style="color: {% if projected_flux > max_flux %}var(--danger){% else %}var(--primary){% endif %}; font-size: 1.2em;">
-                +{{ projected_flux|round(1) }} Flux
-            </span>
-        </div>
-        <div class="flux-bar-container" style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; position: relative;">
-            <div class="flux-bar-fill" id="js-heat-forecast-bar"
-                 style="width: {{ (projected_flux / max_flux * 100) if max_flux > 0 else (100 if projected_flux > 0 else 0) }}%; 
-                        background: {% if projected_flux > max_flux %}var(--danger){% else %}var(--primary){% endif %}; 
-                        height: 100%; transition: width 0.3s ease;"></div>
-            {% if projected_flux > max_flux %}
-            <div style="position: absolute; right: 0; top: 0; height: 100%; width: {{ ( (projected_flux - max_flux) / projected_flux * 100 ) if projected_flux > 0 else 0 }}%; background: rgba(255,255,255,0.2); pointer-events: none;"></div>
-            {% endif %}
-        </div>
-        <div id="js-heat-forecast-warning">
-            {% if projected_flux > max_flux %}
-            <p style="color: var(--danger); font-size: 0.8em; margin-top: 8px; font-style: italic;">
-                WARNING: Generation exceeds transfer capacity ({{ max_flux|round(1) }}). Overheat imminent!
-            </p>
-            {% endif %}
+    <!-- Generation Bar -->
+    <div class="thermal-bar-group">
+        <div class="bar-label-header">GENERATION: {{ projected_gen|round(1) }} Flux</div>
+        <div id="gen-meter" class="meter cyber-meter" style="--max: 100%; height: 25px;">
+            <div class="background-bar"></div>
+            {% set offset = 0 %}
+            {% for p in producers %}
+            {% set fill = (p.amount / max_val * 100) %}
+            <div class="fill tooltip-wrapper"
+                style="--fill: {{ fill }}%; --offset: {{ offset }}%; background: var(--danger); opacity: {{ 0.6 + (loop.index0 % 3) * 0.15 }};">
+                <span class="tooltip">{{ p.name }}: +{{ p.amount|round(1) }}</span>
+                <!-- Floating Label (Cyber Line Anchor) -->
+                <div class="cyber-anchor" style="left: 50%;"></div>
+                <div class="floating-label">{{ p.name }}</div>
+            </div>
+            {% set offset = offset + fill %}
+            {% endfor %}
         </div>
     </div>
 
-    <div id="current-heat-flux" class="flux-display" style="margin-top: 20px;">
-        <div class="flux-meter">
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
-                <span class="flux-label">FLUX POOL</span>
-                <span class="flux-value" style="font-family: 'Orbitron'; font-size: 1.1em;">{{ current_flux|round(1) }} / {{ max_flux|round(1) }}</span>
+    <!-- Cooling Bar -->
+    <div class="thermal-bar-group" style="margin-top: 15px;">
+        <div class="bar-label-header">COOLING PERFORMANCE: {{ projected_cooling|round(1) }} Flux</div>
+        <div id="cool-meter" class="meter cyber-meter" style="--max: 100%; height: 25px;">
+            <div class="background-bar"></div>
+            {% set offset = 0 %}
+            {% for h in systems %}
+            {% set cooling_val = h.tick() if hasattr(h, 'tick') else 0 %}
+            {% if cooling_val > 0 %}
+            {% set fill = (cooling_val / max_val * 100) %}
+            <div class="fill tooltip-wrapper"
+                style="--fill: {{ fill }}%; --offset: {{ offset }}%; background: var(--primary); opacity: {{ 0.6 + (loop.index0 % 3) * 0.2 }};">
+                <span class="tooltip">{{ h.name }}: -{{ cooling_val|round(1) }}</span>
+                <div class="cyber-anchor" style="left: 50%;"></div>
+                <div class="floating-label">{{ h.name }}</div>
             </div>
-            <div class="flux-bar-container tooltip-wrapper" style="height: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--tertiary-color); border-radius: 2px;">
-                <div class="flux-bar-fill"
-                    style="width: {{ (current_flux / max_flux * 100) if max_flux > 0 else (100 if current_flux > 0 else 0) }}%; 
-                           background: {% if current_flux > max_flux %}var(--danger){% else %}var(--accent){% endif %}; 
-                           height: 100%;"></div>
-                <span class="tooltip">Heat ready to be moved into sinks/vents</span>
+            {% set offset = offset + fill %}
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Multi-Segment Heat Sink Distribution (Physical State) -->
+<div class="section-header" style="margin: 20px 0 10px 0;">HEAT SINK SATURATION</div>
+<div id="heatmeter" class="meter" style="--max: 100%; height: 30px; margin-bottom: 25px;">
+    <div class="background-bar"></div>
+    {% for segment in segments %}
+    <div id="heat-bar-{{ segment.name | b64e }}" class="fill" data-cyberlabel="{{ segment.name }}"
+        style="--fill: {{ segment.fill }}%; --color: {{ segment.color }}; --offset: {{ segment.offset }}%;">
+        <div class="cyber-anchor" style="left: 50%;"></div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Forecast & Summary -->
+<div id="heat-forecast" class="compact-stats-grid" style="margin-bottom: 20px;">
+    <div class="stat-item">
+        <span class="stat-label">NET FORECAST</span>
+        <span class="highlight"
+            style="color: {% if projected_gen > (projected_cooling + max_flux) %}var(--danger){% else %}var(--primary){% endif %};">
+            {{ (projected_gen - projected_cooling)|round(1) }} Flux
+        </span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-label">TRANS. CAPACITY</span>
+        <span class="stat-value">{{ max_flux|round(1) }}</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-label">POOL SATURATION</span>
+        <span class="stat-value">{{ (current_flux / max_flux * 100)|round(0) }}%</span>
+    </div>
+</div>
+
+<!-- Heat Sink Management -->
+<div class="heat-sink-grid"
+    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px;">
+    {% for h in systems %}
+    <div class="compact-system-card heat-sink-card">
+        <div class="card-header">
+            <span class="highlight">{{ h.name }}</span>
+            <span class="stat-value">{{ h.current|round(1) }} / {{ h.capacity|round(1) }}</span>
+        </div>
+        <div class="flux-bar-container"
+            style="height: 6px; background: color-mix(in srgb, var(--bg-dark), transparent 70%); border-radius: 3px; margin: 5px 0;">
+            <div class="flux-bar-fill"
+                style="width: {{ (h.current / h.capacity * 100) if h.capacity > 0 else 0 }}%; background: var(--primary);">
+            </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75em;">
+            <span>TRANS. RATE: {{ h.flux|round(1) }}</span>
+            <div class="assign-controls" style="display: flex; align-items: center; gap: 5px;">
+                <input type="number" id="assign-{{ h.name|b64e }}" class="compact-input" style="width: 40px;" value="0">
+                <button class="cyber-button compact-btn"
+                    onclick="window.mechaState.pending.heat_assignments['{{ h.name|b64e }}'] = parseFloat(document.getElementById('assign-{{ h.name|b64e }}').value) || 0; updateNextTurnBreakdown();">
+                    ASSIGN
+                </button>
             </div>
         </div>
     </div>
+    {% endfor %}
+</div>
 </div>

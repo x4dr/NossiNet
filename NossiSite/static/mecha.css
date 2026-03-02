@@ -1,18 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@400;700&display=swap');
 
 :root {
-    --bg-dark: var(--background-color);
-    --card-bg: rgba(10, 18, 10, 0.8);
     --primary: var(--primary-color);
     --secondary: var(--secondary-color);
+    --tertiary: var(--tertiary-color);
     --accent: var(--accent-color);
     --danger: var(--warn-color);
-    --success: var(--primary-color);
-    --warning: #ffaa00;
-    /* Keeping as is for now, or use primary? User said only named pieces. I'll stick to primary or accent */
-    --text-main: #e0e6ed;
-    --text-dim: #94a3b8;
-    --glass-border: var(--tertiary-color);
+
+    --bg-dark: var(--background-color);
+    --card-bg: color-mix(in srgb, var(--midground-color), transparent 20%);
+
+    --text-main: var(--secondary);
+    --text-dim: var(--tertiary);
+
+    --success: var(--primary);
+    --glass-border: var(--tertiary);
 }
 
 body {
@@ -41,100 +43,93 @@ h3 {
 
 /* V3 Comm Center Layout */
 .comm-center-layout {
-    display: grid;
-    grid-template-columns: 280px 1fr;
-    gap: 0;
-    min-height: 100vh;
-    background: #020408;
-    border: 1px solid var(--tertiary-color);
-    border-radius: 8px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-    margin: 0 auto;
-}
-
-/* Navigation Rail */
-.nav-rail {
-    background: rgba(10, 15, 20, 0.95);
-    border-right: 1px solid var(--tertiary-color);
     display: flex;
     flex-direction: column;
-    padding: 20px 0;
+    gap: 0;
+    min-height: 100vh;
+    background: var(--bg-dark);
+    border: 1px solid var(--tertiary);
+    border-radius: 4px;
+    /* Reduced to avoid clash with diagonals */
+    box-shadow: 0 0 20px color-mix(in srgb, var(--bg-dark), transparent 20%);
+    margin: 0 auto;
+    width: 98%;
+    /* More width */
+    max-width: 1400px;
+}
+
+/* Horizontal Top Navigation */
+.nav-top {
+    display: flex;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--tertiary);
+    padding: 0 10px;
+    z-index: 900;
+    height: 50px;
 }
 
 .nav-item {
-    padding: 20px;
+    padding: 0 20px;
     cursor: pointer;
-    border-left: 4px solid transparent;
-    transition: all 0.3s ease;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .nav-item:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: color-mix(in srgb, var(--primary), transparent 95%);
 }
 
 .nav-item.active {
-    background: rgba(var(--primary-rgb), 0.1);
-    border-left-color: var(--primary-color);
-}
-
-.nav-icon {
-    display: none; /* Removing icons entirely as requested */
+    border-bottom-color: var(--primary);
+    background: color-mix(in srgb, var(--primary), transparent 90%);
 }
 
 .nav-label {
     font-family: 'Orbitron', sans-serif;
-    font-size: 0.9em;
-    font-weight: bold;
-    color: var(--text-dim);
+    font-weight: 800;
+    font-size: 0.8em;
     letter-spacing: 1px;
+    color: var(--text-dim);
 }
 
 .nav-item.active .nav-label {
-    color: var(--primary-color);
-    text-shadow: 0 0 5px var(--primary-color);
+    color: var(--primary);
 }
 
-.nav-summary {
-    font-size: 0.75em;
-    color: #666;
-    margin-top: 5px;
-}
-
-.nav-summary .highlight {
-    color: var(--secondary-color);
-    font-weight: bold;
+/* Responsive View Panel Styling */
+.view-panel {
+    display: none;
+    animation: fadeIn 0.4s ease-out;
 }
 
 /* Main Screen Area */
 .main-screen {
-    background: #000000;
-    padding: 30px;
+    background: var(--bg-dark);
+    padding: 15px 25px;
+    /* Reduced padding */
     display: flex;
     flex-direction: column;
     position: relative;
-    border-radius: 0 8px 8px 0;
+    border-radius: 0 4px 4px 0;
 }
 
 .screen-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 2px solid var(--tertiary-color);
-    padding-bottom: 15px;
-    margin-bottom: 30px;
+    margin-bottom: 15px;
+    /* Reduced */
+    border-bottom: 1px solid color-mix(in srgb, var(--primary), transparent 80%);
+    padding-bottom: 5px;
 }
 
 .screen-header h2 {
+    font-size: 1.1em !important;
     margin: 0;
-    font-size: 1.5em;
-    color: var(--primary-color);
-}
-
-/* ... (View Panels & Dashboard Sections omitted - kept same for brevity if no changes, but here we replace all related) */
-.view-panel {
-    display: none;
-    animation: fadeIn 0.4s ease-out;
+    color: var(--primary);
 }
 
 .view-panel.active {
@@ -154,172 +149,57 @@ h3 {
 }
 
 .dashboard-section {
-    background: rgba(10, 10, 10, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: color-mix(in srgb, var(--bg-dark), transparent 50%);
+    border: 1px solid color-mix(in srgb, var(--text-main), transparent 90%);
     border-radius: 4px;
     padding: 20px;
     margin-bottom: 20px;
 }
 
-/* System Card Refinement */
-.system-card {
-    background: var(--card-bg);
-    border: 1px solid var(--tertiary-color);
-    border-radius: 4px;
-    padding: 10px;
-    margin-bottom: 10px;
-    transition: all 0.3s ease;
-    position: relative;
-}
-
-/* Visual States */
-.state-active {
-    border-color: var(--primary-color);
-    /* Reduced glow */
-    box-shadow: inset 0 0 5px rgba(var(--primary-rgb), 0.2);
-}
-
-.state-offline {
-    background: rgba(10, 10, 10, 0.9);
-    border-color: #333;
-    filter: brightness(0.8);
-}
-
-.state-disabled {
-    background: #000;
-    border-color: #222;
-    filter: grayscale(1) brightness(0.4);
+/* Cyber Pipes */
+.pipe-network {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     pointer-events: none;
-    /* Mostly read-only look */
+    z-index: -1;
 }
 
-/* Re-enable pointer events for controls specifically if needed, but cycle button handles interaction */
-.state-disabled .card-controls {
-    pointer-events: auto;
+.cyber-pipe {
+    stroke: var(--tertiary);
+    stroke-width: 4;
+    fill: none;
+    opacity: 0.3;
+    stroke-dasharray: 10 5;
+    animation: flow 10s linear infinite;
 }
 
-.card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding-bottom: 4px;
+@keyframes flow {
+    to {
+        stroke-dashoffset: -150;
+    }
 }
 
-.system-name {
-    font-family: 'Orbitron', sans-serif;
-    font-weight: bold;
-    font-size: 0.85em;
-    color: var(--primary-color);
-    /* Removed text-shadow */
+.pipe-glow {
+    stroke: var(--primary);
+    stroke-width: 2;
+    filter: blur(2px);
+    opacity: 0.5;
 }
 
-.control-btn {
-    background: #222;
-    border: 1px solid #444;
-    color: #ccc;
-    padding: 2px 8px;
-    border-radius: 2px;
-    cursor: pointer;
-    font-size: 0.7em;
-    font-family: 'Inter', sans-serif;
-    text-transform: uppercase;
-}
-
-.control-btn:hover {
-    background: #333;
-    border-color: #666;
-    color: #fff;
-}
-
-/* Stats Box Grid */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 8px;
-    margin-top: 10px;
-}
-
-.stat-item {
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 4px;
-    border-radius: 2px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.stat-label {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.65em;
-    color: #888;
-    text-transform: uppercase;
-    margin-bottom: 2px;
-}
-
-.stat-value {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 0.9em;
-    color: var(--text-main);
-    font-weight: bold;
-}
-
-.state-active .stat-value {
-    color: var(--primary-color);
-}
-
-/* Segmented Meter Bar (Restored Classic) */
-.meter {
-    position: relative;
-    max-width: var(--max, 100%);
-    margin-top: 37px;
-    margin-bottom: 37px;
-    height: 6px;
-    background: #111;
-    border-radius: 2px;
-    border: 1px solid #444;
-    transition: all 0.5s;
-    width: 100%;
-}
-
-.meter:hover {
-    margin-top: 20px;
-    margin-bottom: 20px;
-    height: 40px;
-}
-
-.background-bar {
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.05);
-    z-index: 0;
-    transition: all 0.5s;
-}
-
-.fill {
-    position: absolute;
-    height: 100%;
-    left: var(--offset);
-    width: var(--fill);
-    background-color: var(--color);
-    transition: all 0.5s ease, background-color 5s ease;
-    border-right: 3px solid #000;
-}
-
-/* Cyber Labels & Lines (Restored Classic) */
 .cyber-label {
     position: absolute;
     font: 800 22px 'Orbitron', sans-serif;
     white-space: nowrap;
     z-index: 100 !important;
     pointer-events: none;
-    color: var(--accent-color);
-    text-shadow: 0 0 8px #000, 0 0 16px #000;
+    color: var(--accent);
+    text-shadow: 0 0 8px var(--bg-dark),
+        0 0 6px var(--bg-dark),
+        0 0 12px var(--bg-dark),
+        0 0 16px var(--bg-dark);
 }
 
 .cyber-line {
@@ -332,7 +212,8 @@ h3 {
 }
 
 .cyber-line line {
-    stroke: var(--accent-color);
+    color: var(--accent);
+    stroke: var(--accent);
     stroke-width: 2;
 }
 
@@ -340,7 +221,7 @@ h3 {
 .cyber-line {
     opacity: 0;
     pointer-events: none;
-    transition: opacity 5s;
+    transition: opacity 2s;
     transition-timing-function: cubic-bezier(1, 0, .81, .58);
 }
 
@@ -350,20 +231,323 @@ h3 {
     opacity: 1;
 }
 
+/* System Card Refinement */
+.system-card {
+    background: var(--card-bg);
+    border: 1px solid var(--tertiary);
+    border-left: 4px solid var(--tertiary);
+    padding: 10px;
+    /* Reduced from 15px */
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    border-radius: 4px;
+}
+
+.system-card.state-active {
+    border-left-color: var(--primary);
+    box-shadow: inset 4px 0 15px -3px color-mix(in srgb, var(--primary), transparent 60%);
+}
+
+.system-card:hover {
+    border-color: var(--primary);
+    background: color-mix(in srgb, var(--card-bg), var(--primary) 5%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px color-mix(in srgb, var(--bg-dark), transparent 50%);
+}
+
+.system-card .card-header {
+    border-bottom: 1px solid color-mix(in srgb, var(--text-main), transparent 90%);
+    margin-bottom: 8px;
+    /* Reduced from 12px */
+    padding-bottom: 4px;
+    /* Reduced from 8px */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.card-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.control-btn {
+    background: var(--bg-dark);
+    border: 1px solid var(--tertiary);
+    color: var(--text-dim);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65em;
+    padding: 3px 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+}
+
+.control-btn:hover {
+    background: var(--tertiary);
+    color: var(--bg-dark);
+    border-color: var(--primary);
+}
+
+.state-active .control-btn {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.btn-cycle {
+    background: color-mix(in srgb, var(--secondary), transparent 90%);
+    border-color: var(--secondary);
+    color: var(--secondary);
+}
+
+.btn-cycle:hover {
+    background: var(--secondary);
+    color: var(--bg-dark);
+}
+
+/* Layout Grid Fixes */
+
+.system-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    /* Reduced min-width */
+    gap: 10px;
+    /* Reduced gap */
+    align-items: stretch;
+}
+
+.row-column {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.row-column>* {
+    flex: 0 0 auto !important;
+    /* Ensure they don't stretch tall */
+}
+
+/* Internal Overheat UI */
+.overheat-indicator {
+    position: absolute;
+    top: 5px;
+    right: 25px;
+    background: color-mix(in srgb, var(--danger), transparent 80%);
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.55em;
+    padding: 1px 4px;
+    display: none;
+    animation: blink 1s step-end infinite;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.system-card.internal-heat .overheat-indicator {
+    display: block;
+}
+
+@keyframes blink {
+    50% {
+        opacity: 0.3;
+    }
+}
+
+/* Stats Box Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 6px;
+    margin-top: auto;
+    padding-top: 10px;
+}
+
+.stat-item {
+    background: color-mix(in srgb, var(--bg-dark), transparent 60%);
+    border: 1px solid color-mix(in srgb, var(--text-main), transparent 95%);
+    padding: 3px 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.stat-label {
+    color: var(--text-dim);
+    font-size: 0.55em;
+    text-transform: uppercase;
+}
+
+.stat-value {
+    color: var(--text-main);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+/* Segmented Meter Bar (Restored Classic) */
+.meter {
+    position: relative;
+    max-width: var(--max, 100%);
+    margin-top: 10px;
+    margin-bottom: 10px;
+    height: 12px;
+    background: var(--bg-dark);
+    border-radius: 2px;
+    border: 1px solid var(--tertiary);
+    width: 100%;
+    transition: all 0.5s ease;
+}
+
+.meter:hover {
+    height: 32px;
+    translate: 0 -10px;
+    z-index: 100;
+}
+
+.background-bar {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    background: color-mix(in srgb, var(--text-main), transparent 95%);
+    z-index: 0;
+    transition: all 0.5s;
+}
+
+.fill {
+    position: absolute;
+    height: 100%;
+    left: var(--offset);
+    width: var(--fill);
+    background-color: var(--color);
+    transition: all 0.4s ease;
+    border-right: 2px solid color-mix(in srgb, var(--bg-dark), transparent 50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.meter::before {
+    position: absolute;
+    top: -20px;
+    bottom: -20px;
+    left: 0;
+    right: 0;
+    z-index: -1;
+}
+
+.background-bar {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    background: color-mix(in srgb, var(--text-main), transparent 95%);
+    z-index: 0;
+    transition: all 0.5s;
+}
+
+.fill {
+    position: absolute;
+    height: 100%;
+    left: var(--offset);
+    width: var(--fill);
+    background-color: var(--color);
+    transition: all 0.4s ease;
+    border-right: 2px solid color-mix(in srgb, var(--bg-dark), transparent 50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cyber-anchor {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+/* Cyber Labels (Floating) */
+.floating-label {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) rotate(-45deg);
+    transform-origin: bottom left;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65em;
+    color: var(--text-dim);
+    white-space: nowrap;
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+    margin-bottom: 15px;
+}
+
+.meter:hover .floating-label {
+    opacity: 1;
+    color: var(--primary);
+}
+
+.bar-label-header {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75em;
+    color: var(--text-dim);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.thermal-bar-group {
+    padding: 10px 0;
+}
+
+.compact-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    background: color-mix(in srgb, var(--bg-dark), transparent 80%);
+    border: 1px solid var(--tertiary);
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.compact-system-card {
+    background: color-mix(in srgb, var(--bg-dark), transparent 20%);
+    border: 1px solid var(--tertiary);
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.compact-input {
+    background: var(--bg-dark);
+    border: 1px solid var(--tertiary);
+    color: var(--primary);
+    font-size: 0.8em;
+    padding: 2px 4px;
+}
+
 /* Graph Restoration (Classic Styles) */
 svg#speed-graph {
-    background: #050505;
-    border: 1px solid #333;
+    background: var(--bg-dark);
+    border: 1px solid var(--tertiary);
     width: 100%;
 }
 
 .axis {
-    stroke: var(--primary-color);
+    stroke: var(--primary);
     stroke-width: 2;
 }
 
 .grid {
-    stroke: var(--secondary-color);
+    stroke: var(--secondary);
     opacity: 0.2;
     stroke-dasharray: 4 4;
 }
@@ -384,13 +568,13 @@ svg#speed-graph {
 
 .curve-group:hover .curve,
 .curve-group.active .curve {
-    stroke: var(--primary-color);
-    filter: drop-shadow(0 0 6px var(--primary-color));
+    stroke: var(--primary);
+    filter: drop-shadow(0 0 6px var(--primary));
 }
 
 .curve-group:hover .curve-label,
 .curve-group.active .curve-label {
-    fill: var(--primary-color);
+    fill: var(--primary);
     font-weight: bold;
 }
 
@@ -403,14 +587,14 @@ svg#speed-graph {
 }
 
 .cursor-line {
-    stroke: var(--primary-color);
+    stroke: var(--primary);
     stroke-width: 1;
     pointer-events: none;
     opacity: 0.7;
 }
 
 .tooltip rect {
-    fill: #000;
+    fill: var(--bg-dark);
     opacity: 0.85;
 }
 
@@ -440,26 +624,20 @@ svg#speed-graph {
 }
 
 .meter-container {
-    position: relative;
     height: 20px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--tertiary-color);
-    border-radius: 4px;
-    overflow: hidden;
-    display: flex;
 }
 
 .meter-fill {
     height: 100%;
     transition: width 0.5s ease;
-    border-right: 1px solid rgba(0, 0, 0, 0.2);
+    border-right: 1px solid color-mix(in srgb, var(--bg-dark), transparent 80%);
 }
 
 .flux-display {
-    background: rgba(0, 0, 0, 0.3);
+    background: color-mix(in srgb, var(--bg-dark), transparent 70%);
     padding: 10px;
     border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid color-mix(in srgb, var(--text-main), transparent 90%);
 }
 
 .flux-meter {
@@ -478,7 +656,7 @@ svg#speed-graph {
 .flux-bar-container {
     flex-grow: 1;
     height: 8px;
-    background: #111;
+    background: var(--bg-dark);
     border-radius: 4px;
     overflow: hidden;
 }
@@ -508,10 +686,10 @@ svg#speed-graph {
     left: 50%;
     transform: translateX(-50%);
     margin-bottom: 5px;
-    background: #000;
-    color: #fff;
+    background: var(--bg-dark);
+    color: var(--text-main);
     padding: 4px 8px;
-    border: 1px solid #666;
+    border: 1px solid var(--tertiary);
     font-size: 0.75em;
     white-space: nowrap;
     z-index: 1000;
@@ -542,10 +720,10 @@ svg#speed-graph {
 
 .boot-progress-container {
     margin-top: 10px;
-    background: rgba(0, 0, 0, 0.3);
+    background: color-mix(in srgb, var(--bg-dark), transparent 70%);
     border-radius: 4px;
     padding: 8px;
-    border: 1px solid var(--tertiary-color);
+    border: 1px solid var(--tertiary);
 }
 
 .boot-label {
@@ -558,7 +736,7 @@ svg#speed-graph {
 
 .boot-bar {
     height: 8px;
-    background: #111;
+    background: var(--bg-dark);
     border-radius: 4px;
     overflow: hidden;
     margin-bottom: 8px;
@@ -577,8 +755,8 @@ svg#speed-graph {
 }
 
 .roll-input {
-    background: #000;
-    border: 1px solid var(--tertiary-color);
+    background: var(--bg-dark);
+    border: 1px solid var(--tertiary);
     color: var(--primary);
     font-family: 'Orbitron', sans-serif;
     font-size: 0.8em;
@@ -590,7 +768,7 @@ svg#speed-graph {
 .roll-btn {
     background: var(--tertiary-color);
     border: none;
-    color: white;
+    color: var(--bg-dark);
     padding: 2px 8px;
     border-radius: 2px;
     cursor: pointer;
@@ -611,7 +789,7 @@ svg#speed-graph {
 .breakpoint-item {
     font-size: 0.6em;
     padding: 1px 4px;
-    background: rgba(255, 255, 255, 0.1);
+    background: color-mix(in srgb, var(--text-main), transparent 90%);
     border-radius: 2px;
     color: var(--text-dim);
     cursor: pointer;
@@ -620,9 +798,10 @@ svg#speed-graph {
 /* Cyber Slider Styling */
 .cyber-slider {
     -webkit-appearance: none;
+    appearance: none;
     width: 100%;
     height: 4px;
-    background: var(--tertiary-color);
+    background: var(--tertiary);
     border-radius: 2px;
     outline: none;
     margin: 10px 0;
@@ -631,23 +810,50 @@ svg#speed-graph {
 .cyber-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 12px;
-    height: 20px;
+    width: 8px;
+    height: 16px;
     background: var(--secondary);
     border: 1px solid var(--bg-dark);
     cursor: pointer;
-    border-radius: 2px;
-    box-shadow: 0 0 5px var(--secondary);
+    border-radius: 1px;
+    box-shadow: 0 0 3px var(--secondary);
 }
 
 .cyber-slider::-moz-range-thumb {
-    width: 12px;
-    height: 20px;
+    width: 8px;
+    height: 16px;
     background: var(--secondary);
     border: 1px solid var(--bg-dark);
     cursor: pointer;
-    border-radius: 2px;
-    box-shadow: 0 0 5px var(--secondary);
+    border-radius: 1px;
+    box-shadow: 0 0 3px var(--secondary);
+}
+
+/* System Name as Button/Box */
+.system-name {
+    font-family: 'Orbitron', sans-serif !important;
+    font-size: 0.9em !important;
+    font-weight: bold !important;
+    color: var(--primary) !important;
+    padding: 0 !important;
+    transition: all 0.2s ease !important;
+    display: inline-block !important;
+    text-decoration: none !important;
+    margin-bottom: 5px !important;
+}
+
+.system-name:hover {
+    background: color-mix(in srgb, var(--primary), transparent 80%);
+    border-color: var(--primary);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--primary), transparent 70%);
+}
+
+.system-name::after {
+    content: ' ⓘ' !important;
+    font-size: 0.7em !important;
+    opacity: 0.8 !important;
+    color: var(--secondary) !important;
+    vertical-align: super !important;
 }
 
 .cyber-slider:disabled {
@@ -661,8 +867,8 @@ svg#speed-graph {
 }
 
 .cyber-button {
-    background: var(--primary-color);
-    color: #000;
+    background: var(--primary);
+    color: var(--bg-dark);
     border: none;
     padding: 4px 15px;
     font-family: 'Orbitron', sans-serif;
@@ -675,11 +881,132 @@ svg#speed-graph {
     display: inline-block;
     height: 32px;
     line-height: 24px;
-    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--accent), transparent 70%);
 }
 
-.cyber-button:hover {
-    background: #fff;
-    box-shadow: 0 0 20px var(--primary-color);
-    transform: scale(1.05);
+/* Persistent Status Bar */
+.status-bar {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: color-mix(in srgb, var(--bg-dark), transparent 60%) !important;
+    border-bottom: 1px solid var(--tertiary);
+    padding: 8px 20px;
+    /* Thinner */
+    margin-bottom: 0;
+    position: static !important;
+    /* Non-floating */
+    z-index: 1000 !important;
+    backdrop-filter: blur(5px);
+}
+
+/* Global Action Footer */
+.global-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--card-bg);
+    border-top: 1px solid var(--tertiary);
+    padding: 10px 30px;
+    z-index: 1000;
+}
+
+.static-footer {
+    position: static !important;
+    /* Page bottom */
+}
+
+.footer-heat-control {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.commit-btn {
+    background: var(--primary);
+    color: var(--bg-dark);
+    border: none;
+    padding: 12px 40px;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 800;
+    font-size: 1.1em;
+    cursor: pointer;
+    clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    letter-spacing: 1px;
+}
+
+.commit-btn:hover {
+    background: var(--text-main);
+    box-shadow: 0 0 25px var(--primary);
+    transform: translateY(-2px) scale(1.02);
+}
+
+.commit-btn:active {
+    transform: translateY(0) scale(0.98);
+}
+
+/* High-Alert Warnings */
+.status-bar.alert-overheat {
+    border-color: var(--danger);
+    animation: pulse-danger 1.5s infinite;
+}
+
+@keyframes pulse-danger {
+    0% {
+        box-shadow: 0 0 10px color-mix(in srgb, var(--danger), transparent 60%);
+        border-color: var(--danger);
+    }
+
+    50% {
+        box-shadow: 0 0 30px color-mix(in srgb, var(--danger), transparent 20%);
+        border-color: color-mix(in srgb, var(--danger), white 20%);
+    }
+
+    100% {
+        box-shadow: 0 0 10px color-mix(in srgb, var(--danger), transparent 60%);
+        border-color: var(--danger);
+    }
+}
+
+/* Refined Spacing for Content */
+.main-screen {
+    padding-bottom: 30px !important;
+    /* Reduced since footer is static */
+}
+
+/* Floating Actions */
+.floating-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    background: var(--primary);
+    color: var(--bg-dark);
+    border: none;
+    border-radius: 50%;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 0 15px var(--primary);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+}
+
+.floating-btn:hover {
+    transform: scale(1.1);
+}
+
+/* Improved Targets */
+.control-btn {
+    min-width: 80px;
+    padding: 6px 12px;
+    font-weight: bold;
+}
+
+.system-card {
+    min-height: 120px;
 }

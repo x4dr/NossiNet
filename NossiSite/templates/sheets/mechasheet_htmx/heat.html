@@ -1,16 +1,21 @@
-<div class="system-card heat-card {% if system.is_active() %}state-active{% elif system.is_disabled() %}state-disabled{% elif system.is_booting() %}state-booting{% else %}state-offline{% endif %}"
-    id="system-{{ system.name|b64e }}">
+{% set b64 = system.name|b64e %}
+<div class="system-card heat-card {% if system.is_active() %}state-active{% elif system.is_disabled() %}state-disabled{% elif system.is_booting() %}state-booting{% else %}state-offline{% endif %} {{ 'internal-heat' if system.current > 0 else '' }}"
+     id="system-{{ b64 }}"
+     onwheel="onSystemScroll(event, '{{ b64 }}')"
+     onclick="onSystemCardClick(event, '{{ b64 }}')">
+
+    <div class="overheat-indicator">INTERNAL HEAT: {{ system.current|round(1) }}</div>
 
     <div class="card-header">
-        <a href="{{ url_for('sheets.mecha_system_detail', m=identifier, s=sys_category, n=system.name|b64e) }}" 
+        <a href="{{ url_for('sheets.mecha_system_detail', m=identifier, s=sys_category, n=b64) }}" 
            class="system-name" style="text-decoration: none; cursor: pointer;">{{ system.name }}</a>
         <div class="card-controls">
-            <button class="control-btn" onclick="onSystemToggle('{{ system.name|b64e }}')">
+            <button class="control-btn" onclick="onSystemToggle('{{ b64 }}')">
                 {% if system.is_active() or system.is_booting() %}DEACTIVATE{% else %}ACTIVATE{% endif %}
             </button>
             <button class="control-btn btn-cycle"
-                hx-post="{{ url_for('sheets.mecha_use', m=identifier, s=sys_category, n=system.name|b64e, use='cycle') }}"
-                hx-target="#system-{{ system.name|b64e }}" hx-swap="outerHTML" title="Cycle Availability"
+                hx-post="{{ url_for('sheets.mecha_use', m=identifier, s=sys_category, n=b64, use='cycle') }}"
+                hx-target="#system-{{ b64 }}" hx-swap="outerHTML" title="Cycle Availability"
                 hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'>CYCLE</button>
         </div>
     </div>
@@ -21,61 +26,38 @@
         <div class="boot-bar">
             <div class="boot-fill" style="width: {{ (system.boot_progress / system.activation_rounds) * 100 }}%"></div>
         </div>
-        
-        {% if system.breakpoints %}
-        <div class="roll-input-group">
-            <input type="number" name="roll" class="roll-input" placeholder="Roll" 
-                   value="{{ system.boot_roll if system.boot_roll is not none else '' }}"
-                   hx-post="{{ url_for('sheets.mecha_set_roll', m=identifier, s=sys_category, n=system.name|b64e) }}"
-                   hx-trigger="change" hx-target="#system-{{ system.name|b64e }}" hx-swap="outerHTML"
-                   hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'>
-            <span class="stat-label">Breakpoints:</span>
-            <div class="breakpoint-list">
-                {% for bp in system.breakpoints %}
-                <span class="breakpoint-item {% if system.boot_roll and system.boot_roll >= bp %}reached{% endif %}"
-                      onclick="this.previousElementSibling.previousElementSibling.value={{ bp }}; this.previousElementSibling.previousElementSibling.dispatchEvent(new Event('change'))">
-                    {{ bp }}
-                </span>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-    </div>
-    {% endif %}
-
-    {% if system.is_active() %}
-    <div class="heat-assignment-ui" style="margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px; border: 1px solid var(--tertiary-color);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-            <span class="stat-label">Storage:</span>
-            <span class="highlight">{{ system.current|round(1) }} / {{ system.capacity|round(1) }}</span>
-        </div>
-        <div style="display: flex; gap: 10px; align-items: center;">
-            <input type="range" name="current_val" min="0" max="{{ system.capacity }}" step="0.1" value="{{ system.current }}" 
-                   class="cyber-slider" oninput="onHeatSliderInput(this, '{{ system.name|b64e }}')">
-        </div>
     </div>
     {% endif %}
 
     <div class="stats-grid">
-        <div class="stat-item tooltip-wrapper">
-            <span class="stat-label">Capacity</span>
-            <span class="stat-value">{{ system.capacity }}</span>
-            <span class="tooltip">Total Heat Capacity</span>
+        <div class="stat-item">
+            <span class="stat-label">CAP</span>
+            <span class="stat-value">{{ system.capacity|round(1) }}</span>
         </div>
-        <div class="stat-item tooltip-wrapper">
-            <span class="stat-label">Flux</span>
-            <span class="stat-value">{{ system.flux }}</span>
-            <span class="tooltip">Heat Flux (Transfer Rate)</span>
+        <div class="stat-item">
+            <span class="stat-label">FLUX</span>
+            <span class="stat-value">{{ system.flux|round(1) }}</span>
         </div>
-        <div class="stat-item tooltip-wrapper">
-            <span class="stat-label">Current</span>
-            <span class="stat-value">{{ system.current|round(1) }}</span>
-            <span class="tooltip">Current Stored Heat</span>
+        <div class="stat-item">
+            <span class="stat-label">ENERGY</span>
+            <span class="stat-value">{{ system.energy }}</span>
         </div>
-        <div class="stat-item tooltip-wrapper">
-            <span class="stat-label">Dissipation</span>
+        <div class="stat-item">
+            <span class="stat-label">PASSIVE</span>
             <span class="stat-value">{{ system.passive }}</span>
-            <span class="tooltip">Passive Heat Dissipation</span>
         </div>
     </div>
+
+    {% if system.is_active() or system.current > 0 %}
+    <div class="heat-assignment-ui" style="margin-top: 15px;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.7em; color: var(--text-dim); margin-bottom: 5px;">
+            <span>THERMAL STORAGE</span>
+            <span class="highlight">{{ system.current|round(1) }} / {{ system.capacity|round(1) }}</span>
+        </div>
+        <input type="range" class="cyber-slider" 
+               min="0" max="{{ system.capacity }}" step="0.1" 
+               value="{{ system.current }}"
+               oninput="onHeatSliderInput(this, '{{ b64 }}')">
+    </div>
+    {% endif %}
 </div>

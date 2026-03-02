@@ -26,6 +26,7 @@ class User:
         passwordhash=None,
         funds=0,
         admin="",
+        sheet_data=None,
     ):
         self.username = username.strip().upper()
         if passwordhash is not None:
@@ -40,6 +41,17 @@ class User:
         self._loadedsheet = None
         self.oldsheets = {}
         self.admin = admin
+        self.sheetid = None
+
+        if isinstance(sheet_data, (bytes, bytearray)) and sheet_data:
+            try:
+                self._loadedsheet = VampireCharacter.deserialize(sheet_data)
+            except Exception:
+                log.exception(f"Failed to deserialize sheet for {self.username}")
+        elif isinstance(sheet_data, int) or (
+            isinstance(sheet_data, str) and sheet_data.isdigit()
+        ):
+            self.sheetid = int(sheet_data)
 
     @classmethod
     def connect_db(cls) -> sqlite3.Connection:
@@ -140,7 +152,7 @@ class User:
         else:
             self.savesheet(self.getsheet().setfromform(form), self.sheetid)
 
-    def savesheet(self, sheet, num: int = None):
+    def savesheet(self, sheet, num: int | None = None):
         if not isinstance(sheet, VampireCharacter):
             flash(f"UPDATING LEGACY CHAR FROM {self.username}@{sheet.timestamp}")
             sheet = VampireCharacter.from_character(sheet)
@@ -188,6 +200,7 @@ class User:
             passwordhash=row[1],
             funds=row[2],
             admin=row[4],
+            sheet_data=row[3],
         )
 
     def claimsheet(self, x):

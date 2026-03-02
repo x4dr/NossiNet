@@ -1,5 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
+from datetime import datetime
 from typing import cast, Tuple, Any, Optional, Dict
 
 import requests
@@ -530,26 +531,10 @@ def generate_meter_segments(fills, colors, total, names):
 
 @views.route("/mecha_status_summary/<path:m>")
 def mecha_status_summary(m):
-    # Logic for status
-    status = "NOMINAL"
-    color = "var(--primary)"
-
-    # Check for overheat in latest turn summary
-    history_mgr = MechaEncounterManager(WikiPage.wikipath(), m)
-    encounter_id = session.get("mecha_encounter", {}).get(m)
-    if encounter_id:
-        log = history_mgr.load_encounter(encounter_id)
-        if log and log.get("events"):
-            # Find latest TURN_COMMIT
-            for event in reversed(log["events"]):
-                if event.get("type") == "TURN_COMMIT":
-                    if event.get("summary", {}).get("overheated"):
-                        status = "OVERHEAT"
-                        color = "var(--danger)"
-                    break
-
-    return Markup(
-        f"Status: <span class='highlight' style='color: {color};'>{status}</span>"
+    m_sheet, _, _ = load_mecha_state(m)
+    mech = cast(Mecha, m_sheet.char)
+    return render_template(
+        "sheets/mechasheet_htmx/status_bar.html", mech=mech, identifier=m
     )
 
 
@@ -779,6 +764,7 @@ def mecha_commit_turn(m):
         {
             "type": "TURN_COMMIT",
             "turn": mech.turn,
+            "timestamp": datetime.now().strftime("%H:%M:%S"),
             "summary": summary,
         },
     )
@@ -1145,7 +1131,9 @@ def mech_heat_ui(m):
     mech = cast(Mecha, m_sheet.char)
     total_flux = mech.fluxpool_max()
     current_flux = mech.fluxpool
-    projected_flux = mech.projected_flux()
+    projected_gen = mech.projected_flux()
+    projected_cooling = mech.projected_cooling()
+
     heatsys = list(mech.Heat.values())
 
     # Total heat capacity of the mech
@@ -1165,16 +1153,29 @@ def mech_heat_ui(m):
 
     segments = generate_meter_segments(fills, colors, total_capacity, names)
 
+    # Heat producers (Next Turn)
+    producers = []
+    for cat in ["Movement", "Energy", "Heat", "Offensive", "Defensive", "Support"]:
+        for sys in getattr(mech, cat).values():
+            if sys.is_active() or sys.is_booting():
+                h = sys.amount * (
+                    sys.heats.values() | sum if hasattr(sys, "heats") else sys.heat
+                )
+                if h > 0:
+                    producers.append({"name": sys.name, "amount": h})
+
     return render_template(
         "sheets/mechasheet_htmx/heat_ui.html",
         systems=heatsys,
         max_flux=total_flux,
         current_flux=current_flux,
-        projected_flux=projected_flux,
+        projected_gen=projected_gen,
+        projected_cooling=projected_cooling,
         identifier=m,
         segments=segments,
         total_capacity=total_capacity,
         total_heat=sum(fills),
+        producers=producers,
     )
 
 
@@ -1207,6 +1208,30 @@ def sheet_unmodified(m):
         abort(404)
     return render_template(
         "sheets/mechasheet_classic.html", mech=m_sheet.char, identifier=m
+    )
+
+
+@views.route("/mecha_movement_graph/<path:m>")
+def mecha_movement_graph(m):
+    m_sheet, _, _ = load_mecha_state(m)
+    mech = cast(Mecha, m_sheet.char)
+    data = mech.speeds()
+    ns_max_time = 1
+    ns_max_speed = 1
+    for _, sys in data.items():
+        for t, v in sys["speeds"].items():
+            ti = int(t)
+            if ti > ns_max_time:
+                ns_max_time = ti
+            if v > ns_max_speed:
+                ns_max_speed = v
+
+    return render_template(
+        "sheets/mechasheet_htmx/movement_graph.html",
+        speeds=data,
+        max_time=ns_max_time,
+        max_speed=ns_max_speed,
+        identifier=m,
     )
 
 

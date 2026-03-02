@@ -4,26 +4,37 @@ window.mechaState = {
     baseTurn: 0,
     baseFluxPool: 0,
     baseFluxPoolMax: 0,
-    systems: {}, 
+    systems: {},
     pending: {
         speed: null,
-        toggles: {}, 
-        heat: {},    
+        toggles: {},
+        heat: {},
+        heat_assignments: {}, // NEW: for assigning flux to sinks
         loadout: null,
         heat_manual: 0
     },
     loadouts: {}
 };
 
-window.initMechaState = function(identifier, turn, pool, max) {
+window.initMechaState = function (identifier, turn, pool, max, projectedCooling) {
     window.mechaState.identifier = identifier;
     window.mechaState.baseTurn = parseInt(turn);
     window.mechaState.baseFluxPool = parseFloat(pool);
     window.mechaState.baseFluxPoolMax = parseFloat(max);
-    console.log('DEBUG: Mecha state initialized:', identifier, turn, pool, max);
+    window.mechaState.projectedCooling = parseFloat(projectedCooling || 0);
+    console.log('DEBUG: Mecha state initialized:', identifier, turn, pool, max, projectedCooling);
 }
 
-window.registerSystem = function(b64Name, name, type, current, capacity, flux, energy, heat, active) {
+window.initHeatState = function (identifier, pool, max, projectedCooling) {
+    if (window.mechaState.identifier === identifier) {
+        window.mechaState.baseFluxPool = parseFloat(pool);
+        window.mechaState.baseFluxPoolMax = parseFloat(max);
+        if (projectedCooling !== undefined) window.mechaState.projectedCooling = parseFloat(projectedCooling);
+        window.updateHeatUI();
+    }
+}
+
+window.registerSystem = function (b64Name, name, type, current, capacity, flux, energy, heat, active) {
     window.mechaState.systems[b64Name] = {
         name: name,
         type: type,
@@ -36,7 +47,7 @@ window.registerSystem = function(b64Name, name, type, current, capacity, flux, e
     };
 }
 
-window.updateSpeedUI = function() {
+window.updateSpeedUI = function () {
     if (window.mechaState.pending.speed !== null) {
         const sidebarSpeed = document.querySelector('#sidebar-speed .highlight');
         if (sidebarSpeed) {
@@ -45,9 +56,15 @@ window.updateSpeedUI = function() {
     }
 }
 
-window.updateHeatUI = function() {
+window.updateHeatUI = function () {
     let currentPool = window.mechaState.baseFluxPool;
-    
+
+    // Assignments subtract from pool
+    for (let b64 in window.mechaState.pending.heat_assignments) {
+        currentPool -= window.mechaState.pending.heat_assignments[b64];
+    }
+
+    // Total heat storage changes
     for (let b64 in window.mechaState.pending.heat) {
         const sys = window.mechaState.systems[b64];
         if (sys) {
@@ -60,29 +77,23 @@ window.updateHeatUI = function() {
     if (poolVal) {
         poolVal.innerText = currentPool.toFixed(1) + ' / ' + window.mechaState.baseFluxPoolMax.toFixed(1);
     }
-    
+
     const poolFill = document.querySelector('.flux-bar-fill');
     if (poolFill) {
         const percent = (currentPool / window.mechaState.baseFluxPoolMax) * 100;
         poolFill.style.width = Math.min(100, Math.max(0, percent)) + '%';
         poolFill.style.backgroundColor = currentPool < 0 ? 'var(--danger)' : 'var(--accent)';
     }
-    
-    // Update sidebar summary
-    const sidebarFlux = document.querySelector('#sidebar-heat .highlight');
-    if (sidebarFlux) {
-        sidebarFlux.innerText = currentPool.toFixed(1) + ' / ' + window.mechaState.baseFluxPoolMax.toFixed(1);
-    }
-    
+
     window.updateNextTurnBreakdown();
 }
 
-window.onHeatSliderInput = function(el, b64Name) {
+window.onHeatSliderInput = function (el, b64Name) {
     const newVal = parseFloat(el.value);
     console.log('DEBUG: onHeatSliderInput:', b64Name, newVal);
     const sys = window.mechaState.systems[b64Name];
     if (!sys) return;
-    
+
     // Calculate total pending delta excluding THIS system
     let otherPendingDelta = 0;
     for (let otherB64 in window.mechaState.pending.heat) {
@@ -90,10 +101,10 @@ window.onHeatSliderInput = function(el, b64Name) {
             otherPendingDelta += (window.mechaState.pending.heat[otherB64] - window.mechaState.systems[otherB64].current);
         }
     }
-    
+
     const poolBeforeThis = window.mechaState.baseFluxPool - otherPendingDelta;
     const currentDelta = newVal - sys.current;
-    
+
     // Constraint: Pool cannot go under 0
     if (currentDelta > poolBeforeThis + 0.001) {
         const allowedNewVal = sys.current + poolBeforeThis;
@@ -104,12 +115,12 @@ window.onHeatSliderInput = function(el, b64Name) {
     // Constraint: Pool cannot go over Max (unless already over)
     const max = window.mechaState.baseFluxPoolMax;
     const newPool = poolBeforeThis - currentDelta;
-    
+
     if (newPool > max + 0.001) {
         if (newPool > poolBeforeThis + 0.001 || poolBeforeThis <= max) {
-             const allowedNewVal = sys.current + (poolBeforeThis - max);
-             el.value = Math.max(el.min, allowedNewVal);
-             return window.onHeatSliderInput(el, b64Name);
+            const allowedNewVal = sys.current + (poolBeforeThis - max);
+            el.value = Math.max(el.min, allowedNewVal);
+            return window.onHeatSliderInput(el, b64Name);
         }
     }
 
@@ -126,16 +137,16 @@ window.onHeatSliderInput = function(el, b64Name) {
     window.updateHeatUI();
 }
 
-window.onSystemToggle = function(b64Name) {
+window.onSystemToggle = function (b64Name) {
     const sys = window.mechaState.systems[b64Name];
     if (!sys) return;
-    
+
     if (window.mechaState.pending.toggles[b64Name] !== undefined) {
         delete window.mechaState.pending.toggles[b64Name];
     } else {
         window.mechaState.pending.toggles[b64Name] = !sys.active;
     }
-    
+
     const card = document.getElementById('system-' + b64Name);
     if (card) {
         const btn = card.querySelector('.control-btn');
@@ -143,52 +154,64 @@ window.onSystemToggle = function(b64Name) {
         if (btn) btn.innerText = willBeActive ? 'DEACTIVATE' : 'ACTIVATE';
         card.className = 'system-card ' + (willBeActive ? 'state-active' : 'state-offline');
     }
-    
+
     window.updateHeatUI();
     window.updateNextTurnBreakdown();
 }
 
-window.updateNextTurnBreakdown = function() {
+window.updateNextTurnBreakdown = function () {
     const list = document.getElementById('pending-changes-list');
     if (!list) return;
-    
+
     list.innerHTML = '';
     let hasChanges = false;
-    
+
     if (window.mechaState.pending.speed !== null) {
         addPendingItem(list, 'Set Target Speed to ' + window.mechaState.pending.speed.toFixed(1) + ' km/h', () => { window.mechaState.pending.speed = null; window.updateNextTurnBreakdown(); });
         hasChanges = true;
     }
-    
+
     if (window.mechaState.pending.loadout !== null) {
         addPendingItem(list, 'Apply Loadout: ' + window.mechaState.pending.loadout, () => { window.mechaState.pending.loadout = null; window.updateNextTurnBreakdown(); });
         hasChanges = true;
     }
-    
+
     for (let b64 in window.mechaState.pending.toggles) {
         const sys = window.mechaState.systems[b64];
         if (!sys) continue;
         const state = window.mechaState.pending.toggles[b64] ? 'active' : 'inactive';
-        addPendingItem(list, 'Toggle ' + sys.name + ' to ' + state, () => { 
-            delete window.mechaState.pending.toggles[b64]; 
+        addPendingItem(list, 'Toggle ' + sys.name + ' to ' + state, () => {
+            delete window.mechaState.pending.toggles[b64];
             const card = document.getElementById('system-' + b64);
             if (card) {
                 const btn = card.querySelector('.control-btn');
                 if (btn) btn.innerText = sys.active ? 'DEACTIVATE' : 'ACTIVATE';
                 card.className = 'system-card ' + (sys.active ? 'state-active' : 'state-offline');
             }
-            window.updateNextTurnBreakdown(); 
+            window.updateNextTurnBreakdown();
         });
         hasChanges = true;
     }
-    
+
+    for (let b64 in window.mechaState.pending.heat_assignments) {
+        const val = window.mechaState.pending.heat_assignments[b64];
+        if (Math.abs(val) > 0.001) {
+            const name = window.mechaState.systems[b64]?.name || atob(b64);
+            addPendingItem(list, 'Transfer ' + val.toFixed(1) + ' flux to ' + name, () => {
+                delete window.mechaState.pending.heat_assignments[b64];
+                window.updateHeatUI();
+            });
+            hasChanges = true;
+        }
+    }
+
     for (let b64 in window.mechaState.pending.heat) {
         const sys = window.mechaState.systems[b64];
         if (!sys) continue;
         const val = window.mechaState.pending.heat[b64];
         if (Math.abs(val - sys.current) > 0.001) {
-            addPendingItem(list, 'Assign ' + val.toFixed(1) + ' total heat to ' + sys.name, () => { 
-                delete window.mechaState.pending.heat[b64]; 
+            addPendingItem(list, 'Set ' + sys.name + ' charge to ' + val.toFixed(1), () => {
+                delete window.mechaState.pending.heat[b64];
                 const card = document.getElementById('system-' + b64);
                 if (card) {
                     const slider = card.querySelector('input[type="range"]');
@@ -196,7 +219,7 @@ window.updateNextTurnBreakdown = function() {
                     const storageDisplay = card.querySelector('.heat-assignment-ui .highlight');
                     if (storageDisplay) storageDisplay.innerText = sys.current.toFixed(1) + ' / ' + sys.capacity.toFixed(1);
                 }
-                window.updateHeatUI(); 
+                window.updateHeatUI();
             });
             hasChanges = true;
         }
@@ -206,11 +229,11 @@ window.updateNextTurnBreakdown = function() {
         addPendingItem(list, 'Manual Heat Adjustment: ' + window.mechaState.pending.heat_manual.toFixed(1), () => { window.mechaState.pending.heat_manual = 0; window.updateNextTurnBreakdown(); });
         hasChanges = true;
     }
-    
+
     if (!hasChanges) {
         list.innerHTML = '<p style="color: var(--text-dim); font-style: italic;">No pending changes for Turn ' + (window.mechaState.baseTurn + 1) + '</p>';
     }
-    
+
     window.updateForecastDisplays();
 }
 
@@ -219,24 +242,24 @@ function addPendingItem(parent, text, onRemove) {
     div.className = 'pending-item';
     div.style = 'margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;';
     div.innerHTML = '<span>' + text + '</span>';
-    
+
     const btn = document.createElement('button');
     btn.className = 'control-btn';
     btn.style = 'padding: 2px 10px; font-size: 0.7em;';
     btn.innerText = 'REMOVE';
     btn.onclick = onRemove;
-    
+
     div.appendChild(btn);
     parent.appendChild(div);
 }
 
-window.updateForecastDisplays = function() {
+window.updateForecastDisplays = function () {
     let genFlux = 0;
     let energyOutput = 0;
     let energyDemand = 0;
-    
+
     let items = [];
-    
+
     const activeLoadout = window.mechaState.pending.loadout;
     const loadoutSystems = activeLoadout ? window.mechaState.loadouts[activeLoadout] : null;
 
@@ -248,7 +271,7 @@ window.updateForecastDisplays = function() {
         } else if (window.mechaState.pending.toggles[b64] !== undefined) {
             willBeActive = window.mechaState.pending.toggles[b64];
         }
-        
+
         if (willBeActive) {
             genFlux += sys.heat;
             if (sys.heat > 0) {
@@ -265,12 +288,16 @@ window.updateForecastDisplays = function() {
     if (window.mechaState.pending.heat_manual) {
         genFlux += window.mechaState.pending.heat_manual;
     }
-    
+
     const forecastText = document.getElementById('js-projected-heat');
     if (forecastText) forecastText.innerText = "+" + genFlux.toFixed(1) + " Flux";
-    
+
     const heatTabForecast = document.getElementById('js-heat-forecast-val');
-    if (heatTabForecast) heatTabForecast.innerText = "+" + genFlux.toFixed(1) + " Flux";
+    if (heatTabForecast) {
+        const net = genFlux - (window.mechaState.projectedCooling || 0);
+        heatTabForecast.innerText = (net > 0 ? "+" : "") + net.toFixed(1) + " Flux";
+        heatTabForecast.style.color = (net > window.mechaState.baseFluxPoolMax) ? "var(--danger)" : "var(--primary)";
+    }
 
     const breakdown = document.getElementById('js-forecast-breakdown');
     if (breakdown) {
@@ -282,21 +309,21 @@ window.updateForecastDisplays = function() {
             breakdown.appendChild(div);
         });
     }
-    
+
     const bar = document.getElementById('js-forecast-bar');
     if (bar) {
         const maxF = window.mechaState.baseFluxPoolMax;
         bar.style.width = Math.min(100, (genFlux / maxF) * 100) + "%";
         bar.style.backgroundColor = genFlux > maxF ? "var(--danger)" : "var(--primary)";
     }
-    
+
     const heatBar = document.getElementById('js-heat-forecast-bar');
     if (heatBar) {
         const maxF = window.mechaState.baseFluxPoolMax;
         heatBar.style.width = Math.min(100, (genFlux / maxF) * 100) + "%";
         heatBar.style.backgroundColor = genFlux > maxF ? "var(--danger)" : "var(--primary)";
     }
-    
+
     const warning = document.getElementById('js-overheat-warning');
     if (warning) warning.innerHTML = genFlux > window.mechaState.baseFluxPoolMax ? '<p style="color: var(--danger); font-size: 0.7em; margin-top: 10px; font-style: italic;">OVERHEAT RISK</p>' : '';
 
@@ -305,16 +332,16 @@ window.updateForecastDisplays = function() {
 
     const outText = document.getElementById('js-energy-output');
     if (outText) outText.innerText = energyOutput.toFixed(1);
-    
+
     const demText = document.getElementById('js-energy-demand');
     if (demText) demText.innerText = energyDemand.toFixed(1);
 }
 
-window.commitTurn = function() {
+window.commitTurn = function () {
     console.log('DEBUG: commitTurn() called');
     const url = '/mecha_commit_turn/' + window.mechaState.identifier;
     const data = JSON.stringify(window.mechaState.pending);
-    
+
     return fetch(url, {
         method: 'POST',
         body: data,
@@ -329,7 +356,7 @@ window.commitTurn = function() {
     });
 }
 
-window.onLoadoutChange = function(el) {
+window.onLoadoutChange = function (el) {
     window.mechaState.pending.loadout = el.value;
     window.updateNextTurnBreakdown();
 }
@@ -338,7 +365,7 @@ function getCsrfToken() {
     return document.querySelector('meta[name="csrf-token"]')?.content || '';
 }
 
-window.switchTab = function(tabId, el) {
+window.switchTab = function (tabId, el) {
     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
     el.classList.add('active');
     document.querySelectorAll('.view-panel').forEach(panel => panel.classList.remove('active'));
@@ -361,11 +388,95 @@ window.switchTab = function(tabId, el) {
     }
 }
 
-window.makelabels = function() {
+window.onSystemScroll = function (ev, b64Name) {
+    ev.preventDefault();
+    const sys = window.mechaState.systems[b64Name];
+    if (!sys || sys.type !== 'heat') return;
+
+    const delta = ev.deltaY < 0 ? 1 : -1;
+    let currentVal = window.mechaState.pending.heat[b64Name] !== undefined ? window.mechaState.pending.heat[b64Name] : sys.current;
+
+    let newVal = currentVal + delta;
+    newVal = Math.max(0, Math.min(sys.capacity, newVal));
+
+    const slider = document.querySelector(`#system-${b64Name} .cyber-slider`);
+    if (slider) {
+        slider.value = newVal;
+        window.onHeatSliderInput(slider, b64Name);
+    }
+}
+
+window.onSystemCardClick = function (ev, b64Name) {
+    if (ev.target.tagName === 'BUTTON' || ev.target.tagName === 'INPUT' || ev.target.tagName === 'A') return;
+
+    const sys = window.mechaState.systems[b64Name];
+    if (!sys || sys.type !== 'heat') return;
+
+    let currentVal = window.mechaState.pending.heat[b64Name] !== undefined ? window.mechaState.pending.heat[b64Name] : sys.current;
+    let newVal = (currentVal === 0) ? sys.capacity : 0;
+
+    const slider = document.querySelector(`#system-${b64Name} .cyber-slider`);
+    if (slider) {
+        slider.value = newVal;
+        window.onHeatSliderInput(slider, b64Name);
+    }
+}
+
+window.initDragHandlers = function () {
+    document.querySelectorAll('.system-card').forEach(card => {
+        const b64 = card.id.replace('system-', '');
+        const sys = window.mechaState.systems[b64];
+        card.onmousedown = null;
+        if (!sys || sys.type !== 'heat') return;
+
+        let isDragging = false;
+        let startY = 0;
+        let startVal = 0;
+
+        card.onmousedown = ev => {
+            if (ev.target.tagName === 'BUTTON' || ev.target.tagName === 'INPUT' || ev.target.tagName === 'A') return;
+            isDragging = true;
+            startY = ev.clientY;
+            startVal = window.mechaState.pending.heat[b64] !== undefined ? window.mechaState.pending.heat[b64] : sys.current;
+            card.style.cursor = 'ns-resize';
+        };
+
+        const moveHandler = ev => {
+            if (!isDragging) return;
+            const dy = startY - ev.clientY;
+            const sensitivity = sys.capacity / 200;
+            let newVal = startVal + (dy * sensitivity);
+            newVal = Math.max(0, Math.min(sys.capacity, newVal));
+            const slider = card.querySelector('.cyber-slider');
+            if (slider) {
+                slider.value = newVal;
+                window.onHeatSliderInput(slider, b64);
+            }
+        };
+
+        const upHandler = () => {
+            if (isDragging) {
+                isDragging = false;
+                card.style.cursor = 'default';
+                window.removeEventListener('mousemove', moveHandler);
+                window.removeEventListener('mouseup', upHandler);
+            }
+        };
+        window.addEventListener('mousemove', moveHandler);
+        window.addEventListener('mouseup', upHandler);
+    });
+}
+
+// --- ORIGINAL CYBERLABELS PHYSICS ENGINE ---
+let nodes = [];
+const mouse = { x: 0, y: 0, active: false };
+
+window.makelabels = function () {
     const elements = [...document.querySelectorAll("[data-cyberlabel]")];
-    const nodes = [];
+    nodes = [];
     const containers = new Set();
     elements.forEach(el => containers.add(el.parentElement));
+
     containers.forEach(container => {
         container.classList.add("hoverparent");
         let svgLayer = container.querySelector(".cyber-svg-layer");
@@ -383,11 +494,12 @@ window.makelabels = function() {
             });
             container.appendChild(svgLayer);
         } else {
-            svgLayer.innerHTML = ""; 
+            svgLayer.innerHTML = "";
         }
         container.querySelectorAll(".cyber-label").forEach(l => l.remove());
         const segments = elements.filter(el => el.parentElement === container);
         const containerRect = container.getBoundingClientRect();
+
         segments.forEach((el, i) => {
             const fill = parseFloat(getComputedStyle(el).getPropertyValue('--fill')) || 0;
             if (fill === 0) return;
@@ -409,85 +521,117 @@ window.makelabels = function() {
                 x: cx + (Math.random() - 0.5) * 50,
                 y: cy + (Math.random() - 0.5) * 50,
                 vx: 0, vy: 0,
-                w: 0, h: 0 
+                w: 0, h: 0
             });
         });
     });
-    
-    function applyForces() {
-        for (let i = 0; i < nodes.length; i++) {
-            const n1 = nodes[i];
-            for (let j = i + 1; j < nodes.length; j++) {
-                const n2 = nodes[j];
-                if (n1.container !== n2.container) continue;
-                const dx = n2.x - n1.x;
-                const dy = n2.y - n1.y;
-                const distSq = dx * dx + dy * dy;
-                const dist = Math.sqrt(distSq);
-                if (dist < 200) {
-                    const force = 6000 / Math.max(distSq, 1600);
-                    const fx = (dx / (dist || 1)) * force;
-                    const fy = (dy / (dist || 1)) * force;
-                    n1.vx -= fx; n1.vy -= fy;
-                    n2.vx += fx; n2.vy += fy;
-                }
-            }
-        }
-        for (let node of nodes) {
-            const dx = node.x - node.cx;
-            const dy = node.y - node.cy;
-            const distSq = dx * dx + dy * dy;
-            const dist = Math.sqrt(distSq);
-            if (dist < 150) {
-                const force = 10000 / Math.max(distSq, 400);
-                node.vx += (dx / (dist || 1)) * force;
-                node.vy += (dy / (dist || 1)) * force;
-            }
-            const cRect = node.container.getBoundingClientRect();
-            if (node.x < 15) node.vx += (15 - node.x) * 0.5;
-            if (node.x + node.w > cRect.width - 15) node.vx -= (node.x + node.w - (cRect.width - 15)) * 0.5;
-            node.vx += (node.cx - node.x) * 0.012;
-            node.vy += (node.cy - node.y) * 0.012;
-            node.vx *= 0.6;
-            node.vy *= 0.6;
-            node.x += node.vx;
-            node.y += node.vy;
-        }
-    }
-
-    function render() {
-        for (let node of nodes) {
-            if (!node.label) continue;
-            const w = node.label.offsetWidth;
-            const h = node.label.offsetHeight;
-            node.w = w; node.h = h;
-            const centerX = node.x + w / 2;
-            const centerY = node.y + h / 2;
-            const dx = node.cx - centerX;
-            const dy = node.cy - centerY;
-            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-            const ex = centerX + (dx / dist) * (w / 2);
-            const ey = centerY + (dy / dist) * (h / 2);
-            node.label.style.transform = `translate(${node.x}px, ${node.y}px)`;
-            node.line.setAttribute("x1", ex);
-            node.line.setAttribute("y1", ey);
-            node.line.setAttribute("x2", node.cx);
-            node.line.setAttribute("y2", node.cy);
-            node.dot.setAttribute("cx", centerX);
-            node.dot.setAttribute("cy", centerY);
-        }
-    }
-
-    function tick() {
-        applyForces();
-        render();
-        requestAnimationFrame(tick);
-    }
-    tick();
 }
 
+function applyForces() {
+    // Label Repulsion
+    for (let i = 0; i < nodes.length; i++) {
+        const n1 = nodes[i];
+        for (let j = i + 1; j < nodes.length; j++) {
+            const n2 = nodes[j];
+            if (n1.container !== n2.container) continue;
+            const dx = n2.x - n1.x;
+            const dy = n2.y - n1.y;
+            const distSq = dx * dx + dy * dy;
+            const dist = Math.sqrt(distSq);
+            if (dist < 200) {
+                const force = 6000 / Math.max(distSq, 1600);
+                const fx = (dx / (dist || 1)) * force;
+                const fy = (dy / (dist || 1)) * force;
+                n1.vx -= fx; n1.vy -= fy;
+                n2.vx += fx; n2.vy += fy;
+            }
+        }
+    }
+    // Target and Other forces
+    for (let node of nodes) {
+        const dx = node.x - node.cx;
+        const dy = node.y - node.cy;
+        const distSq = dx * dx + dy * dy;
+        const dist = Math.sqrt(distSq);
+        if (dist < 150) {
+            const force = 10000 / Math.max(distSq, 400);
+            node.vx += (dx / (dist || 1)) * force;
+            node.vy += (dy / (dist || 1)) * force;
+        }
+
+        // Mouse Repulsion
+        if (mouse.active) {
+            const cRect = node.container.getBoundingClientRect();
+            const mx = mouse.x - cRect.left;
+            const my = mouse.y - cRect.top;
+            const mdx = node.x - mx;
+            const mdy = node.y - my;
+            const mdistSq = mdx * mdx + mdy * mdy;
+            if (mdistSq < 10000) {
+                const mdist = Math.sqrt(mdistSq);
+                const mforce = 5000 / Math.max(mdistSq, 100);
+                node.vx += (mdx / (mdist || 1)) * mforce;
+                node.vy += (mdy / (mdist || 1)) * mforce;
+            }
+        }
+
+        const cRect = node.container.getBoundingClientRect();
+        if (node.x < 15) node.vx += (15 - node.x) * 0.5;
+        if (node.x + node.w > cRect.width - 15) node.vx -= (node.x + node.w - (cRect.width - 15)) * 0.5;
+        node.vx += (node.cx - node.x) * 0.012;
+        node.vy += (node.cy - node.y) * 0.012;
+        node.vx *= 0.6;
+        node.vy *= 0.6;
+        node.x += node.vx;
+        node.y += node.vy;
+    }
+}
+
+function updatePositions() {
+    let moved = false;
+    for (let node of nodes) {
+        if (Math.abs(node.vx) > 0.05 || Math.abs(node.vy) > 0.05) moved = true;
+    }
+    return moved;
+}
+
+function render() {
+    for (let node of nodes) {
+        if (!node.label) continue;
+        const w = node.label.offsetWidth;
+        const h = node.label.offsetHeight;
+        node.w = w; node.h = h;
+        const centerX = node.x + w / 2;
+        const centerY = node.y + h / 2;
+        const dx = node.cx - centerX;
+        const dy = node.cy - centerY;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const ex = centerX + (dx / dist) * (w / 2);
+        const ey = centerY + (dy / dist) * (h / 2);
+        node.label.style.transform = `translate(${node.x}px, ${node.y}px)`;
+        node.line.setAttribute("x1", ex);
+        node.line.setAttribute("y1", ey);
+        node.line.setAttribute("x2", node.cx);
+        node.line.setAttribute("y2", node.cy);
+        node.dot.setAttribute("cx", centerX);
+        node.dot.setAttribute("cy", centerY);
+    }
+}
+
+function tick() {
+    applyForces();
+    if (updatePositions()) render();
+    requestAnimationFrame(tick);
+}
+
+document.addEventListener("mousemove", (e) => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+    mouse.active = true;
+});
+document.addEventListener("mouseleave", () => { mouse.active = false; });
+
 window.addEventListener('resize', () => {
-    // Refresh labels on resize
     window.makelabels();
 });
 
@@ -496,9 +640,10 @@ window.addEventListener('DOMContentLoaded', () => {
         setTimeout(window.makelabels, 100);
     });
     window.makelabels();
+    tick();
 });
 
-window.init_speed_graph = function(root = document) {
+window.init_speed_graph = function (root = document) {
     const svg = root.querySelector("#speed-graph");
     if (!svg) return;
     const cursor = svg.querySelector("#cursor-line");
@@ -535,21 +680,27 @@ window.init_speed_graph = function(root = document) {
             const v = v0 + (v1 - v0) * (t - k0) / (k1 - k0);
             out.push(`${name}: ${v.toFixed(2)}`);
         });
-        tooltip.setAttribute("transform", `translate(${c.x + 12},${c.y - 4})`);
+        const tx = c.x + 160 > svg.viewBox.baseVal.width ? c.x - 190 : c.x + 10;
+        const ty = c.y - 80 < 0 ? c.y + 10 : c.y - 80;
+        tooltip.setAttribute("transform", `translate(${tx},${ty})`);
         tooltip.setAttribute("visibility", "visible");
-        title.textContent = `t = ${t.toFixed(2)} s`;
+        title.textContent = `Time: ${t.toFixed(2)}s`;
         value.innerHTML = "";
         out.forEach((line, i) => {
             const tsp = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
-            tsp.setAttribute("x", 12); tsp.setAttribute("dy", "1.2em");
+            tsp.setAttribute("x", 15); tsp.setAttribute("dy", "1.4em");
             tsp.textContent = line; value.appendChild(tsp);
         });
     };
     svg.onmouseleave = () => { tooltip.setAttribute("visibility", "hidden"); cursor.setAttribute("visibility", "hidden"); };
     svg.querySelectorAll(".legend-item").forEach(label => {
         label.onclick = () => {
-            const g = label.closest(".curve-group");
-            g.classList.toggle("hidden"); g.classList.toggle("active");
+            const name = label.dataset.name;
+            const g = svg.querySelector(`.curve-group[data-name="${name}"]`);
+            if (g) {
+                g.classList.toggle("hidden");
+                label.style.opacity = g.classList.contains("hidden") ? "0.3" : "1";
+            }
         };
     });
 }

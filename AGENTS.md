@@ -27,33 +27,39 @@ The project uses `uv` for dependency management.
 ### Server Lifecycle Management
 
 - **NEVER** use `kill` (especially `kill $!`). You have proven incompetent at using it safely.
-- **Explicit Cleanup**: Before starting the server, check for and stop any existing instances using only port-based tools.
-  - Mandatory: `fuser -k 5000/tcp` (kills whatever is on the port).
+- **Explicit Cleanup**: Before starting the server, check for and stop any existing instances using only port-based
+  tools.
+    - Mandatory: `fuser -k 5000/tcp` (kills whatever is on the port).
 - **Verify Death**: Ensure the port is free before binding a new instance to avoid "Address already in use" errors.
 
 ### Human Intervention Protocol
 
-- **Emotional/Cognitive Triggers**: If a thought of "this is frustrating" or "this is confusing" occurs, or if you feel you are stuck in a loop, **STOP IMMEDIATELY** and ask the human for intervention.
-- **The 3-Strike Rule**: If you make 3 subsequent attempts to fix the same error and fail, do not keep trying. Stop and ask for help.
-- **Stagnation**: If a situation doesn't seem to change despite your edits (e.g., the same error keeps occurring), suspect a stale server or environment issue and ask for guidance.
-- **Token Conservation**: Prefer asking a targeted question over burning tokens on speculative "fixes" that have a low probability of success.
+- **Emotional/Cognitive Triggers**: If a thought of "this is frustrating" or "this is confusing" occurs, or if you feel
+  you are stuck in a loop, **STOP IMMEDIATELY** and ask the human for intervention.
+- **The 3-Strike Rule**: If you make 3 subsequent attempts to fix the same error and fail, do not keep trying. Stop and
+  ask for help.
+- **Stagnation**: If a situation doesn't seem to change despite your edits (e.g., the same error keeps occurring),
+  suspect a stale server or environment issue and ask for guidance.
+- **Token Conservation**: Prefer asking a targeted question over burning tokens on speculative "fixes" that have a low
+  probability of success.
 
-### Mecha Loadout Conventions
+## Component-Specific Documentation
 
-- **Loadout Definitions**: Loadouts in the mecha Markdown file should explicitly list all systems to be enabled, including **Energy** systems (reactors). Systems not listed are disabled upon loadout application.
-- **Order**: List reactors at the beginning of the loadout string for clarity.
-- **Ephemeral State**: The `Enabled` status in the systems tables is treated as ephemeral. It is cleared during saving to Markdown to avoid cluttering the base sheet with encounter state.
-- **Initial State**: New encounters automatically apply the "Default" loadout at Turn 0. Ensure a "Default" loadout is defined or allowed to be auto-generated (including all systems).
+For tasks involving specific systems, consult their dedicated design documents:
+
+- **Mecha Sheet**: See [MECHA_DESIGN.md](MECHA_DESIGN.md) for UI/UX guardrails, architecture, and state management rules.
 
 ## Code Style Guidelines
 
 ### Scope & Atomicity (The "No Sidequests" Rule)
 
-- **Atomic Tasks**: Only modify the exact lines/files necessary to fulfill the user's specific request for the current step.
-- **Strict Scope Locking**: Any changes, fixes (even typos), or improvements that are not specifically requested in the current step and signed off on by the user **MUST NOT** be implemented. 
-- **Registry of Improvements**: Instead of implementing unrequested changes, append them to `todo.md` (or the current plan's `.md` file) and present them to the human for future consideration.
+- **Atomic Tasks**: Only modify the exact lines/files necessary to fulfill the user's specific request for the current
+  step.
+- **Strict Scope Locking**: Any changes, fixes (even typos), or improvements that are not specifically requested in the
+  current step and signed off on by the user **MUST NOT** be implemented.
+- **Registry of Improvements**: Instead of implementing unrequested changes, append them to `todo.md` (or the current
+  plan's `.md` file) and present them to the human for future consideration.
 - **Minimize Churn**: Avoid large-scale renames or structural changes unless they are the primary goal of the task.
-
 
 ### Type Hinting & Casts
 
@@ -78,7 +84,14 @@ Organize imports into three groups:
 - **Clean Templates**: Avoid deep nesting and redundant divs. Use semantic HTML.
 - **CSS**: Keep `.css` files clean and professional. Avoid "cheap" looking elements like emojis or unnecessary
   animations. Use pre-defined css variables where possible, and ask before introducing new ones or using a non-variable
-  color
+  color.
+- **Theme Integrity**: Always use `color-mix(in srgb, var(--variable), transparent X%)` for transparency. Never use 
+  hardcoded `rgb()` or `rgba()` values as they break theme adaptability.
+- **Hover Transitions**: Avoid layout shifts when elements expand on hover. Prefer `translate` or `scale` to 
+  visually "lift" or expand elements. If height/margin must change, ensure it is anchored or offset (e.g., `translate`) 
+  to prevent pushing surrounding content.
+- **Style Audits**: Before adding new rules, search the stylesheet for existing definitions of the same class or 
+  duplicate functionality to prevent CSS bloat and conflicting rendering.
 
 ## Architecture & Patterns
 
@@ -92,7 +105,8 @@ Organize imports into three groups:
 2. **Implement**: Follow the "Plan → Approve → Execute" workflow.
 3. **Type Safety**: Ensure all new code is fully type-hinted without relying on casts.
 4. **Verify**:
-   - Run the server and use `curl` or `webfetch` to verify rendering and HTMX endpoints.
-   - Run all available tests: `uv run pytest`. This includes logic tests and Playwright UI tests.
+    - Run the server and use `curl` or `webfetch` to verify rendering and HTMX endpoints.
+    - Run all available tests: `uv run pytest`. This includes logic tests and Playwright UI tests.
 5. **Cleanliness**: Check for LSP errors and run pre-commit hooks: `pre-commit run --all-files`.
-6. **Git**: Stage all relevant work for the current phase. **DO NOT** commit autonomously unless explicitly requested by the user.
+6. **Git**: Stage all relevant work for the current phase. **DO NOT** commit autonomously unless explicitly requested by
+   the user.

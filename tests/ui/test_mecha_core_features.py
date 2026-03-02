@@ -14,7 +14,7 @@ def setup_mecha(page: Page):
 
     page.goto("https://localhost:5000/sheet/mechtest")
     # Clean encounter
-    page.click("text=OVERVIEW")
+    page.click("text=DASHBOARD")
     page.wait_for_selector('#overview-ui button:has-text("NEW")', state="visible")
     page.locator('#overview-ui button:has-text("NEW")').click()
     page.wait_for_load_state("networkidle")
@@ -39,7 +39,7 @@ def dismiss_overheat_modal(page: Page):
 
 def test_speed_target_pending(page: Page):
     # Switch to Movement tab
-    page.click("text=MOVEMENT")
+    page.click("text=DASHBOARD")
 
     # Set target speed
     slider = page.locator("input[name='speed']")
@@ -55,7 +55,7 @@ def test_speed_target_pending(page: Page):
 
 def test_undo_redo_playback(page: Page):
     # 1. Apply Cool loadout
-    page.click("text=OVERVIEW")
+    page.click("text=DASHBOARD")
     page.locator("select[name='loadout']").select_option("Cool")
 
     # 2. Advance to Turn 2 (we are at 1)
@@ -66,7 +66,7 @@ def test_undo_redo_playback(page: Page):
     dismiss_overheat_modal(page)
 
     # 3. Advance to Turn 3
-    page.click("text=MOVEMENT")
+    page.click("text=DASHBOARD")
     page.locator("input[name='speed']").fill("20")
     page.locator("input[name='speed']").dispatch_event("input")
     page.click("text=NEXT TURN")
@@ -75,9 +75,7 @@ def test_undo_redo_playback(page: Page):
     page.wait_for_load_state("networkidle")
 
     # Verify turn is 3
-    expect(page.locator(".nav-item:has-text('NEXT TURN')")).to_contain_text(
-        "Turn: 3", use_inner_text=True
-    )
+    expect(page.locator("#status-turn")).to_contain_text("3", use_inner_text=True)
 
     # 4. Undo Turn 3
     page.click("text=TIMELINE")
@@ -85,9 +83,7 @@ def test_undo_redo_playback(page: Page):
     page.wait_for_url("**/sheet/mechtest")
 
     # Verify turn is back to 2
-    expect(page.locator(".nav-item:has-text('NEXT TURN')")).to_contain_text(
-        "Turn: 2", use_inner_text=True
-    )
+    expect(page.locator("#status-turn")).to_contain_text("2", use_inner_text=True)
 
 
 def test_restore_state(page: Page):
@@ -114,15 +110,14 @@ def test_restore_state(page: Page):
     page.locator(
         ".timeline-turn:has-text('TURN 2') button:has-text('JUMP TO HERE')"
     ).click()
+    page.wait_for_timeout(1000)
 
     # Wait for the reload and turn update
     page.wait_for_url("**/sheet/mechtest")
     page.wait_for_load_state("networkidle")
 
     # Verify turn is back to 2
-    expect(page.locator(".nav-item:has-text('NEXT TURN')")).to_contain_text(
-        "Turn: 2", use_inner_text=True
-    )
+    expect(page.locator("#status-turn")).to_contain_text("2", use_inner_text=True)
 
 
 def test_pending_undo(page: Page):
@@ -133,19 +128,19 @@ def test_pending_undo(page: Page):
     page.wait_for_load_state("networkidle")
 
     # 2. Add some pending changes
-    page.click("text=MOVEMENT")
+    page.click("text=DASHBOARD")
     slider = page.locator("input[name='speed']")
     slider.fill("50")
     slider.dispatch_event("input")
 
-    page.click(".nav-item:has-text('HEAT')")
-    # Wait for the view-heat to be visible
-    page.wait_for_selector("#view-heat.active", state="visible")
+    page.click("text=THERMAL & POWER")
+    # Wait for the view-thermal to be visible
+    page.wait_for_selector("#view-thermal.active", state="visible")
 
     # Wait for system cards to load (they are hx-get="load")
-    page.wait_for_selector("#view-heat .system-card", state="visible", timeout=10000)
+    page.wait_for_selector("#view-thermal .system-card", state="visible", timeout=10000)
 
-    vent_card = page.locator("#view-heat .system-card:has-text('Vent')")
+    vent_card = page.locator("#view-thermal .system-card:has-text('Vent')")
     expect(vent_card).to_be_visible()
 
     vent_slider = vent_card.locator("input[type='range']")
@@ -158,7 +153,7 @@ def test_pending_undo(page: Page):
         "Set Target Speed to 50.0 km/h"
     )
     expect(page.locator("#pending-changes-list")).to_contain_text(
-        "Assign 5.0 total heat to Vent"
+        "Set Vent charge to 5.0"
     )
 
     # 3. Remove latest (Heat)
@@ -169,13 +164,13 @@ def test_pending_undo(page: Page):
         "Set Target Speed to 50.0 km/h"
     )
     expect(page.locator("#pending-changes-list")).not_to_contain_text(
-        "Assign 5.0 total heat to Vent"
+        "Set Vent charge to 5.0"
     )
 
 
 def test_loadout_application(page: Page):
     # 1. Switch to FuelConserving loadout
-    page.click("text=OVERVIEW")
+    page.click("text=DASHBOARD")
     page.locator("select[name='loadout']").select_option("FuelConserving")
 
     # 2. Check Next Turn tab
@@ -187,7 +182,7 @@ def test_loadout_application(page: Page):
 
 def test_new_encounter_naming(page: Page):
     # 1. Apply loadout to change name
-    page.click("text=OVERVIEW")
+    page.click("text=DASHBOARD")
     page.locator("select[name='loadout']").select_option("FuelConserving")
     page.click("text=NEXT TURN")
     page.evaluate("window.commitTurn()")
