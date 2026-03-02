@@ -183,7 +183,7 @@ def editentries(x=None):
         try:
             x = int(x)
             cur = db.execute(
-                "SELECT author, title, text, id, tags " "FROM entries WHERE id == ?",
+                "SELECT author, title, text, id, tags FROM entries WHERE id == ?",
                 [x],
             )
             entry = [
@@ -204,7 +204,7 @@ def editentries(x=None):
             return add_entry()
 
         cur = db.execute(
-            "SELECT author, title, text, id, tags " "FROM entries WHERE id == ?",
+            "SELECT author, title, text, id, tags FROM entries WHERE id == ?",
             [int(request.form["id"])],
         )
         entry = [
@@ -386,12 +386,6 @@ def menu_oldsheets():
     return render_template(
         "sheets/oldsheets.html", oldsheets=oldsheets, xpdiffs=xpdiffs
     )
-
-
-@views.route("/chat/")
-def chatsite():
-    checklogin()
-    return render_template("base/chat.html")
 
 
 @views.route("/showoldsheets/<x>")

@@ -41,23 +41,20 @@
 
             let topButton = document.getElementById("TopButton");
             if (topButton != null) {
-                window.onscroll = function () {
-                    scrollFunction()
+                topButton.onclick = function() {
+                    window.scrollTo({top: 0, behavior: 'smooth'});
                 };
 
-                function topFunction() {
-                    document.body.scrollTop = 0;
-                    document.documentElement.scrollTop = 0;
-                }
-
-                topButton.onclick = topFunction;
-
-                function scrollFunction() {
-                    if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
-                        topButton.classList.add("show");
-                    } else {
-                        topButton.classList.remove("show");
-                    }
+                let tracker = document.getElementById("scroll-tracker");
+                if (tracker) {
+                    let observer = new IntersectionObserver((entries) => {
+                        if (entries[0].isIntersecting) {
+                            topButton.classList.remove("show");
+                        } else {
+                            topButton.classList.add("show");
+                        }
+                    });
+                    observer.observe(tracker);
                 }
             }
 
@@ -66,6 +63,7 @@
     {% block head %}{% endblock %}
 </head>
 <body>
+<div id="scroll-tracker" style="position: absolute; top: 0; left: 0; height: 200px; width: 1px; pointer-events: none;"></div>
 <div id="page_complete" class="page">
     {% block pagetitle %}
         <h1><a href={{ url_for("views.show_entries") }}>NOSFERATU NETWORK</a></h1>
@@ -82,7 +80,7 @@
                     {%- endblock -%}
                     <a class="textbtn metanav" href="{{ url_for("wiki.wikipage", page="index") }}">WIKI</a>
                     <a class="textbtn metanav" href="{{ url_for("views.charsheet") }}">SHEET</a>
-                    <a class="textbtn metanav" href="{{ url_for("views.chatsite") }}">CHAT</a>
+                    <a class="textbtn metanav" href="{{ url_for("socks.chatsite") }}">CHAT</a>
                     <a class="textbtn metanav"
                        href="{{ url_for("views.show_user_profile",username=session.user) }}">{{ session.user }}</a>
                     <a class="textbtn metanav" href="{{ url_for("views.logout") }}">LOG&nbsp;OUT</a>

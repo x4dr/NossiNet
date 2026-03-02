@@ -1,9 +1,13 @@
+from dotenv import load_dotenv
+
 import logging.config
 
 import Data
 from NossiSite import views, extra, webhook, helpers, chat, socks, wiki, sheets
 from NossiSite.base import app
 from gamepack.WikiPage import WikiPage, start_savequeue
+
+load_dotenv()
 
 logconf = Data.handle("logging_config.conf")
 logging.config.fileConfig(logconf, disable_existing_loggers=False)
@@ -41,7 +45,7 @@ if __name__ == "__main__":
         host="127.0.0.1",
         debug=True,
         port=port,
-        use_reloader=False,
+        use_reloader=True,
         threaded=True,
         ssl_context=("cert.pem", "key.pem") if not test else None,
     )

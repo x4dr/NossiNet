@@ -1,24 +1,41 @@
 {% extends "base/layout.html" %}
 {% block head %}
     <meta name="htmx-config" content='{"useTemplateFragments":"true"}'>
-    <script>
-        document.addEventListener("htmx:wsAfterMessage", function (event) {
-            const chatbox = document.getElementById("chatbox");
-            chatbox.scrollTop = chatbox.scrollHeight;
-
-            document.querySelectorAll(".timestamp").forEach(function (element) {
-                const date = new Date(element.innerText);
-                element.outerHTML = date.getHours().toString().padStart(2, "0") + ":" + date.getMinutes().toString().padStart(2, "0") + ":" + date.getSeconds().toString().padStart(2, "0");
-            });
-        });
-        document.addEventListener("htmx:wsAfterSend", function (event) {
-            document.getElementById("message_data").value = "";
-        });
-
-    </script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename='chat.css') }}?v={{ restart_id }}">
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+    <script src="{{ url_for("static", filename='chat.js') }}?v={{ restart_id }}"></script>
 {% endblock %}
 {% block body %}
-    <div id="wrapper" hx-ext="ws" ws-connect="/chatupdates">
+    <div id="wrapper" hx-ext="ws" ws-connect="/ws-chatupdates">
+        {% if livekit_available %}
+            <div id="livekit-start" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <input type="text" id="room-code-input" class="dark" placeholder="Room Code (leave empty for random)"
+                       style="flex-grow: 1; padding: 10px;">
+                <button id="join-video-btn" class="dark" style="padding: 10px; cursor: pointer; white-space: nowrap;">
+                    Join
+                    Video Call
+                </button>
+            </div>
+        {% else %}
+            <div style="margin-bottom: 2px; padding: 0; color: var(--tertiary-color); text-align: center; font-style: italic; font-size: 0.5em;">
+                Call functions unavailable
+            </div>
+        {% endif %}
+        <div id="livekit-wrapper">
+            <div id="room-info"
+                 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 10px; background: var(--midground-color); border-radius: 8px;">
+                <div><strong>Room:</strong> <span id="current-room-name"></span></div>
+                <div><strong>Participants:</strong> <span id="participant-count">0</span></div>
+            </div>
+            <div id="participant-list"
+                 style="margin-bottom: 10px; display: flex; gap: 10px; flex-wrap: wrap; padding: 10px; background: var(--midground-color); border-radius: 8px; font-size: 14px;"></div>
+            <div id="livekit-container"></div>
+            <div class="controls">
+                <button id="toggle-mic-btn" class="dark">Mute Mic</button>
+                <button id="toggle-cam-btn" class="dark">Start Camera</button>
+                <button id="leave-video-btn" class="dark">Leave Call</button>
+            </div>
+        </div>
         <div id="inner" style="width: 100%;">
             <div id="chatbox" class="chatbox"></div>
         </div>

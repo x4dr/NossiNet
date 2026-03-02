@@ -275,19 +275,6 @@ input:focus-visible {
     border-bottom: 1px solid var(--background-color);
 }
 
-.chatbox {
-    position: relative;
-    width: 95%;
-    text-align: left;
-    margin-bottom: 25px;
-    padding: 10px;
-    background: var(--background-color);
-    height: 320px;
-    white-space: pre-wrap;
-    border: 1px solid var(--primary-color);
-    overflow: auto;
-}
-
 .heading {
     font-size: 24px;
     border: 1px solid var(--tertiary-color);
