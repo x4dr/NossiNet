@@ -1,4 +1,5 @@
-from collections import defaultdict
+import re
+import logging
 from pathlib import Path
 from datetime import datetime
 from typing import cast, Tuple, Any, Optional, Dict
@@ -29,6 +30,8 @@ from gamepack.WikiPage import WikiPage
 from gamepack.endworld import Mecha
 from NossiSite.renderers import render_sheet
 from NossiSite.mecha_history import MechaEncounterManager
+
+log = logging.getLogger(__name__)
 
 
 def add_pending_event(m: str, event: Dict[str, Any]):
@@ -130,11 +133,11 @@ lm = LocalMarkdown()
 views = Blueprint("sheets", __name__)
 
 
-@views.route("/debug/session")
-def debug_session():
-    from flask import current_app
-
-    return jsonify({"session_id": current_app.config.get("SESSION_ID", "not set")})
+def sanitize(text: str) -> str:
+    """Allows only letters, numbers, parentheses, commas, plus, minus, and spaces."""
+    if not text:
+        return ""
+    return re.sub(r"[^a-zA-Z0-9(),+\-\s]", "", text)
 
 
 ordinals = [
@@ -457,14 +460,17 @@ def handle_chargen():
 
 @views.route("/doroll", methods=["POST"])
 def doroll():
-    checklogin()
+    if not session.get("logged_in"):
+        return (
+            jsonify({"status": "error", "message": "unauthorized"}),
+            401,
+        )
     ul = Userlist()
     username = session.get("user")
-    if not username:
-        abort(401)
     u = ul.loaduserbyname(username)
     if not u:
-        abort(404)
+        return jsonify({"status": "error", "message": "user not found"}), 404
+
     configchar = u.config("character_sheet", None)
     if not configchar:
         return (
@@ -476,28 +482,34 @@ def doroll():
     if not m_sheet or not isinstance(m_sheet.char, FenCharacter):
         return jsonify({"status": "error", "message": "no valid character sheet"}), 404
 
+    wh = chat.data.get("webhook")
+    if not wh:
+        return (
+            jsonify({"status": "error", "message": "no discord webhook configured"}),
+            503,
+        )
+
     c = m_sheet.char
-    vals = defaultdict(int)
     data = request.get_json() or []
 
-    # Build components in order: Stat1, Stat2 + Mod @5 R
-    stats = [p for p in data if isinstance(p, dict) and p.get("type") == "stat"]
-    reroll = next(
-        (p for p in data if isinstance(p, dict) and p.get("type") == "reroll"), None
-    )
-
     # labels of stats to look up
-    stat_labels = [s.get("label", "") for s in stats]
-    for cat in c.Categories.values():
-        for item in stat_labels:
+    stat_labels = {
+        p.get("label", "")
+        for p in data
+        if isinstance(p, dict) and p.get("type") == "stat"
+    }
+    vals = {}
+    if stat_labels:
+        for cat in c.Categories.values():
             for val_type in cat.keys():
-                if item in cat[val_type]:
-                    vals[item] = int(cat[val_type][item])
+                category_data = cat[val_type]
+                for item in stat_labels:
+                    if item in category_data:
+                        vals[item] = int(category_data[item])
 
-    if not stats:
+    if not data:
         return jsonify({"status": "error", "message": "no valid selection"}), 400
 
-    wh = chat.data.get("webhook")
     # Build components in order as provided in the payload
     labels = []
     values = []
@@ -506,8 +518,8 @@ def doroll():
         if not isinstance(entry, dict):
             continue
 
-        # Skip reroll in main loop, we add it at the end
-        if entry.get("type") == "reroll":
+        etype = entry.get("type")
+        if etype == "reroll":
             continue
 
         label = entry.get("label", "")
@@ -517,10 +529,15 @@ def doroll():
         # If this is not the first item, prepend the joiner
         prefix = ""
         if i > 0 and joiner:
-            prefix = joiner + " "
+            if joiner == ",":
+                prefix = ", "
+            elif joiner == "+":
+                prefix = " + "
+            else:
+                prefix = joiner + " "
 
         # Labels line
-        labels.append(f"{prefix}{label}")
+        labels.append(f"{prefix}{sanitize(label)}")
 
         # Values line
         # If it's a stat from the sheet, use its actual value. Otherwise use the raw value.
@@ -528,20 +545,33 @@ def doroll():
         if label in vals:
             val_to_use = str(vals[label])
 
-        values.append(f"{prefix}{val_to_use}")
+        values.append(f"{prefix}{sanitize(val_to_use)}")
 
     labels.append("@5")
     values.append("@5")
 
+    # Handle reroll if present
+    reroll = next(
+        (p for p in data if isinstance(p, dict) and p.get("type") == "reroll"), None
+    )
     if reroll:
-        labels.append("R" + reroll.get("val", "0"))
-        values.append("R" + reroll.get("val", "0"))
+        rv = reroll.get("val", "0")
+        labels.append(" R" + sanitize(rv))
+        values.append(" R" + sanitize(rv))
 
     message_data = {
         "content": "".join(labels) + "\n" + "".join(values),
         "username": session["user"],
     }
-    requests.post(wh, json=message_data)
+    try:
+        response = requests.post(wh, json=message_data, timeout=5)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        log.error(f"Discord webhook failed: {e}")
+        return (
+            jsonify({"status": "error", "message": "failed to send to discord"}),
+            502,
+        )
 
     return jsonify({"status": "ok"})
 

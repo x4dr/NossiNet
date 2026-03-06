@@ -338,7 +338,6 @@ h2 {
     background-color: var(--secondary-color);
 }
 
-.skill.checkcircle {}
 
 
 .preview-box {
@@ -513,6 +512,33 @@ h2 {
     background: var(--secondary-color);
     color: var(--background-color);
     box-shadow: 0 0 20px var(--secondary-color);
+}
+
+.lightning-btn.nav-lightning {
+    width: 50px !important;
+    height: 50px !important;
+    padding: 5px !important;
+    margin-right: 15px;
+    display: inline-flex !important;
+    vertical-align: middle;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid var(--secondary-color) !important;
+    background: var(--background-color);
+}
+
+.lightning-btn.nav-lightning svg {
+    width: 30px;
+    height: 30px;
+}
+
+.lightning-btn.nav-lightning:hover {
+    transform: scale(1.2);
+    border-color: var(--secondary-color) !important;
+}
+
+.lightning-btn.nav-lightning.active {
+    background: var(--secondary-color) !important;
+    color: var(--background-color) !important;
 }
 
 .numeric-overrides,

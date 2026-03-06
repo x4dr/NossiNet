@@ -187,22 +187,30 @@ window.addEventListener("load", () => {
         if (sendButton) sendButton.style.display = 'none';
         fadeLightning = true;
         fadeStart = performance.now();
+        lightningToggle.classList.remove('active');
+        numericOverrides.classList.remove('active');
+        document.body.classList.remove('lightning-active');
+        document.querySelectorAll('.connectable').forEach(e => e.classList.remove('pulsing'));
+    }
+
+    function toggleLightningMode(force) {
+        lightningMode = (force !== undefined) ? force : !lightningMode;
+        lightningToggle.classList.toggle('active', lightningMode);
+        numericOverrides.classList.toggle('active', lightningMode);
+        document.body.classList.toggle('lightning-active', lightningMode);
+
+        document.querySelectorAll('.connectable').forEach(el => {
+            el.classList.toggle('pulsing', lightningMode);
+        });
+
+        if (!lightningMode) {
+            resetLightningMode();
+        }
     }
 
     if (lightningToggle) {
         lightningToggle.addEventListener('click', () => {
-            lightningMode = !lightningMode;
-            lightningToggle.classList.toggle('active', lightningMode);
-            numericOverrides.classList.toggle('active', lightningMode);
-            document.body.classList.toggle('lightning-active', lightningMode);
-
-            document.querySelectorAll('.connectable').forEach(el => {
-                el.classList.toggle('pulsing', lightningMode);
-            });
-
-            if (!lightningMode) {
-                resetLightningMode();
-            }
+            toggleLightningMode();
         });
     }
 
@@ -248,44 +256,55 @@ window.addEventListener("load", () => {
         });
     });
 
-    if (sendButton) {
-        sendButton.addEventListener('click', () => {
-            if (picked.length > 0) {
-                const payload = picked.map(p => ({
-                    type: p.type,
-                    val: p.val,
-                    label: p.label,
-                    joiner: p.joiner
-                }));
-                if (rerollSign && rerollValue) {
-                    payload.push({ type: 'reroll', val: `${rerollSign}${rerollValue}`, label: `R${rerollSign}${rerollValue}` });
-                }
-
-                fetch("/doroll", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRFToken": csrf_token
-                    },
-                    body: JSON.stringify(payload)
-                }).then(res => {
-                    if (!res.ok) return res.json().then(errData => {
-                        throw new Error(errData.message);
-                    });
-                    return res.json();
-                })
-                    .then(data => console.log("Server response:", data))
-                    .catch(err => alert("Failed: " + err.message));
-
-                resetLightningMode();
-                lightningMode = false;
-                if (lightningToggle) lightningToggle.classList.remove('active');
-                if (numericOverrides) numericOverrides.classList.remove('active');
-                document.body.classList.remove('lightning-active');
-                document.querySelectorAll('.connectable').forEach(e => e.classList.remove('pulsing'));
+    function sendLightningRoll() {
+        if (picked.length > 0) {
+            const payload = picked.map(p => ({
+                type: p.type,
+                val: p.val,
+                label: p.label,
+                joiner: p.joiner
+            }));
+            if (rerollSign && rerollValue) {
+                payload.push({ type: 'reroll', val: `${rerollSign}${rerollValue}`, label: `R${rerollSign}${rerollValue}` });
             }
-        });
+
+            fetch("/doroll", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrf_token
+                },
+                body: JSON.stringify(payload)
+            }).then(res => {
+                if (!res.ok) return res.json().then(errData => {
+                    throw new Error(errData.message);
+                });
+                return res.json();
+            })
+                .then(data => console.log("Server response:", data))
+                .catch(err => alert("Failed: " + err.message));
+
+            resetLightningMode();
+            lightningMode = false;
+        }
     }
+
+    if (sendButton) {
+        sendButton.addEventListener('click', sendLightningRoll);
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (!lightningMode) return;
+
+        if (e.code === 'Space' && picked.length > 0) {
+            e.preventDefault();
+            sendLightningRoll();
+        } else if (e.code === 'Escape') {
+            e.preventDefault();
+            resetLightningMode();
+            lightningMode = false;
+        }
+    });
 
     let fadeLightning = false;
     let fadeStart = 0;
@@ -445,8 +464,20 @@ window.addEventListener("load", () => {
 
     animate();
 
+    function getNextJoiner(index) {
+        return index === 1 ? ',' : '+';
+    }
+
     // click handler
     document.addEventListener("click", ev => {
+        const el = ev.target.closest(".connectable");
+        const isFloating = ev.target.closest(".floating-pick");
+
+        // Auto-activate on first connectable click
+        if (el && !lightningMode && !ev.target.closest('.nav-lightning')) {
+            toggleLightningMode(true);
+        }
+
         if (!lightningMode) {
             if (rerollSelector && rerollSelector.classList.contains('active')) {
                 rerollSelector.classList.remove('active');
@@ -459,27 +490,20 @@ window.addEventListener("load", () => {
             rerollSelector.classList.remove('active');
         }
 
-        const el = ev.target.closest(".connectable");
-        const isFloating = ev.target.closest(".floating-pick");
-
         if (isFloating) {
-            if (isFloating.classList.contains('reroll-pick')) {
-                rerollSign = null;
-                rerollValue = null;
-                document.querySelectorAll('.reroll-sign-btn, .reroll-val-btn').forEach(b => b.classList.remove('selected'));
-                updateSequenceUI();
-                return;
-            }
-            const label = isFloating.textContent.trim();
-            const index = picked.findIndex(p => p.label === label || p.val === label);
-            if (index !== -1) {
-                picked[index].el.classList.remove('selected');
-                picked.splice(index, 1);
-                // Correct default joiners for remaining items
+            const pickIndex = Array.from(sequenceContainer.querySelectorAll('.floating-pick')).indexOf(isFloating);
+            if (pickIndex !== -1) {
+                const item = picked[pickIndex];
+                picked.splice(pickIndex, 1);
+
+                // If no more instances of this element, remove selected class
+                if (!picked.some(p => p.el === item.el)) {
+                    item.el.classList.remove('selected');
+                }
+
+                // Correct default joiners
                 picked.forEach((p, idx) => {
-                    if (idx > 0 && !p.joiner) {
-                        p.joiner = (idx === 1) ? ',' : '+';
-                    }
+                    if (idx > 0) p.joiner = getNextJoiner(idx);
                 });
                 updateSequenceUI();
             }
@@ -490,31 +514,17 @@ window.addEventListener("load", () => {
 
         const type = el.dataset.type || (el.classList.contains('numeric-btn') ? 'number' : 'stat');
         const val = el.dataset.val || el.textContent.trim();
-        const label = el.textContent.trim();
+        const label = el.dataset.label || el.textContent.trim();
 
-        if (!el.classList.contains("selected")) {
-            el.classList.add("selected");
-            const newItem = { el, type, val, label };
-            if (picked.length > 0) {
-                newItem.joiner = (picked.length === 1) ? ',' : '+';
-            }
-            newItem.isNew = true;
-            picked.push(newItem);
-            updateSequenceUI();
-        } else {
-            const index = picked.findIndex(p => p.el === el);
-            if (index !== -1) {
-                el.classList.remove("selected");
-                picked.splice(index, 1);
-                // Correct default joiners for remaining items
-                picked.forEach((p, idx) => {
-                    if (idx > 0 && !p.joiner) {
-                        p.joiner = (idx === 1) ? ',' : '+';
-                    }
-                });
-                updateSequenceUI();
-            }
+        // Always add new item (allowing duplicates)
+        el.classList.add("selected");
+        const newItem = { el, type, val, label };
+        if (picked.length > 0) {
+            newItem.joiner = getNextJoiner(picked.length);
         }
+        newItem.isNew = true;
+        picked.push(newItem);
+        updateSequenceUI();
     });
 
     document.addEventListener('dblclick', ev => {
