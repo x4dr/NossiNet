@@ -11,7 +11,7 @@ window.addEventListener("load", () => {
                 lock_edit_content = true
                 const path = (ref.dataset.path ?? "").split("|");
                 const percentage = ref.dataset.percentage || "";
-                let req = {"context": con, "path": path, "percentage": percentage}
+                let req = { "context": con, "path": path, "percentage": percentage }
                 req.type = ref.dataset["type"] || "text";
                 const response = await fetch("/live_edit", {
                     method: 'POST',
@@ -25,7 +25,7 @@ window.addEventListener("load", () => {
                 try {
                     reply = await response.json(); //extract JSON from the http response
                 } catch (e) {
-                    reply = {"data": ""}
+                    reply = { "data": "" }
                     alert("Internal Server Error!")
                 }
                 lock_edit_content = false;
@@ -144,7 +144,11 @@ window.addEventListener("load", () => {
             anchor.ondblclick = get_edit_content(context, anchor)
         }
     }
-    let picked = [];
+
+    let picked = []; // Each item: { el, type, val, label, joiner }
+    let rerollSign = null; // "+" or "-"
+    let rerollValue = null; // "1" to "5"
+
     const svg = document.getElementById("conn-svg");
     const NS = "http://www.w3.org/2000/svg";
 
@@ -154,11 +158,141 @@ window.addEventListener("load", () => {
         mouseY = ev.clientY;
     });
 
+    let lightningMode = false;
+    const lightningToggle = document.getElementById('lightning-toggle');
+    const numericOverrides = document.getElementById('numeric-overrides');
+    const sequenceContainer = document.getElementById('lightning-sequence');
+    const sendButton = document.getElementById('lightning-send');
+
+    // Reroll elements
+    const rerollWrapper = document.getElementById('reroll-wrapper');
+    const rerollToggle = document.getElementById('reroll-toggle');
+    const rerollSelector = document.getElementById('reroll-selector');
+    const rerollSignGroup = document.getElementById('reroll-sign-group');
+    const rerollValGroup = document.getElementById('reroll-val-group');
+
+    function resetLightningMode() {
+        picked.forEach(item => item.el.classList.remove('selected'));
+        picked = [];
+        rerollSign = null;
+        rerollValue = null;
+        document.querySelectorAll('.reroll-sign-btn, .reroll-val-btn').forEach(b => b.classList.remove('selected'));
+        if (rerollSelector) {
+            rerollSelector.classList.remove('active');
+            rerollSignGroup.style.display = 'flex';
+            rerollValGroup.style.display = 'none';
+        }
+        if (rerollWrapper) rerollWrapper.style.display = 'none';
+        if (sequenceContainer) sequenceContainer.innerHTML = '';
+        if (sendButton) sendButton.style.display = 'none';
+        fadeLightning = true;
+        fadeStart = performance.now();
+    }
+
+    if (lightningToggle) {
+        lightningToggle.addEventListener('click', () => {
+            lightningMode = !lightningMode;
+            lightningToggle.classList.toggle('active', lightningMode);
+            numericOverrides.classList.toggle('active', lightningMode);
+            document.body.classList.toggle('lightning-active', lightningMode);
+
+            document.querySelectorAll('.connectable').forEach(el => {
+                el.classList.toggle('pulsing', lightningMode);
+            });
+
+            if (!lightningMode) {
+                resetLightningMode();
+            }
+        });
+    }
+
+    if (rerollToggle) {
+        rerollToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (rerollSign || rerollValue) {
+                rerollSign = null;
+                rerollValue = null;
+                document.querySelectorAll('.reroll-sign-btn, .reroll-val-btn').forEach(b => b.classList.remove('selected'));
+                rerollSelector.classList.remove('active');
+                rerollToggle.classList.remove('active');
+                updateSequenceUI();
+            } else {
+                rerollSelector.classList.toggle('active');
+                rerollToggle.classList.toggle('active', rerollSelector.classList.contains('active'));
+                rerollSignGroup.style.display = 'flex';
+                rerollValGroup.style.display = 'none';
+            }
+        });
+    }
+
+    // Handles sign selection
+    document.querySelectorAll('.reroll-sign-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            rerollSign = btn.dataset.sign;
+            document.querySelectorAll('.reroll-sign-btn').forEach(b => b.classList.toggle('selected', b === btn));
+            rerollSignGroup.style.display = 'none';
+            rerollValGroup.style.display = 'flex';
+        });
+    });
+
+    // Handles value selection
+    document.querySelectorAll('.reroll-val-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            rerollValue = btn.dataset.val;
+            document.querySelectorAll('.reroll-val-btn').forEach(b => b.classList.toggle('selected', b === btn));
+            rerollSelector.classList.remove('active');
+            rerollToggle.classList.remove('active');
+            updateSequenceUI();
+        });
+    });
+
+    if (sendButton) {
+        sendButton.addEventListener('click', () => {
+            if (picked.length > 0) {
+                const payload = picked.map(p => ({
+                    type: p.type,
+                    val: p.val,
+                    label: p.label,
+                    joiner: p.joiner
+                }));
+                if (rerollSign && rerollValue) {
+                    payload.push({ type: 'reroll', val: `${rerollSign}${rerollValue}`, label: `R${rerollSign}${rerollValue}` });
+                }
+
+                fetch("/doroll", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrf_token
+                    },
+                    body: JSON.stringify(payload)
+                }).then(res => {
+                    if (!res.ok) return res.json().then(errData => {
+                        throw new Error(errData.message);
+                    });
+                    return res.json();
+                })
+                    .then(data => console.log("Server response:", data))
+                    .catch(err => alert("Failed: " + err.message));
+
+                resetLightningMode();
+                lightningMode = false;
+                if (lightningToggle) lightningToggle.classList.remove('active');
+                if (numericOverrides) numericOverrides.classList.remove('active');
+                document.body.classList.remove('lightning-active');
+                document.querySelectorAll('.connectable').forEach(e => e.classList.remove('pulsing'));
+            }
+        });
+    }
+
     let fadeLightning = false;
     let fadeStart = 0;
 
-// utilities
+    // utilities
     function center(el) {
+        if (!el) return [0, 0];
         const r = el.getBoundingClientRect();
         return [(r.left + r.right) / 2, (r.top + r.bottom) / 2];
     }
@@ -189,29 +323,100 @@ window.addEventListener("load", () => {
         return poly;
     }
 
-// animate all lightning lines
-    function animate() {
-        svg.innerHTML = ""; // clear previous frame
+    function updateSequenceUI() {
+        if (!sequenceContainer) return;
+        sequenceContainer.innerHTML = '';
 
+        picked.forEach((p, i) => {
+            if (i > 0) {
+                const sep = document.createElement('span');
+                sep.className = 'sequence-separator interactive';
+                sep.textContent = p.joiner;
+                sep.onclick = (e) => {
+                    e.stopPropagation();
+                    p.joiner = p.joiner === ',' ? '+' : ',';
+                    updateSequenceUI();
+                };
+                sequenceContainer.appendChild(sep);
+                p.prevSeparator = sep;
+            }
+            const pickDiv = document.createElement('div');
+            pickDiv.className = 'floating-pick';
+            if (p.isNew) {
+                pickDiv.classList.add('animate-in');
+                delete p.isNew;
+            }
+            pickDiv.textContent = p.label;
+            sequenceContainer.appendChild(pickDiv);
+            p.floatingEl = pickDiv;
+        });
 
-        const positions = picked.map(center);
-        if (!fadeLightning && picked.length < 3 && picked.length > 0) {
-            positions.push([mouseX, mouseY]);
+        // Pending Separator
+        if (picked.length > 0) {
+            const pendingSep = document.createElement('span');
+            pendingSep.className = 'sequence-separator interactive pending';
+            // Default pending joiner depends on what would be the next index
+            const defaultJoiner = (picked.length === 1) ? ',' : '+';
+            pendingSep.textContent = defaultJoiner;
+
+            pendingSep.onclick = (e) => {
+                e.stopPropagation();
+                // Toggle text visually
+                pendingSep.textContent = (pendingSep.textContent === ',') ? '+' : ',';
+            };
+
+            sequenceContainer.appendChild(pendingSep);
+            sequenceContainer.pendingSeparator = pendingSep;
         }
 
-        // draw lines between consecutive positions
-        for (let i = 0; i < positions.length - 1; i++) {
-            const [x1, y1] = positions[i];
-            const [x2, y2] = positions[i + 1];
-            svg.appendChild(createLightningPolyline(x1, y1, x2, y2));
-
-            // if this is the last segment and we have 3 points, draw a second parallel line
-            if (i === 1 && positions.length === 3) {
-                svg.appendChild(createLightningPolyline(x1, y1, x2, y2));
+        // Reroll part (Unified Flow)
+        if (rerollSign && rerollValue) {
+            if (rerollToggle) {
+                rerollToggle.textContent = `R${rerollSign}${rerollValue}`;
+                rerollToggle.classList.add('selected-reroll');
+                rerollToggle.classList.add('active');
+            }
+        } else {
+            if (rerollToggle) {
+                rerollToggle.textContent = 'R';
+                rerollToggle.classList.remove('selected-reroll');
+                rerollToggle.classList.remove('active');
             }
         }
 
-        // animate flicker by slightly randomizing points
+        const hasSelections = picked.length > 0;
+        if (sendButton) sendButton.style.display = hasSelections ? 'flex' : 'none';
+        if (rerollWrapper) rerollWrapper.style.display = hasSelections ? 'block' : 'none';
+    }
+
+    // animate all lightning lines
+    function animate() {
+        svg.innerHTML = ""; // clear previous frame
+
+        if (lightningMode) {
+            // Direct connections: Sheet/Numbers -> Sequence Picks
+            picked.forEach((p) => {
+                if (p.el && p.floatingEl) {
+                    const p1 = center(p.el);
+                    const p2 = center(p.floatingEl);
+                    svg.appendChild(createLightningPolyline(p1[0], p1[1], p2[0], p2[1]));
+                    svg.appendChild(createLightningPolyline(p1[0], p1[1], p2[0], p2[1]));
+                }
+            });
+
+            // Connection to mouse (only the last element in the bar)
+            if (!fadeLightning) {
+                if (sequenceContainer.pendingSeparator) {
+                    targetPoint = center(sequenceContainer.pendingSeparator);
+                } else {
+                    targetPoint = center(lightningToggle);
+                }
+
+                svg.appendChild(createLightningPolyline(targetPoint[0], targetPoint[1], mouseX, mouseY));
+            }
+        }
+
+        // animate flicker
         svg.querySelectorAll("polyline").forEach(poly => {
             const pts = poly.getAttribute("points").split(" ").map(pt => pt.split(",").map(Number));
             for (let i = 1; i < pts.length - 1; i++) {
@@ -225,14 +430,13 @@ window.addEventListener("load", () => {
         if (fadeLightning) {
             const now = performance.now();
             const elapsed = now - fadeStart;
-            let opacity = 1 - elapsed / 1000;
+            let opacity = 1 - elapsed / 500;
             if (opacity < 0) opacity = 0;
             svg.style.opacity = opacity;
             if (opacity === 0) {
                 svg.innerHTML = "";
                 svg.style.opacity = 1;
                 fadeLightning = false;
-                picked = [];
             }
         }
 
@@ -241,45 +445,83 @@ window.addEventListener("load", () => {
 
     animate();
 
-// click handler
+    // click handler
     document.addEventListener("click", ev => {
-        const el = ev.target.closest(".connectable");
-        if (!el) return;
-
-        if (!el.classList.contains("selected")) {
-            if (picked.length === 3) return;
-            el.classList.add("selected");
-            picked.push(el);
-        } else {
-            el.classList.remove("selected");
-            picked = picked.filter(x => x !== el);
+        if (!lightningMode) {
+            if (rerollSelector && rerollSelector.classList.contains('active')) {
+                rerollSelector.classList.remove('active');
+            }
             return;
         }
 
-        if (picked.length === 3) {
-            // send selection to server
-            fetch("/doroll", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": csrf_token
-                },
-                body: JSON.stringify(picked.map(x => x.textContent.trim()))
-            }).then(res => {
-                if (!res.ok) return res.json().then(errData => {
-                    throw new Error(errData.message);
+        // Close reroll popup if clicked outside
+        if (rerollSelector && rerollSelector.classList.contains('active') && !ev.target.closest('#reroll-wrapper')) {
+            rerollSelector.classList.remove('active');
+        }
+
+        const el = ev.target.closest(".connectable");
+        const isFloating = ev.target.closest(".floating-pick");
+
+        if (isFloating) {
+            if (isFloating.classList.contains('reroll-pick')) {
+                rerollSign = null;
+                rerollValue = null;
+                document.querySelectorAll('.reroll-sign-btn, .reroll-val-btn').forEach(b => b.classList.remove('selected'));
+                updateSequenceUI();
+                return;
+            }
+            const label = isFloating.textContent.trim();
+            const index = picked.findIndex(p => p.label === label || p.val === label);
+            if (index !== -1) {
+                picked[index].el.classList.remove('selected');
+                picked.splice(index, 1);
+                // Correct default joiners for remaining items
+                picked.forEach((p, idx) => {
+                    if (idx > 0 && !p.joiner) {
+                        p.joiner = (idx === 1) ? ',' : '+';
+                    }
                 });
-                return res.json();
-            })
-                .then(data => console.log("Server response:", data))
-                .catch(err => alert("Failed: " + err.message));
+                updateSequenceUI();
+            }
+            return;
+        }
 
-            fadeLightning = true;
-            fadeStart = performance.now();
+        if (!el) return;
 
-            picked.forEach(x => x.classList.remove("selected"));
+        const type = el.dataset.type || (el.classList.contains('numeric-btn') ? 'number' : 'stat');
+        const val = el.dataset.val || el.textContent.trim();
+        const label = el.textContent.trim();
+
+        if (!el.classList.contains("selected")) {
+            el.classList.add("selected");
+            const newItem = { el, type, val, label };
+            if (picked.length > 0) {
+                newItem.joiner = (picked.length === 1) ? ',' : '+';
+            }
+            newItem.isNew = true;
+            picked.push(newItem);
+            updateSequenceUI();
+        } else {
+            const index = picked.findIndex(p => p.el === el);
+            if (index !== -1) {
+                el.classList.remove("selected");
+                picked.splice(index, 1);
+                // Correct default joiners for remaining items
+                picked.forEach((p, idx) => {
+                    if (idx > 0 && !p.joiner) {
+                        p.joiner = (idx === 1) ? ',' : '+';
+                    }
+                });
+                updateSequenceUI();
+            }
         }
     });
 
+    document.addEventListener('dblclick', ev => {
+        if (lightningMode) {
+            ev.preventDefault();
+            ev.stopPropagation();
+        }
+    }, true);
 
-})
+});

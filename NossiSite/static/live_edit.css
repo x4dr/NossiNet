@@ -1,4 +1,3 @@
-
 .editable:empty::before {
     content: "_";
     opacity: 0;
@@ -17,7 +16,7 @@
 
 .editable::before {
     box-shadow: inset 0 0 10px -5px var(--shade-color),
-    inset 0 0 10px -5px var(--shade-color);
+        inset 0 0 10px -5px var(--shade-color);
     transition: 1s;
     position: absolute;
     top: 100%;
@@ -29,9 +28,9 @@
     pointer-events: none;
 }
 
-.editable:hover::before {
+body:not(.lightning-active) .editable:hover::before {
     box-shadow: inset 10px 10px 10px -5px var(--highlight-color),
-    inset -10px -10px 10px -5px var(--highlight-color);
+        inset -10px -10px 10px -5px var(--highlight-color);
     transition: 0.1s;
     position: absolute;
     top: 100%;
@@ -93,8 +92,10 @@
 
 .editfield form {
     display: flex;
-    flex-direction: column; /* Stack items vertically */
-    align-items: center; /* Center items horizontally */
+    flex-direction: column;
+    /* Stack items vertically */
+    align-items: center;
+    /* Center items horizontally */
     gap: 10px;
 
 }
@@ -106,7 +107,8 @@
     z-index: -1;
     position: fixed;
     background: black;
-    box-shadow: inset 0 0 0 1px var(--primary-color);;
+    box-shadow: inset 0 0 0 1px var(--primary-color);
+    ;
     box-sizing: border-box;
     visibility: hidden;
     display: inline-block;
@@ -151,8 +153,4 @@
 .message {
     background: var(--background-color);
     color: var(--primary-color)
-}
-
-.connectable.selected {
-    outline: 3px solid var(--accent-color)
 }

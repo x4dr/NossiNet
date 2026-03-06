@@ -477,32 +477,68 @@ def doroll():
         return jsonify({"status": "error", "message": "no valid character sheet"}), 404
 
     c = m_sheet.char
-    attributes = ["0"]
-    skills = ["0", "0"]
     vals = defaultdict(int)
     data = request.get_json() or []
+
+    # Build components in order: Stat1, Stat2 + Mod @5 R
+    stats = [p for p in data if isinstance(p, dict) and p.get("type") == "stat"]
+    reroll = next(
+        (p for p in data if isinstance(p, dict) and p.get("type") == "reroll"), None
+    )
+
+    # labels of stats to look up
+    stat_labels = [s.get("label", "") for s in stats]
     for cat in c.Categories.values():
-        for item in data:
-            for stat_index, val_type in enumerate(cat.keys()):
+        for item in stat_labels:
+            for val_type in cat.keys():
                 if item in cat[val_type]:
-                    if stat_index:  # second type is skills
-                        skills.append(item)
-                    else:  # first type is attributes
-                        attributes.append(item)
                     vals[item] = int(cat[val_type][item])
-    wh = chat.data.get("webhook")
-    if not wh:
-        return (
-            jsonify(
-                {"status": "error", "message": "webhook not working on the server"}
-            ),
-            500,
-        )
-    if not (int(vals[attributes[-1]]) + int(vals[skills[-1]]) + int(vals[skills[-2]])):
+
+    if not stats:
         return jsonify({"status": "error", "message": "no valid selection"}), 400
+
+    wh = chat.data.get("webhook")
+    # Build components in order as provided in the payload
+    labels = []
+    values = []
+
+    for i, entry in enumerate(data):
+        if not isinstance(entry, dict):
+            continue
+
+        # Skip reroll in main loop, we add it at the end
+        if entry.get("type") == "reroll":
+            continue
+
+        label = entry.get("label", "")
+        raw_val = entry.get("val", "0")
+        joiner = entry.get("joiner", "")  # , or +
+
+        # If this is not the first item, prepend the joiner
+        prefix = ""
+        if i > 0 and joiner:
+            prefix = joiner + " "
+
+        # Labels line
+        labels.append(f"{prefix}{label}")
+
+        # Values line
+        # If it's a stat from the sheet, use its actual value. Otherwise use the raw value.
+        val_to_use = raw_val
+        if label in vals:
+            val_to_use = str(vals[label])
+
+        values.append(f"{prefix}{val_to_use}")
+
+    labels.append("@5")
+    values.append("@5")
+
+    if reroll:
+        labels.append("R" + reroll.get("val", "0"))
+        values.append("R" + reroll.get("val", "0"))
+
     message_data = {
-        "content": f"{attributes[-1]}, {skills[-1]} {skills[-2]}@5\n"
-        f"{vals[attributes[-1]]}, {vals[skills[-1]]} {vals[skills[-2]]}@5",
+        "content": "".join(labels) + "\n" + "".join(values),
         "username": session["user"],
     }
     requests.post(wh, json=message_data)
@@ -1159,7 +1195,7 @@ def mech_heat_ui(m):
         for sys in getattr(mech, cat).values():
             if sys.is_active() or sys.is_booting():
                 h = sys.amount * (
-                    sys.heats.values() | sum if hasattr(sys, "heats") else sys.heat
+                    sum(sys.heats.values()) if hasattr(sys, "heats") else sys.heat
                 )
                 if h > 0:
                     producers.append({"name": sys.name, "amount": h})
