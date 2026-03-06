@@ -65,33 +65,28 @@ def update(response):
 @views.route("/index/<path:path>")
 @views.route("/index/")
 def wiki_index(path="."):
+    root = WikiPage.wikipath()
     r = WikiPage.wikindex()
-    path = WikiPage.wikipath() / path
-    if (
-        not (WikiPage.wikipath() / path).exists()
-        or not (WikiPage.wikipath() / path).is_dir()
-    ):
+    requested_path = root / path
+    if not requested_path.exists() or not requested_path.is_dir():
         abort(404)
+
     return render_template(
         "wiki/wikindex.html",
         current_path=(
-            path.relative_to(WikiPage.wikipath())
-            if path != WikiPage.wikipath()
-            else None
+            requested_path.relative_to(root) if requested_path != root else None
         ),
-        parent=path.relative_to(WikiPage.wikipath()).parent,
+        parent=requested_path.relative_to(root).parent,
         subdirs=sorted(
             [
                 x.stem
-                for x in (WikiPage.wikipath() / path).iterdir()
+                for x in requested_path.iterdir()
                 if x.is_dir()  # only show directories
                 and not x.stem.startswith(".")  # hide hidden directories
             ]
         ),
         entries=[
-            x.relative_to(WikiPage.wikipath()).with_suffix("")
-            for x in r
-            if x.parent == path
+            x.relative_to(root).with_suffix("") for x in r if x.parent == requested_path
         ],
         tags=WikiPage.gettags(),
     )

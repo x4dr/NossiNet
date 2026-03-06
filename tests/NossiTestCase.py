@@ -5,7 +5,7 @@ from flask import Flask, url_for, template_rendered
 from flask_wtf import CSRFProtect
 
 from Data import close_db
-from NossiSite import views, wiki, extra, webhook, helpers
+from NossiSite import views, extra, webhook, helpers
 from gamepack.WikiPage import WikiPage
 
 
@@ -19,8 +19,10 @@ class NossiTestCase(unittest.TestCase):
         }
 
     def setUp(self):
-        if WikiPage._wikipath is None:
-            WikiPage.set_wikipath(Path("."))
+        # Thoroughly reset wikipath
+
+        WikiPage._wikipath = None
+        WikiPage.set_wikipath(Path("."))
 
         close_db()  # ensure no DB is open
         self.app = self.create_app()
@@ -37,6 +39,8 @@ class NossiTestCase(unittest.TestCase):
         self._templates.append(template.name)
 
     def create_app(self):
+        from NossiSite import wiki
+
         app = Flask(__name__)
         app.register_blueprint(views.views)
         app.register_blueprint(wiki.views)

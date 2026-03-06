@@ -23,6 +23,7 @@ class TestWiki(NossiTestCase):
     @mock.patch.object(Data, "DATABASE", "index.db")
     def test_index(self):
         try:
+            WikiPage._wikipath = Path(".")
             c = self.register_login()
             with self.app.app_context():
                 rv = c.get(url_for("wiki.wiki_index"))
@@ -83,27 +84,41 @@ class TestWiki(NossiTestCase):
         self.assertIn('<h2 id="visible-again">visible again</h2>', processed)
 
     def test_mecha(self):
-        WikiPage._wikipath = Path(__file__).parent  # point wiki to test folder
-        wikipage = WikiPage.load(Path(__file__).parent / "testmecha.md", False)
-        mecha_sheet = Mecha.from_mdobj(wikipage.md(True))
-        self.assertIsNotNone(mecha_sheet.total_mass)
-        self.assertTrue(hasattr(mecha_sheet, "speeds"))
+        root = Path(__file__).parent.absolute()
+        with mock.patch.object(WikiPage, "_wikipath", root):
+            wikipage = WikiPage.load(Path("testmecha.md"), False)
+            self.assertIsNotNone(wikipage)
+            if wikipage:
+                mecha_sheet = Mecha.from_mdobj(wikipage.md(True))
+                self.assertIsNotNone(mecha_sheet.total_mass)
+                self.assertTrue(hasattr(mecha_sheet, "speeds"))
 
-        # update page and save
-        wikipage.body = mecha_sheet.to_mdobj().to_md()
-        wikipage.tags = ["mech"]
-        wikipage.live = False
-        wikipage.save_overwrite("", "")
+                # update page and save
+                wikipage.body = mecha_sheet.to_mdobj().to_md()
+                wikipage.tags = {"mech"}
+                wikipage.live = False
+                wikipage.save_overwrite("", "")
 
     def test_speed(self):
-        WikiPage._wikipath = Path("~/wiki").expanduser()
-        wikipage = WikiPage.load(Path("endworld/mecha/systems/movement.md"))
-        systems = wikipage.md().children["Movement Systems"].tables[0]
-        for i in range(2, len(systems.rows)):
-            if systems.rows[i][2].strip() == "":
-                continue
-            data = systems.row_as_dict(i)
-            m = MovementSystem(data["Type"], data)
-            m.amount = 1
-            # test some speeds calculation
-            self.assertIsNotNone(m.speeds(5))
+        root = Path("~/wiki").expanduser().absolute()
+        with mock.patch.object(WikiPage, "_wikipath", root):
+            wikipage = WikiPage.load(Path("endworld/mecha/systems/movement.md"))
+            self.assertIsNotNone(wikipage)
+            if wikipage:
+                # The structure is # Movement Systems -> ## Systems
+                systems = (
+                    wikipage.md()
+                    .children["Movement Systems"]
+                    .children["Systems"]
+                    .tables[0]
+                )
+                for i in range(2, len(systems.rows)):
+                    if systems.rows[i][2].strip() == "":
+                        continue
+                    data = systems.row_as_dict(i)
+                    # The table might have "Type" or "type" or the first column
+                    m_type = data.get("Type") or data.get("type") or systems.rows[i][0]
+                    m = MovementSystem(m_type, data)
+                    m.amount = 1
+                    # test some speeds calculation
+                    self.assertIsNotNone(m.speeds(5))

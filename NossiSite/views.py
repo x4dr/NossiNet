@@ -70,6 +70,8 @@ def entry_text(x):
         return {}
     db = connect_db("entrybyid")
     e = db.execute("SELECT text FROM entries WHERE id = ?", [x]).fetchone()
+    if e is None:
+        return ""
     return bleach.clean(e[0], tags=ALLOWED_TAGS)
 
 
@@ -285,8 +287,10 @@ def charsheet():
     configchar = u.config("character_sheet", None)
     if configchar:
         char = WikiCharacterSheet.load_locate(configchar)
-        if hasattr(char, "render"):
-            return char.render()
+        if char and hasattr(char, "render"):
+            res = char.render()
+            if res:
+                return res
         return redirect(url_for("sheets.sheet", c=configchar))
     return redirect(url_for("sheets.chargen"))
 

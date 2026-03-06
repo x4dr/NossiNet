@@ -26,6 +26,8 @@ def register(app: Flask = None):
     if app is None:
         app = defaultapp
 
+    app.jinja_env.globals.update(hasattr=hasattr)
+
     @app.template_filter("quoted")
     def quoted(s):
         quotedstring = re.findall("'([^']*)'", str(s))
