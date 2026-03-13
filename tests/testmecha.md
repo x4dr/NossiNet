@@ -15,13 +15,13 @@ title: testmecha
 | Rails  | 100    | 3    | 200    | 0.001  | 1000     | 3    | 10     | [ ]     |
 
 ## Energy
-|                     | Energy | Mass | Amount | Heat | Enabled |
-|-------------------|------|----|------|----|-------|
-| baseloadreactor     | 50     | 5    | 1      | 10   | [ ]     |
-| peakload stage 1    | 20     | 5    | 1      | 5    | [ ]     |
-| peakload stage 2    | 20     | 5    | 1      | 5    | [ ]     |
-| backup generator    | 15     | 5    | 1      | 2    | [ ]     |
-| emergency generator | 10     | 5    | 1      | 1    | [ ]     |
+|                     | Energy | Mass | Amount | Heat | Shutoff | Enabled |
+|-------------------|------|----|------|----|-------|-------|
+| baseloadreactor     | 50     | 5    | 1      | 10   | 0       | [ ]     |
+| peakload stage 1    | 20     | 5    | 1      | 5    | 0       | [ ]     |
+| peakload stage 2    | 20     | 5    | 1      | 5    | 0       | [ ]     |
+| backup generator    | 15     | 5    | 1      | 2    | 0       | [ ]     |
+| emergency generator | 10     | 5    | 1      | 1    | 0       | [ ]     |
 
 ## Heat
 |         | Energy | Mass | Amount | Heat | Capacity | Passive | Active | Flux | Current | Enabled |

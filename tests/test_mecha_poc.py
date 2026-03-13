@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import patch
 from gamepack.WikiPage import WikiPage
 from gamepack.endworld.Mecha import Mecha
 from NossiSite.mecha_history import MechaEncounterManager
@@ -19,14 +20,15 @@ def test_client(temp_wiki):
 
     if "sheets" not in app.blueprints:
         app.register_blueprint(sheets.views)
-    WikiPage._wikipath = temp_wiki
-    app.config["WTF_CSRF_ENABLED"] = False
-    app.config["TESTING"] = True
-    with app.test_client() as client:
-        with client.session_transaction() as sess:
-            sess["user"] = "TESTUSER"
-            sess["logged_in"] = True
-        yield client
+    WikiPage._wikipath = None
+    with patch.object(WikiPage, "_wikipath", temp_wiki):
+        app.config["WTF_CSRF_ENABLED"] = False
+        app.config["TESTING"] = True
+        with app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["user"] = "TESTUSER"
+                sess["logged_in"] = True
+            yield client
 
 
 def test_mecha_turn_property():
@@ -178,9 +180,8 @@ def test_system_library_loading(temp_wiki):
         f.write("| | Thrust | Mass |\n|---|---|---|\n| TestWheels | 500 | 5 |")
 
     # Mock wikipath
-    WikiPage._wikipath = temp_wiki
-
-    m = Mecha()
-    data = m.load_system_data("TestWheels", "Movement")
-    assert data["Thrust"] == "500"
-    assert data["Mass"] == "5"
+    with patch.object(WikiPage, "_wikipath", temp_wiki):
+        m = Mecha()
+        data = m.load_system_data("TestWheels", "Movement")
+        assert data["Thrust"] == "500"
+        assert data["Mass"] == "5"

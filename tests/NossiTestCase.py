@@ -20,7 +20,6 @@ class NossiTestCase(unittest.TestCase):
 
     def setUp(self):
         # Thoroughly reset wikipath
-
         WikiPage._wikipath = None
         WikiPage.set_wikipath(Path("."))
 
@@ -39,7 +38,10 @@ class NossiTestCase(unittest.TestCase):
         self._templates.append(template.name)
 
     def create_app(self):
-        from NossiSite import wiki
+        from unittest import mock
+
+        with mock.patch.object(WikiPage, "set_wikipath"):
+            from NossiSite import wiki
 
         app = Flask(__name__)
         app.register_blueprint(views.views)
