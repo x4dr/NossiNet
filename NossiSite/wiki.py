@@ -21,8 +21,8 @@ from flask import (
 )
 from markupsafe import Markup
 
-from NossiPack.LocalMarkdown import LocalMarkdown
 from NossiPack.User import Config
+from NossiPack.markdown import NossiMarkdownProcessor
 from NossiSite.base import log
 from NossiSite.helpers import checklogin
 from gamepack.Dice import DescriptiveError
@@ -33,7 +33,7 @@ from gamepack.WikiPage import WikiPage
 
 WikiPage.set_wikipath(Path.home() / "wiki")
 wikistamp = [0.0]
-lm = LocalMarkdown()
+nossi_markdown = NossiMarkdownProcessor()
 
 chara_objects = {}
 mdlinks = re.compile(r"<a href=\"(.*?)\".*?</a")
@@ -257,7 +257,7 @@ def wikipage(page: Optional[str] = None):
         return redirect(url_for("views.login"))
     if not raw:
         body = bleach.clean(loaded_page.body)
-        body = lm.process(body, page=page)
+        body = nossi_markdown.process(body, page=page)
         return render_template(
             "wiki/wikipage.html",
             title=loaded_page.title,
@@ -587,7 +587,7 @@ def specific(a, parse_md=None):
     else:
         article = article[article.find("\n") * hide_headline :]
     if parse_md:
-        return Markup(lm.process(article, page=a[0]))
+        return Markup(nossi_markdown.process(article, page=a[0]))
     return article
 
 
