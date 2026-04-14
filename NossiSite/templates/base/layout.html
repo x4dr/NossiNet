@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="mul" hx-ext="ws">
+<html lang="mul">
 <head>
     <meta name="viewport" content="width=device-width">
     <meta name="description" content="NosferatuNetwork by Maric
@@ -14,13 +14,55 @@
     {% endblock %}
     <link rel="stylesheet" type="text/css" href="{{ url_for('views.theme') }}?v={{ restart_id }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}?v={{ restart_id }}">
-    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js"
-            integrity="sha384-Akqfrbj/HpNVo8k11SXBb6TlBWmXXlYQrCSqEWmyKJe+hDm3Z/B2WVG4smwBkRVm"
-            crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/htmx-ext-ws@2.0.2"
-            integrity="sha384-0RHpPqZ4QLJXG/ALtieEL/G+NuAI98LYSkT9s6FgciveUhAdo/6wab5NU1tm2Bxs"
-            crossorigin="anonymous"></script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='clock.css') }}?v={{ restart_id }}">
+    <script src="{{ url_for('static', filename='js/htmx.min.js') }}?v={{ restart_id }}"></script>
+    <script src="{{ url_for('static', filename='js/sse.js') }}?v={{ restart_id }}"></script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div id="scroll-tracker" style="position: absolute; top: 0; left: 0; height: 200px; width: 1px; pointer-events: none;"></div>
+    <div id="page_complete" class="page">
+        {% block pagetitle %}
+            <h1><a href={{ url_for('views.show_entries') }}>NOSFERATU NETWORK</a></h1>
+        {% endblock %}
+        {% block metanavcomplete %}
+            <div class=metanavcontainer>
+                {% if not session.logged_in %}
+                    <a class="textbtn metanav" href="{{ url_for('wiki.wikipage', page="index") }}">wiki</a>
+                    <a class="textbtn metanav" href="{{ url_for('views.login') }}">log&nbsp;in</a>
+                    <a class="textbtn metanav" href="{{ url_for('views.register_user') }}">register</a>
+                {% else %}
+                    <div class="metanavcontainer">
+                        {%- block metanavpre -%}
+                        {%- endblock -%}
+                        <a class="textbtn metanav" href="{{ url_for('wiki.wikipage', page="index") }}">WIKI</a>
+                        <a class="textbtn metanav" href="{{ url_for('views.charsheet') }}">SHEET</a>
+                        <a class="textbtn metanav" href="{{ url_for('socks.chatsite') }}">CHAT</a>
+                        <a class="textbtn metanav"
+                           href="{{ url_for('views.show_user_profile',username=session.user) }}">{{ session.user }}</a>
+                        <a class="textbtn metanav" href="{{ url_for('views.logout') }}">LOG&nbsp;OUT</a>
 
+                    </div>
+
+                {%- endif %}
+            </div>
+            {%- block metanavpost -%}
+            {%- endblock -%}
+        {%- endblock -%}
+        {%- if error %}
+            <p class=error><strong>Error:</strong> {{ error }}{% endif %}
+        {%- for message in get_flashed_messages() %}
+            <div class=flash style="white-space: pre-wrap;" onclick="this.parentNode.removeChild(this)">{{ message }}</div>
+        {%- endfor %}
+        {%- block body %}{% endblock -%}
+    </div>
+    <div class="metanavcontainer">
+        {% if not session.logged_in %}
+            <div class="metanav"><a href="{{ url_for('views.impressum') }}">Impressum</a></div>
+        {% endif %}
+        <div class="metanav"><a href="{{ url_for('views.lightswitch', x=request.path[1:]) }}">Light Switch</a></div>
+    </div>
+    <br>
     <script type="text/javascript" charset="utf-8">
         window.addEventListener("load", () => {
             const hiders = document.getElementsByClassName('hider');
@@ -57,54 +99,7 @@
                     observer.observe(tracker);
                 }
             }
-
         });
     </script>
-    {% block head %}{% endblock %}
-</head>
-<body>
-<div id="scroll-tracker" style="position: absolute; top: 0; left: 0; height: 200px; width: 1px; pointer-events: none;"></div>
-<div id="page_complete" class="page">
-    {% block pagetitle %}
-        <h1><a href={{ url_for('views.show_entries') }}>NOSFERATU NETWORK</a></h1>
-    {% endblock %}
-    {% block metanavcomplete %}
-        <div class=metanavcontainer>
-            {% if not session.logged_in %}
-                <a class="textbtn metanav" href="{{ url_for('wiki.wikipage', page="index") }}">wiki</a>
-                <a class="textbtn metanav" href="{{ url_for('views.login') }}">log&nbsp;in</a>
-                <a class="textbtn metanav" href="{{ url_for('views.register_user') }}">register</a>
-            {% else %}
-                <div class="metanavcontainer">
-                    {%- block metanavpre -%}
-                    {%- endblock -%}
-                    <a class="textbtn metanav" href="{{ url_for('wiki.wikipage', page="index") }}">WIKI</a>
-                    <a class="textbtn metanav" href="{{ url_for('views.charsheet') }}">SHEET</a>
-                    <a class="textbtn metanav" href="{{ url_for('socks.chatsite') }}">CHAT</a>
-                    <a class="textbtn metanav"
-                       href="{{ url_for('views.show_user_profile',username=session.user) }}">{{ session.user }}</a>
-                    <a class="textbtn metanav" href="{{ url_for('views.logout') }}">LOG&nbsp;OUT</a>
-
-                </div>
-
-            {%- endif %}
-        </div>
-        {%- block metanavpost -%}
-        {%- endblock -%}
-    {%- endblock -%}
-    {%- if error %}
-        <p class=error><strong>Error:</strong> {{ error }}{% endif %}
-    {%- for message in get_flashed_messages() %}
-        <div class=flash style="white-space: pre-wrap;" onclick="this.parentNode.removeChild(this)">{{ message }}</div>
-    {%- endfor %}
-    {%- block body %}{% endblock -%}
-</div>
-<div class="metanavcontainer">
-    {% if not session.logged_in %}
-        <div class="metanav"><a href="{{ url_for('views.impressum') }}">Impressum</a></div>
-    {% endif %}
-    <div class="metanav"><a href="{{ url_for('views.lightswitch', x=request.path[1:]) }}">Light Switch</a></div>
-</div>
-<br>
 </body>
 </html>

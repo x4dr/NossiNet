@@ -61,6 +61,7 @@
     </script>
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="glitch.css") }}?v={{ restart_id }}">
     <script src="{{ url_for("static", filename="glitch.js") }}?v={{ restart_id }}"></script>
+    <script src="{{ url_for("static", filename="sse_handler.js") }}?v={{ restart_id }}"></script>
     {% for headstate in heads %}
         {{ headstate|safe }}
     {% endfor %}
@@ -96,20 +97,20 @@
     <div>
         <button id="TopButton" title="Upwards">Top</button>
     </div>
-    <div id="editfield" class="editfield">
-        <form id="editform" action="{{ url_for("wiki.live_edit") }}" method="post">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <input name="wiki" type="hidden" value="{{ wiki }}">
-            <input type="hidden" name="type" value="text">
-            <input name="original" id="original" type="hidden" value="">
-            <label for="text" class="overlay">Text to Change</label><br/><textarea class="message" name="new"
-                                                                                   id="text"></textarea>
-            <div>
-                <input type="button" class="bright " value="Close" id="closebutton">
-                <input type="submit" class="bright bottombutton" value="Overwrite">
-            </div>
+            <div id="editfield" class="editfield">
+                <form id="editform" action="{{ url_for("wiki.live_edit") }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input name="wiki" type="hidden" value="{{ wiki }}">
+                    <input type="hidden" name="type" value="text">
+                    <input name="original" id="original" type="hidden" value="">
+                    <label for="text" class="overlay">Text to Change</label><br/><textarea class="message" name="new"
+                                                                                           id="text"></textarea>
+                    <div>
+                        <button type="button" class="bright" id="closebutton">Close</button>
+                        <input type="submit" class="bright bottombutton" value="Overwrite">
+                    </div>
 
-        </form>
-    </div>
+                </form>
+            </div>
     <div class="overlay" id="overlay"></div>
 {% endblock %}

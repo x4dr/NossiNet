@@ -1,0 +1,56 @@
+:root {
+    --clock-fill-full: var(--primary-color);
+    --clock-fill-empty: var(--midground-color);
+    --clock-border: var(--background-color);
+}
+
+@property --clock-active {
+    syntax: '<number>';
+    initial-value: 0;
+    inherits: true;
+}
+
+@property --clock-total {
+    syntax: '<number>';
+    initial-value: 1;
+    inherits: true;
+}
+
+.clock-container {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    /* Gradient fill based on custom properties using defined variables */
+    background: conic-gradient(var(--clock-fill-full) calc((var(--clock-active) / var(--clock-total)) * 360deg), var(--clock-fill-empty) calc((var(--clock-active) / var(--clock-total)) * 360deg));
+    cursor: pointer;
+    border: 4px solid var(--clock-border);
+    transition: transform 0.2s ease, --clock-active 0.4s ease, --clock-total 0.4s ease;
+    overflow: hidden;
+}
+
+.clock-container:hover {
+    transform: scale(1.05);
+}
+
+.clock-ticks {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.tick {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 2px;
+    height: 50%;
+    margin-left: -1px;
+    background: var(--clock-border);
+    transform-origin: bottom center;
+}
