@@ -1,5 +1,6 @@
 {%- extends "base/layout.html" -%}
 {% block head %}
+    <script src="{{ url_for("static", filename="sse_handler.js") }}?v={{ restart_id }}"></script>
     <link rel="stylesheet" type="text/css" href="{{ url_for("views.theme") }}?v={{ restart_id }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="wiki.css") }}?v={{ restart_id }}">
     <link rel="stylesheet" type="text/css"

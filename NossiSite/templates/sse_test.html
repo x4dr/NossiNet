@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en" hx-ext="sse">
+<head>
+    <title>SSE Timer Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/htmx-ext-sse@2.2.2/sse.js"
+            integrity="sha384-fw+eTlCc7suMV/1w/7fr2/PmwElUIt5i82bi+qTiLXvjRXZ2/FkiTNA/w0MhXnGI"
+            crossorigin="anonymous"></script>
+</head>
+<body>
+    <h1>SSE Timer</h1>
+    <div id="timer" hx-ext="sse" sse-connect="/sse_test" sse-swap="message">
+        Waiting for time...
+    </div>
+</body>
+</html>
