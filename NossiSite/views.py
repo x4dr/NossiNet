@@ -145,7 +145,6 @@ def theme():
                 continue
             k, v = entry.split(":")
             t[k.strip()] = v.strip()
-
     with open(current_app.static_folder + "/base-theme.css", "r") as f:
         basetheme = f.read()
     output = ""
@@ -198,13 +197,12 @@ def editentries(x=None):
                 return render_template("base/edit_entry.html", mode="blog", entry=entry)
             else:
                 raise ValueError()
-        except (ValueError, IndexError):
+        except ValueError, IndexError:
             flash("not authorized to edit post " + str(x))
             return redirect(url_for("views.editentries"))
     if request.method == "POST":
         if request.form["id"] == "new":
             return add_entry()
-
         cur = db.execute(
             "SELECT author, title, text, id, tags FROM entries WHERE id == ?",
             [int(request.form["id"])],
@@ -346,8 +344,6 @@ def res_sheet():
 @views.route("/berlinmap")
 def berlinmap():
     return render_template("misc/map.html")
-    # return redirect(
-    # "https://www.google.com/maps/d/viewer?mid=1TH6vryHyVxv_xFjFJDXgXQegZO4")
 
 
 @views.route("/berlinmap/data.dat")
@@ -787,6 +783,6 @@ def lightswitch():
     return redirect("/")
 
 
-@views.route("/favicon.ico")
-def favicon():
-    return redirect("/static/favicon.ico")
+@views.route("/sse_test_ui")
+def sse_test_ui():
+    return render_template("sse_test.html")

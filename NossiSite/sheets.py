@@ -18,7 +18,7 @@ from flask import (
 )
 from markupsafe import Markup
 
-from NossiPack.LocalMarkdown import LocalMarkdown
+from NossiPack.markdown import NossiMarkdownProcessor
 from NossiPack.User import Config, Userlist
 from NossiSite import chat
 from NossiSite.base_ext import decode_id
@@ -129,7 +129,7 @@ def load_mecha_state(
     return m_sheet, history_mgr, encounter_id
 
 
-lm = LocalMarkdown()
+lm = NossiMarkdownProcessor()
 views = Blueprint("sheets", __name__)
 
 
@@ -716,7 +716,7 @@ def mecha_assign_heat(n, m):
                 add_pending_event(
                     m, {"type": "HEAT_ASSIGNMENT", "name": n, "amount": delta}
                 )
-        except (ValueError, TypeError):
+        except ValueError, TypeError:
             abort(400)
     elif amount is not None:
         try:
@@ -725,7 +725,7 @@ def mecha_assign_heat(n, m):
                 add_pending_event(
                     m, {"type": "HEAT_ASSIGNMENT", "name": n, "amount": delta}
                 )
-        except (ValueError, TypeError):
+        except ValueError, TypeError:
             abort(400)
 
     # Re-load state to reflect change in UI
@@ -1085,7 +1085,7 @@ def mecha_set_roll(m, s, n):
         try:
             val = int(roll)
             add_pending_event(m, {"type": "SYSTEM_ROLL", "name": n, "value": val})
-        except (ValueError, TypeError):
+        except ValueError, TypeError:
             abort(400)
 
     # Re-load state
@@ -1119,7 +1119,7 @@ def mecha_update_sector(m, name):
             if damage is not None:
                 try:
                     mech.Sectors[name]["Damage"] = int(damage)
-                except (ValueError, TypeError):
+                except ValueError, TypeError:
                     pass
             if malfunctions is not None:
                 mech.Sectors[name]["Malfunctions"] = malfunctions

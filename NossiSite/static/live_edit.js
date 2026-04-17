@@ -11,7 +11,7 @@ window.addEventListener("load", () => {
                 lock_edit_content = true
                 const path = (ref.dataset.path ?? "").split("|");
                 const percentage = ref.dataset.percentage || "";
-                let req = { "context": con, "path": path, "percentage": percentage }
+                let req = {"context": con, "path": path, "percentage": percentage}
                 req.type = ref.dataset["type"] || "text";
                 const response = await fetch("/live_edit", {
                     method: 'POST',
@@ -25,7 +25,7 @@ window.addEventListener("load", () => {
                 try {
                     reply = await response.json(); //extract JSON from the http response
                 } catch (e) {
-                    reply = { "data": "" }
+                    reply = {"data": ""}
                     alert("Internal Server Error!")
                 }
                 lock_edit_content = false;
@@ -49,7 +49,7 @@ window.addEventListener("load", () => {
         const overlay = document.getElementById("overlay");
         const textdiv = editfield.querySelector("textarea");
         const olddata = editfield.querySelector("[name='original']");
-        const closebutton = editfield.querySelector("[name='closebutton']");
+        const closebutton = editfield.querySelector("#closebutton");
         editfield.className = "editfield"
         editfield.classList.add("activeedit");
         textdiv.value = reply["data"];
@@ -73,7 +73,7 @@ window.addEventListener("load", () => {
         const overlay = document.getElementById("overlay");
         const table = editfield.querySelector("table");
         const addbutton = editfield.querySelector("[name='addtable_entry']");
-        const closebutton = editfield.querySelector("[name='closebutton']");
+        const closebutton = editfield.querySelector("#closebutton");
         const headers = reply["data"]["headers"];
         const rows = reply["data"]["rows"];
         editfield.querySelector("[name='styles']").value = reply["data"]["styles"];
@@ -265,7 +265,11 @@ window.addEventListener("load", () => {
                 joiner: p.joiner
             }));
             if (rerollSign && rerollValue) {
-                payload.push({ type: 'reroll', val: `${rerollSign}${rerollValue}`, label: `R${rerollSign}${rerollValue}` });
+                payload.push({
+                    type: 'reroll',
+                    val: `${rerollSign}${rerollValue}`,
+                    label: `R${rerollSign}${rerollValue}`
+                });
             }
 
             fetch("/doroll", {
@@ -375,8 +379,7 @@ window.addEventListener("load", () => {
             const pendingSep = document.createElement('span');
             pendingSep.className = 'sequence-separator interactive pending';
             // Default pending joiner depends on what would be the next index
-            const defaultJoiner = (picked.length === 1) ? ',' : '+';
-            pendingSep.textContent = defaultJoiner;
+            pendingSep.textContent = (picked.length === 1) ? ',' : '+';
 
             pendingSep.onclick = (e) => {
                 e.stopPropagation();
@@ -410,6 +413,7 @@ window.addEventListener("load", () => {
 
     // animate all lightning lines
     function animate() {
+        if (!svg) return;
         svg.innerHTML = ""; // clear previous frame
 
         if (lightningMode) {
@@ -518,7 +522,7 @@ window.addEventListener("load", () => {
 
         // Always add new item (allowing duplicates)
         el.classList.add("selected");
-        const newItem = { el, type, val, label };
+        const newItem = {el, type, val, label};
         if (picked.length > 0) {
             newItem.joiner = getNextJoiner(picked.length);
         }

@@ -7,10 +7,10 @@ from gamepack.FenCharacter import FenCharacter
 from gamepack.endworld.EWCharacter import EWCharacter
 from NossiSite.renderers import register_renderer
 from NossiPack.User import User
-from NossiPack.LocalMarkdown import LocalMarkdown
+from NossiPack.markdown import NossiMarkdownProcessor
 from NossiSite.sheet_helpers import infolet_filler, infolet_extractor
 
-lm = LocalMarkdown()
+lm = NossiMarkdownProcessor()
 
 
 @register_renderer(FenCharacter)

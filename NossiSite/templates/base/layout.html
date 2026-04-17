@@ -16,90 +16,90 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}?v={{ restart_id }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='clock.css') }}?v={{ restart_id }}">
     <script src="{{ url_for('static', filename='js/htmx.min.js') }}?v={{ restart_id }}"></script>
-    <script src="{{ url_for('static', filename='js/sse.js') }}?v={{ restart_id }}"></script>
     {% block head %}{% endblock %}
 </head>
 <body>
-    <div id="scroll-tracker" style="position: absolute; top: 0; left: 0; height: 200px; width: 1px; pointer-events: none;"></div>
-    <div id="page_complete" class="page">
-        {% block pagetitle %}
-            <h1><a href={{ url_for('views.show_entries') }}>NOSFERATU NETWORK</a></h1>
-        {% endblock %}
-        {% block metanavcomplete %}
-            <div class=metanavcontainer>
-                {% if not session.logged_in %}
-                    <a class="textbtn metanav" href="{{ url_for('wiki.wikipage', page="index") }}">wiki</a>
-                    <a class="textbtn metanav" href="{{ url_for('views.login') }}">log&nbsp;in</a>
-                    <a class="textbtn metanav" href="{{ url_for('views.register_user') }}">register</a>
-                {% else %}
-                    <div class="metanavcontainer">
-                        {%- block metanavpre -%}
-                        {%- endblock -%}
-                        <a class="textbtn metanav" href="{{ url_for('wiki.wikipage', page="index") }}">WIKI</a>
-                        <a class="textbtn metanav" href="{{ url_for('views.charsheet') }}">SHEET</a>
-                        <a class="textbtn metanav" href="{{ url_for('socks.chatsite') }}">CHAT</a>
-                        <a class="textbtn metanav"
-                           href="{{ url_for('views.show_user_profile',username=session.user) }}">{{ session.user }}</a>
-                        <a class="textbtn metanav" href="{{ url_for('views.logout') }}">LOG&nbsp;OUT</a>
+<div id="scroll-tracker"
+     style="position: absolute; top: 0; left: 0; height: 200px; width: 1px; pointer-events: none;"></div>
+<div id="page_complete" class="page">
+    {% block pagetitle %}
+        <h1><a href={{ url_for('views.show_entries') }}>NOSFERATU NETWORK</a></h1>
+    {% endblock %}
+    {% block metanavcomplete %}
+        <div class=metanavcontainer>
+            {% if not session.logged_in %}
+                <a class="textbtn metanav" href="{{ url_for('wiki.wikipage', page="index") }}">wiki</a>
+                <a class="textbtn metanav" href="{{ url_for('views.login') }}">log&nbsp;in</a>
+                <a class="textbtn metanav" href="{{ url_for('views.register_user') }}">register</a>
+            {% else %}
+                <div class="metanavcontainer">
+                    {%- block metanavpre -%}
+                    {%- endblock -%}
+                    <a class="textbtn metanav" href="{{ url_for('wiki.wikipage', page="index") }}">WIKI</a>
+                    <a class="textbtn metanav" href="{{ url_for('views.charsheet') }}">SHEET</a>
+                    <a class="textbtn metanav" href="{{ url_for('socks.chatsite') }}">CHAT</a>
+                    <a class="textbtn metanav"
+                       href="{{ url_for('views.show_user_profile',username=session.user) }}">{{ session.user }}</a>
+                    <a class="textbtn metanav" href="{{ url_for('views.logout') }}">LOG&nbsp;OUT</a>
 
-                    </div>
+                </div>
 
-                {%- endif %}
-            </div>
-            {%- block metanavpost -%}
-            {%- endblock -%}
+            {%- endif %}
+        </div>
+        {%- block metanavpost -%}
         {%- endblock -%}
-        {%- if error %}
-            <p class=error><strong>Error:</strong> {{ error }}{% endif %}
-        {%- for message in get_flashed_messages() %}
-            <div class=flash style="white-space: pre-wrap;" onclick="this.parentNode.removeChild(this)">{{ message }}</div>
-        {%- endfor %}
-        {%- block body %}{% endblock -%}
-    </div>
-    <div class="metanavcontainer">
-        {% if not session.logged_in %}
-            <div class="metanav"><a href="{{ url_for('views.impressum') }}">Impressum</a></div>
-        {% endif %}
-        <div class="metanav"><a href="{{ url_for('views.lightswitch', x=request.path[1:]) }}">Light Switch</a></div>
-    </div>
-    <br>
-    <script type="text/javascript" charset="utf-8">
-        window.addEventListener("load", () => {
-            const hiders = document.getElementsByClassName('hider');
-            for (let i = 0; i < hiders.length; i++) {
-                let hider = hiders[i]
-                let target = document.getElementById(hider.dataset.for)
-                hider.addEventListener("click", async () => {
-                    let cache = target.style.height;
-                    target.style.height = target.scrollHeight + "px";
-                    await new Promise(r => setTimeout(r, 100));
-                    target.classList.toggle("hiding")
-                    target.classList.toggle("nothiding")
-                    hider.classList.toggle("hider-expanded")
-                    await new Promise(r => setTimeout(r, 100));
-                    target.style.height = cache;
+    {%- endblock -%}
+    {%- if error %}
+        <p class=error><strong>Error:</strong> {{ error }}{% endif %}
+    {%- for message in get_flashed_messages() %}
+        <div class=flash style="white-space: pre-wrap;" onclick="this.parentNode.removeChild(this)">{{ message }}</div>
+    {%- endfor %}
+    {%- block body %}{% endblock -%}
+</div>
+<div class="metanavcontainer">
+    {% if not session.logged_in %}
+        <div class="metanav"><a href="{{ url_for('views.impressum') }}">Impressum</a></div>
+    {% endif %}
+    <div class="metanav"><a href="{{ url_for('views.lightswitch', x=request.path[1:]) }}">Light Switch</a></div>
+</div>
+<br>
+<script type="text/javascript" charset="utf-8">
+    window.addEventListener("load", () => {
+        const hiders = document.getElementsByClassName('hider');
+        for (let i = 0; i < hiders.length; i++) {
+            let hider = hiders[i]
+            let target = document.getElementById(hider.dataset.for)
+            hider.addEventListener("click", async () => {
+                let cache = target.style.height;
+                target.style.height = target.scrollHeight + "px";
+                await new Promise(r => setTimeout(r, 100));
+                target.classList.toggle("hiding")
+                target.classList.toggle("nothiding")
+                hider.classList.toggle("hider-expanded")
+                await new Promise(r => setTimeout(r, 100));
+                target.style.height = cache;
+            });
+        }
+
+        let topButton = document.getElementById("TopButton");
+        if (topButton != null) {
+            topButton.onclick = function () {
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            };
+
+            let tracker = document.getElementById("scroll-tracker");
+            if (tracker) {
+                let observer = new IntersectionObserver((entries) => {
+                    if (entries[0].isIntersecting) {
+                        topButton.classList.remove("show");
+                    } else {
+                        topButton.classList.add("show");
+                    }
                 });
+                observer.observe(tracker);
             }
-
-            let topButton = document.getElementById("TopButton");
-            if (topButton != null) {
-                topButton.onclick = function() {
-                    window.scrollTo({top: 0, behavior: 'smooth'});
-                };
-
-                let tracker = document.getElementById("scroll-tracker");
-                if (tracker) {
-                    let observer = new IntersectionObserver((entries) => {
-                        if (entries[0].isIntersecting) {
-                            topButton.classList.remove("show");
-                        } else {
-                            topButton.classList.add("show");
-                        }
-                    });
-                    observer.observe(tracker);
-                }
-            }
-        });
-    </script>
+        }
+    });
+</script>
 </body>
 </html>
