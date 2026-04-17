@@ -1,5 +1,4 @@
 from unittest import mock
-
 from flask import url_for
 
 import Data
@@ -7,7 +6,6 @@ from tests.NossiTestCase import NossiTestCase
 
 
 class TestViews(NossiTestCase):
-
     @mock.patch.object(Data, "DATABASE", "login.db")
     def test_login(self):
         try:

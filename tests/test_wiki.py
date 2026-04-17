@@ -1,10 +1,9 @@
 from pathlib import Path
 from unittest import mock
-
 from flask import url_for
 
 import Data
-from NossiPack.LocalMarkdown import LocalMarkdown
+from NossiPack.markdown import NossiMarkdownProcessor
 from gamepack.FenCharacter import FenCharacter
 from gamepack.Item import fenconvert, fendeconvert
 from gamepack.MDPack import search_tables, table_add, table_remove, table_row_edit
@@ -72,7 +71,7 @@ class TestWiki(NossiTestCase):
         self.assertEqual(search_tables(sut, "z", 0), "| z | whoop |\n")
 
     def test_local_markdown_hiding(self):
-        processed = LocalMarkdown().process(
+        processed = NossiMarkdownProcessor().process(
             "# thing\n"
             "## !hidden subheading\n"
             "hiddentext\n"

@@ -81,7 +81,7 @@ def test_render_htmx_fragments(test_app, mecha_instance):
             sys_category="heat",
         )
         assert "Sink" in rendered
-        assert "Storage" in rendered
+        assert "CAP" in rendered
 
         # Test energy system
         rendered = render_template(

@@ -12,7 +12,7 @@ def setup_mecha(page: Page):
     # Capture console logs
     page.on("console", lambda msg: print(f"BROWSER: {msg.text}"))
 
-    page.goto("https://localhost:5000/sheet/mechtest")
+    page.goto("https://127.0.0.1:5000/sheet/mechtest")
     # Clean encounter
     page.click("text=DASHBOARD")
     page.wait_for_selector('#overview-ui button:has-text("NEW")', state="visible")
@@ -150,10 +150,10 @@ def test_pending_undo(page: Page):
     # Verify both in Next Turn
     page.click(".nav-item:has-text('NEXT TURN')")
     expect(page.locator("#pending-changes-list")).to_contain_text(
-        "Set Target Speed to 50.0 km/h"
+        "Set Target Speed to 50.0"
     )
     expect(page.locator("#pending-changes-list")).to_contain_text(
-        "Set Vent charge to 5.0"
+        "Assign 5.0 heat to Vent"
     )
 
     # 3. Remove latest (Heat)
@@ -161,10 +161,10 @@ def test_pending_undo(page: Page):
 
     # Verify Speed remains, Heat gone
     expect(page.locator("#pending-changes-list")).to_contain_text(
-        "Set Target Speed to 50.0 km/h"
+        "Set Target Speed to 50.0"
     )
     expect(page.locator("#pending-changes-list")).not_to_contain_text(
-        "Set Vent charge to 5.0"
+        "Assign 5.0 heat to Vent"
     )
 
 

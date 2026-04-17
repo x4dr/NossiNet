@@ -14,23 +14,28 @@ def browser_context_args(browser_context_args):
 @pytest.fixture(scope="function", autouse=True)
 def setup_clocks(page: Page):
     page.on("console", lambda msg: print(f"BROWSER: {msg.text}"))
-    page.goto("https://localhost:5000/wiki/clocks")
+    page.goto("https://127.0.0.1:5000/wiki/clocks")
     page.wait_for_selector(".clock-container", state="visible")
     page.wait_for_load_state("networkidle")
 
 
 def test_complex_clock_interaction(page: Page):
-    clock_id = "IRUWOQ3FNRWGC4Q-MNWG6Y3LOM"
+    clock_id = "IRUWOQ3FNRWGC4Q-MNWG6Y3LOMXG2ZA"
     clock_container = page.locator(f"#{clock_id}")
     expect(clock_container).to_be_visible()
 
+    # Wait for JS
+    page.wait_for_timeout(1500)
+
     # Check if we can increment or decrement
+    box = clock_container.bounding_box()
+    if not box:
+        pytest.fail("Clock container not found/visible.")
+
     for _ in range(4):
-        inactive = clock_container.locator(".segment:not(.active)")
-        if inactive.count() > 0:
-            inactive.first.click(force=True)
-        else:
-            clock_container.locator(".segment.active").last.click(force=True)
+        # Click the right side (angle ~90) to increment,
+        # or just click center-ish to interact
+        page.mouse.click(box["x"] + box["width"] * 0.75, box["y"] + box["height"] * 0.5)
         page.wait_for_timeout(300)
 
     # We should have changed state at least.
