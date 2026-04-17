@@ -109,4 +109,8 @@ Organize imports into three groups:
     - Run all available tests: `uv run pytest`. This includes logic tests and Playwright UI tests.
 5. **Cleanliness**: Check for LSP errors and run pre-commit hooks: `pre-commit run --all-files`.
 6. **Git**: Stage all relevant work for the current phase. **DO NOT** commit autonomously unless explicitly requested by
-   the user.
+   the user. When committing:
+    - **Verify Changes**: NEVER use `--no-verify`. If pre-commit hooks fail, fix the issues.
+7. **Reproduce Before Fix**: If an error or regression is encountered, it **must** be reproduced with a failing test (unit or E2E) before any fix is implemented or verified. The fix must be proven to make *only* that failing test pass, without changing other behaviors.
+8. **Test-Driven Communication**: When reporting test status, explicitly state if a test is currently passing or failing. If a test is failing, provide the error output as proof of reproduction. Do not report "ready for commit" until all relevant tests pass, including the regression test.
+9. **Zero-Sidequest Rule**: Strictly avoid any code changes, logging, or "optimizations" not requested by the user. If an issue is discovered, report it and wait for instructions.

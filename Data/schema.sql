@@ -89,9 +89,12 @@ create table if not exists configs
 create unique index if not exists configs_user_option_uindex
 	on configs (user, option);
 
-create table if not exists sheets
+
+create table if not exists clocks
 (
-    sheet_id  INTEGER PRIMARY KEY,
-    owner     TEXT REFERENCES users,
-    sheetdata TEXT NOT NULL
+    page_id     TEXT NOT NULL,
+    clock_name  TEXT NOT NULL,
+    current_val INTEGER NOT NULL,
+    total_val   INTEGER NOT NULL,
+    PRIMARY KEY (page_id, clock_name)
 );

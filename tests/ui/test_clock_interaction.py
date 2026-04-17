@@ -36,3 +36,34 @@ def test_complex_clock_interaction(page: Page):
     # We should have changed state at least.
     # The test doesn't care exactly how many, just that it's interactive.
     print("Complex interaction completed.")
+
+
+def test_clock_ui_interaction_changes_active_attribute(page: Page):
+    # Locate the clock by its ID. Now that generate_clock is fixed to use relative paths,
+    # the ID will include the .md suffix encoded.
+    clock_id = "IRUWOQ3FNRWGC4Q-MNWG6Y3LOMXG2ZA"
+    clock = page.locator(f"#{clock_id}")
+
+    # Ensure it's visible
+    expect(clock).to_be_visible()
+
+    # Capture initial data-active value
+    initial_active = clock.get_attribute("data-active")
+
+    # Wait for the delayed JS handlers in sse_handler.js to attach
+    page.wait_for_timeout(1500)
+
+    # Click the clock to increment
+    box = clock.bounding_box()
+    if box:
+        page.mouse.click(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+    else:
+        pytest.fail("Clock container not found/visible.")
+
+    # Verify the UI update
+    page.wait_for_timeout(2000)
+    current_active = clock.get_attribute("data-active")
+
+    assert (
+        current_active != initial_active
+    ), "The clock 'data-active' attribute did not change after click interaction."

@@ -1,15 +1,9 @@
 window.addEventListener("load", function () {
-    // Delay initialization to ensure the DOM has settled and animations/loads are complete
+    // Delay initialization to ensure the DOM has settled
     setTimeout(function () {
-        console.log('Initializing SSE hub...');
         const eventSource = new EventSource("/sse_updates");
 
-        eventSource.onopen = function () {
-            console.log('SSE connection opened.');
-        };
-
         eventSource.onmessage = function (evt) {
-            console.log('SSE message received:', evt.data);
             try {
                 const data = JSON.parse(evt.data);
                 const targetEl = document.getElementById(data.target);
@@ -33,8 +27,6 @@ window.addEventListener("load", function () {
             }
         };
 
-
-        // Add global click/dblclick handler for clock interaction
         document.addEventListener('click', function (e) {
             const clock = e.target.closest('.clock-container');
             if (clock) {
@@ -62,7 +54,7 @@ window.addEventListener("load", function () {
                 const delta = (angle < activeAngle) ? -1 : 1;
 
                 const endpoint = `${clock.dataset.endpoint}/${delta}`;
-                fetch(endpoint);
+                fetch(endpoint).catch(err => console.error("Clock update fetch failed:", err));
                 return;
             }
 
@@ -70,7 +62,7 @@ window.addEventListener("load", function () {
             const target = e.target.closest('.gauge-box');
             if (target && target.hasAttribute('data-endpoint')) {
                 const endpoint = target.getAttribute('data-endpoint');
-                fetch(endpoint);
+                fetch(endpoint).catch(err => console.error("Gauge update fetch failed:", err));
             }
         });
 
@@ -82,32 +74,5 @@ window.addEventListener("load", function () {
                 e.stopPropagation();
             }
         });
-
-        eventSource.onmessage = function (evt) {
-            console.log('SSE message received:', evt.data);
-            try {
-                const data = JSON.parse(evt.data);
-                const targetEl = document.getElementById(data.target);
-                if (targetEl) {
-                    if (data.type === 'clock') {
-                        // Update clock visual via custom properties
-                        targetEl.style.setProperty('--clock-active', data.current);
-                        targetEl.style.setProperty('--clock-total', data.total);
-                        targetEl.dataset.active = data.current;
-                        targetEl.dataset.total = data.total;
-                    } else if (data.type === 'line') {
-                        // Existing line logic
-                        const boxes = targetEl.querySelectorAll('.gauge-box');
-                        boxes.forEach((box, i) => {
-                            box.className = (i < data.current) ? 'gauge-box filled' : 'gauge-box empty';
-                        });
-                    }
-                }
-            } catch (e) {
-                console.error('Error parsing SSE JSON:', e);
-            }
-        };
-
-
     }, 1000); // 1-second delay
 });

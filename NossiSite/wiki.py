@@ -30,6 +30,7 @@ from gamepack.FenCharacter import FenCharacter
 from gamepack.MDPack import traverse_md, MDObj
 from gamepack.WikiCharacterSheet import WikiCharacterSheet
 from gamepack.WikiPage import WikiPage
+from scripts.sync_clocks import sync_clocks_with_db
 
 WikiPage.set_wikipath(Path.home() / "wiki")
 wikistamp = [0.0]
@@ -338,6 +339,7 @@ def editwiki(page: str):
                 )
 
             page_to_save.save_overwrite(session["user"])
+            sync_clocks_with_db()
             flash(f"Saved {page_to_save.title.strip() or p}.")
         return redirect(url_for("wiki.wikipage", page=request.form.get("wiki", None)))
     return abort(405)
@@ -540,6 +542,7 @@ def live_edit_write_table(formdata, context):
 
 @views.route("/live_edit", methods=["POST"])
 def live_edit():
+    # loading edit modal is accomplished by posting relevant context data and receiving the reply
     if request.is_json and (formdata := request.get_json()):
         return live_edit_get(formdata)
     # else, form was transmitted
