@@ -1,10 +1,11 @@
 import pytest
+
 from NossiPack.markdown import NossiMarkdownProcessor, NossiTag, WikiEnvironment
 
 
 # A test tag that reverses text in pre-processing
 class ReverseTag(NossiTag):
-    priority = 10
+    priority = 11
 
     def pre_process(self, text: str, env: WikiEnvironment) -> str:
         return text[::-1]
@@ -12,7 +13,7 @@ class ReverseTag(NossiTag):
 
 # A test tag that appends to html in post-processing
 class AppendTag(NossiTag):
-    priority = 20
+    priority = 21
 
     def post_process(self, html: str, env: WikiEnvironment) -> str:
         return html + "<p>appended</p>"
