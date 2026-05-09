@@ -50,15 +50,14 @@ class Chatroom:
         return chatlog
 
     def resolve_mentions(self, line):
-        import re
-
         db = connect_db("resolving mentions")
 
         def replace_mention(match):
             discord_id = match.group(1)
+            # Try exact match or the snowflake(username) format
             res = db.execute(
-                "SELECT user FROM configs WHERE option = 'discord' AND value LIKE :did;",
-                dict(did=f"{discord_id}%"),
+                "SELECT user FROM configs WHERE option = 'discord' AND (value = :id OR value LIKE :pattern);",
+                dict(id=discord_id, pattern=f"{discord_id}(%"),
             ).fetchone()
             return res[0] if res else match.group(0)
 

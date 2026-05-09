@@ -3,10 +3,15 @@
     <meta name="htmx-config" content='{"useTemplateFragments":"true"}'>
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename='chat.css') }}?v={{ restart_id }}">
     <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+    <script src="{{ url_for("static", filename='js/sse.js') }}?v={{ restart_id }}"></script>
     <script src="{{ url_for("static", filename='chat.js') }}?v={{ restart_id }}"></script>
 {% endblock %}
 {% block body %}
-    <div id="wrapper">
+    <div id="wrapper" hx-ext="sse" sse-connect="/sse_updates">
+        <div style="display:none;">
+            <div sse-swap="chat" hx-target="#chatbox" hx-swap="beforeend"></div>
+            <div sse-swap="roll" hx-target="#chatbox" hx-swap="beforeend"></div>
+        </div>
         {% if livekit_available %}
             <div id="livekit-start" style="display: flex; gap: 10px; margin-bottom: 10px;">
                 <input type="text" id="room-code-input" class="dark" placeholder="Room Code (leave empty for random)"
@@ -37,10 +42,10 @@
             </div>
         </div>
         <div id="inner" style="width: 100%;">
-            <div id="chatbox" class="chatbox" hx-get="/chat/history" hx-trigger="load"></div>
+            <div id="chatbox" class="chatbox" hx-get="/chat/history" hx-trigger="load" sse-swap="chat" hx-swap="beforeend"></div>
         </div>
         <div id="statusmessage" style="display: none;"></div>
-        <form id="messageform" hx-post="/chat/send" hx-swap="none" onsubmit="setTimeout(() => { document.getElementById('message_data').value = ''; }, 10); return false;">
+        <form id="messageform" hx-post="/chat/send" hx-swap="none" hx-on::after-request="this.reset()">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <div class="formline" style="display: flex; align-items: center">
                 <label for="message_data"></label>

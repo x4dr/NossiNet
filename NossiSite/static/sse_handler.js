@@ -26,8 +26,21 @@ window.addEventListener("load", function () {
         };
 
         eventSource.onmessage = function (evt) {
+            // This will only fire for events without a name (if any remain)
+            handleSSEData(evt.data);
+        };
+
+        // Handle named events
+        const eventTypes = ['clock', 'line', 'roll', 'chat'];
+        eventTypes.forEach(type => {
+            eventSource.addEventListener(type, function(evt) {
+                handleSSEData(evt.data);
+            });
+        });
+
+        function handleSSEData(raw_data) {
             try {
-                const data = JSON.parse(evt.data);
+                const data = JSON.parse(raw_data);
                 const targetEl = document.getElementById(data.target);
                 if (targetEl) {
                     if (data.type === 'clock') {
@@ -48,38 +61,45 @@ window.addEventListener("load", function () {
                 if (data.type === 'roll') {
                     const resultEl = document.getElementById('lightning-result');
                     if (resultEl) {
-                        resultEl.innerHTML = `${data.labels} ==> <strong>${data.result}</strong>`;
+                        // Use textContent for the result to avoid XSS
+                        // We still use innerHTML for the <strong> but it's safe if we control data.result
+                        // Actually, let's just be safe.
+                        resultEl.textContent = ''; 
+                        resultEl.appendChild(document.createTextNode(`${data.labels} ==> `));
+                        const strong = document.createElement('strong');
+                        strong.textContent = data.result;
+                        resultEl.appendChild(strong);
+                        
                         resultEl.classList.add('active');
                         resultEl.classList.add('flash');
                         setTimeout(() => resultEl.classList.remove('flash'), 500);
                     }
                     
-                    const chatbox = document.getElementById('chatbox');
-                    if (chatbox) {
-                        const msgDiv = document.createElement('div');
-                        const timeStr = data.time || new Date().toISOString();
-                        msgDiv.innerHTML = `<div>[<time class="timestamp" datetime="${timeStr}">${timeStr}</time>] ${data.mention} \`${data.full_stages}\`<br/><strong>${data.result}</strong></div>`;
-                        chatbox.appendChild(msgDiv);
-                        chatbox.scrollTop = chatbox.scrollHeight;
-                        if (typeof updateRelativeTimes === 'function') updateRelativeTimes();
+                    // Chatbox update is now handled by HTMX SSE in chat.html
+                    // But we might still need updateRelativeTimes
+                    if (document.getElementById('chatbox')) {
+                        setTimeout(() => {
+                            if (typeof window.updateRelativeTimes === 'function') window.updateRelativeTimes();
+                            const chatbox = document.getElementById('chatbox');
+                            if (chatbox) chatbox.scrollTop = chatbox.scrollHeight;
+                        }, 100);
                     }
                 }
 
                 if (data.type === 'chat') {
-                    const chatbox = document.getElementById('chatbox');
-                    if (chatbox) {
-                        const msgDiv = document.createElement('div');
-                        // Use data.time as text initially, updateRelativeTimes will fix it
-                        msgDiv.innerHTML = `<div>[<time class="timestamp" datetime="${data.time}">${data.time}</time>] ${data.user}<br/>${data.line}</div>`;
-                        chatbox.appendChild(msgDiv);
-                        chatbox.scrollTop = chatbox.scrollHeight;
-                        if (typeof updateRelativeTimes === 'function') updateRelativeTimes();
+                    // Chatbox update is now handled by HTMX SSE in chat.html
+                    if (document.getElementById('chatbox')) {
+                        setTimeout(() => {
+                            if (typeof window.updateRelativeTimes === 'function') window.updateRelativeTimes();
+                            const chatbox = document.getElementById('chatbox');
+                            if (chatbox) chatbox.scrollTop = chatbox.scrollHeight;
+                        }, 100);
                     }
                 }
             } catch (e) {
                 console.error('Error parsing SSE JSON:', e);
             }
-        };
+        }
 
         document.addEventListener('click', function (e) {
             const clock = e.target.closest('.clock-container');

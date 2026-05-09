@@ -1,7 +1,5 @@
-import json
 import os
 import re
-import threading
 import time
 from datetime import datetime, timezone
 
@@ -9,7 +7,6 @@ import requests
 from flask import render_template, session, request
 from jinja2 import Environment, PackageLoader, select_autoescape
 from livekit import api
-from simple_websocket import Server
 
 from NossiPack.Chatrooms import Chatroom
 from NossiPack.User import Userlist
@@ -20,32 +17,9 @@ from NossiSite.base import log
 from NossiSite.socks import views
 
 env = Environment(loader=PackageLoader("NossiSite"), autoescape=select_autoescape())
-template = env.get_template("base/chatmsg.html")
 history_template = env.get_template("base/chathistory.html")
 
-clients = []
-last_update = {}
-data: dict = {"webhook": "", "channelid": "629329117266968576", "thread": None}
-
-
-def send_chat_update():
-    cache = {}
-    for client in list(clients):  # copy to avoid changing set while iterating
-        lu = last_update.get(client) or 0
-        response, last = cache.get(lu, (None, None))
-
-        if not response:
-            messages, last = load_chat(lu)
-            response = template.render(
-                messages=messages,
-                now=datetime.now(timezone.utc).isoformat(),
-            )
-            cache[lu] = (response, last)
-        try:
-            client.send(response)
-            last_update[client] = last
-        except:  # noqa E722 # if any exception happens, remove client
-            clients.remove(client)
+data: dict = {"webhook": "", "channelid": "", "botname": "Okysa", "thread": None}
 
 
 def load_chat(after: int):
@@ -64,16 +38,7 @@ def load_chat(after: int):
         }, (rows[0][2] if rows else after)
 
 
-def background_chat_update():
-    while True:
-        send_chat_update()
-        time.sleep(5)
-
-
 def init():
-    t = threading.Thread(target=background_chat_update)
-    t.daemon = True
-    t.start()
     db = connect_db("init chat")
     webhook = db.execute(
         "SELECT value FROM configs WHERE user = 'bridge' AND option= 'webhook'"
@@ -81,9 +46,82 @@ def init():
     channelid = db.execute(
         "SELECT value FROM configs WHERE user = 'bridge' AND option= 'channelid'"
     ).fetchone()
+    botname = db.execute(
+        "SELECT value FROM configs WHERE user = 'bridge' AND option= 'botname'"
+    ).fetchone()
     data["webhook"] = webhook[0] if webhook else ""
-    data["channelid"] = channelid[0] if channelid else "629329117266968576"
-    data["thread"] = t
+    data["channelid"] = channelid[0] if channelid else ""
+    data["botname"] = botname[0] if botname else "Okysa"
+
+
+def sync_chat(username, message_content, mention=None, broadcast=True):
+    """
+    Synchronizes a message to the local chat and Discord.
+    """
+    ul = Userlist()
+    u = ul.loaduserbyname(username)
+
+    # Determine names for local vs discord
+    display_name = username
+    if mention:
+        pass
+    elif u:
+        discord_config = u.config("discord", "")
+        discord_id_match = re.match(r"(\d+)", discord_config)
+        discord_id = discord_id_match.group(1) if discord_id_match else ""
+        mention = f"<@{discord_id}>" if discord_id else username
+    else:
+        mention = username
+
+    # 1. Save locally to NossiNet Chat
+    try:
+        # Use display name for local chat
+        formatted_line = f"{display_name}\n{message_content}"
+        room_id = data.get("channelid")
+        cr = Chatroom(room_id) if room_id else None
+        if cr:
+            cr.addlinetolog(formatted_line, time.time())
+
+        if broadcast:
+            # Resolve mentions for the local display if possible
+            resolved_content = (
+                cr.resolve_mentions(message_content) if cr else message_content
+            )
+            timestamp = datetime.now(timezone.utc).isoformat()
+            # Broadcast via SSE for instant chat update
+            broadcast_to_hub(
+                {
+                    "type": "chat",
+                    "line": resolved_content,
+                    "user": display_name,
+                    "time": timestamp,
+                    "html": render_template(
+                        "base/single_chat_msg.html",
+                        user=display_name,
+                        line=resolved_content,
+                        time=timestamp,
+                    ),
+                }
+            )
+    except Exception as e:
+        log.error(f"Local chat save failed: {e}")
+
+    # 2. Sync to Discord Webhook (Best Effort)
+    if data["webhook"]:
+        # If the content already starts with a mention (like in doroll), we might want to preserve it
+        # or prepend it if not present.
+        content = message_content
+        if mention and not content.startswith(mention):
+            content = f"{mention} {content}"
+
+        message_data = {
+            "content": content,
+            "username": username,
+        }
+        try:
+            requests.post(data["webhook"], json=message_data, timeout=5)
+        except Exception as e:
+            log.error(f"Discord sync failed: {e}")
 
 
 @views.route("/chat/history")
@@ -103,92 +141,10 @@ def chat_send():
     if not message_content:
         return "", 204
 
-    ul = Userlist()
     username = session.get("user")
-    u = ul.loaduserbyname(username)
-    if not u:
-        return "", 204
-
-    # Extract only digits from the start of the config (handles "ID(username)" format)
-    discord_config = u.config("discord", "")
-    discord_id_match = re.match(r"(\d+)", discord_config)
-    discord_id = discord_id_match.group(1) if discord_id_match else ""
-    mention = f"<@{discord_id}>" if discord_id else username
-
-    # 1. Save locally to NossiNet Chat
-    try:
-        formatted_line = f"{mention}\n{message_content}"
-        Chatroom(data["channelid"]).addlinetolog(formatted_line, time.time())
-        # Broadcast via SSE for instant chat update
-        broadcast_to_hub(
-            {
-                "type": "chat",
-                "line": message_content,
-                "user": mention,
-                "time": datetime.now(timezone.utc).isoformat(),
-            }
-        )
-    except Exception as e:
-        log.error(f"Local chat save failed: {e}")
-
-    # 2. Sync to Discord Webhook (Best Effort)
-    if data["webhook"]:
-        message_data = {
-            "content": message_content,
-            "username": username,  # Keep username for Discord sender identity
-        }
-        try:
-            requests.post(data["webhook"], json=message_data, timeout=5)
-        except Exception as e:
-            log.error(f"Discord sync failed: {e}")
+    sync_chat(username, message_content)
 
     return "", 204
-
-
-@views.route("/ws-chatupdates", websocket=True)
-def chat_updates():
-    log.info("WebSocket connection attempt on /ws-chatupdates")
-    try:
-        ws = Server.accept(request.environ)
-        log.info(
-            f"WebSocket connection accepted for user: {session.get('user', 'Anonymous')}"
-        )
-    except Exception as e:
-        log.error(f"WebSocket acceptance failed: {e}")
-        return ""
-
-    clients.append(ws)
-    while True:
-        try:
-            x = ws.receive()
-            if x:
-                message_content = json.loads(str(x))["message_data"]
-                username = session.get("user", "Anonymous")
-
-                # 1. Save locally to NossiNet Chat
-                try:
-                    formatted_line = f"{username}: {message_content}"
-                    Chatroom(data["channelid"]).addlinetolog(
-                        formatted_line, time.time()
-                    )
-                except Exception as e:
-                    log.error(f"Local chat save failed: {e}")
-
-                # 2. Sync to Discord Webhook (Best Effort)
-                if data["webhook"]:
-                    message_data = {
-                        "content": message_content,
-                        "username": username,
-                    }
-                    try:
-                        requests.post(data["webhook"], json=message_data, timeout=5)
-                    except Exception as e:
-                        log.error(f"Discord sync failed: {e}")
-        except Exception as e:
-            log.error(f"WebSocket receive error: {e}")
-            break
-    clients.remove(ws)
-    return ""
 
 
 @views.route("/chat/livekit-token/<room_name>")

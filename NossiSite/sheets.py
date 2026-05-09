@@ -1,11 +1,9 @@
 import re
-import time
 import logging
 from pathlib import Path
 from datetime import datetime
 from typing import cast, Tuple, Any, Optional, Dict
 
-import requests
 from flask import (
     render_template,
     Blueprint,
@@ -21,7 +19,6 @@ from markupsafe import Markup
 
 from NossiPack.markdown import NossiMarkdownProcessor
 from NossiPack.User import Config, Userlist
-from NossiPack.Chatrooms import Chatroom
 from NossiSite import chat
 from NossiSite.base_ext import decode_id
 from NossiSite.helpers import checklogin
@@ -487,8 +484,6 @@ def doroll():
     if not m_sheet or not isinstance(m_sheet.char, FenCharacter):
         return jsonify({"status": "error", "message": "no valid character sheet"}), 404
 
-    wh = chat.data.get("webhook")
-
     c = m_sheet.char
     data = request.get_json() or []
 
@@ -603,16 +598,18 @@ def doroll():
     # Formatting: Mention, then space, then code in backticks, then results on new line
     chat_message = f"{mention} `{full_stages_str}`\n{roll_result}"
 
-    # 1. Broadcast to Group Chat (NossiNet)
-    try:
-        # Using the bridge channel ID from chat module
-        bridge_room = chat.data.get("channelid", "629329117266968576")
-        Chatroom(bridge_room).addlinetolog(chat_message, time.time())
-    except Exception as e:
-        log.error(f"Chat broadcast failed: {e}")
+    # Use the unified sync_chat method from chat module
+    # This handles local saving, SSE broadcast (disabled here), and Discord sync
+    chat.sync_chat(
+        chat.data.get("botname", "Okysa"),
+        chat_message,
+        mention=mention,
+        broadcast=False,
+    )
 
-    # 2. Broadcast via SSE for instant sheet update
+    # 2. Broadcast via SSE for instant sheet update (Specific to sheet roll UI)
     try:
+        timestamp = datetime.now().isoformat()
         broadcast_to_hub(
             {
                 "type": "roll",
@@ -621,21 +618,18 @@ def doroll():
                 "full_stages": full_stages_str,
                 "user": session["user"],
                 "mention": mention,
+                "time": timestamp,
+                "html": render_template(
+                    "base/single_roll_msg.html",
+                    user=session["user"],
+                    full_stages=full_stages_str,
+                    result=roll_result,
+                    time=timestamp,
+                ),
             }
         )
     except Exception as e:
         log.error(f"SSE broadcast failed: {e}")
-
-    # 3. Push to Discord Webhook
-    if wh:
-        message_data = {
-            "content": chat_message,
-            "username": "Okysa",
-        }
-        try:
-            requests.post(wh, json=message_data, timeout=5)
-        except requests.RequestException as e:
-            log.error(f"Discord webhook failed: {e}")
 
     return jsonify({"status": "ok", "roll_result": roll_result})
 

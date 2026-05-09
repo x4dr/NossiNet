@@ -48,7 +48,8 @@ def sse_updates_handler():
             yield ": connected\n\n"
             while True:
                 update = q.get()
-                yield f"data: {json.dumps(update)}\n\n"
+                event_type = update.get("type", "message")
+                yield f"event: {event_type}\ndata: {json.dumps(update)}\n\n"
         except GeneratorExit:
             log.info("SSE Hub: Client disconnected")
             pass
