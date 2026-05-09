@@ -38,7 +38,7 @@ def load_chat(after: int):
         }, (rows[0][2] if rows else after)
 
 
-def init():
+def init() -> None:
     db = connect_db("init chat")
     webhook = db.execute(
         "SELECT value FROM configs WHERE user = 'bridge' AND option= 'webhook'"
@@ -54,41 +54,44 @@ def init():
     data["botname"] = botname[0] if botname else "Okysa"
 
 
-def sync_chat(username, message_content, mention=None, broadcast=True):
+def sync_chat(
+    username: str,
+    message_content: str,
+    mention: str | None = None,
+    broadcast: bool = True,
+) -> None:
     """
     Synchronizes a message to the local chat and Discord.
     """
     ul = Userlist()
     u = ul.loaduserbyname(username)
 
-    # Determine names for local vs discord
     display_name = username
-    if mention:
-        pass
-    elif u:
+    if not mention and u:
         discord_config = u.config("discord", "")
         discord_id_match = re.match(r"(\d+)", discord_config)
         discord_id = discord_id_match.group(1) if discord_id_match else ""
         mention = f"<@{discord_id}>" if discord_id else username
-    else:
+    elif not mention:
         mention = username
 
-    # 1. Save locally to NossiNet Chat
     try:
-        # Use display name for local chat
         formatted_line = f"{display_name}\n{message_content}"
         room_id = data.get("channelid")
+        if not room_id:
+            log.warning(
+                "Chat sync: No 'channelid' configured for 'bridge' user. Local chat logging skipped."
+            )
+
         cr = Chatroom(room_id) if room_id else None
         if cr:
             cr.addlinetolog(formatted_line, time.time())
 
         if broadcast:
-            # Resolve mentions for the local display if possible
             resolved_content = (
                 cr.resolve_mentions(message_content) if cr else message_content
             )
             timestamp = datetime.now(timezone.utc).isoformat()
-            # Broadcast via SSE for instant chat update
             broadcast_to_hub(
                 {
                     "type": "chat",
@@ -106,10 +109,7 @@ def sync_chat(username, message_content, mention=None, broadcast=True):
     except Exception as e:
         log.error(f"Local chat save failed: {e}")
 
-    # 2. Sync to Discord Webhook (Best Effort)
     if data["webhook"]:
-        # If the content already starts with a mention (like in doroll), we might want to preserve it
-        # or prepend it if not present.
         content = message_content
         if mention and not content.startswith(mention):
             content = f"{mention} {content}"
@@ -122,6 +122,10 @@ def sync_chat(username, message_content, mention=None, broadcast=True):
             requests.post(data["webhook"], json=message_data, timeout=5)
         except Exception as e:
             log.error(f"Discord sync failed: {e}")
+    else:
+        log.warning(
+            "Chat sync: No 'webhook' configured for 'bridge' user. Discord sync skipped."
+        )
 
 
 @views.route("/chat/history")

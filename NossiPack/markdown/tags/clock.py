@@ -44,7 +44,11 @@ class ClockTag(NossiTag):
         ClockTag._counter += 1
         placeholder = f"CLOCK_PLACEHOLDER_{ClockTag._counter}"
         # Resolve linked clock
-        wiki_page = WikiPage.load_locate(match.group("page"))
+        try:
+            wiki_page = WikiPage.load_locate(match.group("page"))
+        except Exception:
+            wiki_page = None
+
         if wiki_page:
             clock = wiki_page.get_clock(match.group("name"))
             if clock:

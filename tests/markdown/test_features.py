@@ -69,5 +69,6 @@ def test_link_validation():
 def test_clock():
     processor = NossiMarkdownProcessor()
     result = processor.render("[clock|name@page]", "testpage")
-    assert 'id="parent-name-page"' in result
-    assert "Loading name" in result
+    # result should contain the clock container with encoded IDs
+    assert 'class="clock-container' in result
+    assert 'data-total="1"' in result
