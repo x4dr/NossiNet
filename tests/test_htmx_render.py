@@ -81,7 +81,8 @@ def test_render_htmx_fragments(test_app, mecha_instance):
             sys_category="heat",
         )
         assert "Sink" in rendered
-        assert "CAP" in rendered
+        # Handle template change to "THERMAL STORAGE" or similar
+        assert "STORAGE" in rendered.upper()
 
         # Test energy system
         rendered = render_template(
@@ -105,12 +106,16 @@ def test_render_htmx_fragments(test_app, mecha_instance):
         rendered = render_template(
             "sheets/mechasheet_htmx/heat_ui.html",
             systems=list(mecha_instance.Heat.values()),
+            producers=[{"name": "TestGen", "amount": 5.0}],
+            segments=[{"name": "Sink", "fill": 50, "color": "blue", "offset": 0}],
             max_flux=10,
             current_flux=5,
             projected_flux=7,
+            projected_gen=5.0,
+            projected_cooling=2.0,
             identifier="test",
         )
-        assert "FLUX POOL" in rendered
+        assert "POOL SATURATION" in rendered
 
         # Test movement graph
         speeds = mecha_instance.speeds()
