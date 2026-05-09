@@ -9,6 +9,19 @@ def sync_clocks_with_db():
     log.debug("Starting clock synchronization with database.")
     db = connect_db("sync_clocks")
 
+    # Ensure the table exists before attempting to sync
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS clocks (
+            page_id     TEXT NOT NULL,
+            clock_name  TEXT NOT NULL,
+            current_val INTEGER NOT NULL,
+            total_val   INTEGER NOT NULL,
+            PRIMARY KEY (page_id, clock_name)
+        );
+    """
+    )
+
     all_clocks = []
     root = WikiPage.wikipath()
     for md_file in WikiPage.wikindex():
