@@ -49,12 +49,29 @@ class Chatroom:
             return self.chatlog(limit)  # another round to get the correct time
         return chatlog
 
+    def resolve_mentions(self, line):
+        import re
+
+        db = connect_db("resolving mentions")
+
+        def replace_mention(match):
+            discord_id = match.group(1)
+            res = db.execute(
+                "SELECT user FROM configs WHERE option = 'discord' AND value LIKE :did;",
+                dict(did=f"{discord_id}%"),
+            ).fetchone()
+            return res[0] if res else match.group(0)
+
+        return re.sub(r"<@!?(\d+)>", replace_mention, line)
+
     def addlinetolog(self, line, time_):
+        line = self.resolve_mentions(line)
         db = connect_db("adding line")
         db.execute(
             "INSERT INTO chatlogs (line, time, room)" "VALUES (:line, :time ,:room)",
             dict(line=line, time=time_, room=self.name),
         )
+        db.commit()
 
     def addline(self, line, supresssave=False):
         if not session["user"] in self.presentusers:

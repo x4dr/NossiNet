@@ -41,7 +41,7 @@
                     <a class="textbtn metanav"
                        href="{{ url_for('views.show_user_profile',username=session.user) }}">{{ session.user }}</a>
                     <a class="textbtn metanav" href="{{ url_for('views.logout') }}">LOG&nbsp;OUT</a>
-
+                    <span id="global-conn-status" title="Connection Status" style="margin-left: 10px; font-size: 0.8em; color: var(--tertiary-color);">●</span>
                 </div>
 
             {%- endif %}

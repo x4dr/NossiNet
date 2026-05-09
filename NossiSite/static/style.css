@@ -98,6 +98,17 @@ hr {
     height: inherit
 }
 
+#global-conn-status {
+    transition: color 0.3s ease;
+    cursor: help;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+#global-conn-status:hover {
+    filter: brightness(1.2) drop-shadow(0 0 2px currentColor);
+}
+
 
 #TopButton {
     position: fixed;

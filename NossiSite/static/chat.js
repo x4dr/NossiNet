@@ -350,10 +350,59 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
+    // WebSocket Status Logic
+    const statusMsg = document.getElementById("statusmessage");
+    const globalStatus = document.getElementById('global-conn-status');
+
+    document.body.addEventListener("htmx:load", function (event) {
+        updateRelativeTimes();
+    });
+
+    const updateStatus = (state, text, color, title) => {
+        if (statusMsg) {
+            statusMsg.innerText = text;
+            statusMsg.style.color = color;
+            statusMsg.style.display = "block";
+            statusMsg.style.opacity = "1";
+        }
+        if (globalStatus) {
+            globalStatus.style.color = color;
+            globalStatus.title = `WS: ${title}`;
+        }
+    };
+
+    document.addEventListener("htmx:wsOpen", (event) => {
+        updateStatus('connected', "Connected to Server", "var(--highlight-color, #00ff00)", "Connected");
+        setTimeout(() => {
+            if (statusMsg && statusMsg.innerText === "Connected to Server") {
+                statusMsg.style.opacity = "0";
+                setTimeout(() => {
+                    if (statusMsg.style.opacity === "0") statusMsg.style.display = "none";
+                }, 500);
+            }
+        }, 3000);
+    });
+
+    document.addEventListener("htmx:wsClose", (event) => {
+        const reason = event.detail.reason || "No reason provided";
+        const code = event.detail.code || "Unknown code";
+        updateStatus('closed', `Connection lost (${code}: ${reason}). Retrying...`, "var(--error-color, #ff4444)", `Closed: ${code}`);
+    });
+
+    document.addEventListener("htmx:wsError", (event) => {
+        const errorMsg = event.detail.error || "Unknown WebSocket Error";
+        updateStatus('error', "Connection Error! Check console for details.", "var(--error-color, #ff0000)", "Connection Error");
+        console.error("Detailed WebSocket Error:", event.detail);
+    });
+
+    document.addEventListener("htmx:wsConnecting", (event) => {
+        updateStatus('connecting', "Connecting to Server...", "var(--warn-color, #ffff00)", "Connecting...");
+    });
+
     updateRelativeTimes();
 });
 
-function updateRelativeTimes() {
+window.updateRelativeTimes = function() {
     document.querySelectorAll(".timestamp").forEach(function (element) {
         const dateString = element.getAttribute("datetime");
         if (!dateString) return;
@@ -397,7 +446,9 @@ document.addEventListener("htmx:wsAfterMessage", function (event) {
     updateRelativeTimes();
 });
 
-setInterval(updateRelativeTimes, 30000);
+setInterval(() => {
+    if (typeof updateRelativeTimes === 'function') updateRelativeTimes();
+}, 30000);
 
 document.addEventListener("htmx:wsAfterSend", function (event) {
     const msgInput = document.getElementById("message_data");

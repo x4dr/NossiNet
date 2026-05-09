@@ -196,3 +196,11 @@ time[tabindex="0"]:focus + .hidden-until-hover {
     cursor: pointer;
     text-decoration: underline dotted;
 }
+
+#statusmessage {
+    padding: 5px;
+    margin: 5px 0;
+    font-size: 0.9em;
+    font-style: italic;
+    transition: opacity 0.5s ease;
+}

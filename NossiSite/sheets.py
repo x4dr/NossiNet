@@ -1,4 +1,5 @@
 import re
+import time
 import logging
 from pathlib import Path
 from datetime import datetime
@@ -20,11 +21,15 @@ from markupsafe import Markup
 
 from NossiPack.markdown import NossiMarkdownProcessor
 from NossiPack.User import Config, Userlist
+from NossiPack.Chatrooms import Chatroom
 from NossiSite import chat
 from NossiSite.base_ext import decode_id
 from NossiSite.helpers import checklogin
+from NossiSite.socks import broadcast_to_hub
 from gamepack.Dice import DescriptiveError
+from gamepack.DiceParser import DiceParser
 from gamepack.FenCharacter import FenCharacter
+
 from gamepack.WikiCharacterSheet import WikiCharacterSheet
 from gamepack.WikiPage import WikiPage
 from gamepack.endworld import Mecha
@@ -483,11 +488,6 @@ def doroll():
         return jsonify({"status": "error", "message": "no valid character sheet"}), 404
 
     wh = chat.data.get("webhook")
-    if not wh:
-        return (
-            jsonify({"status": "error", "message": "no discord webhook configured"}),
-            503,
-        )
 
     c = m_sheet.char
     data = request.get_json() or []
@@ -559,21 +559,85 @@ def doroll():
         labels.append(" R" + sanitize(rv))
         values.append(" R" + sanitize(rv))
 
-    message_data = {
-        "content": "".join(labels) + "\n" + "".join(values),
-        "username": session["user"],
-    }
+    # Perform local roll
+    dp = DiceParser()
+    roll_code = "".join(values)
     try:
-        response = requests.post(wh, json=message_data, timeout=5)
-        response.raise_for_status()
-    except requests.RequestException as e:
-        log.error(f"Discord webhook failed: {e}")
-        return (
-            jsonify({"status": "error", "message": "failed to send to discord"}),
-            502,
-        )
+        r = dp.do_roll(roll_code)
+        roll_result = r.roll_v()
+    except Exception as e:
+        log.error(f"Local roll failed: {e}")
+        roll_result = f"Error: {e}"
 
-    return jsonify({"status": "ok"})
+    # Prepare group message and Discord mention
+    discord_config = u.config("discord", "")
+    # Extract only digits from the start of the config (handles "ID(username)" format)
+    discord_id_match = re.match(r"(\d+)", discord_config)
+    discord_id = discord_id_match.group(1) if discord_id_match else ""
+
+    mention = f"<@{discord_id}>" if discord_id else session["user"]
+
+    # Okysa Style Format: Roll before Resolution ==> Final Roll after all Resolution Steps ==> detailed result
+    labels_str = "".join(labels)
+
+    # Stages for the roll
+    stages = [labels_str]
+    # Add values if they are different from labels (they usually are)
+    if roll_code != labels_str:
+        stages.append(roll_code)
+
+    # Determine simplified stage (e.g. "0, 1 + 3 + 1@5" ==> "0, 5@5")
+    # We do a basic check if the roll_code can be simplified
+    try:
+        # Resolve math in the code part (e.g. "1 + 3 + 1" -> "5")
+        # DiceParser.resolveroll can help with this
+        resolved_node = dp.resolveroll(roll_code, 0)
+        simplified_code = resolved_node.code
+        if simplified_code != roll_code and simplified_code != labels_str:
+            stages.append(simplified_code)
+    except Exception:
+        pass
+
+    full_stages_str = " ==> ".join(stages)
+
+    # Formatting: Mention, then space, then code in backticks, then results on new line
+    chat_message = f"{mention} `{full_stages_str}`\n{roll_result}"
+
+    # 1. Broadcast to Group Chat (NossiNet)
+    try:
+        # Using the bridge channel ID from chat module
+        bridge_room = chat.data.get("channelid", "629329117266968576")
+        Chatroom(bridge_room).addlinetolog(chat_message, time.time())
+    except Exception as e:
+        log.error(f"Chat broadcast failed: {e}")
+
+    # 2. Broadcast via SSE for instant sheet update
+    try:
+        broadcast_to_hub(
+            {
+                "type": "roll",
+                "result": roll_result,
+                "labels": labels_str,
+                "full_stages": full_stages_str,
+                "user": session["user"],
+                "mention": mention,
+            }
+        )
+    except Exception as e:
+        log.error(f"SSE broadcast failed: {e}")
+
+    # 3. Push to Discord Webhook
+    if wh:
+        message_data = {
+            "content": chat_message,
+            "username": "Okysa",
+        }
+        try:
+            requests.post(wh, json=message_data, timeout=5)
+        except requests.RequestException as e:
+            log.error(f"Discord webhook failed: {e}")
+
+    return jsonify({"status": "ok", "roll_result": roll_result})
 
 
 def generate_meter_segments(fills, colors, total, names):

@@ -185,6 +185,11 @@ window.addEventListener("load", () => {
         if (rerollWrapper) rerollWrapper.style.display = 'none';
         if (sequenceContainer) sequenceContainer.innerHTML = '';
         if (sendButton) sendButton.style.display = 'none';
+        const resultEl = document.getElementById('lightning-result');
+        if (resultEl) {
+            resultEl.classList.remove('active');
+            setTimeout(() => { if(!resultEl.classList.contains('active')) resultEl.textContent = ''; }, 400);
+        }
         fadeLightning = true;
         fadeStart = performance.now();
         lightningToggle.classList.remove('active');
@@ -272,6 +277,12 @@ window.addEventListener("load", () => {
                 });
             }
 
+            const resultEl = document.getElementById('lightning-result');
+            if (resultEl) {
+                resultEl.textContent = 'Rolling...';
+                resultEl.classList.add('active');
+            }
+
             fetch("/doroll", {
                 method: "POST",
                 headers: {
@@ -315,8 +326,13 @@ window.addEventListener("load", () => {
 
     // utilities
     function center(el) {
-        if (!el) return [0, 0];
+        if (!el) {
+            // Attempt to re-find if null
+            el = document.getElementById('lightning-toggle');
+            if (!el) return [0, 0];
+        }
         const r = el.getBoundingClientRect();
+        if (r.width === 0 && r.height === 0) return [0, 0];
         return [(r.left + r.right) / 2, (r.top + r.bottom) / 2];
     }
 
@@ -429,13 +445,19 @@ window.addEventListener("load", () => {
 
             // Connection to mouse (only the last element in the bar)
             if (!fadeLightning) {
-                if (sequenceContainer.pendingSeparator) {
+                let targetPoint = [0, 0];
+                if (sequenceContainer && sequenceContainer.pendingSeparator) {
                     targetPoint = center(sequenceContainer.pendingSeparator);
-                } else {
+                }
+                
+                // Fallback if pendingSeparator is not ready or at (0,0)
+                if (targetPoint[0] === 0 && targetPoint[1] === 0) {
                     targetPoint = center(lightningToggle);
                 }
 
-                svg.appendChild(createLightningPolyline(targetPoint[0], targetPoint[1], mouseX, mouseY));
+                if (targetPoint[0] !== 0 || targetPoint[1] !== 0) {
+                    svg.appendChild(createLightningPolyline(targetPoint[0], targetPoint[1], mouseX, mouseY));
+                }
             }
         }
 

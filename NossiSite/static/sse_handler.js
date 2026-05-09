@@ -1,7 +1,29 @@
 window.addEventListener("load", function () {
+    const globalStatus = document.getElementById('global-conn-status');
+    const updateGlobalStatus = (state, title) => {
+        if (!globalStatus) return;
+        let color = 'var(--tertiary-color)';
+        if (state === 'connected') color = 'var(--highlight-color, #00ff00)';
+        if (state === 'error') color = 'var(--error-color, #ff0000)';
+        if (state === 'connecting') color = 'var(--warn-color, #ffff00)';
+        globalStatus.style.color = color;
+        if (title) globalStatus.title = `SSE: ${title}`;
+    };
+
     // Delay initialization to ensure the DOM has settled
     setTimeout(function () {
+        updateGlobalStatus('connecting', 'Connecting...');
         const eventSource = new EventSource("/sse_updates");
+
+        eventSource.onopen = function() {
+            console.log("SSE Connection opened");
+            updateGlobalStatus('connected', 'Connected');
+        };
+
+        eventSource.onerror = function(err) {
+            console.error("SSE Connection error:", err);
+            updateGlobalStatus('error', 'Disconnected/Error. Retrying...');
+        };
 
         eventSource.onmessage = function (evt) {
             try {
@@ -20,6 +42,38 @@ window.addEventListener("load", function () {
                         boxes.forEach((box, i) => {
                             box.className = (i < data.current) ? 'gauge-box filled' : 'gauge-box empty';
                         });
+                    }
+                }
+
+                if (data.type === 'roll') {
+                    const resultEl = document.getElementById('lightning-result');
+                    if (resultEl) {
+                        resultEl.innerHTML = `${data.labels} ==> <strong>${data.result}</strong>`;
+                        resultEl.classList.add('active');
+                        resultEl.classList.add('flash');
+                        setTimeout(() => resultEl.classList.remove('flash'), 500);
+                    }
+                    
+                    const chatbox = document.getElementById('chatbox');
+                    if (chatbox) {
+                        const msgDiv = document.createElement('div');
+                        const timeStr = data.time || new Date().toISOString();
+                        msgDiv.innerHTML = `<div>[<time class="timestamp" datetime="${timeStr}">${timeStr}</time>] ${data.mention} \`${data.full_stages}\`<br/><strong>${data.result}</strong></div>`;
+                        chatbox.appendChild(msgDiv);
+                        chatbox.scrollTop = chatbox.scrollHeight;
+                        if (typeof updateRelativeTimes === 'function') updateRelativeTimes();
+                    }
+                }
+
+                if (data.type === 'chat') {
+                    const chatbox = document.getElementById('chatbox');
+                    if (chatbox) {
+                        const msgDiv = document.createElement('div');
+                        // Use data.time as text initially, updateRelativeTimes will fix it
+                        msgDiv.innerHTML = `<div>[<time class="timestamp" datetime="${data.time}">${data.time}</time>] ${data.user}<br/>${data.line}</div>`;
+                        chatbox.appendChild(msgDiv);
+                        chatbox.scrollTop = chatbox.scrollHeight;
+                        if (typeof updateRelativeTimes === 'function') updateRelativeTimes();
                     }
                 }
             } catch (e) {
