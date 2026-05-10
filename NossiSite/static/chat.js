@@ -356,6 +356,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateRelativeTimes();
 });
 
+// Single robust trigger for any DOM change (covers SSE, polling, and manual injection)
+const observer = new MutationObserver((mutations) => {
+    if (typeof window.updateRelativeTimes === 'function') {
+        window.updateRelativeTimes();
+    }
+});
+observer.observe(document.documentElement, { childList: true, subtree: true });
+
 window.updateRelativeTimes = function() {
     document.querySelectorAll(".timestamp").forEach(function (element) {
         const dateString = element.getAttribute("datetime");

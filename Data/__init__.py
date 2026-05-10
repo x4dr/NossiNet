@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 import pathlib
@@ -7,7 +8,7 @@ from importlib import resources
 from pathlib import Path
 
 
-DATABASE = "./NN.db"
+DATABASE = os.environ.get("DATABASE", "./NN.db")
 g = {}  # module level caching
 logger = logging.getLogger(__name__)
 

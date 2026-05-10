@@ -36,9 +36,11 @@ if __name__ == "__main__":
         parser = argparse.ArgumentParser()
         parser.add_argument("port", type=int, nargs="?", default=5000)
         parser.add_argument("--session-id", type=str, default="none")
+        parser.add_argument("--no-ssl", action="store_true", default=False)
         args = parser.parse_args()
         port = args.port
         app.config["SESSION_ID"] = args.session_id
+        test = args.no_ssl
     except Exception:
         port = 5000
     app.run(
