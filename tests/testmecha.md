@@ -11,8 +11,8 @@ title: testmecha
 ## Movement
 |        | Energy | Heat | Thrust | Anchor | Dynamics | Mass | Amount | Enabled |
 |------|------|----|------|------|--------|----|------|-------|
-| Wheels | 100    | 5    | 400    | 0.5    | 5        | 2    | 10     | [ ]     |
-| Rails  | 100    | 3    | 200    | 0.001  | 1000     | 3    | 10     | [ ]     |
+| Wheels | 20     | 5    | 400    | 0.5    | 5        | 2    | 1      | [ ]     |
+| Rails  | 15     | 3    | 200    | 0.001  | 1000     | 3    | 1      | [ ]     |
 
 ## Energy
 |                     | Energy | Mass | Amount | Heat | Shutoff | Enabled |
@@ -26,9 +26,9 @@ title: testmecha
 ## Heat
 |         | Energy | Mass | Amount | Heat | Capacity | Passive | Active | Flux | Current | Enabled |
 |-------|------|----|------|----|--------|-------|------|----|-------|-------|
-| Vent    | 10     | 1    | 1      | 0    | 100      | 10%     | 2      | 0    | 0       | [ ]     |
-| Coolant | 5      | 1    | 1      | 0    | 50       | 0       | 10     | 0    | 0       | [ ]     |
-| Sink    | 5      | 5    | 1      | 0    | 400      | 1%      | 0.01   | 0    | 0       | [ ]     |
+| Vent    | 5      | 1    | 1      | 0    | 100      | 10%     | 2      | 5    | 0       | [ ]     |
+| Coolant | 0      | 1    | 1      | 0    | 50       | 0       | 10%    | 10   | 0       | [ ]     |
+| Sink    | 5      | 5    | 1      | 0    | 400      | 1%      | 0.01   | 1    | 0       | [ ]     |
 
 ## Offensive
 |         | Energy | Mass | Heat | Amount | Enabled |

@@ -1,0 +1,39 @@
+<div class="system-box-narrow{% if system.is_active() %} active {% endif %}{% if system.is_disabled() %} inactive {% endif %}"
+     id="heat-{{ system.name|b64e }}"
+     oncontextmenu="return false;">
+
+    <div hx-get="{{ url_for('sheets.mecha_use', m=identifier, s='heat', n=system.name|b64e ) }}"
+         hx-swap="outerHTML swap:1s settle:1s"
+         hx-trigger="click from:#heat-{{ system.name|b64e }}"
+         hx-target="#heat-{{ system.name|b64e }}"
+         style="display: none;"></div>
+
+    <div hx-get="{{ url_for('sheets.mecha_use', m=identifier, s='heat', n=system.name|b64e ) }}?use=disable"
+         hx-swap="outerHTML swap:1s settle:1s"
+         hx-trigger="contextmenu from:#heat-{{ system.name|b64e }}"
+         hx-target="#heat-{{ system.name|b64e }}"
+         style="display: none;"></div>
+
+    <span class="stat-heading">{{ system.name }}</span>
+
+    <div class="stat-box">
+        <span class="stat-label">C: {{ system.capacity }}</span>
+        <span class="tooltip-text">Heat capacity</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-label">P: {{ system.passive }}</span>
+        <span class="tooltip-text">Passive heat dissipation</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-label">A: {{ system.active }}</span>
+        <span class="tooltip-text">Active heat generation</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-label">F: {{ system.flux }}</span>
+        <span class="tooltip-text">Ability to move heat</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-label">L: {{ system.current }}</span>
+        <span class="tooltip-text">Current heat level</span>
+    </div>
+</div>

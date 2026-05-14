@@ -1,0 +1,51 @@
+{% extends "base/layout.html" %}
+{% block head %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='mecha.css') }}?v={{ restart_id }}">
+{% endblock %}
+
+{% block body %}
+<div class="comm-center-layout" style="grid-template-columns: 1fr;">
+    <main class="main-screen">
+        <header class="screen-header">
+            <h2 id="main-title">SYSTEM DETAIL: {{ system.name }}</h2>
+            <a href="{{ url_for('sheets.sheet', c=identifier) }}" class="control-btn">BACK TO SHEET</a>
+        </header>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+            <section class="dashboard-section">
+                <h3 class="stat-heading">CURRENT STATUS</h3>
+                <div class="system-card state-active" style="padding: 20px;">
+                    <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+                        {% for k, v in system.to_dict().items() %}
+                        <div class="stat-item">
+                            <span class="stat-label">{{ k }}</span>
+                            <span class="stat-value">{{ v }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                {% if system.is_booting() %}
+                <div class="boot-progress-container" style="margin-top: 20px;">
+                    <span class="boot-label">BOOTING... ({{ system.boot_progress }}/{{ system.activation_rounds }})</span>
+                    <div class="boot-bar">
+                        <div class="boot-fill" style="width: {{ (system.boot_progress / system.activation_rounds) * 100 }}%"></div>
+                    </div>
+                </div>
+                {% endif %}
+            </section>
+
+            <section class="dashboard-section">
+                <h3 class="stat-heading">WIKI DOCUMENTATION</h3>
+                {% if base_page %}
+                <div class="wiki-content" style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 4px; border: 1px solid var(--tertiary-color);">
+                    {{ base_page.body | markdown }}
+                </div>
+                {% else %}
+                <p style="color: var(--text-dim); font-style: italic;">No base documentation found for this system.</p>
+                {% endif %}
+            </section>
+        </div>
+    </main>
+</div>
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends "base/layout.html" %}
+{% block head %}
+<link rel="stylesheet" type="text/css" href="{{ url_for("static", filename='mecha_classic.css' ) }}?v={{ restart_id
+    }}">
+<script src="{{ url_for("static", filename="mechasheet.js" ) }}?v={{ restart_id }}"></script>
+{% endblock %}
+{% block body %}
+<h3>Movement</h3>
+<div class="system-row">
+    {% for energy in mech.Movement.values() %}
+    <div hx-get="{{ url_for("sheets.mecha_sys_classic", m=identifier, s="movement" , n=energy.name) }}"
+        hx-swap="innerHTML" hx-trigger="load"></div>
+    {% endfor %}
+</div>
+<div>
+    {% set svg_w = 1000 %}
+    {% set svg_h = 500 %}
+
+    {% set margin = 40 %}
+    {% set graph_w = svg_w - 2*margin %}
+    {% set graph_h = svg_h - 2*margin %}
+
+    {% set data = mech.speeds() %}
+    {% set ns = namespace(max_time=1, max_speed=1) %}
+
+    {# compute maxima #}
+    {% for _, sys in data.items() %}
+    {% for t, v in sys.speeds.items() %}
+    {% set ti = t|int %}
+    {% if ti > ns.max_time %}{% set ns.max_time = ti %}{% endif %}
+    {% if v > ns.max_speed %}{% set ns.max_speed = v %}{% endif %}
+    {% endfor %}
+    {% endfor %}
+
+    <svg viewBox="0 0 {{ svg_w }} {{ svg_h }}" width="100%" height="{{ svg_h }}" id="speed-graph"
+        style="overflow: visible" data-max-time="{{ ns.max_time }}">
+
+        <!-- GRID -->
+        {% for i in range(0, 13) %}
+        <line x1="{{ margin + i/12 * graph_w }}" y1="{{ margin }}" x2="{{ margin + i/12 * graph_w }}"
+            y2="{{ svg_h - margin }}" class="grid"></line>
+
+        <line x1="{{ margin }}" y1="{{ margin + i/10 * graph_h }}" x2="{{ svg_w - margin }}"
+            y2="{{ margin + i/10 * graph_h }}" class="grid"></line>
+        {% endfor %}
+        {% set colors = ['#0055aa', '#00aa55', '#5500aa', '#55aa00', '#aa0055', '#aa5500'] %}
+        {% for name, sys in data.items() %}
+        <g class="curve-group" data-name="{{ name }}" data-speeds='{{ sys.speeds | tojson }}'
+            style="--curve-color: {{ colors[loop.index0 % colors|length] }}">
+
+            {% set last = namespace(x=0, y=0) %}
+            {% set points = [] %}
+            {% for t, v in sys.speeds.items() %}
+            {% set last.x = margin + (t|int / ns.max_time) * graph_w %}
+            {% set last.y = svg_h - margin - (v / ns.max_speed) * graph_h %}
+            {% set _ = points.append((last.x, last.y)) %}
+            {% endfor %}
+
+            {% if last.x < margin + graph_w %} {% set _=points.append((margin + graph_w, last.y)) %} {% endif %} <!-- {{
+                points }} {{name}}-->
+
+                {% set points_str = points | map("join", ",") | join(" ") %}
+                <polyline class="curve-hit" fill="none" stroke="transparent" stroke-width="14" pathLength="1"
+                    points="{{ points_str }}">
+                </polyline>
+                <polyline class="curve animated" fill="none" stroke-width="2" pathLength="1" points="{{ points_str }}">
+                </polyline>
+
+                <text x="{{ margin + 10 }}" y="{{ margin + 20 + loop.index * 20 }}" class="curve-label legend-item">
+                    {{ name }} ({{ "%.1f"|format(sys.topspeed) }} km/h)
+                </text>
+
+        </g>
+        {% endfor %}
+        <line id="cursor-line" y1="{{ margin }}" y2="{{ svg_h - margin }}" x1="{{ margin }}" x2="{{ margin }}"
+            class="cursor-line"></line>
+
+        <g id="tooltip" visibility="hidden" class="tooltip">
+            <rect x="0" y="0" width="1" height="1" rx="4" ry="4"></rect>
+            <text x="0" y="0">
+                <tspan id="tooltip-title" x="0" dy="1.2em"></tspan>
+                <tspan id="tooltip-value" x="0" dy="1.2em"></tspan>
+            </text>
+        </g>
+        <!-- AXES -->
+        <line x1="{{ margin }}" y1="{{ svg_h - margin }}" x2="{{ svg_w - margin }}" y2="{{ svg_h - margin }}"
+            class="axis"></line>
+
+        <line x1="{{ margin }}" y1="{{ margin }}" x2="{{ margin }}" y2="{{ svg_h - margin }}" class="axis"></line>
+
+
+    </svg>
+
+
+    {{ mech.speeds() }}
+</div>
+
+<h3>Energy</h3>
+<div class="system-row">
+    {% for energy in mech.Energy.values() %}
+    <div hx-get="{{ url_for("sheets.mecha_sys_classic", m=identifier, s="energy" , n=energy.name) }}"
+        hx-swap="innerHTML" hx-trigger="load"></div>
+    {% endfor %}
+
+</div>
+
+<div hx-get="{{ url_for("sheets.energy_meter_classic", m=identifier) }}" hx-swap="innerHTML"
+    hx-trigger="load, htmx:afterSettle from:.system-row">
+</div>
+
+<h3>Heat</h3>
+<div class="system-row">
+    {% for heat in mech.Heat.values() %}
+    <div hx-get="{{ url_for("sheets.mecha_sys_classic", m=identifier, s="heat" , n=heat.name) }}" hx-swap="innerHTML"
+        hx-trigger="load"></div>
+    {% endfor %}
+</div>
+
+<h3>Offensive</h3>
+<div class="system-row">
+    {% for system in mech.Offensive.values() %}
+    <div hx-get="{{ url_for('sheets.mecha_sys_classic', m=identifier, s='offensive', n=system.name) }}"
+        hx-swap="innerHTML" hx-trigger="load"></div>
+    {% endfor %}
+</div>
+
+<h3>Defensive</h3>
+<div class="system-row">
+    {% for system in mech.Defensive.values() %}
+    <div hx-get="{{ url_for('sheets.mecha_sys_classic', m=identifier, s='defensive', n=system.name) }}"
+        hx-swap="innerHTML" hx-trigger="load"></div>
+    {% endfor %}
+</div>
+
+<h3>Support</h3>
+<div class="system-row">
+    {% for system in mech.Support.values() %}
+    <div hx-get="{{ url_for('sheets.mecha_sys_classic', m=identifier, s='support', n=system.name) }}"
+        hx-swap="innerHTML" hx-trigger="load"></div>
+    {% endfor %}
+</div>
+<h3>Seal</h3>
+<div style="display: grid; grid-template-columns: repeat(2, 1fr);">
+    <div>Name</div>
+    <div>Level</div>
+    {% for seal in mech.Seal.values() %}
+    <div>{{ seal.name }}</div>
+    <div>{{ seal.level }}</div>
+    {% endfor %}
+</div>
+
+
+{% endblock %}

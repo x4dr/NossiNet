@@ -1,0 +1,46 @@
+<div class="heat-ui-container">
+    {% set max_val = [projected_gen, projected_cooling, 1] | max %}
+
+    <div class="thermal-bar-group">
+        <div class="bar-label-header">Generation: {{ projected_gen|round(1) }} Flux</div>
+        <div class="meter-static" style="height:20px;">
+            {% set offset = namespace(val=0) %}
+            {% for p in producers %}
+            {% set fill = (p.amount / max_val * 100) %}
+            <div class="fill" style="left:{{ offset.val }}%; width:{{ fill }}%; background:var(--danger); opacity:{{ 0.6 + (loop.index0 % 3) * 0.15 }};">
+            </div>
+            {% set offset.val = offset.val + fill %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="thermal-bar-group">
+        <div class="bar-label-header">Cooling: {{ projected_cooling|round(1) }} Flux</div>
+        <div class="meter-static" style="height:20px;">
+            {% set offset2 = namespace(val=0) %}
+            {% for h in systems %}
+            {% set cooling_val = h.tick() %}
+            {% if cooling_val > 0 %}
+            {% set fill = (cooling_val / max_val * 100) %}
+            <div class="fill" style="left:{{ offset2.val }}%; width:{{ fill }}%; background:var(--primary-color); opacity:{{ 0.6 + (loop.index0 % 3) * 0.2 }};">
+            </div>
+            {% set offset2.val = offset2.val + fill %}
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="heat-section-header">Sink Saturation</div>
+    <div class="meter-static">
+        {% for segment in segments %}
+        <div class="fill" style="left:{{ segment.offset }}%; width:{{ segment.fill }}%; background:{{ segment.color }};">
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="compact-stats-grid">
+        <span>Forecast: {{ (projected_gen - projected_cooling)|round(1) }} Flux</span>
+        <span>Pool: {{ current_flux|round(0) }}/{{ max_flux|round(0) }}</span>
+        <span>Capacity: {{ "%.0f"|format(total_capacity) }}</span>
+    </div>
+</div>

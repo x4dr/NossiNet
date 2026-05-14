@@ -1,0 +1,48 @@
+{% set b64 = system.name|b64e %}
+<div class="system-card movement-card {% if system.is_active() %}state-active{% elif system.is_disabled() %}state-disabled{% elif system.is_booting() %}state-booting{% else %}state-offline{% endif %} {{ 'internal-heat' if system.current_heat > 0 else '' }}"
+     id="system-{{ b64 }}">
+    
+    <div class="overheat-indicator">INTERNAL HEAT: {{ system.current_heat|round(1) }}</div>
+
+    <div class="card-header">
+        <a href="{{ url_for('sheets.mecha_system_detail', m=identifier, s=sys_category, n=b64) }}" 
+           class="system-name" style="text-decoration: none; cursor: pointer;">{{ system.name }}</a>
+        <div class="card-controls">
+            <button class="control-btn" onclick="onSystemToggle('{{ b64 }}')">
+                {% if system.is_active() or system.is_booting() %}DEACTIVATE{% else %}ACTIVATE{% endif %}
+            </button>
+            <button class="control-btn btn-cycle"
+                hx-post="{{ url_for('sheets.mecha_use', m=identifier, s=sys_category, n=b64, use='cycle') }}"
+                hx-target="#system-{{ b64 }}" hx-swap="outerHTML" title="Cycle Availability"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'>CYCLE</button>
+        </div>
+    </div>
+
+    {% if system.is_booting() %}
+    <div class="boot-progress-container">
+        <span class="boot-label">BOOTING... ({{ system.boot_progress }}/{{ system.activation_rounds }})</span>
+        <div class="boot-bar">
+            <div class="boot-fill" style="width: {{ (system.boot_progress / system.activation_rounds) * 100 }}%"></div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="stats-grid">
+        <div class="stat-item">
+            <span class="stat-label">THRUST</span>
+            <span class="stat-value">{{ system.thrust }}kN</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">DYN</span>
+            <span class="stat-value">{{ system.dynamics }}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">ENERGY</span>
+            <span class="stat-value">{{ system.energy * system.amount }}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">HEAT</span>
+            <span class="stat-value">{{ system.amount * (system.heats.values()|sum) }}</span>
+        </div>
+    </div>
+</div>

@@ -5,223 +5,321 @@
 {% endblock %}
 
 {% block body %}
-<div class="comm-center-layout denser-layout">
-    <!-- Main Display Area -->
-    <main class="main-screen">
-        <!-- Persistent Status Header -->
-        <div class="status-bar" hx-get="{{ url_for('sheets.mecha_status_summary', m=identifier) }}"
-            hx-trigger="load, resource-updated from:body" hx-swap="outerHTML">
-            <div class="status-item">SPEED: <span id="status-speed" class="highlight">{{
-                    "%.1f"|format(mech.current_speed) }}</span> km/h
-            </div>
-            <div class="status-item">POWER: <span id="status-power" class="highlight">{{ mech.energy_output() }}</span>
-            </div>
-            <div class="status-item">FLUX: <span id="status-flux" class="highlight">{{ mech.fluxpool|round(1) }} / {{
-                    mech.fluxpool_max()|round(1) }}</span></div>
-            <div class="status-item">TURN: <span id="status-turn" class="highlight">{{ mech.turn }}</span></div>
+<div class="mecha-layout">
+    <!-- Sidebar -->
+    <aside class="mecha-sidebar" id="mecha-sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-title">MECHA</span>
+            <span class="sidebar-turn">TURN {{ mech.turn }}</span>
         </div>
 
-        <!-- Top Navigation (Non-floating) -->
-        <nav class="nav-top">
-            <div class="nav-item active" onclick="switchTab('dashboard', this)">
-                <div class="nav-label">DASHBOARD</div>
+        <nav class="sidebar-nav">
+            <div class="sidebar-item active" data-view="overview" onclick="switchView('overview', this)">
+                <div class="sidebar-item-label">Overview</div>
+                <div class="sidebar-item-summary" id="ss-overview">--</div>
+                <div class="sidebar-item-hover" id="ssh-overview">
+                    <div class="hover-row"><span class="hover-label">Speed</span><span class="hover-value">{{ "%.1f"|format(mech.current_speed) }} km/h</span></div>
+                    <div class="hover-row"><span class="hover-label">Target</span><span class="hover-value">{{ "%.1f"|format(mech.target_speed) }} km/h</span></div>
+                    <div class="hover-row"><span class="hover-label">Fluxpool</span><span class="hover-value">{{ mech.fluxpool|round(1) }} / {{ mech.fluxpool_max()|round(1) }}</span></div>
+                    <div class="hover-row"><span class="hover-label">Energy</span><span class="hover-value">{{ mech.energy_output()|round(1) }} / {{ mech.energy_demand()|round(1) }}</span></div>
+                </div>
             </div>
-            <div class="nav-item" onclick="switchTab('thermal', this)">
-                <div class="nav-label">THERMAL & POWER</div>
+            <div class="sidebar-item" data-view="movement" onclick="switchView('movement', this)">
+                <div class="sidebar-item-label">Movement</div>
+                <div class="sidebar-item-summary" id="ss-movement">{{ "%.1f"|format(mech.current_speed) }} km/h</div>
+                <div class="sidebar-item-hover" id="ssh-movement">
+                    <div class="hover-row"><span class="hover-label">Current</span><span class="hover-value">{{ "%.1f"|format(mech.current_speed) }} km/h</span></div>
+                    <div class="hover-row"><span class="hover-label">Target</span><span class="hover-value">{{ "%.1f"|format(mech.target_speed) }} km/h</span></div>
+                    <div class="hover-row"><span class="hover-label">Systems</span><span class="hover-value">{{ mech.Movement|length }}</span></div>
+                </div>
             </div>
-            <div class="nav-item" onclick="switchTab('combat', this)">
-                <div class="nav-label">COMBAT</div>
+            <div class="sidebar-item" data-view="power" onclick="switchView('power', this)">
+                <div class="sidebar-item-label">Power</div>
+                <div class="sidebar-item-summary" id="ss-power">{{ mech.energy_output()|round(1) }} E</div>
+                <div class="sidebar-item-hover" id="ssh-power">
+                    <div class="hover-row"><span class="hover-label">Output</span><span class="hover-value">{{ mech.energy_output()|round(1) }}</span></div>
+                    <div class="hover-row"><span class="hover-label">Demand</span><span class="hover-value">{{ mech.energy_demand()|round(1) }}</span></div>
+                    <div class="hover-row"><span class="hover-label">Reactors</span><span class="hover-value">{{ mech.Energy|length }}</span></div>
+                </div>
             </div>
-            <div class="nav-item" onclick="switchTab('nextturn', this)">
-                <div class="nav-label">NEXT TURN</div>
+            <div class="sidebar-item" data-view="thermal" onclick="switchView('thermal', this)">
+                <div class="sidebar-item-label">Thermal</div>
+                <div class="sidebar-item-summary" id="ss-thermal">{{ mech.fluxpool|round(1) }} / {{ mech.fluxpool_max()|round(1) }}</div>
+                <div class="sidebar-item-hover" id="ssh-thermal">
+                    <div class="hover-row"><span class="hover-label">Fluxpool</span><span class="hover-value">{{ mech.fluxpool|round(1) }} / {{ mech.fluxpool_max()|round(1) }}</span></div>
+                    <div class="hover-row"><span class="hover-label">Baseload</span><span class="hover-value">{{ mech.flux_baseload()|round(1) }}</span></div>
+                    <div class="hover-row"><span class="hover-label">Cooling</span><span class="hover-value">{{ mech.projected_cooling()|round(1) }}</span></div>
+                </div>
             </div>
-            <div class="nav-item" onclick="switchTab('timeline', this)">
-                <div class="nav-label">TIMELINE</div>
+            <div class="sidebar-item" data-view="combat" onclick="switchView('combat', this)">
+                <div class="sidebar-item-label">Combat</div>
+                <div class="sidebar-item-summary" id="ss-combat">{{ mech.Offensive|length }} wpn</div>
+                <div class="sidebar-item-hover" id="ssh-combat">
+                    <div class="hover-row"><span class="hover-label">Weapons</span><span class="hover-value">{{ mech.Offensive|length }}</span></div>
+                    <div class="hover-row"><span class="hover-label">Defense</span><span class="hover-value">{{ mech.Defensive|length }}</span></div>
+                </div>
+            </div>
+            <div class="sidebar-item" data-view="support" onclick="switchView('support', this)">
+                <div class="sidebar-item-label">Support</div>
+                <div class="sidebar-item-summary" id="ss-support">{{ mech.Support|length }} sys</div>
+                <div class="sidebar-item-hover" id="ssh-support">
+                    <div class="hover-row"><span class="hover-label">Systems</span><span class="hover-value">{{ mech.Support|length }}</span></div>
+                </div>
             </div>
         </nav>
+
+        <div class="sidebar-footer">
+            <div id="pending-badge" class="pending-badge hidden" onclick="switchView('overview', document.querySelector('[data-view=overview]'))">
+                <span id="pending-count">0</span> pending
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content + Footer wrapper -->
+    <div class="mecha-right">
+    <main class="mecha-content">
+        <!-- Status Bar -->
+        <div class="mecha-statusbar" hx-get="{{ url_for('sheets.mecha_status_summary', m=identifier) }}"
+            hx-trigger="load, resource-updated from:body" hx-swap="outerHTML">
+            <div class="status-item">SPEED: <span class="stat-val">{{ "%.1f"|format(mech.current_speed) }}</span> km/h</div>
+            <div class="status-item">POWER: <span class="stat-val">{{ mech.energy_output() }}</span></div>
+            <div class="status-item">FLUX: <span class="stat-val">{{ mech.fluxpool|round(1) }} / {{ mech.fluxpool_max()|round(1) }}</span></div>
+            <div class="status-item">TURN: <span class="stat-val">{{ mech.turn }}</span></div>
+        </div>
+
+        <!-- Overheat Modal Container -->
+        <div id="overheat-modal-container"></div>
         <div hx-get="{{ url_for('sheets.mecha_check_modals', m=identifier) }}" hx-trigger="load"
             hx-target="#overheat-modal-container" style="display:none;"></div>
-        <script>
-            initMechaState("{{ identifier }}", {{ mech.turn }}, {{ mech.fluxpool }}, {{ mech.fluxpool_max() }}, {{ mech.projected_cooling() }});
-            {% for cat in ["Movement", "Energy", "Heat", "Offensive", "Defensive", "Support"] %}
-            {% for name, sys in mech.get_syscat(cat).items() %}
-            {% set total_heat = (sys.heats.values() | sum) * sys.amount %}
-            window.registerSystem("{{ name|b64e }}", "{{ name }}", "{{ cat|lower }}", {{ sys.current if cat == "Heat" else 0 }}, {{ sys.capacity if cat == "Heat" else 0 }}, {{ sys.flux if cat == "Heat" else 0 }}, {{ sys.energy * sys.amount }}, {{ total_heat }}, {{ 'true' if sys.is_active() or sys.is_booting() else 'false' }});
-            {% endfor %}
-            {% endfor %}
 
-            window.mechaState.loadouts = {
-                {% for name, systems in mech.loadouts.items() %}
-            "{{ name }}": [{% for s in systems %}"{{ s.name|b64e if s.systype is defined else '' }}"{% if not loop.last %}, {% endif %} {% endfor %}],
-            {% endfor %}
-            };
-        </script>
-        <div id="overheat-modal-container"></div>
-
-
-        <header class="screen-header">
-            <h2 id="main-title">MECHA DASHBOARD</h2>
-            <div class="screen-status">ONLINE</div>
+        <!-- Header -->
+        <header class="content-header">
+            <h2 id="view-title">Overview</h2>
         </header>
 
-        <!-- View: Dashboard (Overview + Movement) -->
-        <div id="view-dashboard" class="view-panel active">
-            {% include "sheets/mechasheet_htmx/overview_ui.html" %}
-            <div style="margin-top: 30px;">
-                <h3 class="stat-heading">SPEED CONTROL</h3>
-                {% include "sheets/mechasheet_htmx/speed_control.html" %}
-                <!-- Movement Analysis Graph -->
-                <div class="graph-container"
-                    style="margin-top: 20px; background: rgba(0,0,0,0.1); border-radius: 4px; padding: 10px; border: 1px solid var(--tertiary-color);">
-                    <div hx-get="{{ url_for('sheets.mecha_movement_graph', m=identifier) }}"
+        <!-- View: Overview -->
+        <div id="view-overview" class="view-panel active">
+            <div class="overview-grid">
+                <div class="overview-card">
+                    <h3 class="card-title">Speed</h3>
+                    <div class="speed-display">
+                        <span class="speed-current">{{ "%.1f"|format(mech.current_speed) }}</span>
+                        <span class="speed-unit">km/h</span>
+                    </div>
+                    <div class="speed-target">
+                        Target: <span id="ov-target-speed">{{ "%.1f"|format(mech.target_speed) }}</span> km/h
+                    </div>
+                </div>
+
+                <div class="overview-card overview-heat" onclick="switchView('thermal', document.querySelector('[data-view=thermal]'))" style="cursor:pointer;">
+                    <h3 class="card-title">Heat</h3>
+                    <div id="overview-heat" hx-get="{{ url_for('sheets.mech_heat_ui', m=identifier, mode='overview') }}"
                         hx-trigger="load, resource-updated from:body" hx-swap="innerHTML">
-                        <div class="loading-placeholder"
-                            style="font-family: 'Orbitron'; font-size: 0.8em; color: var(--text-dim);">INITIATING
-                            PROPULSION ANALYSIS...</div>
+                        <div class="graph-placeholder">LOADING...</div>
+                    </div>
+                </div>
+
+                <div class="overview-card overview-power" onclick="switchView('power', document.querySelector('[data-view=power]'))" style="cursor:pointer;">
+                    <h3 class="card-title">Power</h3>
+                    <div class="meter-container" hx-get="{{ url_for('sheets.energy_meter', m=identifier) }}"
+                        hx-trigger="load, resource-updated from:body" hx-swap="innerHTML">
+                        <div class="graph-placeholder">LOADING...</div>
+                    </div>
+                </div>
+
+                <div class="overview-card">
+                    <h3 class="card-title">Systems</h3>
+                    <div class="sys-status-grid">
+                        {% for cat in ["Movement", "Energy", "Heat", "Offensive", "Defensive", "Support"] %}
+                        <div class="sys-cat"><span class="cat-label">{{ cat }}</span><span class="cat-val">{{ mech.get_syscat(cat)|length }}</span></div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="overview-card overview-pending">
+                    <h3 class="card-title">Pending Changes</h3>
+                    <div id="pending-list" class="pending-list">
+                        <span class="pending-empty">No pending changes</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- View: Thermal (Heat + Energy) -->
-        <div id="view-thermal" class="view-panel">
-            <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px;">
-                <div class="thermal-col-power">
-                    <section class="dashboard-section section-energy-meter">
-                        <h3 class="stat-heading">POWER GRID</h3>
-                        <div class="meter-container" hx-get="{{ url_for('sheets.energy_meter', m=identifier) }}"
-                            hx-swap="innerHTML" hx-trigger="load, resource-updated from:body" hx-target="this">
-                        </div>
-                    </section>
+        <!-- View: Movement -->
+        <div id="view-movement" class="view-panel">
+            <div class="domain-grid">
+                <div class="domain-section">
+                    <h3 class="card-title">Speed Control</h3>
+                    {% include "sheets/mechasheet_htmx/speed_control.html" %}
+                    <div class="graph-container" hx-get="{{ url_for('sheets.mecha_movement_graph', m=identifier) }}"
+                        hx-trigger="load, resource-updated from:body" hx-swap="innerHTML">
+                        <div class="graph-placeholder">PROPULSION ANALYSIS...</div>
+                    </div>
                 </div>
-                <div class="thermal-col-heat">
-                    <section class="dashboard-section">
-                        <h3 class="stat-heading">THERMAL REGULATION</h3>
-                        <div id="unified-heat-ui" hx-get="{{ url_for('sheets.mech_heat_ui', m=identifier) }}"
-                            hx-swap="innerHTML" hx-trigger="load, resource-updated from:body" hx-target="this">
-                        </div>
-                    </section>
+                <div class="domain-section">
+                    <h3 class="card-title">Movement Systems</h3>
+                    <div class="system-row">
+                        {% for sys in mech.Movement.values() %}
+                        <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='movement', n=sys.name|b64e) }}"
+                            hx-swap="outerHTML" hx-trigger="load" hx-target="this"></div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <section class="dashboard-section" style="margin-top: 20px;">
-                <h3 class="stat-heading">MAINTENANCE SYSTEMS</h3>
-                <div class="system-row">
-                    {% for energy in mech.Energy.values() %}
-                    <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='energy', n=energy.name|b64e) }}"
-                        hx-swap="outerHTML" hx-trigger="load" hx-target="this"></div>
-                    {% endfor %}
-                    {% for heat in mech.Heat.values() %}
-                    <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='heat', n=heat.name|b64e) }}"
-                        hx-swap="outerHTML" hx-trigger="load" hx-target="this"></div>
-                    {% endfor %}
+        <!-- View: Power -->
+        <div id="view-power" class="view-panel">
+            <div class="domain-grid">
+                <div class="domain-section">
+                    <h3 class="card-title">Power Grid</h3>
+                    <div class="meter-container" hx-get="{{ url_for('sheets.energy_meter', m=identifier) }}"
+                        hx-swap="innerHTML" hx-trigger="load, resource-updated from:body" hx-target="this"></div>
                 </div>
-            </section>
+                <div class="domain-section">
+                    <h3 class="card-title">Reactors</h3>
+                    <div class="system-row">
+                        {% for sys in mech.Energy.values() %}
+                        <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='energy', n=sys.name|b64e) }}"
+                            hx-swap="outerHTML" hx-trigger="load" hx-target="this"></div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Thermal -->
+        <div id="view-thermal" class="view-panel">
+            <div class="domain-grid">
+                <div class="domain-section">
+                    <h3 class="card-title">Thermal Regulation</h3>
+                    <div id="unified-heat-ui" hx-get="{{ url_for('sheets.mech_heat_ui', m=identifier) }}"
+                        hx-swap="innerHTML" hx-trigger="load, resource-updated from:body" hx-target="this"></div>
+                </div>
+                <div class="domain-section">
+                    <h3 class="card-title">Cooling Systems</h3>
+                    <div class="system-row">
+                        {% for sys in mech.Heat.values() %}
+                        <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='heat', n=sys.name|b64e) }}"
+                            hx-swap="outerHTML" hx-trigger="load" hx-target="this"></div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- View: Combat -->
         <div id="view-combat" class="view-panel">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <section class="dashboard-section">
-                    <h3 class="stat-heading">Offensive</h3>
+            <div class="domain-grid">
+                <div class="domain-section">
+                    <h3 class="card-title">Weapons</h3>
                     <div class="system-row">
-                        {% for system in mech.Offensive.values() %}
-                        <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='offensive', n=system.name|b64e) }}"
+                        {% for sys in mech.Offensive.values() %}
+                        <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='offensive', n=sys.name|b64e) }}"
                             hx-swap="outerHTML" hx-trigger="load" hx-target="this"></div>
                         {% endfor %}
                     </div>
-                </section>
-                <section class="dashboard-section">
-                    <h3 class="stat-heading">Defensive & Support</h3>
+                </div>
+                <div class="domain-section">
+                    <h3 class="card-title">Defense</h3>
                     <div class="system-row">
-                        {% for system in mech.Defensive.values() %}
-                        <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='defensive', n=system.name|b64e) }}"
+                        {% for sys in mech.Defensive.values() %}
+                        <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='defensive', n=sys.name|b64e) }}"
                             hx-swap="outerHTML" hx-trigger="load" hx-target="this"></div>
                         {% endfor %}
-                        {% for system in mech.Support.values() %}
-                        <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='support', n=system.name|b64e) }}"
-                            hx-swap="outerHTML" hx-trigger="load" hx-target="this"></div>
+                    </div>
+                    <h3 class="card-title" style="margin-top:16px;">Seals</h3>
+                    <div class="seal-grid">
+                        {% for seal in mech.Seal.values() %}
+                        <div class="seal-item"><span class="seal-name">{{ seal.name }}</span><span class="seal-lvl">Lv {{ seal.level }}</span></div>
                         {% endfor %}
-
                     </div>
-                    <div class="dashboard-section" style="margin-top: 20px">
-                        <h3 class="stat-heading">Seals</h3>
-                        <div
-                            style="display: grid; grid-template-columns: 1fr auto; gap: 5px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px;">
-                            <div class="stat-label">Name</div>
-                            <div class="stat-label">Lvl</div>
-                            {% for seal in mech.Seal.values() %}
-                            <div class="system-name">{{ seal.name }}</div>
-                            <div class="stat-value">{{ seal.level }}</div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </section>
+                </div>
             </div>
         </div>
 
-        <!-- View: Next Turn -->
-        <div id="view-nextturn" class="view-panel" hx-get="{{ url_for('sheets.mecha_next_turn_view', m=identifier) }}"
-            hx-trigger="resource-updated from:body" hx-target="this">
-            {% include "sheets/mechasheet_htmx/next_turn_view.html" %}
-        </div>
-
-        <!-- View: Timeline -->
-        <div id="view-timeline" class="view-panel">
-            <section class="dashboard-section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3 class="stat-heading" style="margin: 0;">ENCOUNTER TIMELINE</h3>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="control-btn" hx-post="{{ url_for('sheets.mecha_undo', m=identifier) }}"
-                            hx-target="body" hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
-                            title="Undo">UNDO</button>
-                        <button class="control-btn" hx-post="{{ url_for('sheets.mecha_redo', m=identifier) }}"
-                            hx-target="body" hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
-                            title="Redo">REDO</button>
+        <!-- View: Support -->
+        <div id="view-support" class="view-panel">
+            <div class="domain-grid">
+                <div class="domain-section">
+                    <h3 class="card-title">Support Systems</h3>
+                    <div class="system-row">
+                        {% for sys in mech.Support.values() %}
+                        <div hx-get="{{ url_for('sheets.mecha_sys', m=identifier, s='support', n=sys.name|b64e) }}"
+                            hx-swap="outerHTML" hx-trigger="load" hx-target="this"></div>
+                        {% endfor %}
                     </div>
                 </div>
-                <div id="timeline-content" hx-get="{{ url_for('sheets.mecha_timeline', m=identifier) }}"
-                    hx-trigger="load, turn-updated from:body" hx-target="this">
-                    <p style="color: var(--text-dim); font-style: italic;">Loading timeline...</p>
-                </div>
-            </section>
+            </div>
         </div>
     </main>
-    <!-- Global Action Footer -->
-    <footer class="global-footer static-footer">
-        <div class="footer-heat-control">
-            <div class="stat-label">MANUAL HEAT</div>
-            <div style="display: flex; gap: 10px;">
-                <input type="number" id="global-manual-heat" class="roll-input" style="width: 80px;" placeholder="+/-">
-                <button class="cyber-button" style="background: var(--tertiary);"
-                    onclick="window.mechaState.pending.heat_manual = parseFloat(document.getElementById('global-manual-heat').value) || 0; updateNextTurnBreakdown();">SET</button>
+
+    <!-- Footer -->
+    <footer class="mecha-footer">
+        <div class="footer-controls">
+            <div class="footer-heat">
+                <span class="footer-label">Manual Heat</span>
+                <input type="number" id="global-manual-heat" class="footer-input" placeholder="+/-">
+                <button class="footer-btn" onclick="setManualHeat()">SET</button>
             </div>
         </div>
-        <button class="commit-btn" onclick="commitTurn()">COMMIT TURN & TRANSITION</button>
+        <button class="commit-btn" onclick="commitTurn()">COMMIT TURN</button>
     </footer>
-
-    <!-- Scroll to Top Button -->
-    <button id="scroll-to-top" class="floating-btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
-        title="Scroll to Top">
-        ↑
-    </button>
-</div>
+    </div><!-- end mecha-right -->
+</div><!-- end mecha-layout -->
 
 <script>
-    function switchTab(tabName, element) {
-        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    {% autoescape false %}
+    initMechaState("{{ identifier }}", {{ mech.turn }}, {{ mech.fluxpool }}, {{ mech.fluxpool_max() }}, {{ mech.projected_cooling() }});
+    {% for cat in ["Movement", "Energy", "Heat", "Offensive", "Defensive", "Support"] %}
+    {% for name, sys in mech.get_syscat(cat).items() %}
+    {% set total_heat = (sys.heats.values() | sum) * sys.amount %}
+    window.registerSystem("{{ name|b64e }}", "{{ name }}", "{{ cat|lower }}", {{ sys.current if cat == "Heat" else 0 }}, {{ sys.capacity if cat == "Heat" else 0 }}, {{ sys.flux if cat == "Heat" else 0 }}, {{ sys.energy * sys.amount }}, {{ total_heat }}, {{ 'true' if sys.is_active() or sys.is_booting() else 'false' }});
+    {% endfor %}
+    {% endfor %}
+
+    window.mechaState.loadouts = {
+        {% for name, systems in mech.loadouts.items() %}
+        "{{ name }}": [{% for s in systems %}"{{ s.name|b64e if s.systype is defined else '' }}"{% if not loop.last %}, {% endif %}{% endfor %}],
+        {% endfor %}
+    };
+    {% endautoescape %}
+
+    function switchView(viewName, element) {
+        document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
         element.classList.add('active');
         document.querySelectorAll('.view-panel').forEach(el => el.classList.remove('active'));
-        document.getElementById('view-' + tabName).classList.add('active');
+        const panel = document.getElementById('view-' + viewName);
+        if (panel) panel.classList.add('active');
         const titles = {
-            'dashboard': 'MECHA DASHBOARD',
-            'thermal': 'THERMAL & POWER',
-            'combat': 'COMBAT SYSTEMS',
-            'nextturn': 'TURN TRANSITION',
-            'timeline': 'ENCOUNTER TIMELINE'
+            'overview': 'Overview', 'movement': 'Movement', 'power': 'Power',
+            'thermal': 'Thermal', 'combat': 'Combat', 'support': 'Support'
         };
-        document.getElementById('main-title').textContent = titles[tabName];
-        window.dispatchEvent(new Event('resize'));
+        document.getElementById('view-title').textContent = titles[viewName] || viewName;
+    }
+
+    function setManualHeat() {
+        const val = parseFloat(document.getElementById('global-manual-heat').value) || 0;
+        window.mechaState.pending.heat_manual = val;
+        updatePendingBadge();
+    }
+
+    function updatePendingBadge() {
+        const pending = window.mechaState.pending;
+        let count = 0;
+        if (pending.speed !== undefined) count++;
+        if (pending.heat_manual) count++;
+        if (pending.toggles && Object.keys(pending.toggles).length) count += Object.keys(pending.toggles).length;
+        if (pending.heat_assignments && Object.keys(pending.heat_assignments).length) count += Object.keys(pending.heat_assignments).length;
+        if (pending.loadout) count++;
+        const badge = document.getElementById('pending-badge');
+        const countEl = document.getElementById('pending-count');
+        if (count > 0) {
+            badge.classList.remove('hidden');
+            countEl.textContent = count;
+        } else {
+            badge.classList.add('hidden');
+        }
     }
 </script>
 {% endblock %}

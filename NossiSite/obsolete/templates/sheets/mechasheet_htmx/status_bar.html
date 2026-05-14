@@ -1,0 +1,12 @@
+<div class="status-bar {% if mech.projected_flux() > mech.fluxpool_max() %}alert-overheat{% endif %}"
+        id="mecha-status-bar" hx-get="{{ url_for('sheets.mecha_status_summary', m=identifier) }}"
+        hx-trigger="resource-updated from:body" hx-swap="outerHTML">
+        <div class="status-item">SPEED: <span id="status-speed" class="highlight">{{ "%.1f"|format(mech.current_speed)
+                        }}</span> km/h
+        </div>
+        <div class="status-item">POWER: <span id="status-power" class="highlight">{{ mech.energy_output()|round(1)
+                        }}</span> / <span class="highlight">{{ mech.energy_demand()|round(1) }}</span></div>
+        <div class="status-item">FLUX: <span id="status-flux" class="highlight">{{ mech.fluxpool|round(1) }} / {{
+                        mech.fluxpool_max()|round(1) }}</span></div>
+        <div class="status-item">TURN: <span id="status-turn" class="highlight">{{ mech.turn }}</span></div>
+</div>

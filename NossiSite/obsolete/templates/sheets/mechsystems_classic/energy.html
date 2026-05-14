@@ -1,0 +1,30 @@
+<div class="system-box-narrow{% if system.is_active() %} active {% endif %}{% if system.is_disabled() %} inactive {% endif %}"
+     id="energy-{{ system.name|b64e }}"
+     oncontextmenu="return false;">
+
+    <div hx-get="{{ url_for('sheets.mecha_use', m=identifier, s='energy', n=system.name|b64e ) }}"
+         hx-swap="outerHTML swap:1s settle:1s"
+         hx-trigger="click from:#energy-{{ system.name|b64e }}"
+         hx-target="#energy-{{ system.name|b64e }}"
+         style="display: none;"></div>
+
+    <div hx-get="{{ url_for('sheets.mecha_use', m=identifier, s='energy', n=system.name|b64e ) }}?use=disable"
+         hx-swap="outerHTML swap:1s settle:1s"
+         hx-trigger="contextmenu from:#energy-{{ system.name|b64e }}"
+         hx-target="#energy-{{ system.name|b64e }}"
+         style="display: none;"></div>
+
+    <span class="stat-heading">{{ system.name }}</span>
+    <div class="stat-box">
+        <span class="stat-label">X: {{ system.amount }}</span>
+        <span class="tooltip-text">scaling factor</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-label">TE: {{ system.amount*system.energy }}</span>
+        <span class="tooltip-text">Total Energy after scaling</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-label">TM: {{ system.amount*system.mass }}</span>
+        <span class="tooltip-text">Total Mass after scaling</span>
+    </div>
+</div>

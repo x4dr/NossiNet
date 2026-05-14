@@ -547,29 +547,6 @@ function applyForces() {
             }
         }
     }
-    // Label overlap resolution (bounding box collision)
-    for (let i = 0; i < nodes.length; i++) {
-        const n1 = nodes[i];
-        for (let j = i + 1; j < nodes.length; j++) {
-            const n2 = nodes[j];
-            if (n1.container !== n2.container) continue;
-            const overlapX = Math.max(0, (n1.w + n2.w) / 2 - Math.abs(n2.x - n1.x));
-            const overlapY = Math.max(0, (n1.h + n2.h) / 2 - Math.abs(n2.y - n1.y));
-            if (overlapX > 3 && overlapY > 3) {
-                if (overlapX < overlapY) {
-                    const push = overlapX * 0.3;
-                    const dir = n2.x > n1.x ? 1 : -1;
-                    n1.vx -= dir * push;
-                    n2.vx += dir * push;
-                } else {
-                    const push = overlapY * 0.3;
-                    const dir = n2.y > n1.y ? 1 : -1;
-                    n1.vy -= dir * push;
-                    n2.vy += dir * push;
-                }
-            }
-        }
-    }
     // Target and Other forces
     for (let node of nodes) {
         const dx = node.x - node.cx;
@@ -592,7 +569,7 @@ function applyForces() {
             const mdistSq = mdx * mdx + mdy * mdy;
             if (mdistSq < 10000) {
                 const mdist = Math.sqrt(mdistSq);
-                const mforce = 2000 / Math.max(mdistSq, 100);
+                const mforce = 5000 / Math.max(mdistSq, 100);
                 node.vx += (mdx / (mdist || 1)) * mforce;
                 node.vy += (mdy / (mdist || 1)) * mforce;
             }
@@ -601,10 +578,10 @@ function applyForces() {
         const cRect = node.container.getBoundingClientRect();
         if (node.x < 15) node.vx += (15 - node.x) * 0.5;
         if (node.x + node.w > cRect.width - 15) node.vx -= (node.x + node.w - (cRect.width - 15)) * 0.5;
-        node.vx += (node.cx - node.x) * 0.008;
-        node.vy += (node.cy - node.y) * 0.008;
-        node.vx *= 0.55;
-        node.vy *= 0.55;
+        node.vx += (node.cx - node.x) * 0.012;
+        node.vy += (node.cy - node.y) * 0.012;
+        node.vx *= 0.6;
+        node.vy *= 0.6;
         node.x += node.vx;
         node.y += node.vy;
     }
