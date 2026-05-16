@@ -7,6 +7,7 @@
 {% endblock %}
 {% block head %}
     <link href="{{ url_for('static', filename='wiki.css') }}?v={{ restart_id }}" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="clock.css") }}?v={{ restart_id }}">
 {% endblock %}
 {% block metanavcomplete %}
     <div class="metanavcontainer">

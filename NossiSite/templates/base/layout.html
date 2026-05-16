@@ -14,7 +14,6 @@
     {% endblock %}
     <link rel="stylesheet" type="text/css" href="{{ url_for('views.theme') }}?v={{ restart_id }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}?v={{ restart_id }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='clock.css') }}?v={{ restart_id }}">
     <script src="{{ url_for('static', filename='js/htmx.min.js') }}?v={{ restart_id }}"></script>
     {% block head %}{% endblock %}
 </head>
