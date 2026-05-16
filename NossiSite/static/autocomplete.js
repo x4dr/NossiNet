@@ -19,11 +19,11 @@ function autocomplete(inp, arr, exclude = []) {
         const list = inp._autocompleteList;
         if (inp._currentfocus >= list.children.length || isNaN(inp._currentfocus)) inp._currentfocus = 0;
         if (inp._currentfocus < 0) inp._currentfocus = (list.children.length - 1);
-        x = list.children.item(inp._currentfocus)
-        const last = makeActive(x);
+        let x = list.children.item(inp._currentfocus)
+        makeActive(x);
         if (e.keyCode === 13) {
             e.preventDefault();
-            last.click();
+            if (x) x.click();
             removeAutocompleteList(inp._autocompleteList);
             inp._autocompleteList = null;
         }
@@ -36,13 +36,10 @@ function autocomplete(inp, arr, exclude = []) {
 let lastactive = null;
 
 function makeActive(x) {
-    if (!x) return false;
-    let last = lastactive
-    if (lastactive) lastactive?.classList?.remove("autocomplete-active");
+    if (!x) return;
+    if (lastactive) lastactive.classList.remove("autocomplete-active");
     lastactive = x
     x.classList.add("autocomplete-active");
-    return last;
-
 }
 
 function buildAutocompleteList(arr, inp) {
@@ -129,7 +126,7 @@ function positionAutocompleteList(inp, list) {
 
 function removeAutocompleteList(list) {
     if (!list) return;
-    list.zIndex = 1
+    list.style.zIndex = 1
     list.style.transition = 'opacity 0.5s ease-out';
     list.style.opacity = '0';
     setTimeout(() => {

@@ -8,6 +8,7 @@
 {% if owner %}
 <!-- {owner} -->
 <script src="{{ url_for('static', filename='live_edit.js' ) }}?v={{ restart_id }}"></script>
+<script src="{{ url_for('static', filename='lightning.js' ) }}?v={{ restart_id }}"></script>
 
 {% for err in character.errors %}
 

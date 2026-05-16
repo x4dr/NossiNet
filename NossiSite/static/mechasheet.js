@@ -525,6 +525,17 @@ window.makelabels = function () {
             });
         });
     });
+    if (!window._fadeInit) {
+        window._fadeInit = true;
+        let current = null;
+        document.addEventListener("mouseover", (e) => {
+            const wrap = e.target.closest(".meter-wrap");
+            if (!wrap || wrap === current) return;
+            if (current) current.classList.remove("lasthoveredmeter");
+            wrap.classList.add("lasthoveredmeter");
+            current = wrap;
+        });
+    }
 }
 
 function applyForces() {
@@ -621,6 +632,11 @@ function updatePositions() {
 function render() {
     for (let node of nodes) {
         if (!node.label) continue;
+        // Recalculate anchor from current element position
+        const rect = node.el.getBoundingClientRect();
+        const cRect = node.container.getBoundingClientRect();
+        node.cx = (rect.left - cRect.left) + rect.width / 2;
+        node.cy = (rect.top - cRect.top) + rect.height / 2;
         const w = node.label.offsetWidth;
         const h = node.label.offsetHeight;
         node.w = w; node.h = h;

@@ -61,33 +61,19 @@ window.addEventListener("load", function () {
                 if (data.type === 'roll') {
                     const resultEl = document.getElementById('lightning-result');
                     if (resultEl) {
-                        // Use textContent for the result to avoid XSS
-                        // We still use innerHTML for the <strong> but it's safe if we control data.result
-                        // Actually, let's just be safe.
-                        resultEl.textContent = ''; 
+                        resultEl.textContent = '';
                         resultEl.appendChild(document.createTextNode(`${data.labels} ==> `));
                         const strong = document.createElement('strong');
                         strong.textContent = data.result;
                         resultEl.appendChild(strong);
-                        
+
                         resultEl.classList.add('active');
                         resultEl.classList.add('flash');
                         setTimeout(() => resultEl.classList.remove('flash'), 500);
                     }
-                    
-                    // Chatbox update is now handled by HTMX SSE in chat.html
-                    // But we might still need updateRelativeTimes
-                    if (document.getElementById('chatbox')) {
-                        setTimeout(() => {
-                            if (typeof window.updateRelativeTimes === 'function') window.updateRelativeTimes();
-                            const chatbox = document.getElementById('chatbox');
-                            if (chatbox) chatbox.scrollTop = chatbox.scrollHeight;
-                        }, 100);
-                    }
                 }
 
-                if (data.type === 'chat') {
-                    // Chatbox update is now handled by HTMX SSE in chat.html
+                if (data.type === 'roll' || data.type === 'chat') {
                     if (document.getElementById('chatbox')) {
                         setTimeout(() => {
                             if (typeof window.updateRelativeTimes === 'function') window.updateRelativeTimes();
@@ -100,53 +86,5 @@ window.addEventListener("load", function () {
                 console.error('Error parsing SSE JSON:', e);
             }
         }
-
-        document.addEventListener('click', function (e) {
-            const clock = e.target.closest('.clock-container');
-            if (clock) {
-                // Prevent bubbling to parents (like click triggers for modals)
-                e.preventDefault();
-                e.stopPropagation();
-
-                const rect = clock.getBoundingClientRect();
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-                const clickX = e.clientX - rect.left - centerX;
-                const clickY = e.clientY - rect.top - centerY;
-
-                // Polar coordinate angle (0 is at top)
-                let rawAngle = Math.atan2(clickY, clickX) * (180 / Math.PI) + 90;
-                // Normalize angle to [0, 360)
-                let angle = (rawAngle + 360) % 360;
-
-                // Active angle
-                const active = parseInt(clock.dataset.active);
-                const total = parseInt(clock.dataset.total);
-                const activeAngle = (active / total) * 360;
-
-                // Logic: click in active sector = decrease (-1)
-                const delta = (angle < activeAngle) ? -1 : 1;
-
-                const endpoint = `${clock.dataset.endpoint}/${delta}`;
-                fetch(endpoint).catch(err => console.error("Clock update fetch failed:", err));
-                return;
-            }
-
-            // Existing gauge/other logic
-            const target = e.target.closest('.gauge-box');
-            if (target && target.hasAttribute('data-endpoint')) {
-                const endpoint = target.getAttribute('data-endpoint');
-                fetch(endpoint).catch(err => console.error("Gauge update fetch failed:", err));
-            }
-        });
-
-        document.addEventListener('dblclick', function (e) {
-            const clock = e.target.closest('.clock-container');
-            if (clock) {
-                // Stop bubbling on double click to prevent modal opening
-                e.preventDefault();
-                e.stopPropagation();
-            }
-        });
-    }, 1000); // 1-second delay
+    }, 1000);
 });
