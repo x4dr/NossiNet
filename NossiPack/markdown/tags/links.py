@@ -6,7 +6,11 @@ from urllib.parse import urlparse
 
 class LinkValidatorTag(NossiTag):
     """
-    Validates wiki links, marking broken ones and fixing internal paths.
+    Wiki link validation (automatic).
+
+    Internal <a href="pagename"> links get a /wiki/ prefix.
+    If the target page does not exist the link gets a missing CSS class.
+    External links and anchor-only links are left unchanged.
     """
 
     priority = 80

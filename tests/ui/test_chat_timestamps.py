@@ -39,7 +39,7 @@ def test_server(test_db):
 
     port = 5001
     proc = subprocess.Popen(
-        ["python", "NossiNet.py", str(port), "--no-ssl"],
+        ["python", "NossiNet.py", str(port)],
         env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -52,7 +52,7 @@ def test_server(test_db):
         stdout, stderr = proc.communicate()
         pytest.fail(f"Server failed to start!\nSTDOUT: {stdout}\nSTDERR: {stderr}")
 
-    yield f"http://127.0.0.1:{port}"
+    yield f"https://127.0.0.1:{port}"
 
     proc.terminate()
     try:

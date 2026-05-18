@@ -5,15 +5,28 @@ from NossiPack.markdown.base import NossiTag, WikiEnvironment
 
 class CheckboxTag(NossiTag):
     """
-    Handles checklist syntax: - [ ] and - [x]
-    Transforms into hx-get checkboxes.
+    Task list: `- [ ] task` and `- [x] done`
+
+    Transforms list items into HTMX-powered toggle checkboxes.
+    Inside code blocks (backtick-wrapped) checkboxes are left as plain text.
+
+    Examples:
+      - [ ] unfinished
+      - [x] completed
     """
 
     priority = 30
     checkbox_re = re.compile(r"\[(?P<checked>.)] (?P<text>.*)")
 
+    @staticmethod
+    def _is_inside_code(text: str, pos: int) -> bool:
+        before = text[:pos]
+        return before.count("`") % 2 == 1
+
     def pre_process(self, text: str, env: WikiEnvironment) -> str:
         def _sub(match):
+            if self._is_inside_code(text, match.start()):
+                return match.group(0)
             m = self.checkbox_re.match(match.group(0)[2:])
             if not m:
                 return match.group(0)
