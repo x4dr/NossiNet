@@ -1235,52 +1235,17 @@ def energy_meter(m):
     mech = cast(Mecha, m_sheet.char)
     current_max = mech.energy_budget()
     overall_max = mech.energy_total()
-
-    # Generation segments -- all energy systems by state
-    gen_fills = []
-    gen_names = []
-    gen_colors = []
-    for e in mech.Energy.values():
-        val = e.energy * e.amount
-        if e.is_active():
-            gen_fills.append(val)
-            gen_names.append(e.name)
-            gen_colors.append("var(--primary-color)")
-        elif e.is_disabled():
-            gen_fills.append(val)
-            gen_names.append(e.name + " (damaged)")
-            gen_colors.append("var(--danger)")
-        else:
-            gen_fills.append(val)
-            gen_names.append(e.name)
-            gen_colors.append(
-                "color-mix(in srgb, var(--primary-color), transparent 70%)"
-            )
-
-    gen_max = overall_max if overall_max > 0 else 1
-    gen_segments = generate_meter_segments(gen_fills, gen_colors, gen_max, gen_names)
-
-    # Consumption segments -- active non-energy systems within budget
-    con_systems, _ = mech.energy_allocation()
-    con_fills = [s.energy * s.amount for s in con_systems]
-    con_names = [s.name for s in con_systems]
-    con_colors = ["var(--secondary-color)", "var(--primary-color)"]
-    con_max = current_max if current_max > 0 else 1
-    con_segments = generate_meter_segments(con_fills, con_colors, con_max, con_names)
-
-    con_draw = sum(con_fills)
+    systems, active = mech.energy_allocation()
+    fills = [x.energy for x in systems]
+    colors = ["var(--secondary-color)", "var(--primary-color)"]
+    segments = generate_meter_segments(
+        fills, colors, current_max, [x.name for x in systems]
+    )
     return render_template(
         "sheets/mechasheet_htmx/bar.html",
-        gen_segments=gen_segments,
-        con_segments=con_segments,
-        gen_max=overall_max,
-        gen_active_max=current_max,
-        con_max=current_max,
-        con_draw=con_draw,
-        gen_active=sum(1 for e in mech.Energy.values() if e.is_active()),
-        gen_total=len(mech.Energy),
+        segments=segments,
         name=m.rsplit("/")[-1],
-        maximum=100 * current_max / overall_max if overall_max > 0 else 0,
+        maximum=100 * current_max / overall_max,
     )
 
 
@@ -1323,14 +1288,8 @@ def mech_heat_ui(m):
                 if h > 0:
                     producers.append({"name": sys.name, "amount": h})
 
-    is_overview = request.args.get("mode") == "overview"
-    template = (
-        "sheets/mechasheet_htmx/heat_ui_overview.html"
-        if is_overview
-        else "sheets/mechasheet_htmx/heat_ui.html"
-    )
     return render_template(
-        template,
+        "sheets/mechasheet_htmx/heat_ui.html",
         systems=heatsys,
         max_flux=total_flux,
         current_flux=current_flux,

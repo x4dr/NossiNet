@@ -1,29 +1,8 @@
-<div class="meter-section">
-    <div class="bar-label-header">GENERATION: {{ "%.0f"|format(gen_active_max) }}E ({{ gen_active }}/{{ gen_total }} active, {{ "%.0f"|format(gen_max) }}E total)</div>
-    <div class="meter-wrap">
-    <div class="meter">
-        <div class="background-bar"></div>
-        {% for seg in gen_segments %}
-        <div class="fill" data-cyberlabel="{{ seg.name }}"
-            style="--fill: {{ seg.fill }}%; --color: {{ seg.color }}; --offset: {{ seg.offset }}%;">
-            <div class="cyber-anchor"></div>
-        </div>
-        {% endfor %}
+<div id="energymeter" class="meter" style="--max: {{ maximum }}%;">
+    <div id="background-bar-{{ name }}" class="background-bar"></div>
+    {% for segment in segments %}
+    <div id="{{ name }}-bar-{{ segment.name | b64e }}" class="fill" data-cyberlabel="{{ segment.name }}"
+        style="--fill: {{ segment.fill }}%; --color: {{ segment.color }}; --offset: {{ segment.offset }}%;">
     </div>
-    </div>
-</div>
-
-<div class="meter-section" style="margin-top:10px;">
-    <div class="bar-label-header">CONSUMPTION: {{ "%.0f"|format(con_draw) }}E / {{ "%.0f"|format(con_max) }}E budget</div>
-    <div class="meter-wrap">
-    <div class="meter">
-        <div class="background-bar"></div>
-        {% for seg in con_segments %}
-        <div class="fill" data-cyberlabel="{{ seg.name }}"
-            style="--fill: {{ seg.fill }}%; --color: {{ seg.color }}; --offset: {{ seg.offset }}%;">
-            <div class="cyber-anchor"></div>
-        </div>
-        {% endfor %}
-    </div>
-    </div>
+    {% endfor %}
 </div>
