@@ -5,7 +5,13 @@ from gamepack.Item import Item
 
 class InfoletTag(NossiTag):
     """
-    Handles infolet syntax: [!q:name]
+    Item tooltip: `[!q:itemname]`
+
+    Renders a hover tooltip with the item's description from the game database.
+    Falls back to showing just the item name if not found.
+
+    Examples:
+      [!q:healing potion]
     """
 
     priority = 40

@@ -93,6 +93,16 @@ Organize imports into three groups:
 - **Style Audits**: Before adding new rules, search the stylesheet for existing definitions of the same class or 
   duplicate functionality to prevent CSS bloat and conflicting rendering.
 
+### Git & History Discipline
+
+- **Git is for State, not Coding**: If a task involves re-organizing code state or history (e.g. squashing, cleaning up), 
+  reach the final file state using `write` or `edit` tools. Perform exactly **one** Git reset to align the history 
+  after the files are correct. NEVER use Git commands like `checkout` or `cherry-pick` to move code content between 
+  branches or states.
+- **The "Final" Law**: If any command or plan step containing words like "final", "last", or "conclusive" does not 
+  immediately produce the finished state, **STOP IMMEDIATELY**. Explain to the user what is preventing completion and 
+  ask for a plan. Do not loop or retry "final" steps.
+
 ## Architecture & Patterns
 
 - **Blueprints**: Flask logic is organized into Blueprints (`views`, `wiki`, `sheets`, etc.).

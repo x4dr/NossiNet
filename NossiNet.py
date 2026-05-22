@@ -29,7 +29,6 @@ start_savequeue()
 if __name__ == "__main__":
     logging.warning("Nosferatu net being run directly, DO NOT USE IN PRODUCTION")
 
-    test = False
     try:
         import argparse
 
@@ -47,7 +46,7 @@ if __name__ == "__main__":
         port=port,
         use_reloader=True,
         threaded=True,
-        ssl_context=("cert.pem", "key.pem") if not test else None,
+        ssl_context=("cert.pem", "key.pem"),
     )
 
     logging.warning("Nosferatu net closing")

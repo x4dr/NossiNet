@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
+    const optionscache = {};
     document.body.addEventListener("htmx:beforeSwap", () => {
         document.querySelectorAll('.smoothtransition').forEach(el => {
             el.style.gridTemplateRows = '0fr';
@@ -31,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     let resolved = false;
 
                     const onEnd = (e) => {
-                        if (e.target !== el) return; // ignore events from child elements
+                        if (e.target !== el) return;
                         if (resolved) return;
                         resolved = true;
                         el.removeEventListener('transitionend', onEnd);
@@ -41,7 +42,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     el.addEventListener('transitionend', onEnd);
 
-                    // Fallback: resolve after expected max transition time + small buffer
                     const timer = setTimeout(() => {
                         if (resolved) return;
                         resolved = true;
@@ -171,8 +171,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         }
-        const optionscache = {}; // global cache
-
         async function getOptions(heading, system = 'context') {
             if (!optionscache[heading]) {
                 const res = await fetch(`/skills/${system}/${heading}`);

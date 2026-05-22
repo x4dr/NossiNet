@@ -275,6 +275,50 @@ def wikipage(page: Optional[str] = None):
     return loaded_page.body, 200, {"Content-Type": "text/plain; charset=utf-8"}
 
 
+@views.route("/localmarkdown")
+def localmarkdown_demo():
+    sections = [
+        "# Local Markdown Features\n\n"
+        "Auto-generated reference documentation for all markdown tags.\n"
+    ]
+
+    for tag in nossi_markdown.tags:
+        cls = type(tag)
+        doc = cls.__doc__
+        if doc:
+            sections.append(f"---\n\n## {cls.__name__}\n\n{doc}\n")
+
+    body = "\n".join(sections)
+    body = bleach.clean(body)
+    body = nossi_markdown.process(body, page="localmarkdown")
+
+    return render_template(
+        "wiki/wikipage.html",
+        title="Local Markdown Demo",
+        tags=[],
+        body=Markup(body),
+        wiki="localmarkdown",
+        sheet_available=False,
+        css="",
+    )
+
+
+@views.route("/localmarkdown/raw")
+def localmarkdown_raw():
+    sections = [
+        "# Local Markdown Features\n\n"
+        "Auto-generated reference documentation for all markdown tags.\n"
+    ]
+
+    for tag in nossi_markdown.tags:
+        cls = type(tag)
+        doc = cls.__doc__
+        if doc:
+            sections.append(f"---\n\n## {cls.__name__}\n\n{doc}\n")
+
+    return "\n".join(sections), 200, {"Content-Type": "text/plain; charset=utf-8"}
+
+
 @views.route("/edit/<path:page>", methods=["GET", "POST"])
 def editwiki(page: str):
     checklogin()
