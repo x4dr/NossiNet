@@ -275,6 +275,24 @@ def wikipage(page: Optional[str] = None):
     return loaded_page.body, 200, {"Content-Type": "text/plain; charset=utf-8"}
 
 
+_checkbox_state: dict[str, bool] = {}
+
+
+@views.route("/checkbox/<path:rest>")
+def checkbox_toggle(rest: str):
+    key = rest
+    current = _checkbox_state.get(key, False)
+    _checkbox_state[key] = not current
+    checked = "checked" if not current else ""
+    return (
+        f'<input type="checkbox" {checked} '
+        f'hx-get="/checkbox/{key}" '
+        f'hx-swap="outerHTML" hx-trigger="change">',
+        200,
+        {"Content-Type": "text/html"},
+    )
+
+
 @views.route("/localmarkdown")
 def localmarkdown_demo():
     sections = [
@@ -286,10 +304,17 @@ def localmarkdown_demo():
         cls = type(tag)
         doc = cls.__doc__
         if doc:
-            sections.append(f"---\n\n## {cls.__name__}\n\n{doc}\n")
+            doc_rendered = nossi_markdown.process(
+                bleach.clean(doc), page="localmarkdown"
+            )
+            sections.append(
+                f"---\n\n"
+                f"## {cls.__name__}\n\n"
+                f"```\n{doc}\n```\n\n"
+                f"{doc_rendered}\n"
+            )
 
     body = "\n".join(sections)
-    body = bleach.clean(body)
     body = nossi_markdown.process(body, page="localmarkdown")
 
     return render_template(

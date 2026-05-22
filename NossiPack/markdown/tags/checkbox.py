@@ -34,7 +34,7 @@ class CheckboxTag(NossiTag):
             txt = m.group("text").strip()
             return (
                 f'<input type="checkbox" {checked} hx-get="/checkbox/{txt}/{env.page_name}" '
-                f'hx-swap="outerHTML" hx-trigger="load"> {txt}'
+                f'hx-swap="outerHTML" hx-trigger="change"> {txt}'
             )
 
         return re.sub(r"- \[.?]\s*.*", _sub, text)
