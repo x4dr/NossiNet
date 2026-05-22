@@ -29,7 +29,7 @@ GITHUB_WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET")
 WTF_CSRF_TIME_LIMIT = 60 * 60 * 24 * 7  #
 app.config.from_object(__name__)
 log = logging.getLogger("frontend")
-fh = logging.FileHandler("nossilog.log", mode="w")
+fh = logging.FileHandler("nossilog.log", mode="a")
 fh.setLevel(logging.DEBUG)
 log.addHandler(fh)
 logging.basicConfig(format="%(asctime)s %(levelname)s:%(message)s")
