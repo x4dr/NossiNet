@@ -20,6 +20,7 @@ app.register_blueprint(sheets.views)
 socks.start_threads()
 app.register_blueprint(extra.views)
 app.register_blueprint(chat.views)
+app.register_blueprint(socks.views)
 webhook.register(app)
 helpers.register(app)
 

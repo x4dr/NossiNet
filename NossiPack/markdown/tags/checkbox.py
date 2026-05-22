@@ -1,4 +1,5 @@
 import re
+from urllib.parse import quote
 
 from NossiPack.markdown.base import NossiTag, WikiEnvironment
 
@@ -33,7 +34,7 @@ class CheckboxTag(NossiTag):
             checked = "checked" if m.group("checked").strip() == "x" else ""
             txt = m.group("text").strip()
             return (
-                f'<input type="checkbox" {checked} hx-get="/checkbox/{txt}/{env.page_name}" '
+                f'<input type="checkbox" {checked} hx-get="/checkbox/{quote(txt)}/{env.page_name}" '
                 f'hx-swap="outerHTML" hx-trigger="change"> {txt}'
             )
 

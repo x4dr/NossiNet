@@ -4,7 +4,7 @@ import time
 from datetime import datetime, timezone
 
 import requests
-from flask import render_template, session, request
+from flask import Blueprint, render_template, session, request
 from jinja2 import Environment, PackageLoader, select_autoescape
 from livekit import api
 
@@ -14,7 +14,8 @@ from Data import connect_db
 from NossiSite.helpers import checklogin
 from NossiSite.socks import broadcast_to_hub
 from NossiSite.base import log
-from NossiSite.socks import views
+
+views = Blueprint("chat", __name__)
 
 env = Environment(loader=PackageLoader("NossiSite"), autoescape=select_autoescape())
 history_template = env.get_template("base/chathistory.html")
