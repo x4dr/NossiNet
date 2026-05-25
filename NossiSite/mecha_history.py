@@ -49,7 +49,7 @@ class MechaEncounterManager:
                             "file": f.name,
                         }
                     )
-            except (json.JSONDecodeError, IOError):
+            except json.JSONDecodeError, IOError:
                 continue
 
         # Sort by start_time descending
@@ -63,7 +63,7 @@ class MechaEncounterManager:
         try:
             with open(filename, "r") as f:
                 return json.load(f)
-        except (json.JSONDecodeError, IOError):
+        except json.JSONDecodeError, IOError:
             return None
 
     def save_encounter(self, timestamp: str, data: Dict[str, Any]):

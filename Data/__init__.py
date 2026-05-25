@@ -7,7 +7,6 @@ from contextlib import closing
 from importlib import resources
 from pathlib import Path
 
-
 DATABASE = os.environ.get("DATABASE", "./NN.db")
 g = {}  # module level caching
 logger = logging.getLogger(__name__)

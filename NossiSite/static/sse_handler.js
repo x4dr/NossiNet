@@ -10,35 +10,33 @@ window.addEventListener("load", function () {
         if (title) globalStatus.title = `SSE: ${title}`;
     };
 
-    // Delay initialization to ensure the DOM has settled
-    setTimeout(function () {
-        updateGlobalStatus('connecting', 'Connecting...');
-        const eventSource = new EventSource("/sse_updates");
+    updateGlobalStatus('connecting', 'Connecting...');
+    const eventSource = new EventSource("/sse_updates");
 
-        eventSource.onopen = function() {
-            console.log("SSE Connection opened");
-            updateGlobalStatus('connected', 'Connected');
-        };
+    eventSource.onopen = function() {
+        console.log("SSE Connection opened");
+        updateGlobalStatus('connected', 'Connected');
+    };
 
-        eventSource.onerror = function(err) {
-            console.error("SSE Connection error:", err);
-            updateGlobalStatus('error', 'Disconnected/Error. Retrying...');
-        };
+    eventSource.onerror = function(err) {
+        console.error("SSE Connection error:", err);
+        updateGlobalStatus('error', 'Disconnected/Error. Retrying...');
+    };
 
-        eventSource.onmessage = function (evt) {
-            // This will only fire for events without a name (if any remain)
+    eventSource.onmessage = function (evt) {
+        // This will only fire for events without a name (if any remain)
+        handleSSEData(evt.data);
+    };
+
+    // Handle named events
+    const eventTypes = ['clock', 'line', 'roll', 'chat'];
+    eventTypes.forEach(type => {
+        eventSource.addEventListener(type, function(evt) {
             handleSSEData(evt.data);
-        };
-
-        // Handle named events
-        const eventTypes = ['clock', 'line', 'roll', 'chat'];
-        eventTypes.forEach(type => {
-            eventSource.addEventListener(type, function(evt) {
-                handleSSEData(evt.data);
-            });
         });
+    });
 
-        function handleSSEData(raw_data) {
+    function handleSSEData(raw_data) {
             try {
                 const data = JSON.parse(raw_data);
                 const targetEl = document.getElementById(data.target);
@@ -86,5 +84,4 @@ window.addEventListener("load", function () {
                 console.error('Error parsing SSE JSON:', e);
             }
         }
-    }, 1000);
 });

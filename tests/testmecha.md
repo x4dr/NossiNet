@@ -31,9 +31,9 @@ title: testmecha
 | Sink    | 5      | 5    | 1      | 0    | 400      | 1%      | 0.01   | 0    | 0       | [ ]     |
 
 ## Offensive
-|         | Energy | Mass | Heat | Amount | Enabled |
-|-------|------|----|----|------|-------|
-| AutoGun | 30     | 7    | 0    | 1      | [ ]     |
+|         | Energy | Mass | Damage | Range | Ammo | Heat | Boot | Modes | Amount | Enabled |
+|-------|------|----|------|-----|----|----|----|-----|------|-------|
+| AutoGun | 30     | 7    | 0      | -     | -    | 0    | 0    | -     | 1      | [ ]     |
 
 ## Defensive
 |            | Energy | Mass | Heat | Amount | Enabled |
