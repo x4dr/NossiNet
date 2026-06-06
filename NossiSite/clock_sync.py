@@ -9,7 +9,6 @@ def sync_clocks_with_db():
     log.debug("Starting clock synchronization with database.")
     db = connect_db("sync_clocks")
 
-    # Ensure the table exists before attempting to sync
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS clocks (

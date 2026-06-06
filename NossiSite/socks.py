@@ -11,7 +11,7 @@ from Data import connect_db
 from NossiSite.base import log
 from NossiSite.base_ext import encode_id, decode_id
 from gamepack.WikiPage import WikiPage
-from scripts.sync_clocks import sync_clocks_with_db
+from NossiSite.clock_sync import sync_clocks_with_db
 
 views = Blueprint("socks", __name__)
 
