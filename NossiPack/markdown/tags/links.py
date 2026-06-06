@@ -8,7 +8,7 @@ class LinkValidatorTag(NossiTag):
     """
     Wiki link validation (automatic).
 
-    Internal <a href="pagename"> links get a /wiki/ prefix.
+    Internal `<a href="pagename">` links get a /wiki/ prefix.
     If the target page does not exist the link gets a missing CSS class.
     External links and anchor-only links are left unchanged.
     """
