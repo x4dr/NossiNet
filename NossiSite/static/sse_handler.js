@@ -1,5 +1,12 @@
+function formatTime(date) {
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+}
+
 window.addEventListener("load", function () {
     const globalStatus = document.getElementById('global-conn-status');
+    if (globalStatus) globalStatus.style.display = '';
     const updateGlobalStatus = (state, title) => {
         if (!globalStatus) return;
         let color = 'var(--tertiary-color)';
@@ -10,12 +17,21 @@ window.addEventListener("load", function () {
         if (title) globalStatus.title = `SSE: ${title}`;
     };
 
+    function updateLastSeen() {
+        if (!globalStatus) return;
+        const now = new Date();
+        const currentTitle = globalStatus.title;
+        if (currentTitle && !currentTitle.startsWith('Connected')) return;
+        globalStatus.title = `Connected - Last Update: ${formatTime(now)}`;
+    }
+
     updateGlobalStatus('connecting', 'Connecting...');
     const eventSource = new EventSource("/sse_updates");
 
     eventSource.onopen = function() {
         console.log("SSE Connection opened");
         updateGlobalStatus('connected', 'Connected');
+        updateLastSeen();
     };
 
     eventSource.onerror = function(err) {
@@ -37,6 +53,12 @@ window.addEventListener("load", function () {
     });
 
     function handleSSEData(raw_data) {
+            updateLastSeen();
+            if (globalStatus) {
+                globalStatus.classList.remove('pulse');
+                void globalStatus.offsetWidth;
+                globalStatus.classList.add('pulse');
+            }
             try {
                 const data = JSON.parse(raw_data);
                 const targetEl = document.getElementById(data.target);

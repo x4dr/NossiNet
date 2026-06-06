@@ -105,8 +105,14 @@ hr {
     vertical-align: middle;
 }
 
-#global-conn-status:hover {
-    filter: brightness(1.2) drop-shadow(0 0 2px currentColor);
+#global-conn-status.pulse {
+    animation: pulse-glow .6s ease-out;
+}
+
+@keyframes pulse-glow {
+    0% { filter: brightness(1) drop-shadow(0 0 0 currentColor); }
+    50% { filter: brightness(1.8) drop-shadow(0 0 6px currentColor); }
+    100% { filter: brightness(1) drop-shadow(0 0 0 currentColor); }
 }
 
 
