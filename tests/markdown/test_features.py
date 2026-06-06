@@ -313,10 +313,20 @@ def test_foldable_id_unique():
     assert ids[0] != ids[1]
 
 
-def test_glitch_separate_spans():
-    """g~hello~g — g~world~g~W0RLD~g must produce two separate spans."""
+def test_glitch_dual_text_not_side_by_side():
+    """g~Text A~Text B~g must NOT show both texts as visible content."""
     processor = NossiMarkdownProcessor()
-    result = processor.render("g~hello~g — g~world~g~W0RLD~g", "testpage")
+    result = processor.render("g~Text A~Text B~g", "testpage")
+    assert 'class="glitch"' in result
+    assert 'data-text="Text B"' in result
+    assert "Text A" in result
+    assert ">Text B<" not in result
+
+
+def test_glitch_separate_spans():
+    """g~hello~g — g~world~W0RLD~g must produce two separate spans."""
+    processor = NossiMarkdownProcessor()
+    result = processor.render("g~hello~g — g~world~W0RLD~g", "testpage")
     spans = re.findall(r'<span class="glitch"', result)
     assert len(spans) == 2
     assert 'data-text="hello"' in result
@@ -363,6 +373,76 @@ def test_glitch_outside_code():
     result = processor.render("g~hello~g", "testpage")
     assert 'class="glitch"' in result
     assert 'data-text="hello"' in result
+
+
+def test_fenced_code_block():
+    """Triple-backtick fenced code blocks render as <pre><code>."""
+    processor = NossiMarkdownProcessor()
+    result = processor.render("```\ncode here\n```", "testpage")
+    assert "<pre>" in result
+    assert "<code>" in result
+    assert "code here" in result
+
+
+def test_fenced_code_protects_invert():
+    """i~text~i inside fenced code block must not be inverted."""
+    processor = NossiMarkdownProcessor()
+    result = processor.render("```\ni~not inverted~i\n```", "testpage")
+    assert 'class="invert"' not in result
+    assert "i~not inverted~i" in result
+
+
+def test_fenced_code_protects_glitch():
+    """g~text~g inside fenced code block must not be glitched."""
+    processor = NossiMarkdownProcessor()
+    result = processor.render("```\ng~not glitched~g\n```", "testpage")
+    assert 'class="glitch"' not in result
+
+
+def test_invert():
+    """i~text~i renders as <span class='invert'>."""
+    processor = NossiMarkdownProcessor()
+    result = processor.render("i~hello~i", "testpage")
+    assert 'class="invert"' in result
+    assert "hello" in result
+
+
+def test_invert_inside_code():
+    """i~text~i inside inline code must not be inverted."""
+    processor = NossiMarkdownProcessor()
+    result = processor.render("`i~hello~i`", "testpage")
+    assert 'class="invert"' not in result
+
+
+def test_invert_outside_code():
+    """i~text~i outside code blocks still works."""
+    processor = NossiMarkdownProcessor()
+    result = processor.render("i~hello~i", "testpage")
+    assert 'class="invert"' in result
+
+
+def test_fenced_code_adjacent_to_invert():
+    """Fenced code block next to invert text must both render correctly."""
+    processor = NossiMarkdownProcessor()
+    result = processor.render("```\ncode\n```\n\ni~inverted~i", "testpage")
+    assert "<pre>" in result
+    assert 'class="invert"' in result
+
+
+def test_fenced_code_protects_checkbox():
+    """Checkbox syntax inside fenced code block must not be processed."""
+    processor = NossiMarkdownProcessor()
+    result = processor.render("```\n- [ ] unfinished\n- [x] done\n```", "testpage")
+    assert 'type="checkbox"' not in result
+    assert "- [ ] unfinished" in result
+    assert "- [x] done" in result
+
+
+def test_checkbox_outside_fenced():
+    """Checkbox syntax outside fenced code blocks still works."""
+    processor = NossiMarkdownProcessor()
+    result = processor.render("- [ ] task\n```\ncode\n```", "testpage")
+    assert result.count('type="checkbox"') == 1
 
 
 def test_tooltip_html_structure():

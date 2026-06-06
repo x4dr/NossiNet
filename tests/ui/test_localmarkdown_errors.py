@@ -1,7 +1,13 @@
-from playwright.sync_api import sync_playwright
+import pytest
+from playwright.sync_api import Page
 
 
-def test_localmarkdown_renders_without_errors():
+@pytest.fixture(scope="function")
+def browser_context_args(browser_context_args):
+    return {**browser_context_args, "ignore_https_errors": True}
+
+
+def test_localmarkdown_renders_without_errors(page: Page):
     errors = []
 
     def log_error(msg):
@@ -9,30 +15,16 @@ def test_localmarkdown_renders_without_errors():
             errors.append(msg.text)
         print(f"BROWSER LOG: {msg.text}")
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(ignore_https_errors=True)
-        page = context.new_page()
+    page.on("console", log_error)
+    page.on(
+        "response",
+        lambda response: (
+            errors.append(f"404 on {response.url}") if response.status == 404 else None
+        ),
+    )
 
-        # Track 404s and errors
-        page.on("console", log_error)
-        page.on(
-            "response",
-            lambda response: (
-                errors.append(f"404 on {response.url}")
-                if response.status == 404
-                else None
-            ),
-        )
+    page.goto("https://127.0.0.1:5000/localmarkdown")
 
-        page.goto("https://127.0.0.1:5000/localmarkdown")
+    page.wait_for_timeout(2000)
 
-        # Wait for potential HTMX requests to trigger
-        page.wait_for_timeout(2000)
-
-        assert len(errors) == 0, f"Found errors during rendering: {errors}"
-        browser.close()
-
-
-if __name__ == "__main__":
-    test_localmarkdown_renders_without_errors()
+    assert len(errors) == 0, f"Found errors during rendering: {errors}"

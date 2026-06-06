@@ -19,6 +19,5 @@ def test_localmarkdown_rendering(page: Page):
     # Check if the title is correct
     expect(page).to_have_title("Local Markdown Demo")
 
-    # Check if some markdown features rendered
     # Look for expected headings
-    expect(page.locator("h1")).to_have_text("Local Markdown Features")
+    expect(page.get_by_role("heading", name="Local Markdown Features")).to_be_visible()

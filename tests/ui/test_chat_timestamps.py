@@ -6,20 +6,30 @@ import sqlite3
 import shutil
 from pathlib import Path
 from playwright.sync_api import Page, expect
+from pytest_httpserver import HTTPServer
 
 
 @pytest.fixture(scope="session")
-def test_db():
-    # 1. Create a isolated test database
+def webhook_server():
+    server = HTTPServer()
+    server.start()
+    server.expect_request("/mock-webhook").respond_with_data("OK", status=204)
+    yield server
+    server.clear()
+    if server.is_running():
+        server.stop()
+
+
+@pytest.fixture(scope="session")
+def test_db(webhook_server):
     test_db_path = Path("test_NN.db").absolute()
     if Path("NN.db").exists():
         shutil.copy("NN.db", test_db_path)
 
-    # 2. Point the Discord webhook to our mock server port (5002)
     conn = sqlite3.connect(test_db_path)
     conn.execute(
-        "UPDATE configs SET value = 'http://127.0.0.1:5002/mock-webhook' "
-        "WHERE user = 'bridge' AND option = 'webhook'"
+        "UPDATE configs SET value = ? " "WHERE user = 'bridge' AND option = 'webhook'",
+        (f"http://127.0.0.1:{webhook_server.port}/mock-webhook",),
     )
     conn.commit()
     conn.close()
@@ -66,38 +76,36 @@ def browser_context_args(browser_context_args):
     return {**browser_context_args, "ignore_https_errors": True}
 
 
-def test_chat_timestamp_instant_update(page: Page, test_server, httpserver):
-    # 1. Setup Mock Discord Webhook on port 5002
-    httpserver.expect_request("/mock-webhook").respond_with_data("OK", status=204)
+def test_chat_timestamp_instant_update(page: Page, test_server, webhook_server):
     base_url = test_server
 
-    # 2. Login
+    # 1. Login
     page.goto(f"{base_url}/login")
     page.fill("input[name='username']", "TESTUSER")
     page.fill("input[name='password']", "password123")
     page.click("input[type='submit']")
 
-    # 3. Go to chat
+    # 2. Go to chat
     page.goto(f"{base_url}/chat/")
     page.wait_for_selector("#chatbox")
 
-    # 4. Send a message
+    # 3. Send a message
     unique_id = f"{int(time.time() * 1000)}"
     test_msg = f"TEST-ROBUST-{unique_id}"
     msg_input = page.locator("#message_data")
     msg_input.fill(test_msg)
     msg_input.press("Enter")
 
-    # 5. Wait for the message to appear via SSE
-    # Use to_contain_text on chatbox for better resilience
+    # 4. Wait for the message to appear via SSE
     expect(page.locator("#chatbox")).to_contain_text(test_msg, timeout=15000)
 
-    # 6. Verify Webhook (Safety Confirmation)
-    # The httpserver log should record the request
+    # 5. Verify Webhook (Safety Confirmation)
     page.wait_for_timeout(1000)
-    assert len(httpserver.log) > 0, "Discord webhook was NOT intercepted by local mock!"
+    assert (
+        len(webhook_server.log) > 0
+    ), "Discord webhook was NOT intercepted by local mock!"
 
-    # 7. Check the timestamp inside the newly appeared element
+    # 6. Check the timestamp inside the newly appeared element
     timestamp = page.locator(f"div:has-text('{test_msg}')").locator(".timestamp").last
     ts_text = timestamp.inner_text()
     print(f"Verified timestamp: '{ts_text}'")

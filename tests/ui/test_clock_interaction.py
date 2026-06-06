@@ -16,7 +16,7 @@ def setup_clocks(page: Page):
     page.on("console", lambda msg: print(f"BROWSER: {msg.text}"))
     page.goto("https://127.0.0.1:5000/wiki/clocks")
     page.wait_for_selector(".clock-container", state="visible")
-    page.wait_for_load_state("networkidle")
+    page.wait_for_timeout(2000)
 
 
 def test_complex_clock_interaction(page: Page):
