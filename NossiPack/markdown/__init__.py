@@ -3,6 +3,7 @@ import re
 import markdown
 from NossiPack.markdown.base import WikiEnvironment, NossiTag
 import NossiPack.markdown.tags.glitch  # noqa: F401
+import NossiPack.markdown.tags.invert  # noqa: F401
 import NossiPack.markdown.tags.transclude  # noqa: F401
 import NossiPack.markdown.tags.checkbox  # noqa: F401
 import NossiPack.markdown.tags.infolet  # noqa: F401
@@ -15,6 +16,7 @@ import NossiPack.markdown.tags.section_tooltip  # noqa: F401
 
 class NossiMarkdownProcessor:
     _code_pre_re = re.compile(r"<code[^>]*>.*?</code>|<pre[^>]*>.*?</pre>", re.DOTALL)
+    _fenced_block_re = re.compile(r"^```\w*\s*\n.*?^```\s*$", re.MULTILINE | re.DOTALL)
 
     def __init__(self):
         self.tags = NossiTag.registry
@@ -39,6 +41,26 @@ class NossiMarkdownProcessor:
             html = html.replace(key, original)
         return html
 
+    @classmethod
+    def _protect_fenced(cls, text: str) -> tuple[str, dict[str, str]]:
+        protected: dict[str, str] = {}
+        counter = 0
+
+        def _stash(match):
+            nonlocal counter
+            counter += 1
+            key = f"\x00FENCED_{counter}_\x00"
+            protected[key] = match.group(0)
+            return key
+
+        return cls._fenced_block_re.sub(_stash, text), protected
+
+    @staticmethod
+    def _restore_fenced(text: str, protected: dict[str, str]) -> str:
+        for key, original in protected.items():
+            text = text.replace(key, original)
+        return text
+
     _cross_line_emphasis_re = re.compile(r"(?<!\*)\*([^* \n][^*]*?\n[^*]*?)\*(?!\*)")
 
     @classmethod
@@ -48,16 +70,23 @@ class NossiMarkdownProcessor:
     def render(self, raw_text: str, page_name: str) -> str:
         env = WikiEnvironment(page_name, raw_text)
 
+        # 0. Protect fenced code blocks from pre-processors and cross-line emphasis
+        text, fenced_protected = self._protect_fenced(raw_text)
+
         # 1. Run Pre-processors
-        text = raw_text
         for tag in self.tags:
             text = tag.pre_process(text, env)
 
         # 1.5. Escape cross-line emphasis
         text = self._escape_cross_line_emphasis(text)
 
+        # 1.6. Restore fenced code blocks
+        text = self._restore_fenced(text, fenced_protected)
+
         # 2. Markdown Core
-        html = markdown.markdown(text, extensions=["nl2br", "tables", "toc"])
+        html = markdown.markdown(
+            text, extensions=["nl2br", "tables", "toc", "fenced_code"]
+        )
 
         env.html_content = html
 
