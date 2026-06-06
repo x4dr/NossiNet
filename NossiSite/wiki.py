@@ -30,7 +30,7 @@ from gamepack.FenCharacter import FenCharacter
 from gamepack.MDPack import traverse_md, MDObj
 from gamepack.WikiCharacterSheet import WikiCharacterSheet
 from gamepack.WikiPage import WikiPage
-from scripts.sync_clocks import sync_clocks_with_db
+from NossiSite.clock_sync import sync_clocks_with_db
 
 WikiPage.set_wikipath(Path.home() / "wiki")
 wikistamp = [0.0]
@@ -299,6 +299,8 @@ def localmarkdown_demo():
         "# Local Markdown Features\n\n"
         "Auto-generated reference documentation for all markdown tags.\n"
     ]
+    placeholders: list[str] = []
+    rendered_snippets: list[str] = []
 
     for tag in nossi_markdown.tags:
         cls = type(tag)
@@ -307,15 +309,22 @@ def localmarkdown_demo():
             doc_rendered = nossi_markdown.process(
                 bleach.clean(doc), page="localmarkdown"
             )
+            idx = len(placeholders)
+            placeholder = f"<!--LOCALMD_{idx:04d}-->"
             sections.append(
                 f"---\n\n"
                 f"## {cls.__name__}\n\n"
                 f"```\n{doc}\n```\n\n"
-                f"{doc_rendered}\n"
+                f"{placeholder}\n"
             )
+            placeholders.append(placeholder)
+            rendered_snippets.append(doc_rendered)
 
     body = "\n".join(sections)
     body = nossi_markdown.process(body, page="localmarkdown")
+
+    for placeholder, snippet in zip(placeholders, rendered_snippets):
+        body = body.replace(placeholder, snippet)
 
     return render_template(
         "wiki/wikipage.html",
