@@ -42,9 +42,8 @@
             </div>
         </div>
         <div id="inner" style="width: 100%;">
-            <div id="chatbox" class="chatbox" hx-get="/chat/history" hx-trigger="load" sse-swap="chat" hx-swap="beforeend"></div>
+            <div id="chatbox" class="chatbox" hx-get="/chat/history" hx-trigger="load" hx-swap="beforeend"></div>
         </div>
-        <div id="statusmessage" style="display: none;"></div>
         <form id="messageform" hx-post="/chat/send" hx-swap="none" hx-on::after-request="this.reset()">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <div class="formline" style="display: flex; align-items: center">

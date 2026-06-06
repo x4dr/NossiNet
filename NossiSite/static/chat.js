@@ -312,9 +312,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.addEventListener("keydown", (event) => {
         if (!msgInput) return;
 
-        // Space to focus if not already focusing an input/textarea
-        const tag = document.activeElement.tagName.toLowerCase();
-        if (event.key === " " && tag !== "input" && tag !== "textarea") {
+        // Space to focus chat input unless user is interacting with an editable/interactive element
+        const activeEl = document.activeElement;
+        const tag = activeEl.tagName.toLowerCase();
+        const isInteractive = (
+            tag === 'input' || tag === 'textarea' || tag === 'select' ||
+            tag === 'button' || activeEl.isContentEditable
+        );
+        if (event.key === " " && !isInteractive) {
             msgInput.focus();
             event.preventDefault();
         }
@@ -356,13 +361,52 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateRelativeTimes();
 });
 
-// Single robust trigger for any DOM change (covers SSE, polling, and manual injection)
-const observer = new MutationObserver((mutations) => {
+// Intercept SSE swaps: if the response is JSON with an "html" field, use that instead
+document.addEventListener('htmx:beforeSwap', (evt) => {
+    if (evt.detail.target.id !== 'chatbox') return;
+    try {
+        const parsed = JSON.parse(evt.detail.serverResponse);
+        if (parsed.html) {
+            evt.detail.serverResponse = parsed.html;
+        }
+    } catch {
+        // Not JSON, leave as-is
+    }
+});
+
+// Update timestamps and connection dot after HTMX swaps
+document.addEventListener('htmx:afterSwap', () => {
     if (typeof window.updateRelativeTimes === 'function') {
         window.updateRelativeTimes();
     }
+    const dot = document.getElementById('global-conn-status');
+    if (dot) {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        dot.title = `Connected - Last Update: ${hh}:${mm}`;
+        dot.classList.remove('pulse');
+        void dot.offsetWidth;
+        dot.classList.add('pulse');
+    }
 });
-observer.observe(document.documentElement, { childList: true, subtree: true });
+
+// Track SSE connection state (events bubble up from #wrapper)
+document.addEventListener('htmx:sseOpen', () => {
+    const dot = document.getElementById('global-conn-status');
+    if (dot) {
+        dot.style.display = '';
+        dot.style.color = 'var(--highlight-color, #00ff00)';
+        dot.title = 'Connected';
+    }
+});
+document.addEventListener('htmx:sseError', () => {
+    const dot = document.getElementById('global-conn-status');
+    if (dot) {
+        dot.style.color = 'var(--error-color, #ff0000)';
+        dot.title = 'Disconnected';
+    }
+});
 
 window.updateRelativeTimes = function() {
     document.querySelectorAll(".timestamp").forEach(function (element) {

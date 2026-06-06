@@ -111,12 +111,8 @@ def sync_chat(
         log.error(f"Local chat save failed: {e}")
 
     if data["webhook"]:
-        content = message_content
-        if mention and not content.startswith(mention):
-            content = f"{mention} {content}"
-
         message_data = {
-            "content": content,
+            "content": message_content,
             "username": username,
         }
         try:
@@ -194,32 +190,12 @@ def chat_debug():
 @views.route("/chat/")
 def chatsite():
     checklogin()
-    livekit_available = False
-    lk_url = os.environ.get("LIVEKIT_URL")
-    log.debug(f"Checking LiveKit at {lk_url}")
-    if (
-        lk_url
+    livekit_available = bool(
+        os.environ.get("LIVEKIT_URL")
         and os.environ.get("LIVEKIT_API_KEY")
         and os.environ.get("LIVEKIT_API_SECRET")
-    ):
-        url = lk_url.replace("ws://", "http://").replace("wss://", "https://")
-        if not url.startswith("http"):
-            url = "http://" + url
-        try:
-            # Use a session without environment proxies for local addresses
-            with requests.Session() as s:
-                s.trust_env = False
-                res = s.get(url, timeout=5, verify=False)
-                if res.status_code == 200:
-                    livekit_available = True
-                    log.debug("LiveKit check: OK (200)")
-                else:
-                    log.warning(
-                        f"LiveKit responded with status {res.status_code} at {url}"
-                    )
-        except Exception as e:
-            log.error(f"LiveKit connectivity check failed for {url}: {e}")
-    else:
+    )
+    if not livekit_available:
         log.warning("LiveKit variables missing in environment")
 
     return render_template("base/chat.html", livekit_available=livekit_available)
