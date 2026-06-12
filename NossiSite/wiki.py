@@ -312,10 +312,7 @@ def localmarkdown_demo():
             idx = len(placeholders)
             placeholder = f"<!--LOCALMD_{idx:04d}-->"
             sections.append(
-                f"---\n\n"
-                f"## {cls.__name__}\n\n"
-                f"```\n{doc}\n```\n\n"
-                f"{placeholder}\n"
+                f"---\n\n## {cls.__name__}\n\n```\n{doc}\n```\n\n{placeholder}\n"
             )
             placeholders.append(placeholder)
             rendered_snippets.append(doc_rendered)

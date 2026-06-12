@@ -28,7 +28,7 @@ def test_db(webhook_server):
 
     conn = sqlite3.connect(test_db_path)
     conn.execute(
-        "UPDATE configs SET value = ? " "WHERE user = 'bridge' AND option = 'webhook'",
+        "UPDATE configs SET value = ? WHERE user = 'bridge' AND option = 'webhook'",
         (f"http://127.0.0.1:{webhook_server.port}/mock-webhook",),
     )
     conn.commit()

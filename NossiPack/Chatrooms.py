@@ -72,7 +72,7 @@ class Chatroom:
             db.commit()
 
     def addline(self, line: str, supresssave: bool = False) -> None:
-        if not session["user"] in self.presentusers:
+        if session["user"] not in self.presentusers:
             raise DescriptiveError(
                 "You got disconnected, because you left this room or were inactive."
             )

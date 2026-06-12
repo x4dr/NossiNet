@@ -158,12 +158,15 @@ def boardgamemap(size, seed=""):
             resetfirst()
             for y in range(size):
                 yield (
-                    "" if notfirst() else ","
-                ) + f'{{ "x":{x:d}, "y":{y:d}, ' + ",".join(
-                    cell(
-                        # x, y
+                    ("" if notfirst() else ",")
+                    + f'{{ "x":{x:d}, "y":{y:d}, '
+                    + ",".join(
+                        cell(
+                            # x, y
+                        )
                     )
-                ) + "}"
+                    + "}"
+                )
             yield "]"
         yield "]}"
 
