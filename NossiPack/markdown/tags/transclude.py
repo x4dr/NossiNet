@@ -26,6 +26,12 @@ class TranscludeTag(NossiTag):
     """
 
     priority = 20
+    tag_id = "transclude"
+    syntax = "[!pagename] or [!pagename#heading|Text]"
+    description = "Include content from another wiki page inline"
+    example = "[!endworld/mecha/systems#heavy-shield|Heavy Shield Table]"
+    category = "content"
+    pattern = r"\[!(?![tq]:)(?P<page>[^#|\]]+?)(?:#(?P<fragment>[^|\]]*?))?(?:\|(?P<text>[^\]]*?))?\]"
 
     transclude_re = re.compile(
         r"\[!(?![tq]:)(?P<page>[^#|\]]+?)(?:#(?P<fragment>[^|\]]*?))?(?:\|(?P<text>[^\]]*?))?\]"

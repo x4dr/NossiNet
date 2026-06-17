@@ -16,13 +16,19 @@ class GlitchTag(NossiTag):
     """
 
     priority = 10
-    re_glitch = re.compile(r"g~([^~]+)~(?:(?:([^~]+)~g)|g)")
+    tag_id = "glitch"
+    syntax = "g~text~g"
+    description = "Glitch text effect with optional replacement text"
+    example = "g~hello~g or g~world~W0RLD~g"
+    category = "text"
+    pattern = r"g(~{1,2})([^~]+)\1g(?:\1([^~]+)\1g)?"
+    re_glitch = re.compile(r"g(~{1,2})([^~]+)\1g(?:\1([^~]+)\1g)?")
 
     def post_process(self, html: str, env: WikiEnvironment) -> str:
         return self.re_glitch.sub(
             lambda m: (
-                f'<span class="glitch" data-text="{escape(m.group(2) or m.group(1))}">'
-                f"{m.group(1)}</span>"
+                f'<span class="glitch" data-text="{escape(m.group(3) or m.group(2))}">'
+                f"{m.group(2)}</span>"
             ),
             html,
         )

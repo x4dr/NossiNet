@@ -3,6 +3,7 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="clock.css") }}?v={{ restart_id }}">
     <script src="{{ url_for("static", filename="clock.js") }}?v={{ restart_id }}"></script>
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="tip-wiki-editor.css") }}?v={{ restart_id }}">
+    <script id="wiki-tags-data" type="application/json">{{ wiki_tags_json|safe }}</script>
     <script type="module" src="{{ url_for("static", filename="tip-wiki-editor.js") }}?v={{ restart_id }}"></script>
     <script>
         function highlightClosestHeadingFromFragment() {
@@ -46,6 +47,7 @@
     </script>
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="glitch.css") }}?v={{ restart_id }}">
     <script src="{{ url_for("static", filename="glitch.js") }}?v={{ restart_id }}"></script>
+    <script src="{{ url_for("static", filename="wiki-tag-validator.js") }}?v={{ restart_id }}"></script>
     <script src="{{ url_for("static", filename="sse_handler.js") }}?v={{ restart_id }}"></script>
     {% for headstate in heads %}
         {{ headstate|safe }}

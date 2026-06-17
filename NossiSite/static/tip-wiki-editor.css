@@ -17,7 +17,7 @@
     border: 1px solid var(--secondary-color, #555);
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 4px 24px color-mix(in srgb, #000, transparent 50%);
 }
 
 .tip-toolbar {
@@ -164,4 +164,142 @@
 
 .tip-save:hover {
     filter: brightness(1.15);
+}
+
+.tip-tag-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--primary-color, #ddd);
+    margin-left: auto;
+}
+
+.tip-tag-select {
+    font-size: 12px;
+    padding: 2px 4px;
+    border: 1px solid var(--secondary-color, #555);
+    border-radius: 4px;
+    background: var(--background-color, #1a1a2e);
+    color: var(--primary-color, #ddd);
+    cursor: pointer;
+    max-width: 140px;
+}
+
+.tip-tag-select:hover {
+    border-color: var(--accent-color, #4a90d9);
+}
+
+.tip-source-area {
+    display: none;
+    flex: 1;
+    padding: 16px 20px;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    background: color-mix(in srgb, var(--background-color, #1a1a2e), white 3%);
+    color: var(--primary-color, #ddd);
+    border: none;
+    outline: none;
+    resize: none;
+    tab-size: 2;
+}
+
+.tip-source-toggle {
+    background: transparent;
+    color: var(--primary-color, #ddd);
+    border-color: color-mix(in srgb, var(--accent-color, #4a90d9), transparent 50%);
+}
+
+.tip-source-toggle:hover {
+    background: color-mix(in srgb, var(--accent-color, #4a90d9), transparent 75%);
+}
+
+/* --- Wiki Tag Decorations --- */
+
+.tag-dirty {
+    border-radius: 4px;
+    padding: 1px 3px;
+    background: color-mix(in srgb, var(--primary-color), transparent 85%);
+    transition: background 0.3s;
+}
+
+.tag-dirty.transclude,
+.tag-dirty.section-tooltip,
+.tag-dirty.infolet {
+    border: 1px solid color-mix(in srgb, var(--accent-color), transparent 60%);
+}
+
+.tag-dirty.glitch,
+.tag-dirty.invert {
+    border: 1px solid color-mix(in srgb, var(--warn-color, #cf0012), transparent 50%);
+}
+
+.tag-valid.transclude,
+.tag-valid.section-tooltip,
+.tag-valid.infolet {
+    background: color-mix(in srgb, var(--accent-color, #1070a0), transparent 80%);
+    border: 1px solid color-mix(in srgb, var(--accent-color), transparent 40%);
+    border-radius: 4px;
+    padding: 1px 3px;
+}
+
+.tag-valid.glitch {
+    background: color-mix(in srgb, var(--accent-color), transparent 75%);
+    border: 1px solid color-mix(in srgb, var(--accent-color), transparent 30%);
+    border-radius: 4px;
+    padding: 1px 3px;
+}
+
+.tag-valid.invert {
+    filter: invert(1);
+    background: transparent;
+}
+
+.tag-invalid {
+    background: color-mix(in srgb, var(--warn-color, #cf0012), transparent 85%);
+    border: 1px solid color-mix(in srgb, var(--warn-color), transparent 30%);
+    border-radius: 4px;
+    padding: 1px 3px;
+}
+
+/* --- Foldable Heading --- */
+
+.foldable-heading {
+    position: relative;
+    border: 1px solid color-mix(in srgb, var(--midground-color, #555), transparent 30%);
+    border-radius: 6px;
+    padding: 2px 6px;
+    margin: 0.5em 0;
+}
+
+.foldable-heading::before {
+    content: "folded";
+    position: absolute;
+    top: -8px;
+    left: 8px;
+    font-size: 10px;
+    line-height: 1;
+    padding: 0 4px;
+    color: color-mix(in srgb, var(--primary-color), transparent 40%);
+    background: var(--background-color, #1a1a2e);
+    border: 1px solid color-mix(in srgb, var(--midground-color), transparent 30%);
+    border-radius: 3px;
+}
+
+/* --- Tooltip --- */
+
+.tag-tooltip {
+    position: fixed;
+    z-index: 2000;
+    max-width: 320px;
+    padding: 8px 12px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--primary-color, #ddd);
+    background: color-mix(in srgb, var(--midground-color, #0a120a), transparent 10%);
+    border: 1px solid var(--tertiary-color, #006700);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px color-mix(in srgb, #000, transparent 40%);
+    pointer-events: none;
 }

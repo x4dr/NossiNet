@@ -29418,7 +29418,16 @@ var Markdown = Extension.create({
   }
 });
 export {
+  Decoration,
+  DecorationSet,
   Editor,
+  Extension,
   Markdown,
-  index_default as StarterKit
+  Node3 as Node,
+  Plugin,
+  index_default as StarterKit,
+  Strike,
+  TaskItem,
+  TaskList,
+  g as Marked
 };

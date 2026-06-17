@@ -17,6 +17,11 @@ class CheckboxTag(NossiTag):
     """
 
     priority = 30
+    tag_id = "checkbox"
+    syntax = "- [ ] task or - [x] done"
+    description = "Interactive task list checkboxes"
+    example = "- [ ] unfinished\n- [x] completed"
+    category = "interactive"
     checkbox_re = re.compile(r"\[(?P<checked>.)] (?P<text>.*)")
 
     @staticmethod

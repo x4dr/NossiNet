@@ -17,6 +17,13 @@ class SectionTooltipTag(NossiTag):
     """
 
     priority = 25
+    tag_id = "section-tooltip"
+    syntax = "[!t:pagename] or [!t:pagename#heading|Text]"
+    description = "Hover tooltip showing content from another page or section"
+    example = "[!t:demo#transclusion|See transclusion]"
+    category = "content"
+    pattern = r"\[!t:(?P<spec>[^\]]+?)\]"
+    flags = "i"
 
     tooltip_re = re.compile(r"\[!t:(?P<spec>[^\]]+?)\]", re.IGNORECASE)
     _rendering: set[str] = set()

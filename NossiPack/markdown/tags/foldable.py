@@ -17,6 +17,11 @@ class FoldableTag(NossiTag):
     """
 
     priority = 50
+    tag_id = "foldable"
+    syntax = "## !Collapsible Heading"
+    description = "Collapsible section that hides content until clicked"
+    example = "## !Secret Notes\nHidden content here."
+    category = "layout"
     headline_re = re.compile(r"(<h(\d)[^>]*)>\s*!(.*?)\s*(</h\d+>)", re.IGNORECASE)
     _counter = 0
 

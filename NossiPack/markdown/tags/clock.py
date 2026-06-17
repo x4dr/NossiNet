@@ -17,6 +17,11 @@ class ClockTag(NossiTag):
     """
 
     priority = 70
+    tag_id = "clock"
+    syntax = "[clock|name|current|total] or [clock|name@pagename]"
+    description = "Interactive progress clock with clickable segments"
+    example = "[clock|progress|3|8]"
+    category = "interactive"
     clock_re = re.compile(r"\[clock\|(?P<name>.*?)\|(?P<current>\d+)\|(?P<total>\d+)]")
     linked_clock_re = re.compile(r"\[clock\|(?P<name>.*?)@(?P<page>.*?)]")
 

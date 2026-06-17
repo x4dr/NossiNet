@@ -15,6 +15,13 @@ class InfoletTag(NossiTag):
     """
 
     priority = 40
+    tag_id = "infolet"
+    syntax = "[!q:itemname]"
+    description = "Hover tooltip with item description from the game database"
+    example = "[!q:healing potion]"
+    category = "content"
+    pattern = r"\[!q:(?P<name>.*?)]"
+    flags = "i"
     infolet_re = re.compile(r"\[!q:(?P<name>.*?)]", re.IGNORECASE)
 
     def post_process(self, html: str, env: WikiEnvironment) -> str:
