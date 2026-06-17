@@ -5,7 +5,7 @@ description = "Nosferatu Network, A PnP help website"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "bleach>=6.2.0",
+    "bleach>=6.4.0",
     "eventlet>=0.40.4",
     "flask>=3.1.2",
     "flask-wtf>=1.2.2",
