@@ -519,15 +519,17 @@ def searchwiki():
 
 
 def live_edit_get(formdata):
-    a = formdata.get("path", [])
-    a = [parse.unquote(x) for x in a if x]
-    if not a:
-        a = [formdata["percentage"]]
     t = parse.unquote(formdata.get("type", "text"))
     loaded_page = WikiPage.load_locate(formdata["context"])
     if not loaded_page:
         return {"data": "", "type": "error"}
     res: str = loaded_page.body
+    if t == "tiptap":
+        return {"data": res, "type": "tiptap"}
+    a = formdata.get("path", [])
+    a = [parse.unquote(x) for x in a if x]
+    if not a:
+        a = [formdata["percentage"]]
     if t == "text":
         return live_edit_get_text(res, a)
     if t == "table":
@@ -561,6 +563,8 @@ def live_edit_write(formdata, context):
         return live_edit_write_text(formdata, context)
     elif formdata["type"] == "table":
         return live_edit_write_table(formdata, context)
+    elif formdata["type"] == "tiptap":
+        return live_edit_write_tiptap(formdata, context)
 
 
 def live_edit_write_text(formdata, context):
@@ -584,6 +588,19 @@ def live_edit_write_text(formdata, context):
         page.save_overwrite(session.get("user"))
     else:
         log.info(f"rejected empty replace {context}")
+
+
+def live_edit_write_tiptap(formdata, context):
+    body = formdata["body"].replace("\r\n", "\n")
+    loc = WikiPage.locate(context)
+    if not loc:
+        return
+    log.info(f"tiptap saving {loc}")
+    page = WikiPage.load(loc)
+    if not page:
+        return
+    page.body = body
+    page.save_overwrite(session.get("user"))
 
 
 def live_edit_write_table(formdata, context):

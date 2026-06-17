@@ -1,0 +1,167 @@
+.tip-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: color-mix(in srgb, #000, transparent 30%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tip-panel {
+    display: flex;
+    flex-direction: column;
+    width: min(95vw, 960px);
+    height: min(90vh, 700px);
+    background: var(--background-color, #1a1a2e);
+    border: 1px solid var(--secondary-color, #555);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+}
+
+.tip-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--secondary-color, #555);
+    background: color-mix(in srgb, var(--background-color, #1a1a2e), white 5%);
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.tip-toolbar button {
+    padding: 4px 8px;
+    font-size: 13px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--primary-color, #ddd);
+    cursor: pointer;
+    min-width: 28px;
+    text-align: center;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.tip-toolbar button:hover {
+    background: color-mix(in srgb, var(--accent-color, #4a90d9), transparent 80%);
+}
+
+.tip-toolbar button.tip-active {
+    background: color-mix(in srgb, var(--accent-color, #4a90d9), transparent 40%);
+    border-color: var(--accent-color, #4a90d9);
+}
+
+.tip-sep {
+    width: 1px;
+    margin: 4px 4px;
+    background: var(--secondary-color, #555);
+    flex-shrink: 0;
+}
+
+#tip-editor {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    outline: none;
+    color: var(--primary-color, #ddd);
+    line-height: 1.6;
+}
+
+#tip-editor .ProseMirror {
+    min-height: 100%;
+    outline: none;
+    font-size: 15px;
+}
+
+#tip-editor .ProseMirror p {
+    margin: 0.5em 0;
+}
+
+#tip-editor .ProseMirror h1,
+#tip-editor .ProseMirror h2,
+#tip-editor .ProseMirror h3 {
+    margin: 1em 0 0.5em;
+    font-weight: 600;
+}
+
+#tip-editor .ProseMirror h1 { font-size: 1.5em; }
+#tip-editor .ProseMirror h2 { font-size: 1.25em; }
+#tip-editor .ProseMirror h3 { font-size: 1.1em; }
+
+#tip-editor .ProseMirror ul,
+#tip-editor .ProseMirror ol {
+    padding-left: 1.5em;
+}
+
+#tip-editor .ProseMirror pre {
+    background: color-mix(in srgb, var(--background-color, #1a1a2e), white 10%);
+    color: var(--primary-color, #ddd);
+    padding: 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    overflow-x: auto;
+}
+
+#tip-editor .ProseMirror code {
+    background: color-mix(in srgb, var(--background-color, #1a1a2e), white 10%);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+#tip-editor .ProseMirror pre code {
+    background: transparent;
+    padding: 0;
+}
+
+#tip-editor .ProseMirror blockquote {
+    border-left: 3px solid var(--accent-color, #4a90d9);
+    padding-left: 1em;
+    margin: 0.5em 0;
+    color: color-mix(in srgb, var(--primary-color, #ddd), transparent 20%);
+}
+
+#tip-editor .ProseMirror hr {
+    border: none;
+    border-top: 1px solid var(--secondary-color, #555);
+    margin: 1em 0;
+}
+
+.tip-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 10px 12px;
+    border-top: 1px solid var(--secondary-color, #555);
+    flex-shrink: 0;
+}
+
+.tip-btn {
+    padding: 8px 20px;
+    font-size: 14px;
+    border: 1px solid var(--secondary-color, #555);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.tip-cancel {
+    background: transparent;
+    color: var(--primary-color, #ddd);
+}
+
+.tip-cancel:hover {
+    background: color-mix(in srgb, var(--secondary-color, #555), transparent 60%);
+}
+
+.tip-save {
+    background: var(--accent-color, #4a90d9);
+    color: white;
+    border-color: var(--accent-color, #4a90d9);
+}
+
+.tip-save:hover {
+    filter: brightness(1.15);
+}
