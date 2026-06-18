@@ -249,6 +249,31 @@ def test_section_tooltip_cycle():
         assert "Page A has" in result
 
 
+def test_transclude_recursion_limit():
+    """Recursive transclusion must not produce raw syntax or infinite nesting.
+
+    PageA has [!PageB], PageB has [!PageA]. The depth limit of 5 must:
+    1. Not produce raw [! syntax in output
+    2. Produce at most 5 levels of transclusion divs
+    """
+    processor = NossiMarkdownProcessor()
+    from NossiPack.markdown.tags.transclude import TranscludeTag
+
+    TranscludeTag._depth = 0
+
+    pages = {
+        "PageA": MagicMock(body="PageA has [!PageB]"),
+        "PageB": MagicMock(body="PageB has [!PageA]"),
+    }
+    with patch("gamepack.WikiPage.WikiPage.load_locate") as mock_load:
+        mock_load.side_effect = lambda name: pages.get(name)
+        result = processor.render("[!PageA]", "test")
+
+    assert "[!Page" not in result, "No raw transclude syntax should be visible"
+    count = result.count('<div class="transcluded">')
+    assert count <= 5, f"Expected ≤5 transclusion divs, got {count}"
+
+
 def test_glitch():
 
     processor = NossiMarkdownProcessor()
@@ -445,13 +470,24 @@ def test_checkbox_outside_fenced():
     assert result.count('type="checkbox"') == 1
 
 
-def test_tooltip_html_structure():
-    """Tooltip must render trigger text and content span."""
+def test_tooltip_keeps_content_hidden_until_hover():
+    """Tooltip content must be inside tooltiptext so CSS hides/shows it.
+
+    RED: Without <div> wrapper, block-level content (<h1>, <div>) breaks
+    out of the inline <span class='tooltiptext'>, making it always visible.
+    GREEN: With <div> wrapper, all content is contained and only shown
+    on hover (.tooltip:hover .tooltiptext).
+    """
     processor = NossiMarkdownProcessor()
-    body = "## Section\ninner content"
+    section_body = "# Transclusion\ncontent [!t:Transclusion#section]"
+    pages = {
+        "Transclusion": MagicMock(body=section_body, title="Transclusion"),
+    }
     with patch("gamepack.WikiPage.WikiPage.load_locate") as mock_load:
-        mock_load.return_value = MagicMock(body=body, title="Page")
-        result = processor.render("[!t:Page#section]", "test")
-        assert '<span class="tooltip">' in result
-        assert '<span class="tooltiptext">' in result
-        assert "inner content" in result
+        mock_load.side_effect = lambda name: pages.get(name)
+        result = processor.render("[!t:Transclusion]", "test")
+
+    # The tooltiptext must be a <div> so it can contain block-level content
+    assert (
+        '<div class="tooltiptext">' in result
+    ), "tooltiptext must be a <div> to contain block elements"

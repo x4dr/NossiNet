@@ -58,7 +58,7 @@ class SectionTooltipTag(NossiTag):
             rendered = proc.render(body, page_name)
             return (
                 f'<span class="tooltip">{text}'
-                f'<span class="tooltiptext">{rendered}</span></span>'
+                f'<div class="tooltiptext">{rendered}</div></span>'
             )
         except Exception:
             return match.group(0)

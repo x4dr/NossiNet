@@ -20,12 +20,16 @@ class TranscludeTag(NossiTag):
     Display text: `[!pagename|Text]`
       Sets display text for the transclusion link (only meaningful with `#heading`).
 
+    Recursion protection: depth counter with a hard limit of 5 nested levels.
+
     Examples:
       [!endworld/mecha/systems/tables#heavy-shield|Heavy Shield Table]
       [!demo#demo-foldable]
     """
 
     priority = 20
+    _depth: int = 0
+    _max_depth: int = 5
 
     transclude_re = re.compile(
         r"\[!(?![tq]:)(?P<page>[^#|\]]+?)(?:#(?P<fragment>[^|\]]*?))?(?:\|(?P<text>[^\]]*?))?\]"
@@ -60,19 +64,23 @@ class TranscludeTag(NossiTag):
         return self.heading_re.sub(lambda m: f"{m.group(1)} {new_title}", body, count=1)
 
     def _transclude(self, match: re.Match):
-        pagename = match.group("page").strip()
-        fragment = match.group("fragment")
-        text = match.group("text")
-
-        if not pagename:
-            return match.group(0)
-
-        if fragment:
-            fragment = fragment.strip()
-        if text:
-            text = text.strip()
-
+        TranscludeTag._depth += 1
         try:
+            if TranscludeTag._depth > TranscludeTag._max_depth:
+                return ""
+
+            pagename = match.group("page").strip()
+            fragment = match.group("fragment")
+            text = match.group("text")
+
+            if not pagename:
+                return match.group(0)
+
+            if fragment:
+                fragment = fragment.strip()
+            if text:
+                text = text.strip()
+
             page = WikiPage.load_locate(pagename)
             body = page.body
 
@@ -91,3 +99,5 @@ class TranscludeTag(NossiTag):
             return f'\n<div class="transcluded">\n{rendered}\n</div>\n'
         except Exception:
             return match.group(0)
+        finally:
+            TranscludeTag._depth -= 1
