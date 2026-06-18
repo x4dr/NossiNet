@@ -23,99 +23,51 @@
                 body: JSON.stringify({ type: tagType, raw, context: pageName }),
             })
             const data = await r.json()
-            if (data.valid) {
-                el.classList.remove('tag-dirty')
-                el.classList.add('tag-valid')
-                if (data.content) {
-                    el.setAttribute('data-tooltip-content', data.content)
-                }
-            } else {
-                el.classList.remove('tag-dirty')
-                el.classList.add('tag-invalid')
+            window.__tagValidation[raw] = data.valid ? 'valid' : 'invalid'
+            if (data.content) {
+                window.__tagContent[raw] = data.content
             }
         } catch {
-            el.classList.remove('tag-dirty')
-            el.classList.add('tag-invalid')
+            window.__tagValidation[raw] = 'invalid'
         }
-    }
 
-    let pending = new Set()
-    let timer = null
-
-    function schedule(el) {
-        pending.add(el)
-        if (!timer) {
-            timer = setTimeout(() => {
-                timer = null
-                const batch = Array.from(pending)
-                pending.clear()
-                batch.forEach(validate)
-            }, 200)
-        }
+        // Trigger re-decoration so the plugin picks up the cached result
+        document.dispatchEvent(new CustomEvent('tag-validation-update'))
     }
 
     function startObserver(root) {
+        // Process existing dirty tags (from initial decoration)
+        root.querySelectorAll('.tag-dirty').forEach(validate)
+
+        // Watch for new tags introduced by editing
         const observer = new MutationObserver((mutations) => {
             for (const m of mutations) {
                 for (const node of m.addedNodes) {
-                    if (node.nodeType === 1) {
-                        if (node.classList && node.classList.contains('tag-dirty')) {
-                            schedule(node)
-                        }
-                        if (node.querySelectorAll) {
-                            node.querySelectorAll('.tag-dirty').forEach(schedule)
-                        }
+                    if (node.nodeType === 1 && node.classList && node.classList.contains('tag-dirty')) {
+                        validate(node)
                     }
                 }
             }
         })
         observer.observe(root, { childList: true, subtree: true })
-        return observer
     }
 
     function init() {
         const pm = document.querySelector('.ProseMirror')
-        if (!pm) {
-            document.addEventListener('DOMContentLoaded', () => {
-                const el = document.querySelector('.ProseMirror')
-                if (el) { startObserver(el); document.documentElement.dataset.wikiTagValidator = 'ready' }
-            })
+        if (pm) {
+            startObserver(pm)
+            document.documentElement.dataset.wikiTagValidator = 'ready'
             return
         }
-        startObserver(pm)
-        document.documentElement.dataset.wikiTagValidator = 'ready'
-    }
-
-    init()
-
-    let tooltipEl = null
-
-    function showTooltip(e) {
-        const el = e.target.closest('[data-tooltip-content]')
-        if (!el) { hideTooltip(); return }
-        const content = el.getAttribute('data-tooltip-content') || ''
-        if (!content) return
-        if (!tooltipEl) {
-            tooltipEl = document.createElement('div')
-            tooltipEl.className = 'tag-tooltip'
-            document.body.appendChild(tooltipEl)
-        }
-        tooltipEl.textContent = content
-        requestAnimationFrame(() => {
-            const r = el.getBoundingClientRect()
-            tooltipEl.style.left = Math.min(r.left + r.width / 2 - tooltipEl.offsetWidth / 2, window.innerWidth - tooltipEl.offsetWidth - 8) + 'px'
-            tooltipEl.style.top = (r.bottom + 6) + 'px'
-            tooltipEl.style.display = 'block'
+        // .ProseMirror is added later when the editor opens (dblclick)
+        document.addEventListener('editor-prosemirror-ready', () => {
+            const el = document.querySelector('.ProseMirror')
+            if (el) {
+                startObserver(el)
+                document.documentElement.dataset.wikiTagValidator = 'ready'
+            }
         })
     }
 
-    function hideTooltip() {
-        if (tooltipEl) { tooltipEl.style.display = 'none' }
-    }
-
-    document.addEventListener('mouseover', showTooltip)
-    document.addEventListener('mouseout', (e) => {
-        if (!e.relatedTarget || !e.relatedTarget.closest) return
-        if (!e.relatedTarget.closest('[data-tooltip-content]')) hideTooltip()
-    })
+    init()
 })()

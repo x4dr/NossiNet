@@ -21,8 +21,8 @@ class GlitchTag(NossiTag):
     description = "Glitch text effect with optional replacement text"
     example = "g~hello~g or g~world~W0RLD~g"
     category = "text"
-    pattern = r"g(~{1,2})([^~]+)\1g(?:\1([^~]+)\1g)?"
-    re_glitch = re.compile(r"g(~{1,2})([^~]+)\1g(?:\1([^~]+)\1g)?")
+    pattern = r"g(~{1,2})([^~]+)\1(?:g|([^~]+)\1g)"
+    re_glitch = re.compile(r"g(~{1,2})([^~]+)\1(?:g|([^~]+)\1g)")
 
     def post_process(self, html: str, env: WikiEnvironment) -> str:
         return self.re_glitch.sub(

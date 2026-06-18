@@ -1,6 +1,10 @@
 let editor = null
 let sourceMode = false
 
+// Shared validation cache — writable by validator, read by decoration plugin
+window.__tagValidation = window.__tagValidation || {}
+window.__tagContent = window.__tagContent || {}
+
 function getWikiTags() {
     const el = document.getElementById('wiki-tags-data')
     if (!el) return []
@@ -99,6 +103,7 @@ function createWikiTagPlugin(tags, pm) {
                         decorations(state) {
                             const decos = []
                             const doc = state.doc
+                            const cache = window.__tagValidation || {}
 
                             doc.descendants((node, pos) => {
                                 if (node.isText) {
@@ -108,24 +113,35 @@ function createWikiTagPlugin(tags, pm) {
                                         let match
                                         while ((match = regex.exec(text)) !== null) {
                                             if (match.index === regex.lastIndex) { regex.lastIndex++; continue }
+                                            const raw = match[0]
+                                            const cached = cache[raw]
+                                            let cls
+                                            if (cached === 'valid') {
+                                                cls = `tag-valid ${id}`
+                                            } else if (cached === 'invalid') {
+                                                cls = `tag-invalid`
+                                            } else {
+                                                cls = `tag-dirty ${id}`
+                                            }
                                             decos.push(
                                                 Decoration.inline(pos + match.index, pos + match.index + match[0].length, {
-                                                    class: `tag-dirty ${id}`,
-                                                    'data-raw': match[0],
+                                                    class: cls,
+                                                    'data-raw': raw,
                                                 })
                                             )
                                         }
                                     }
                                 }
 
-                                if (node.type.name === 'heading') {
-                                    const first = node.firstChild
-                                    if (first && first.isText && first.text.startsWith('!')) {
-                                        decos.push(
-                                            Decoration.node(pos, pos + node.nodeSize, { class: 'foldable-heading' })
-                                        )
-                                    }
+                            if (node.type.name === 'heading') {
+                                const first = node.firstChild
+                                if (first && first.isText && first.text.startsWith('!')) {
+                                    decos.push(
+                                        Decoration.node(pos, pos + node.nodeSize, { class: 'foldable-heading' })
+                                    )
                                 }
+                            }
+
                             })
 
                             return DecorationSet.create(doc, decos)
@@ -213,6 +229,10 @@ async function openWikiEditor(wikiName) {
             if (m && [...m[0]].length - 1 === 1) return undefined
             return origDel.call(this, e, ...a)
         }
+
+        // Re-trigger decoration evaluation when validator caches a result
+        const onValidation = () => { if (editor) editor.view.dispatch(editor.state.tr) }
+        document.addEventListener('tag-validation-update', onValidation)
 
         editor = new Editor({
             element: document.querySelector('#tip-editor'),
@@ -345,6 +365,7 @@ async function openWikiEditor(wikiName) {
                 }
                 editor.on('selectionUpdate', updateActive)
                 updateActive()
+                document.dispatchEvent(new CustomEvent('editor-prosemirror-ready'))
             }
         }
 
@@ -377,6 +398,7 @@ async function openWikiEditor(wikiName) {
         })
 
         editor.commands.focus()
+        document.dispatchEvent(new CustomEvent('editor-prosemirror-ready'))
     } catch (e) {
         console.error('tip-wiki-editor error:', e)
     }

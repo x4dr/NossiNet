@@ -175,10 +175,11 @@ def test_section_tooltip():
     with patch("gamepack.WikiPage.WikiPage.load_locate") as mock_load:
         mock_load.return_value = MagicMock(body=body, title="Source")
         result = processor.render("[!t:Source]", "test")
-        assert 'class="tooltip"' in result
-        assert 'class="tooltiptext"' in result
+        assert 'class="tip-trigger"' in result
+        assert 'class="tip-content"' in result
         assert "Source" in result
         assert "secret" in result
+        assert "tooltip" not in result
 
 
 def test_section_tooltip_fragment():
@@ -446,12 +447,14 @@ def test_checkbox_outside_fenced():
 
 
 def test_tooltip_html_structure():
-    """Tooltip must render trigger text and content span."""
+    """Tooltip must render trigger span and hidden content div."""
     processor = NossiMarkdownProcessor()
     body = "## Section\ninner content"
     with patch("gamepack.WikiPage.WikiPage.load_locate") as mock_load:
         mock_load.return_value = MagicMock(body=body, title="Page")
         result = processor.render("[!t:Page#section]", "test")
-        assert '<span class="tooltip">' in result
-        assert '<span class="tooltiptext">' in result
+        assert '<span class="tip-trigger"' in result
+        assert 'data-tip="stip-' in result
+        assert 'class="tip-content"' in result
+        assert "tip-stip-" in result
         assert "inner content" in result
