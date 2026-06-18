@@ -9,6 +9,8 @@ class SectionTooltipTag(NossiTag):
     Section tooltip: `[!t:pagename]`, `[!t:pagename#heading]`, `[!t:pagename|Text]`, `[!t:pagename#heading|Text]`
 
     Renders a hover tooltip showing transcluded page / section content on hover.
+    Trigger is an inline <span>, tooltip content is a hidden <div> appended
+    before </body>. JavaScript (wiki-tag-validator.js) shows/positions it.
     Built-in cycle detection prevents infinite recursion.
 
     Examples:
@@ -17,14 +19,33 @@ class SectionTooltipTag(NossiTag):
     """
 
     priority = 25
+    tag_id = "section-tooltip"
+    syntax = "[!t:pagename] or [!t:pagename#heading|Text]"
+    description = "Hover tooltip showing content from another page or section"
+    example = "[!t:demo#transclusion|See transclusion]"
+    category = "content"
+    pattern = r"\[!t:(?P<spec>[^\]]+?)\]"
+    flags = "i"
 
     tooltip_re = re.compile(r"\[!t:(?P<spec>[^\]]+?)\]", re.IGNORECASE)
     _rendering: set[str] = set()
+    _content_stack: list[list[tuple[str, str]]] = []
+    _counter: int = 0
 
     def post_process(self, html: str, env: WikiEnvironment) -> str:
-        return self.tooltip_re.sub(self._render, html)
+        self._content_stack.append([])
+        html = self.tooltip_re.sub(self._render_trigger, html)
 
-    def _render(self, match: re.Match) -> str:
+        pending = self._content_stack.pop()
+        if pending:
+            tips = "\n".join(
+                f'<div class="tip-content" id="tip-{tid}" hidden>{content}</div>'
+                for tid, content in pending
+            )
+            html = html + "\n" + tips
+        return html
+
+    def _render_trigger(self, match: re.Match) -> str:
         spec = match.group("spec")
         page_name, heading, text = self._parse_spec(spec)
 
@@ -56,10 +77,10 @@ class SectionTooltipTag(NossiTag):
 
             proc = NossiMarkdownProcessor()
             rendered = proc.render(body, page_name)
-            return (
-                f'<span class="tooltip">{text}'
-                f'<div class="tooltiptext">{rendered}</div></span>'
-            )
+            tip_id = f"stip-{SectionTooltipTag._counter}"
+            SectionTooltipTag._counter += 1
+            self._content_stack[-1].append((tip_id, rendered))
+            return f'<span class="tip-trigger" data-tip="{tip_id}">{text}</span>'
         except Exception:
             return match.group(0)
         finally:

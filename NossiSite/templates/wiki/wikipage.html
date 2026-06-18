@@ -2,8 +2,9 @@
 {% block head %}
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="clock.css") }}?v={{ restart_id }}">
     <script src="{{ url_for("static", filename="clock.js") }}?v={{ restart_id }}"></script>
-    <script src="{{ url_for("static", filename="live_edit.js") }}?v={{ restart_id }}"></script>
-    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="live_edit.css") }}?v={{ restart_id }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="tip-wiki-editor.css") }}?v={{ restart_id }}">
+    <script id="wiki-tags-data" type="application/json">{{ wiki_tags_json|safe }}</script>
+    <script type="module" src="{{ url_for("static", filename="tip-wiki-editor.js") }}?v={{ restart_id }}"></script>
     <script>
         function highlightClosestHeadingFromFragment() {
             const frag = decodeURIComponent(location.hash.slice(1));
@@ -38,23 +39,6 @@
             }
         }
 
-        window.addEventListener("click", function (e) {
-            const x = e.clientX, y = e.clientY, mouselement = document.elementFromPoint(x, y);
-            if (mouselement.classList.contains("category"))
-                return;
-            const wikibody = document.getElementById("wikibody");
-            const toc = wikibody.querySelector(".toc")?.innerText;
-            const fulltext = wikibody.innerText.substring(toc ? toc.length : 0)
-            if (mouselement === wikibody) return;
-            const ratio = fulltext.indexOf(mouselement.innerText) / fulltext.length
-
-            if (wikibody.contains(mouselement)) {
-                mouselement.dataset["percentage"] = ratio;
-                mouselement.ondblclick = async () => {
-                    await get_edit_content("{{wiki}}", mouselement)();
-                };
-            }
-        });
         document.addEventListener('DOMContentLoaded', () => {
             highlightClosestHeadingFromFragment();
         });
@@ -63,6 +47,7 @@
     </script>
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="glitch.css") }}?v={{ restart_id }}">
     <script src="{{ url_for("static", filename="glitch.js") }}?v={{ restart_id }}"></script>
+    <script src="{{ url_for("static", filename="wiki-tag-validator.js") }}?v={{ restart_id }}"></script>
     <script src="{{ url_for("static", filename="sse_handler.js") }}?v={{ restart_id }}"></script>
     {% for headstate in heads %}
         {{ headstate|safe }}
@@ -85,7 +70,8 @@
             <button class="textbtn metanav">Open Charactersheet</button>
         </a>
     {% endif %}
-    <div class="wiki editable" id="wikibody" style="word-wrap:break-word;border:1px solid">{{ body|safe }}
+    <div style="visibility: hidden" id="context_element">{{ wiki }}</div>
+    <div class="wiki" id="wikibody" style="word-wrap:break-word;border:1px solid">{{ body|safe }}
         <br> {#dangerous body has to be cleaned before being sent here#}
     </div>
     <div style="margin: 2em">|
@@ -99,20 +85,4 @@
     <div>
         <button id="TopButton" title="Upwards">Top</button>
     </div>
-            <div id="editfield" class="editfield">
-                <form id="editform" action="{{ url_for("wiki.live_edit") }}" method="post">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <input name="wiki" type="hidden" value="{{ wiki }}">
-                    <input type="hidden" name="type" value="text">
-                    <input name="original" id="original" type="hidden" value="">
-                    <label for="text" class="overlay">Text to Change</label><br/><textarea class="message" name="new"
-                                                                                           id="text"></textarea>
-                    <div>
-                        <button type="button" class="bright" id="closebutton">Close</button>
-                        <input type="submit" class="bright bottombutton" value="Overwrite">
-                    </div>
-
-                </form>
-            </div>
-    <div class="overlay" id="overlay"></div>
 {% endblock %}

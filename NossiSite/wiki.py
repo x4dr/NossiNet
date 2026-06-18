@@ -35,6 +35,7 @@ from NossiSite.clock_sync import sync_clocks_with_db
 WikiPage.set_wikipath(Path.home() / "wiki")
 wikistamp = [0.0]
 nossi_markdown = NossiMarkdownProcessor()
+wiki_tags_json = json.dumps([tag.to_dict() for tag in nossi_markdown.tags])
 
 chara_objects = {}
 mdlinks = re.compile(r"<a href=\"(.*?)\".*?</a")
@@ -265,6 +266,7 @@ def wikipage(page: Optional[str] = None):
             tags=loaded_page.tags,
             body=body,
             wiki=page,
+            wiki_tags_json=wiki_tags_json,
             sheet_available=loaded_page.char is not None,
             css=(
                 url_for("static", filename="wikimecha.css")
@@ -348,6 +350,48 @@ def localmarkdown_raw():
             sections.append(f"---\n\n## {cls.__name__}\n\n{doc}\n")
 
     return "\n".join(sections), 200, {"Content-Type": "text/plain; charset=utf-8"}
+
+
+@views.route("/wiki-tags.json")
+def wiki_tags_json_endpoint():
+    return json.dumps([tag.to_dict() for tag in nossi_markdown.tags])
+
+
+@views.route("/tag-validate", methods=["POST"])
+def tag_validate():
+    data = request.get_json()
+    if not data:
+        return {"valid": False}, 400
+    tag_type = data.get("type", "")
+    raw = data.get("raw", "")
+
+    if tag_type in ("glitch", "invert"):
+        return {"valid": True, "content": raw}
+
+    if tag_type == "transclude":
+        page_match = re.search(
+            r"\[!(?![tq]:)([^#|\]]+?)(?:#([^|\]]*?))?(?:\|([^\]]*?))?\]", raw
+        )
+        if page_match:
+            exists = WikiPage.locate(page_match.group(1).lower()) is not None
+            return {"valid": exists, "content": page_match.group(2) or ""}
+        return {"valid": False}
+
+    if tag_type == "section-tooltip":
+        spec_match = re.search(r"\[!t:([^\]]+?)\]", raw, re.IGNORECASE)
+        if spec_match:
+            parts = spec_match.group(1).split("#", 1)
+            exists = WikiPage.locate(parts[0].lower()) is not None
+            return {"valid": exists, "content": spec_match.group(1)}
+        return {"valid": False}
+
+    if tag_type == "infolet":
+        name_match = re.search(r"\[!q:(.*?)\]", raw, re.IGNORECASE)
+        if name_match:
+            return {"valid": True, "content": name_match.group(1)}
+        return {"valid": False}
+
+    return {"valid": False}
 
 
 @views.route("/edit/<path:page>", methods=["GET", "POST"])
@@ -519,15 +563,17 @@ def searchwiki():
 
 
 def live_edit_get(formdata):
-    a = formdata.get("path", [])
-    a = [parse.unquote(x) for x in a if x]
-    if not a:
-        a = [formdata["percentage"]]
     t = parse.unquote(formdata.get("type", "text"))
     loaded_page = WikiPage.load_locate(formdata["context"])
     if not loaded_page:
         return {"data": "", "type": "error"}
     res: str = loaded_page.body
+    if t == "tiptap":
+        return {"data": res, "type": "tiptap"}
+    a = formdata.get("path", [])
+    a = [parse.unquote(x) for x in a if x]
+    if not a:
+        a = [formdata["percentage"]]
     if t == "text":
         return live_edit_get_text(res, a)
     if t == "table":
@@ -561,6 +607,8 @@ def live_edit_write(formdata, context):
         return live_edit_write_text(formdata, context)
     elif formdata["type"] == "table":
         return live_edit_write_table(formdata, context)
+    elif formdata["type"] == "tiptap":
+        return live_edit_write_tiptap(formdata, context)
 
 
 def live_edit_write_text(formdata, context):
@@ -584,6 +632,22 @@ def live_edit_write_text(formdata, context):
         page.save_overwrite(session.get("user"))
     else:
         log.info(f"rejected empty replace {context}")
+
+
+def live_edit_write_tiptap(formdata, context):
+    body = formdata["body"].replace("\r\n", "\n")
+    if not body.strip():
+        log.warning("tiptap save with empty body — rejected")
+        return
+    loc = WikiPage.locate(context)
+    if not loc:
+        return
+    log.info(f"tiptap saving {loc}")
+    page = WikiPage.load(loc)
+    if not page:
+        return
+    page.body = body
+    page.save_overwrite(session.get("user"))
 
 
 def live_edit_write_table(formdata, context):

@@ -12,6 +12,11 @@ class HeaderFixTag(NossiTag):
     """
 
     priority = 60
+    tag_id = "header-fix"
+    syntax = "(automatic)"
+    description = "Fix multi-line headings in rendered HTML"
+    example = ""
+    category = "internal"
     # Match headers with content that spans multiple lines
     header_re = re.compile(
         r"<(?P<h>h\d*)\b(?P<extra>[^>]*)>(?P<content>.*?)</(?P=h)\b[^>]*>",

@@ -194,6 +194,33 @@ hr {
     visibility: visible;
 }
 
+.tip-content {
+    display: block;
+    position: fixed;
+    z-index: 10000;
+    background: var(--background-color);
+    border: 1px solid var(--secondary-color);
+    border-radius: 6px;
+    padding: 8px 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    max-width: 400px;
+    max-height: 300px;
+    overflow-y: auto;
+    color: var(--primary-color);
+    font-size: 14px;
+    line-height: 1.5;
+    pointer-events: auto;
+}
+
+.tip-content[hidden] {
+    display: none;
+}
+
+.tip-trigger {
+    cursor: help;
+    border-bottom: 1px dashed var(--secondary-color);
+}
+
 .hiderbox {
     visibility: hidden;
     position: absolute;

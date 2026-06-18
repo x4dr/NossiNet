@@ -175,10 +175,11 @@ def test_section_tooltip():
     with patch("gamepack.WikiPage.WikiPage.load_locate") as mock_load:
         mock_load.return_value = MagicMock(body=body, title="Source")
         result = processor.render("[!t:Source]", "test")
-        assert 'class="tooltip"' in result
-        assert 'class="tooltiptext"' in result
+        assert 'class="tip-trigger"' in result
+        assert 'class="tip-content"' in result
         assert "Source" in result
         assert "secret" in result
+        assert "tooltip" not in result
 
 
 def test_section_tooltip_fragment():
@@ -470,24 +471,14 @@ def test_checkbox_outside_fenced():
     assert result.count('type="checkbox"') == 1
 
 
-def test_tooltip_keeps_content_hidden_until_hover():
-    """Tooltip content must be inside tooltiptext so CSS hides/shows it.
-
-    RED: Without <div> wrapper, block-level content (<h1>, <div>) breaks
-    out of the inline <span class='tooltiptext'>, making it always visible.
-    GREEN: With <div> wrapper, all content is contained and only shown
-    on hover (.tooltip:hover .tooltiptext).
-    """
+def test_tooltip_html_structure():
+    """Tooltip must render trigger span and hidden content div."""
     processor = NossiMarkdownProcessor()
-    section_body = "# Transclusion\ncontent [!t:Transclusion#section]"
-    pages = {
-        "Transclusion": MagicMock(body=section_body, title="Transclusion"),
-    }
+    body = "## Section\ninner content"
     with patch("gamepack.WikiPage.WikiPage.load_locate") as mock_load:
-        mock_load.side_effect = lambda name: pages.get(name)
-        result = processor.render("[!t:Transclusion]", "test")
-
-    # The tooltiptext must be a <div> so it can contain block-level content
-    assert (
-        '<div class="tooltiptext">' in result
-    ), "tooltiptext must be a <div> to contain block elements"
+        mock_load.return_value = MagicMock(body=body, title="Page")
+        result = processor.render("[!t:Page#section]", "test")
+        assert '<span class="tip-trigger"' in result
+        assert 'data-tip="stip-' in result
+        assert 'class="tip-content"' in result
+        assert "inner content" in result

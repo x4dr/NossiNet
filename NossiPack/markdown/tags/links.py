@@ -14,6 +14,11 @@ class LinkValidatorTag(NossiTag):
     """
 
     priority = 80
+    tag_id = "link-validator"
+    syntax = "(automatic)"
+    description = "Validate wiki links and apply missing/valid classes"
+    example = ""
+    category = "internal"
 
     def post_process(self, html: str, env: WikiEnvironment) -> str:
         soup = BeautifulSoup(html, "html.parser")

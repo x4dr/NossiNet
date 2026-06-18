@@ -13,10 +13,16 @@ class InvertTag(NossiTag):
     """
 
     priority = 15
-    re_invert = re.compile(r"i~([^~]+)~i")
+    tag_id = "invert"
+    syntax = "i~text~i"
+    description = "Invert foreground and background colors for text"
+    example = "i~this text is inverted~i"
+    category = "text"
+    pattern = r"i(~{1,2})([^~]+)\1i"
+    re_invert = re.compile(r"i(~{1,2})([^~]+)\1i")
 
     def post_process(self, html: str, env: WikiEnvironment) -> str:
         return self.re_invert.sub(
-            lambda m: f'<span class="invert">{m.group(1)}</span>',
+            lambda m: f'<span class="invert">{m.group(2)}</span>',
             html,
         )
