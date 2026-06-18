@@ -1,19 +1,14 @@
 import re
+
 from NossiPack.markdown.base import NossiTag, WikiEnvironment
+from NossiPack.markdown.tags.section_tooltip import TOOLTIP_EMBED_THRESHOLD
 from gamepack.Item import Item
+
+_infolet_content: list[list[tuple[str, str]]] = []
+_counter: int = 0
 
 
 class InfoletTag(NossiTag):
-    """
-    Item tooltip: `[!q:itemname]`
-
-    Renders a hover tooltip with the item's description from the game database.
-    Falls back to showing just the item name if not found.
-
-    Examples:
-      [!q:healing potion]
-    """
-
     priority = 40
     tag_id = "infolet"
     syntax = "[!q:itemname]"
@@ -25,11 +20,30 @@ class InfoletTag(NossiTag):
     infolet_re = re.compile(r"\[!q:(?P<name>.*?)]", re.IGNORECASE)
 
     def post_process(self, html: str, env: WikiEnvironment) -> str:
-        return self.infolet_re.sub(self._replace, html)
+        _infolet_content.append([])
+        html = self.infolet_re.sub(self._render_trigger, html)
 
-    def _replace(self, match: re.Match):
+        pending = _infolet_content.pop()
+        if pending:
+            tips = "\n".join(
+                f'<div class="tip-content" id="tip-{tid}" hidden>{content}</div>'
+                for tid, content in pending
+            )
+            html = html + "\n" + tips
+        return html
+
+    def _render_trigger(self, match: re.Match):
         name = match.group("name")
         item = Item.item_cache.get(name)
-        if item and item.description:
-            return f'<div class="tooltip">{name}<span class="tooltiptext">{item.description}</span></div>'
-        return name
+        if not item or not item.description:
+            return name
+
+        desc = item.description
+        if len(desc) <= TOOLTIP_EMBED_THRESHOLD:
+            global _counter
+            tip_id = f"iq-{_counter}"
+            _counter += 1
+            _infolet_content[-1].append((tip_id, desc))
+            return f'<span class="tip-trigger" data-tip="{tip_id}">{name}</span>'
+
+        return f'<span class="tip-trigger" data-tooltip="item:{name}">{name}</span>'

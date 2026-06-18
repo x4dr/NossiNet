@@ -48,6 +48,7 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="glitch.css") }}?v={{ restart_id }}">
     <script src="{{ url_for("static", filename="glitch.js") }}?v={{ restart_id }}"></script>
     <script src="{{ url_for("static", filename="wiki-tag-validator.js") }}?v={{ restart_id }}"></script>
+    <script src="{{ url_for("static", filename="tooltip.js") }}?v={{ restart_id }}"></script>
     <script src="{{ url_for("static", filename="sse_handler.js") }}?v={{ restart_id }}"></script>
     {% for headstate in heads %}
         {{ headstate|safe }}

@@ -394,6 +394,19 @@ def tag_validate():
     return {"valid": False}
 
 
+@views.route("/render/<path:locator>")
+def render_locator(locator: str):
+    raw = WikiPage.resolve_address(locator)
+    if raw is None:
+        abort(404)
+    rendered = nossi_markdown.process(raw, locator.split("#", 1)[0])
+    return (
+        rendered,
+        200,
+        {"Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache"},
+    )
+
+
 @views.route("/edit/<path:page>", methods=["GET", "POST"])
 def editwiki(page: str):
     checklogin()

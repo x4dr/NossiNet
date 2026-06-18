@@ -15,13 +15,14 @@ The project uses `uv` for dependency management.
 
 - **Install dependencies**: `uv sync`
 - **Python Version**: 3.14 or higher (enforced in `pyproject.toml`).
-- **Development dependencies**: `pytest`, `black`, `flake8`, `pre-commit`.
+- **Development dependencies**: `pytest`, `black`, `ruff`, `mypy`, `pre-commit`.
 
 ### Build & Run
 
 - **Run server**: `uv run python NossiNet.py [port]` (defaults to 5000)
 - **Formatting**: `black .`
-- **Linting**: `flake8`
+- **Linting**: `ruff check .`
+- **Type checking**: `mypy --strict .`
 - **Pre-commit**: `pre-commit run --all-files`
 
 ### Server Lifecycle Management
@@ -78,6 +79,18 @@ Organize imports into three groups:
 2. Third-party libraries (Flask, bleach, etc.)
 3. Local application modules (`NossiSite`, `gamepack`)
 
+### Documentation and Comments
+
+- Use comprehensive docstrings (Google style) for all public APIs
+- Use inline comments sparingly, only for complex logic
+
+### Testing Conventions
+
+- Use pytest style (plain functions, fixtures, parametrize)
+- Use `pytest.raises` for expected exceptions
+- Test functions: `test_*` naming convention
+- Use fixtures for setup/teardown over `setUp()`/`tearDown()`
+
 ### HTMX & Templates
 
 - **Partial Updates**: Use HTMX for dynamic UI updates (e.g., `hx-get`, `hx-target`).
@@ -117,7 +130,7 @@ Organize imports into three groups:
 4. **Verify**:
     - Run the server and use `curl` or `webfetch` to verify rendering and HTMX endpoints.
     - Run all available tests: `uv run pytest`. This includes logic tests and Playwright UI tests.
-5. **Cleanliness**: Check for LSP errors and run pre-commit hooks: `pre-commit run --all-files`.
+5. **Cleanliness**: Run `mypy --strict .` for type checking, then run pre-commit hooks: `uv run pre-commit run --all-files`.
 6. **Git**: Stage all relevant work for the current phase. **DO NOT** commit autonomously unless explicitly requested by
    the user. When committing:
     - **Verify Changes**: NEVER use `--no-verify`. If pre-commit hooks fail, fix the issues.

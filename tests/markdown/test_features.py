@@ -296,7 +296,8 @@ def test_infolet():
         "gamepack.Item.Item.item_cache", {"test": MagicMock(description="desc")}
     ):
         result = processor.render("[!q:test]", "testpage")
-        assert 'class="tooltip"' in result
+        assert 'class="tip-trigger"' in result
+        assert 'data-tip="iq-' in result
         assert "desc" in result
 
 

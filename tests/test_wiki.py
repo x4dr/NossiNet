@@ -98,6 +98,27 @@ class TestWiki(NossiTestCase):
                 wikipage.live = False
                 wikipage.save_overwrite("", "")
 
+    def test_render_endpoint_returns_rendered_html(self):
+        with mock.patch.object(WikiPage, "resolve_address") as mock_resolve:
+            mock_resolve.return_value = "## Test Heading\ntest content"
+            with self.app.app_context():
+                rv = self.client.get(
+                    url_for("wiki.render_locator", locator="test_page#Test Heading")
+                )
+            self.assertEqual(rv.status_code, 200)
+            self.assertEqual(rv.content_type, "text/html; charset=utf-8")
+            self.assertIn(b"Test Heading</h2>", rv.data)
+            self.assertIn(b"test content", rv.data)
+
+    def test_render_endpoint_returns_404_for_nonexistent(self):
+        with mock.patch.object(WikiPage, "resolve_address") as mock_resolve:
+            mock_resolve.return_value = None
+            with self.app.app_context():
+                rv = self.client.get(
+                    url_for("wiki.render_locator", locator="no_such_page")
+                )
+            self.assertEqual(rv.status_code, 404)
+
     def test_speed(self):
         root = Path("~/wiki").expanduser().absolute()
         with mock.patch.object(WikiPage, "_wikipath", root):
