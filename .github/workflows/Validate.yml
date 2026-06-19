@@ -13,6 +13,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Checkout GamePack at pinned SHA
+        run: |
+          SHA=$(cat .gamepack-sha)
+          git clone https://github.com/x4dr/GamePack.git ../GamePack
+          git -C ../GamePack checkout "$SHA"
+
       - name: Setup Python 3.14
         uses: actions/setup-python@v5
         with:
@@ -20,17 +26,6 @@ jobs:
 
       - name: Install uv
         run: pip install uv
-
-      - name: Pin gamepack to committed SHA
-        run: |
-          SHA=$(cat .gamepack-sha)
-          python3 -c "
-          import pathlib, re
-          p = pathlib.Path('pyproject.toml')
-          c = p.read_text()
-          c = re.sub(r'path = \"\.\./GamePack\", editable = true \}', 'git = \"https://github.com/x4dr/GamePack.git\", rev = \"$SHA\" }', c)
-          p.write_text(c)
-          "
 
       - name: Cache uv + venv
         uses: actions/cache@v3
@@ -73,23 +68,18 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Checkout GamePack at pinned SHA
+        run: |
+          SHA=$(cat .gamepack-sha)
+          git clone https://github.com/x4dr/GamePack.git ../GamePack
+          git -C ../GamePack checkout "$SHA"
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.14"
 
       - name: Install uv
         run: pip install uv
-
-      - name: Pin gamepack to committed SHA
-        run: |
-          SHA=$(cat .gamepack-sha)
-          python3 -c "
-          import pathlib, re
-          p = pathlib.Path('pyproject.toml')
-          c = p.read_text()
-          c = re.sub(r'path = \"\.\./GamePack\", editable = true \}', 'git = \"https://github.com/x4dr/GamePack.git\", rev = \"$SHA\" }', c)
-          p.write_text(c)
-          "
 
       - name: Cache uv + venv
         uses: actions/cache@v3
