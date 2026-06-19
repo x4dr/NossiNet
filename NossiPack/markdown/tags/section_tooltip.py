@@ -10,18 +10,36 @@ from NossiPack.markdown.base import NossiTag, WikiEnvironment
 TOOLTIP_EMBED_THRESHOLD = 500
 
 
-class SectionTooltipTag(NossiTag):
-    """Section tooltip: ``[!t:pagename]`` or ``[!t:pagename#heading|Text]``.
+class DirectTooltipTag(NossiTag):
+    r"""Direct tooltip: ``[!t:"content"|text]``.
 
-    Renders a hover tooltip showing rendered content from another page
-    or a specific section within a page. Short content is embedded inline;
-    longer content uses a deferred tooltip lookup.
+    Renders a hover tooltip trigger with inline static content, no
+    page/section lookup required.
+    """
+
+    priority = 24
+    tag_id = "direct-tooltip"
+    syntax = '[!t:"content"|text]'
+    description = "Hover tooltip with direct inline text content"
+    example = '[!t:"This is the tooltip text"|hover me]'
+    category = "content"
+
+    def post_process(self, html: str, env: WikiEnvironment) -> str:  # noqa: ARG002
+        """No-op — ``LinkedTooltipTag`` handles all ``[!t:...]`` processing."""
+        return html
+
+
+class LinkedTooltipTag(NossiTag):
+    """Linked tooltip: ``[!t:pagename]`` or ``[!t:pagename#heading|Text]``.
+
+    Renders a hover tooltip trigger that fetches content from another
+    page or section via ``/render/<locator>`` at runtime.
     """
 
     priority = 25
-    tag_id = "section-tooltip"
+    tag_id = "linked-tooltip"
     syntax = "[!t:pagename] or [!t:pagename#heading|Text]"
-    description = "Hover tooltip showing content from another page or section"
+    description = "Hover tooltip showing content from a linked page or section"
     example = "[!t:demo#transclusion|See transclusion]"
     category = "content"
     pattern = r"\[!t:(?P<spec>[^\]]+?)\]"
@@ -35,8 +53,9 @@ class SectionTooltipTag(NossiTag):
     def post_process(self, html: str, env: WikiEnvironment) -> str:  # noqa: ARG002
         """Replace section tooltip syntax with tooltip trigger HTML.
 
-        Renders tooltip triggers and appends hidden tip-content divs
-        at the end of the HTML.
+        Page-based tooltips use ``data-tip="{locator}"`` for runtime
+        loading via ``/render/<locator>``. Static quoted tooltips are
+        embedded inline.
 
         Args:
             html: The rendered HTML content.
@@ -57,18 +76,7 @@ class SectionTooltipTag(NossiTag):
         return html
 
     def _render_trigger(self, match: re.Match[str]) -> str:
-        """Render a single section tooltip match.
-
-        Handles static embedded content, circular-reference protection,
-        and delegates to ``_render_locator`` for page-based tooltips.
-
-        Args:
-            match: The regex match for a section tooltip pattern.
-
-        Returns:
-            HTML for the tooltip trigger, or the original match text
-            if rendering fails.
-        """
+        """Render a single section tooltip match."""
         spec = match.group("spec")
         page_name, heading, text, is_static = self._parse_spec(spec)
 
@@ -76,37 +84,25 @@ class SectionTooltipTag(NossiTag):
             result = self._embed_static(page_name, text)
             return result if result is not None else match.group(0)
 
-        if page_name in SectionTooltipTag._rendering:
+        if page_name in LinkedTooltipTag._rendering:
             return text or heading.capitalize() if heading else page_name
 
-        SectionTooltipTag._rendering.add(page_name)
+        LinkedTooltipTag._rendering.add(page_name)
         try:
             return self._render_locator(page_name, heading, text, match)
         finally:
-            SectionTooltipTag._rendering.discard(page_name)
+            LinkedTooltipTag._rendering.discard(page_name)
 
     def _embed_static(self, content: str, text: str | None) -> str | None:
-        """Render statically embedded content as an inline tooltip.
-
-        Processes the content through the full markdown pipeline and
-        stores it as a hidden tip-content div.
-
-        Args:
-            content: The raw markdown content to render.
-            text: Optional display text for the trigger element.
-
-        Returns:
-            HTML for the tooltip trigger, or None if the content
-            is empty.
-        """
+        """Render statically embedded content as an inline tooltip."""
         from NossiPack.markdown import NossiMarkdownProcessor
 
         if text is None:
             text = content
         proc = NossiMarkdownProcessor()
         rendered = proc.render(content, "tooltip")
-        tip_id = f"stip-{SectionTooltipTag._counter}"
-        SectionTooltipTag._counter += 1
+        tip_id = f"stip-{LinkedTooltipTag._counter}"
+        LinkedTooltipTag._counter += 1
         self._content_stack[-1].append((tip_id, rendered))
         return f'<span class="tip-trigger" data-tip="{tip_id}">{text}</span>'
 
@@ -117,7 +113,11 @@ class SectionTooltipTag(NossiTag):
         text: str | None,
         match: re.Match[str],
     ) -> str:
-        """Render a page-based tooltip, embedding or deferring based on length.
+        """Render a page-based tooltip trigger with dynamic content loading.
+
+        Always uses ``data-tip="{locator}"`` so the client-side
+        tooltip system fetches rendered content from
+        ``/render/<locator>`` at runtime.
 
         Args:
             page_name: The wiki page to pull content from.
@@ -138,20 +138,13 @@ class SectionTooltipTag(NossiTag):
             return match.group(0)
 
         if text is None:
-            page = WikiPage.load_locate(page_name)
-            text = page.title or page_name if page else page_name
+            if heading:
+                text = heading.capitalize()
+            else:
+                page = WikiPage.load_locate(page_name)
+                text = page.title or page_name if page else page_name
 
-        if len(raw_markdown) <= TOOLTIP_EMBED_THRESHOLD:
-            from NossiPack.markdown import NossiMarkdownProcessor
-
-            proc = NossiMarkdownProcessor()
-            rendered = proc.render(raw_markdown, page_name)
-            tip_id = f"stip-{SectionTooltipTag._counter}"
-            SectionTooltipTag._counter += 1
-            self._content_stack[-1].append((tip_id, rendered))
-            return f'<span class="tip-trigger" data-tip="{tip_id}">{text}</span>'
-
-        return f'<span class="tip-trigger" data-tooltip="{locator}">{text}</span>'
+        return f'<span class="tip-trigger" data-tip="{locator}">{text}</span>'
 
     def _parse_spec(self, spec: str) -> tuple[str, str | None, str | None, bool]:
         """Parse a tooltip specification string into its components.

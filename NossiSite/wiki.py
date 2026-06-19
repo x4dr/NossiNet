@@ -373,12 +373,16 @@ def tag_validate() -> WerkzeugResponse:
             return WerkzeugResponse(data, 200, content_type="application/json")
         return WerkzeugResponse(json.dumps({"valid": False}), 200, content_type="application/json")
 
-    if tag_type == "section-tooltip":
+    if tag_type == "linked-tooltip":
         spec_match = re.search(r"\[!t:([^\]]+?)\]", raw, re.IGNORECASE)
         if spec_match:
-            parts = spec_match.group(1).split("#", 1)
+            spec = spec_match.group(1)
+            if spec.startswith('"'):
+                data = json.dumps({"valid": True, "content": spec})
+                return WerkzeugResponse(data, 200, content_type="application/json")
+            parts = spec.split("#", 1)
             exists = WikiPage.locate(parts[0].lower()) is not None
-            data = json.dumps({"valid": exists, "content": spec_match.group(1)})
+            data = json.dumps({"valid": exists, "content": spec})
             return WerkzeugResponse(data, 200, content_type="application/json")
         return WerkzeugResponse(json.dumps({"valid": False}), 200, content_type="application/json")
 
@@ -389,15 +393,60 @@ def tag_validate() -> WerkzeugResponse:
             return WerkzeugResponse(data, 200, content_type="application/json")
         return WerkzeugResponse(json.dumps({"valid": False}), 200, content_type="application/json")
 
+    if tag_type == "wikilink":
+        link_match = re.search(r"\[\[([^\]]+?)\]\]", raw)
+        if link_match:
+            inner = link_match.group(1)
+            # Strip optional |text suffix
+            pipe_idx = inner.find("|")
+            page_ref = inner[:pipe_idx].strip() if pipe_idx >= 0 else inner.strip()
+            # Extract page name (strip #heading if present)
+            page_name = page_ref.split("#", 1)[0].strip()
+            exists = WikiPage.locate(page_name.lower()) is not None
+            data = json.dumps({"valid": exists, "content": page_ref})
+            return WerkzeugResponse(data, 200, content_type="application/json")
+        return WerkzeugResponse(json.dumps({"valid": False}), 200, content_type="application/json")
+
     return WerkzeugResponse(json.dumps({"valid": False}), 200, content_type="application/json")
 
 
 @views.route("/render/<path:locator>")
 def render_locator(locator: str) -> WerkzeugResponse:
     """Render a wiki page fragment (optionally with section anchor) as HTML."""
+    from gamepack.Item import Item
+
+    # Handle infolet lookups
+    if locator.startswith("q:"):
+        item_name = locator[2:]
+        item = Item.item_cache.get(item_name)
+        if item and item.description:
+            rendered = nossi_markdown.process(item.description, locator)
+            return WerkzeugResponse(
+                rendered,
+                200,
+                {"Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache"},
+            )
+        return WerkzeugResponse(
+            f"<p>Item <strong>{item_name}</strong> not found</p>",
+            200,
+            {"Content-Type": "text/html; charset=utf-8"},
+        )
+
     raw = WikiPage.resolve_address(locator)
     if raw is None:
-        abort(404)
+        parts = locator.split("#", 1)
+        page_name = parts[0]
+        if len(parts) > 1 and parts[1].strip():
+            return WerkzeugResponse(
+                f"<p>Heading <strong>{parts[1]}</strong> not found on page" f" <strong>{page_name}</strong></p>",
+                200,
+                {"Content-Type": "text/html; charset=utf-8"},
+            )
+        return WerkzeugResponse(
+            f"<p>Page <strong>{page_name}</strong> not found</p>",
+            200,
+            {"Content-Type": "text/html; charset=utf-8"},
+        )
     rendered = nossi_markdown.process(raw, locator.split("#", 1)[0])
     return WerkzeugResponse(
         rendered,

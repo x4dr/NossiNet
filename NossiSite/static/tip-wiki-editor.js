@@ -84,15 +84,79 @@ function createClockNode(pm) {
     })
 }
 
+function createLinkInputRule(pm) {
+    const { Extension, Plugin } = pm
+    return Extension.create({
+        name: 'linkInputRule',
+        addProseMirrorPlugins() {
+            return [
+                new Plugin({
+                    props: {
+                        handleTextInput(view, from, to, text) {
+                            if (text !== ')') return false
+                            const { state, dispatch } = view
+                            const { schema } = state
+                            const $pos = state.doc.resolve(from)
+                            const start = $pos.start()
+                            const textBefore = state.doc.textBetween(start, from)
+                            const match = /\[([^\]]+)\]\(([^)]*?)$/.exec(textBefore)
+                            if (!match) return false
+                            const [full, label, url] = match
+                            const linkStart = from - full.length
+                            const tr = state.tr
+                            tr.replaceWith(linkStart, from, schema.text(label))
+                            tr.addMark(linkStart, linkStart + label.length, schema.marks.link.create({ href: url }))
+                            dispatch(tr)
+                            return true
+                        },
+                    },
+                }),
+            ]
+        },
+    })
+}
+
 function createWikiTagPlugin(tags, pm) {
     const { Extension, Plugin, Decoration, DecorationSet } = pm
     const tagPatterns = tags
-        .filter(t => t.pattern && t.category !== 'internal' && t.id !== 'clock')
+        .filter(t => t.pattern && t.id !== 'clock')
         .map(t => {
             const jsPattern = t.pattern.replace(/\(\?P<([^>]+)>/g, '(?<$1>')
             const flags = t.flags ? t.flags + 'g' : 'g'
             return { id: t.id, regex: new RegExp(jsPattern, flags) }
         })
+
+    // Wiki link pattern [[page]], [[page#heading]], [[page|text]], [[page#heading|text]]
+    tagPatterns.push({
+        id: 'wikilink',
+        regex: /\[\[(?<ref>[^\]]+?)\]\]/g,
+    })
+
+    function matchTip(match, id) {
+        if (id === 'wikilink') {
+            if (!match.groups) return null
+            const inner = match.groups.ref
+            const pipeIdx = inner.indexOf('|')
+            return pipeIdx >= 0 ? inner.slice(0, pipeIdx).trim() : inner.trim()
+        }
+        if (id === 'transclude' && match.groups) {
+            const page = match.groups.page
+            const fragment = match.groups.fragment
+            return fragment ? page + '#' + fragment : page
+        }
+        if (id === 'linked-tooltip' && match.groups) {
+            const spec = match.groups.spec
+            if (!spec) return null
+            if (spec.startsWith('"')) return null
+            const pipeIdx = spec.indexOf('|')
+            const ref = pipeIdx >= 0 ? spec.slice(0, pipeIdx).trim() : spec.trim()
+            return ref || null
+        }
+        if (id === 'infolet' && match.groups) {
+            return match.groups.name ? 'q:' + match.groups.name : null
+        }
+        return null
+    }
 
     return Extension.create({
         name: 'wikiTagDecorations',
@@ -107,6 +171,19 @@ function createWikiTagPlugin(tags, pm) {
 
                             doc.descendants((node, pos) => {
                                 if (node.isText) {
+                                    // Add data-tip for link marks (standard markdown links)
+                                    if (node.marks) {
+                                        for (const mark of node.marks) {
+                                            if (mark.type.name === 'link') {
+                                                decos.push(
+                                                    Decoration.inline(pos, pos + node.nodeSize, {
+                                                        'data-tip': mark.attrs.href,
+                                                    })
+                                                )
+                                            }
+                                        }
+                                    }
+
                                     const text = node.text
                                     for (const { id, regex } of tagPatterns) {
                                         regex.lastIndex = 0
@@ -123,11 +200,20 @@ function createWikiTagPlugin(tags, pm) {
                                             } else {
                                                 cls = `tag-dirty ${id}`
                                             }
+                                            const attrs = { class: cls, 'data-raw': raw }
+                                            if (id === 'glitch') {
+                                                cls = cls.replace('glitch', 'static-glitch')
+                                                attrs.class = cls
+                                                attrs['data-text'] = match[3] || match[2] || ''
+                                                attrs['data-type'] = 'glitch'
+                                            }
+                                            if (id === 'invert') {
+                                                attrs['data-text'] = match[2] || ''
+                                            }
+                                            const tip = matchTip(match, id)
+                                            if (tip) attrs['data-tip'] = tip
                                             decos.push(
-                                                Decoration.inline(pos + match.index, pos + match.index + match[0].length, {
-                                                    class: cls,
-                                                    'data-raw': raw,
-                                                })
+                                                Decoration.inline(pos + match.index, pos + match.index + match[0].length, attrs)
                                             )
                                         }
                                     }
@@ -153,7 +239,7 @@ function createWikiTagPlugin(tags, pm) {
     })
 }
 
-async function openWikiEditor(wikiName) {
+async function openWikiEditor(wikiName, scrollPct = 0) {
     try {
         const csrf = document.querySelector('meta[name="csrf-token"]').content
 
@@ -176,8 +262,14 @@ async function openWikiEditor(wikiName) {
 
         let tagOptions = ''
         for (const t of tags) {
-            tagOptions += `<option value="${t.syntax.replace(/"/g, '&quot;')}">${t.id}</option>`
+            const syntaxes = t.syntax.split(' or ').map(s => s.trim())
+            for (const syntax of syntaxes) {
+                const label = syntaxes.length > 1 ? `${t.id} — ${syntax}` : t.id
+                tagOptions += `<option value="${syntax.replace(/"/g, '&quot;')}">${label}</option>`
+            }
         }
+        tagOptions += `<option value="[[page]]">wikilink — [[page]]</option>`
+        tagOptions += `<option value="[[page|text]]">wikilink — [[page|text]]</option>`
 
         wrapper.innerHTML = `
             <div class="tip-panel">
@@ -194,6 +286,7 @@ async function openWikiEditor(wikiName) {
                     <button data-tip-cmd="bulletList" title="Bullet list">ul</button>
                     <button data-tip-cmd="orderedList" title="Ordered list">ol</button>
                     <span class="tip-sep"></span>
+                    <button data-tip-cmd="wikilink" title="Wiki link">[ ]</button>
                     <button data-tip-cmd="blockquote" title="Blockquote">"</button>
                     <button data-tip-cmd="codeBlock" title="Code block">{ }</button>
                     <button data-tip-cmd="horizontalRule" title="Horizontal rule">hr</button>
@@ -219,6 +312,7 @@ async function openWikiEditor(wikiName) {
         const m = await import('/static/lib/tiptap/tip-edit.js')
         const { Editor, StarterKit, Markdown, TaskList, TaskItem, Strike, Marked, Node } = m
         const wikTagsPlugin = createWikiTagPlugin(tags, m)
+        const linkInputPlugin = createLinkInputRule(m)
         const ClockNode = createClockNode(m)
 
         // Patch marked's del tokenizer to only match ~~, not single ~
@@ -237,18 +331,30 @@ async function openWikiEditor(wikiName) {
         editor = new Editor({
             element: document.querySelector('#tip-editor'),
             extensions: [
-                StarterKit.configure({history: {depth: 100}, strike: false}),
+                StarterKit.configure({
+                    history: {depth: 100},
+                    strike: false,
+                    link: { openOnClick: false },
+                }),
                 Strike,
                 Markdown.configure({indentation: {style: 'space', size: 2}}),
                 TaskList,
                 TaskItem.configure({nested: true}),
                 ClockNode,
                 wikTagsPlugin,
+                linkInputPlugin,
             ],
             content: original,
             contentType: 'markdown',
-            autofocus: 'end',
         })
+
+        // Scroll to same relative position as the main wiki page
+        const targetPos = Math.min(
+            Math.floor(editor.state.doc.content.size * scrollPct),
+            editor.state.doc.content.size - 1
+        )
+        if (scrollPct > 0) editor.commands.setTextSelection(targetPos)
+        editor.commands.focus()
 
         // Don't escape ~ in text serialization — we patched marked to reject single ~
         const mgr = editor.markdown
@@ -288,11 +394,23 @@ async function openWikiEditor(wikiName) {
             bulletList: 'toggleBulletList', orderedList: 'toggleOrderedList',
             blockquote: 'toggleBlockquote', codeBlock: 'toggleCodeBlock',
             horizontalRule: 'setHorizontalRule',
+            wikilink: 'insertWikilink',
         }
 
         btns.forEach(btn => {
             btn.addEventListener('click', () => {
                 const cmd = btn.dataset.tipCmd
+                if (cmd === 'wikilink') {
+                    const { from, to } = editor.state.selection
+                    const selectedText = editor.state.doc.textBetween(from, to)
+                    if (selectedText && from !== to) {
+                        const result = `[[${selectedText}|page]]`
+                        editor.chain().focus().insertContentAt({ from, to }, result, { updateSelection: false }).setTextSelection(from + selectedText.length + 3).run()
+                    } else {
+                        editor.chain().focus().insertContent('[[').run()
+                    }
+                    return
+                }
                 const spec = cmdMap[cmd]
                 if (!spec) return
                 if (typeof spec === 'string') {
@@ -307,17 +425,50 @@ async function openWikiEditor(wikiName) {
 
         const tagSelect = wrapper.querySelector('#tip-tag-select')
         tagSelect.addEventListener('change', () => {
-            const val = tagSelect.value
+            const syntax = tagSelect.value
             tagSelect.value = ''
-            if (!val || !editor) return
-            editor.chain().focus().insertContent(val).run()
+            if (!syntax || !editor) return
+
+            const { from, to } = editor.state.selection
+            const selectedText = editor.state.doc.textBetween(from, to)
+            const hasSelection = selectedText && from !== to
+
+            if (!hasSelection) {
+                editor.chain().focus().insertContent(syntax).run()
+                return
+            }
+
+            let result, cursorOffset
+            const pipeIdx = syntax.indexOf('|')
+
+            if (pipeIdx >= 0) {
+                const before = syntax.slice(0, pipeIdx)
+                const after = syntax.slice(pipeIdx)
+                let replaced
+                const quoteMatch = before.match(/"(\w+)"/)
+                if (quoteMatch) {
+                    replaced = before.replace(/"(\w+)"/, '"' + selectedText + '"')
+                } else {
+                    replaced = before.replace(/(\[!?(?:\w+:)?|\[\[)(\w+)/, (_, p) => p + selectedText)
+                }
+                result = replaced + after
+                cursorOffset = replaced.length + 1
+            } else if (/\btext\b/.test(syntax)) {
+                result = syntax.replace(/\btext\b/, selectedText)
+                cursorOffset = result.length
+            } else {
+                result = syntax.replace(/(\[!?(?:\w+:)?|\[\[)(\w+)/, (_, p) => p + selectedText)
+                cursorOffset = result.length
+            }
+
+            editor.chain().focus().insertContentAt({ from, to }, result, { updateSelection: false }).setTextSelection(from + cursorOffset).run()
         })
 
         function getContent() {
             if (sourceMode) {
                 return document.getElementById('tip-source-area').value
             }
-            return editor.getMarkdown()
+            return editor.getMarkdown().replace(/\\\[/g, '[').replace(/\\\]/g, ']')
         }
 
         async function toggleSource() {
@@ -326,7 +477,7 @@ async function openWikiEditor(wikiName) {
             const btn = document.getElementById('tip-source-toggle')
             sourceMode = !sourceMode
             if (sourceMode) {
-                sourceEl.value = editor.getMarkdown()
+                sourceEl.value = editor.getMarkdown().replace(/\\\[/g, '[').replace(/\\\]/g, ']')
                 editorEl.style.display = 'none'
                 sourceEl.style.display = 'block'
                 btn.textContent = '</> WYSIWYG'
@@ -341,21 +492,26 @@ async function openWikiEditor(wikiName) {
                 const { Editor: Ed, StarterKit: SK, Markdown: Md, TaskList: TL, TaskItem: TI, Strike: Sk, Node: Nd } = m2
                 const tags = getWikiTags().filter(t => t.category !== 'internal')
                 const wikiPlugin = createWikiTagPlugin(tags, m2)
+                const linkInputPlugin2 = createLinkInputRule(m2)
                 const clockNode2 = createClockNode(m2)
                 editor = new Ed({
                     element: editorEl,
                     extensions: [
-                        SK.configure({history: {depth: 100}, strike: false}),
+                        SK.configure({
+                            history: {depth: 100},
+                            strike: false,
+                            link: { openOnClick: false },
+                        }),
                         Sk,
                         Md.configure({indentation: {style: 'space', size: 2}}),
                         TL,
                         TI.configure({nested: true}),
                         clockNode2,
                         wikiPlugin,
+                        linkInputPlugin2,
                     ],
                     content: md,
                     contentType: 'markdown',
-                    autofocus: 'end',
                 })
                 const mgr2 = editor.markdown
                 if (mgr2 && mgr2.escapeMarkdownSyntax) {
@@ -397,7 +553,6 @@ async function openWikiEditor(wikiName) {
             }
         })
 
-        editor.commands.focus()
         document.dispatchEvent(new CustomEvent('editor-prosemirror-ready'))
     } catch (e) {
         console.error('tip-wiki-editor error:', e)
@@ -416,5 +571,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!body || !ctx) return
     const name = ctx.textContent.trim()
     ctx.remove()
-    body.addEventListener('dblclick', () => openWikiEditor(name))
+    body.addEventListener('dblclick', () => {
+        const maxScroll = document.documentElement.scrollHeight - window.innerHeight
+        const scrollPct = maxScroll > 0 ? window.scrollY / maxScroll : 0
+        openWikiEditor(name, scrollPct)
+    })
 })
