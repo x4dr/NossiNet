@@ -28,7 +28,8 @@ class LinkValidatorTag(NossiTag):
 
         Internal links get a ``/wiki/`` prefix. Links to non-existent
         pages get a ``missing`` CSS class. External and anchor-only
-        links are left unchanged.
+        links are left unchanged. Internal links also get a ``data-tip``
+        attribute for hover preview tooltips.
 
         Args:
             html: The rendered HTML content.
@@ -48,4 +49,5 @@ class LinkValidatorTag(NossiTag):
                     a["class"] = [*a.get("class", []), "missing"]
                 else:
                     a["href"] = "/wiki/" + href
+                a["data-tip"] = href
         return str(soup)

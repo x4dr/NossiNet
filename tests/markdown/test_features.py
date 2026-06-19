@@ -176,28 +176,27 @@ visible"""
 
 
 def test_section_tooltip() -> None:
-    """Section tooltip renders trigger span and hidden content div."""
+    """Section tooltip renders trigger span with data-tip locator."""
     processor = NossiMarkdownProcessor()
     body = "# Source\n\ncontent\n\n## Details\nsecret"
     with patch("gamepack.WikiPage.WikiPage.load_locate") as mock_load:
         mock_load.return_value = MagicMock(body=body, title="Source")
         result = processor.render("[!t:Source]", "test")
         assert 'class="tip-trigger"' in result
-        assert 'class="tip-content"' in result
+        assert 'data-tip="Source"' in result
         assert "Source" in result
-        assert "secret" in result
-        assert "tooltip" not in result
+        assert 'class="tip-content"' not in result
 
 
 def test_section_tooltip_fragment() -> None:
-    """Section tooltip with fragment targets the specific section."""
+    """Section tooltip with fragment uses data-tip with locator."""
     processor = NossiMarkdownProcessor()
     body = "# Page\n\n## Details\nhidden\n\n## Other\nvisible"
     with patch("gamepack.WikiPage.WikiPage.load_locate") as mock_load:
         mock_load.return_value = MagicMock(body=body, title="Page")
         result = processor.render("[!t:Page#details]", "test")
-        assert "hidden" in result
-        assert "visible" not in result
+        assert 'data-tip="Page#details"' in result
+        assert "hidden" not in result
 
 
 def test_section_tooltip_rename() -> None:
@@ -208,7 +207,7 @@ def test_section_tooltip_rename() -> None:
         mock_load.return_value = MagicMock(body=body, title="Page")
         result = processor.render("[!t:Page#details|Fun Fact]", "test")
         assert "Fun Fact" in result
-        assert "info" in result
+        assert "info" not in result
 
 
 def test_section_tooltip_self_reference() -> None:
@@ -235,11 +234,8 @@ def test_section_tooltip_placeholder_does_not_wipe_outer() -> None:
     with patch("gamepack.WikiPage.WikiPage.load_locate") as mock_load:
         mock_load.side_effect = lambda name: pages.get(name)
         result = processor.render("[!t:OuterPage]", "test")
-        assert "TIP_PLACEHOLDER_" not in result
         assert "[!t:" not in result
-        assert "outer" in result
-        assert "inner content" in result
-        assert "target" in result
+        assert 'data-tip="OuterPage"' in result
 
 
 def test_section_tooltip_cycle() -> None:
@@ -255,8 +251,7 @@ def test_section_tooltip_cycle() -> None:
         mock_load.side_effect = lambda name: pages.get(name)
         result = processor.render("[!t:PageA]", "test")
         assert "[!t:" not in result
-        assert "TIP_PLACEHOLDER_" not in result
-        assert "Page A has" in result
+        assert 'data-tip="PageA"' in result
 
 
 def test_transclude_recursion_limit() -> None:
@@ -488,16 +483,15 @@ def test_checkbox_outside_fenced() -> None:
 
 
 def test_tooltip_html_structure() -> None:
-    """Tooltip must render trigger span and hidden content div."""
+    """Tooltip must render trigger span with data-tip locator, no embedded content."""
     processor = NossiMarkdownProcessor()
     body = "## Section\ninner content"
     with patch("gamepack.WikiPage.WikiPage.load_locate") as mock_load:
         mock_load.return_value = MagicMock(body=body, title="Page")
         result = processor.render("[!t:Page#section]", "test")
         assert '<span class="tip-trigger"' in result
-        assert 'data-tip="stip-' in result
-        assert 'class="tip-content"' in result
-        assert "inner content" in result
+        assert 'data-tip="Page#section"' in result
+        assert 'class="tip-content"' not in result
 
 
 def test_transclude_missing_page_returns_original_syntax() -> None:
@@ -514,3 +508,19 @@ def test_transclude_missing_page_returns_original_syntax() -> None:
 
     assert "[!nonexistent]" in result
     assert '<div class="transcluded">' not in result
+
+
+def test_strikethrough() -> None:
+    """~~text~~ is converted to <del>text</del>."""
+    processor = NossiMarkdownProcessor()
+    result = processor.render("This is ~~deleted~~ text.", "testpage")
+    assert "<del>deleted</del>" in result
+    assert "~~deleted~~" not in result
+
+
+def test_strikethrough_inside_markdown() -> None:
+    """~~text~~ works inside bold/italic markdown formatting."""
+    processor = NossiMarkdownProcessor()
+    result = processor.render("**bold ~~strikethrough~~ text**", "testpage")
+    assert "<del>strikethrough</del>" in result
+    assert "<strong>" in result

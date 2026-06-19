@@ -2,10 +2,9 @@
 
 import sys
 from pathlib import Path
-
-import pytest
 from typing import Any
 
+import pytest
 from playwright.sync_api import Page, expect
 
 sys.path.append(str(Path(__file__).parent.parent.parent))

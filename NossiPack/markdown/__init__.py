@@ -13,6 +13,7 @@ import NossiPack.markdown.tags.infolet
 import NossiPack.markdown.tags.invert
 import NossiPack.markdown.tags.links
 import NossiPack.markdown.tags.section_tooltip
+import NossiPack.markdown.tags.strikethrough
 import NossiPack.markdown.tags.transclude  # noqa: F401
 from NossiPack.markdown.base import NossiTag, WikiEnvironment
 

@@ -206,10 +206,18 @@ hr {
     max-width: 400px;
     max-height: 300px;
     overflow-y: auto;
+    overscroll-behavior: contain;
     color: var(--primary-color);
     font-size: 14px;
     line-height: 1.5;
     pointer-events: auto;
+    opacity: 0;
+    transition: opacity 100ms ease;
+}
+
+.tip-content.tip-fadeout {
+    transition: opacity 300ms ease;
+    opacity: 0;
 }
 
 .tip-content[hidden] {

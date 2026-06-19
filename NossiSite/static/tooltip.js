@@ -6,7 +6,16 @@
         container = document.createElement('div')
         container.id = 'tooltip-container'
         container.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;z-index:10000;'
-        document.body.appendChild(container)
+    }
+
+    function ensureContainer() {
+        if (!container.parentNode && document.body) {
+            document.body.appendChild(container)
+        }
+    }
+    ensureContainer()
+    if (!container.parentNode) {
+        document.addEventListener('DOMContentLoaded', ensureContainer)
     }
 
     var cache = new Map()
@@ -15,7 +24,13 @@
 
     function hide() {
         if (activeTip) {
-            activeTip.style.display = 'none'
+            activeTip.classList.add('tip-fadeout')
+            activeTip.style.opacity = '0'
+            var el = activeTip
+            setTimeout(function () {
+                el.style.display = 'none'
+                el.classList.remove('tip-fadeout')
+            }, 300)
             activeTip = null
         }
     }
@@ -65,9 +80,15 @@
     function showTip(el, trigger) {
         cancelHide()
         if (activeTip && activeTip !== el) {
+            activeTip.style.opacity = '0'
             activeTip.style.display = 'none'
         }
+        el.classList.remove('tip-fadeout')
+        el.style.opacity = '0'
+        el.style.display = 'block'
         position(el, trigger)
+        void el.offsetHeight
+        el.style.opacity = '1'
         activeTip = el
     }
 
@@ -86,6 +107,7 @@
         loading.className = 'tip-content'
         loading.textContent = 'Loading...'
         loading.style.display = 'none'
+        ensureContainer()
         container.appendChild(loading)
         cache.set(locator, loading)
         showTip(loading, trigger)
@@ -97,7 +119,7 @@
                 var div = document.createElement('div')
                 div.className = 'tip-content'
                 div.innerHTML = xhr.responseText
-                div.style.display = 'none'
+                ensureContainer()
                 container.appendChild(div)
                 cache.set(locator, div)
                 if (loading.parentNode) loading.parentNode.removeChild(loading)
@@ -123,7 +145,11 @@
 
         if (tipId) {
             var content = getTipContent(tipId)
-            if (content) showTip(content, trigger)
+            if (content) {
+                showTip(content, trigger)
+            } else {
+                fetchTooltip(tipId, trigger)
+            }
         } else if (locator) {
             fetchTooltip(locator, trigger)
         }
@@ -137,6 +163,16 @@
         if (related && related.closest && related.closest('[data-tip], [data-tooltip]')) return
         scheduleHide()
     })
+
+    document.addEventListener('wheel', function (e) {
+        var tip = e.target.closest('.tip-content')
+        if (!tip) return
+        var atTop = tip.scrollTop === 0
+        var atBottom = tip.scrollHeight - tip.scrollTop - tip.clientHeight <= 1
+        if ((e.deltaY < 0 && atTop) || (e.deltaY > 0 && atBottom)) {
+            e.preventDefault()
+        }
+    }, { passive: false })
 
     document.addEventListener('mouseover', function (e) {
         var tip = e.target.closest('.tip-content')

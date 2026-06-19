@@ -12,8 +12,9 @@
 
     async function validate(el) {
         const raw = el.getAttribute('data-raw') || ''
-        const classes = Array.from(el.classList)
-        const tagType = classes.find(c => c !== 'tag-dirty' && c !== 'tag-valid' && c !== 'tag-invalid') || ''
+        const tagType = el.getAttribute('data-type') || Array.from(el.classList).find(
+            c => c !== 'tag-dirty' && c !== 'tag-valid' && c !== 'tag-invalid'
+        ) || ''
         if (!tagType || !raw) return
 
         try {

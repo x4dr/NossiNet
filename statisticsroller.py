@@ -6,10 +6,10 @@ import sys
 import time
 from collections.abc import Callable
 from itertools import combinations
-from typing import Any
 
 # This code is only here for reference to various explorative legacy coding sessions. Do not Import.
 from math import ceil
+from typing import Any
 
 from gamepack.DiceParser import DiceParser
 from gamepack.fasthelpers import plot

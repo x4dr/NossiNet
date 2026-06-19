@@ -124,15 +124,18 @@ class TestWiki(NossiTestCase):
             self.assertIn(b"Test Heading</h2>", rv.data)
             self.assertIn(b"test content", rv.data)
 
-    def test_render_endpoint_returns_404_for_nonexistent(self) -> None:
-        """Verify the render endpoint returns 404 for a non-existent locator."""
+    def test_render_endpoint_returns_error_html_for_nonexistent(self) -> None:
+        """Verify the render endpoint returns 200 with error HTML for a non-existent locator."""
         with mock.patch.object(WikiPage, "resolve_address") as mock_resolve:
             mock_resolve.return_value = None
             with self.app.app_context():
                 rv = self.client.get(
                     url_for("wiki.render_locator", locator="no_such_page"),
                 )
-            self.assertEqual(rv.status_code, 404)
+            self.assertEqual(rv.status_code, 200)
+            self.assertIn(b"Page", rv.data)
+            self.assertIn(b"no_such_page", rv.data)
+            self.assertIn(b"not found", rv.data)
 
     def test_speed(self) -> None:
         """Verify movement system speed calculations for all entries in the systems table."""

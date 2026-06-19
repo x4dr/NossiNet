@@ -1,4 +1,14 @@
 
+@media (prefers-reduced-motion: reduce) {
+    .glitch::before,
+    .glitch::after {
+        animation: none;
+        clip-path: inset(50% 0 0 0);
+        color: var(--accent-color);
+        transform: translate(2px, 0);
+    }
+}
+
 .glitch {
     position: relative;
     display: inline-block;

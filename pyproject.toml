@@ -74,7 +74,7 @@ line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "D", "UP", "B", "SIM", "ARG", "RUF"]
-ignore = ["D203", "D213", "D407", "D413", "EM101"]  # EM101: single-language repo, string literals in exceptions are fine
+ignore = ["D203", "D213", "D407", "D413", "EM101", "N999"]  # EM101: single-language repo, string literals in exceptions are fine
 
 [tool.pytest.ini_options]
 env = [

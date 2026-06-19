@@ -43,9 +43,7 @@ class NossiTestCase(unittest.TestCase):
         """Tear down the test app and disconnect template signal."""
         template_rendered.disconnect(self._record_template, self.app)
 
-    def _record_template(
-        self, sender: Flask, template: Any, context: dict[str, object], **extra: object
-    ) -> None:  # noqa: ARG002
+    def _record_template(self, _sender: Flask, template: Any, _context: dict[str, object], **_extra: object) -> None:
         self._templates.append(template.name)
 
     def create_app(self) -> Flask:

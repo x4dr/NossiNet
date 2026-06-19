@@ -219,15 +219,11 @@ def test_decorations_applied_without_errors(page: Page) -> None:
     dirty_count = page.locator(".ProseMirror .tag-dirty").count()
     assert dirty_count > 0, f"Expected .tag-dirty elements in editor, found {dirty_count}"
 
-    # Wait for validator to resolve at least one tag (valid or invalid)
+    # The transclude [!pagename] doesn't exist → should become .tag-invalid
     page.wait_for_selector(
-        ".ProseMirror .tag-valid, .ProseMirror .tag-invalid",
+        ".ProseMirror .tag-invalid",
         timeout=10000,
     )
-
-    # The transclude [!pagename] doesn't exist → should be .tag-invalid
-    invalid_count = page.locator(".ProseMirror .tag-invalid").count()
-    assert invalid_count > 0, f"Expected at least one .tag-invalid element, found {invalid_count}"
 
     # Console still clean
     non_sse_errors = [e for e in errors if "SSE" not in e]
@@ -274,6 +270,42 @@ def test_source_mode_toggle(page: Page) -> None:
     assert not non_sse_errors, f"Unexpected console errors: {non_sse_errors}"
 
 
+def test_live_link_conversion(page: Page) -> None:
+    """Typing [text](url) in the editor creates a link mark immediately."""
+    errors = []
+
+    def on_console(msg: ConsoleMessage) -> None:
+        if msg.type == "error":
+            errors.append(msg.text)
+
+    page.on("console", on_console)
+
+    page.goto("https://127.0.0.1:5000/wiki/demo")
+    expect(page.locator("#wikibody")).to_be_visible()
+
+    page.locator("#wikibody").dblclick()
+    page.wait_for_selector(".tip-overlay", state="visible", timeout=5000)
+    expect(page.locator("#tip-editor .ProseMirror")).to_be_visible()
+
+    page.locator("#tip-editor .ProseMirror").click()
+    page.keyboard.type("[Aurier](aurier)")
+
+    page.wait_for_timeout(500)
+
+    link_count = page.locator("#tip-editor .ProseMirror a").count()
+    assert link_count > 0, (
+        f"Expected at least one <a> link in the editor after typing [Aurier](aurier), " f"found {link_count}"
+    )
+
+    href = page.locator("#tip-editor .ProseMirror a").first.get_attribute("href")
+    assert href == "aurier", f"Expected href='aurier', got '{href}'"
+
+    non_sse_errors = [e for e in errors if "SSE" not in e]
+    assert not non_sse_errors, f"Unexpected console errors: {non_sse_errors}"
+
+    page.locator("#tip-close").click()
+
+
 def test_wiki_page_renders_tags_correctly(page: Page) -> None:
     """Verify server-side wiki page renders all tag types correctly."""
     errors = []
@@ -290,7 +322,7 @@ def test_wiki_page_renders_tags_correctly(page: Page) -> None:
     texts = sorted(text for t in data_texts if (text := t.get_attribute("data-text")) is not None)
     assert texts == ["replacement", "text"], f"Unexpected data-text values: {texts}"
 
-    # Section tooltip: span.tip-trigger inside <p>, div.tip-content with rich HTML
+    # Section tooltip: span.tip-trigger inside <p> with data-tip locator (no embedded content)
     tip_struct = page.evaluate(
         """() => {
         const trigger = document.querySelector('span.tip-trigger');
@@ -298,9 +330,6 @@ def test_wiki_page_renders_tags_correctly(page: Page) -> None:
 
         const tipId = trigger.getAttribute('data-tip');
         if (!tipId) return { error: 'no data-tip attr' };
-
-        const content = document.getElementById('tip-' + tipId);
-        if (!content) return { error: 'no div#tip-' + tipId };
 
         const parentP = trigger.closest('p');
         if (!parentP) return { error: 'trigger not inside <p>' };
@@ -312,23 +341,17 @@ def test_wiki_page_renders_tags_correctly(page: Page) -> None:
 
         return {
             triggerText: trigger.textContent,
-            contentHtml: content.innerHTML.substring(0, 300),
+            tipId: tipId,
             parentPTag: parentP.tagName,
             headingAbove: prevH2.textContent,
-            contentHidden: content.hasAttribute('hidden'),
-            nestedTranscludes: content.querySelectorAll('.transcluded').length,
         };
     }""",
     )
     assert "error" not in tip_struct, f"DOM structure error: {tip_struct.get('error')}"
     assert "Transclusion" in tip_struct["triggerText"]
-    assert tip_struct["contentHidden"], "Tooltip content div should be hidden"
     assert (
-        tip_struct["nestedTranscludes"] > 0
-    ), f"Expected nested transcludes in tooltip content, got {tip_struct['nestedTranscludes']}"
-    assert (
-        "Include content from another page" in tip_struct["contentHtml"]
-    ), f"Tooltip content should contain transcluded text, got: {tip_struct['contentHtml']}"
+        tip_struct["tipId"] == "demo#transclusion"
+    ), f"Expected data-tip to be locator 'demo#transclusion', got '{tip_struct['tipId']}'"
 
     # Transclude: recursive transclusion produces nested .transcluded divs
     transcluded_count = body.locator(".transcluded").count()
@@ -346,8 +369,10 @@ def test_wiki_page_renders_tags_correctly(page: Page) -> None:
     # Checkbox
     assert body.locator('input[type="checkbox"]').count() == 2
 
-    # Strikethrough via standard markdown
-    assert "~~strikethrough~~" in (body.text_content() or "")
+    # Strikethrough via ~~text~~ renders as <del>
+    del_elements = body.locator("del")
+    assert del_elements.count() >= 1, f"Expected <del> elements for ~~strikethrough~~, found {del_elements.count()}"
+    assert "strikethrough" in (del_elements.first.text_content() or "")
 
     # No console errors
     non_sse = [e for e in errors if "SSE" not in e and "favicon" not in e.lower()]

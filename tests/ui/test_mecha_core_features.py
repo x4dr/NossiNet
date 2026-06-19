@@ -1,8 +1,8 @@
 """Tests for mecha sheet core features (loadouts, turns, timeline)."""
 
-import pytest
 from typing import Any
 
+import pytest
 from playwright.sync_api import Page, expect
 
 

@@ -1,8 +1,8 @@
 """Tests for the local markdown demo page rendering."""
 
-import pytest
 from typing import Any
 
+import pytest
 from playwright.sync_api import Page, expect
 
 
