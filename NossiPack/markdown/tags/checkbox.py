@@ -1,3 +1,5 @@
+"""Interactive task list checkboxes for wiki markdown."""
+
 import re
 from urllib.parse import quote
 
@@ -5,8 +7,7 @@ from NossiPack.markdown.base import NossiTag, WikiEnvironment
 
 
 class CheckboxTag(NossiTag):
-    """
-    Task list: `- [ ] task` and `- [x] done`
+    """Task list: `- [ ] task` and `- [x] done`.
 
     Transforms list items into HTMX-powered toggle checkboxes.
     Inside code blocks (backtick-wrapped) checkboxes are left as plain text.
@@ -14,6 +15,7 @@ class CheckboxTag(NossiTag):
     Examples:
       - [ ] unfinished
       - [x] completed
+
     """
 
     priority = 30
@@ -30,7 +32,18 @@ class CheckboxTag(NossiTag):
         return before.count("`") % 2 == 1
 
     def pre_process(self, text: str, env: WikiEnvironment) -> str:
-        def _sub(match):
+        """Replace task list syntax with HTMX-powered checkbox HTML.
+
+        Args:
+            text: The raw markdown source.
+            env: The current rendering environment.
+
+        Returns:
+            Markdown with ``- [ ]`` / ``- [x]`` patterns replaced by
+            interactive checkbox markup.
+        """
+
+        def _sub(match: re.Match[str]) -> str:
             if self._is_inside_code(text, match.start()):
                 return match.group(0)
             m = self.checkbox_re.match(match.group(0)[2:])

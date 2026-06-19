@@ -1,14 +1,20 @@
+"""Tests for mecha sheet core features (loadouts, turns, timeline)."""
+
 import pytest
+from typing import Any
+
 from playwright.sync_api import Page, expect
 
 
 @pytest.fixture(scope="function")
-def browser_context_args(browser_context_args):
+def browser_context_args(browser_context_args: dict[str, Any]) -> dict[str, bool]:
+    """Configure Playwright to ignore HTTPS errors for local testing."""
     return {**browser_context_args, "ignore_https_errors": True}
 
 
 @pytest.fixture(scope="function", autouse=True)
-def setup_mecha(page: Page):
+def setup_mecha(page: Page) -> None:
+    """Navigate to the mecha test sheet and commit a loadout to get a stable state."""
     # Capture console logs
     page.on("console", lambda msg: print(f"BROWSER: {msg.text}"))
 
@@ -27,7 +33,8 @@ def setup_mecha(page: Page):
     page.wait_for_load_state("networkidle")
 
 
-def dismiss_overheat_modal(page: Page):
+def dismiss_overheat_modal(page: Page) -> None:
+    """Dismiss the overheat modal if it appears."""
     try:
         # Wait a bit for HTMX to potentially load the modal
         page.wait_for_selector("#overheat-modal", state="visible", timeout=3000)
@@ -37,7 +44,8 @@ def dismiss_overheat_modal(page: Page):
         pass
 
 
-def test_speed_target_pending(page: Page):
+def test_speed_target_pending(page: Page) -> None:
+    """Setting a target speed appears in the Next Turn pending changes list."""
     # Switch to Movement tab
     page.click("text=DASHBOARD")
 
@@ -49,11 +57,12 @@ def test_speed_target_pending(page: Page):
     # Verify in Next Turn tab
     page.click("text=NEXT TURN")
     expect(page.locator("#pending-changes-list")).to_contain_text(
-        "Set Target Speed to 50.0 km/h"
+        "Set Target Speed to 50.0 km/h",
     )
 
 
-def test_undo_redo_playback(page: Page):
+def test_undo_redo_playback(page: Page) -> None:
+    """Advancing turns and undoing restores the previous turn number."""
     # 1. Apply Cool loadout
     page.click("text=DASHBOARD")
     page.locator("select[name='loadout']").select_option("Cool")
@@ -86,7 +95,8 @@ def test_undo_redo_playback(page: Page):
     expect(page.locator("#status-turn")).to_contain_text("2", use_inner_text=True)
 
 
-def test_restore_state(page: Page):
+def test_restore_state(page: Page) -> None:
+    """Jumping to a previous turn in the timeline restores that turn's state."""
     # 1. Commit Turn 2
     page.click("text=NEXT TURN")
     page.evaluate("window.commitTurn()")
@@ -108,7 +118,7 @@ def test_restore_state(page: Page):
 
     # Click JUMP TO HERE for Turn 2
     page.locator(
-        ".timeline-turn:has-text('TURN 2') button:has-text('JUMP TO HERE')"
+        ".timeline-turn:has-text('TURN 2') button:has-text('JUMP TO HERE')",
     ).click()
     page.wait_for_timeout(1000)
 
@@ -121,7 +131,8 @@ def test_restore_state(page: Page):
 
 
 @pytest.mark.skip(reason="failing, todo")
-def test_pending_undo(page: Page):
+def test_pending_undo(page: Page) -> None:
+    """Removing a pending change from the Next Turn list works correctly."""
     # 1. Advance to Turn 2 to get heat (setup already did Turn 1)
     page.click("text=NEXT TURN")
     page.evaluate("window.commitTurn()")
@@ -151,10 +162,10 @@ def test_pending_undo(page: Page):
     # Verify both in Next Turn
     page.click(".nav-item:has-text('NEXT TURN')")
     expect(page.locator("#pending-changes-list")).to_contain_text(
-        "Set Target Speed to 50.0"
+        "Set Target Speed to 50.0",
     )
     expect(page.locator("#pending-changes-list")).to_contain_text(
-        "Assign 5.0 heat to Vent"
+        "Assign 5.0 heat to Vent",
     )
 
     # 3. Remove latest (Heat)
@@ -162,14 +173,15 @@ def test_pending_undo(page: Page):
 
     # Verify Speed remains, Heat gone
     expect(page.locator("#pending-changes-list")).to_contain_text(
-        "Set Target Speed to 50.0"
+        "Set Target Speed to 50.0",
     )
     expect(page.locator("#pending-changes-list")).not_to_contain_text(
-        "Assign 5.0 heat to Vent"
+        "Assign 5.0 heat to Vent",
     )
 
 
-def test_loadout_application(page: Page):
+def test_loadout_application(page: Page) -> None:
+    """Selecting a loadout adds a pending loadout change to the Next Turn list."""
     # 1. Switch to FuelConserving loadout
     page.click("text=DASHBOARD")
     page.locator("select[name='loadout']").select_option("FuelConserving")
@@ -177,11 +189,12 @@ def test_loadout_application(page: Page):
     # 2. Check Next Turn tab
     page.click("text=NEXT TURN")
     expect(page.locator("#pending-changes-list")).to_contain_text(
-        "Apply Loadout: FuelConserving"
+        "Apply Loadout: FuelConserving",
     )
 
 
-def test_new_encounter_naming(page: Page):
+def test_new_encounter_naming(page: Page) -> None:
+    """Encounter name updates to reflect the applied loadout after commit."""
     # 1. Apply loadout to change name
     page.click("text=DASHBOARD")
     page.locator("select[name='loadout']").select_option("FuelConserving")
@@ -194,6 +207,6 @@ def test_new_encounter_naming(page: Page):
     # 2. Verify name in selector
     page.wait_for_timeout(2000)
     selected = page.locator("select[name='encounter_id']").evaluate(
-        "el => el.options[el.selectedIndex].text"
+        "el => el.options[el.selectedIndex].text",
     )
     assert "FuelConserving" in selected

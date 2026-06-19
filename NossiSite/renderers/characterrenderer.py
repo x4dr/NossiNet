@@ -1,21 +1,36 @@
-from typing import Any
-from flask import render_template, session, redirect, url_for
+"""Renderer for FenCharacter and EWCharacter sheets."""
+
 from pathlib import Path
-from gamepack.WikiCharacterSheet import WikiCharacterSheet
-from gamepack.WikiPage import WikiPage
-from gamepack.FenCharacter import FenCharacter
+from typing import TYPE_CHECKING, Any
+
+from flask import redirect, render_template, session, url_for
 from gamepack.endworld.EWCharacter import EWCharacter
-from NossiSite.renderers import register_renderer
-from NossiPack.User import User
+from gamepack.FenCharacter import FenCharacter
+from gamepack.WikiPage import WikiPage
+
 from NossiPack.markdown import NossiMarkdownProcessor
-from NossiSite.sheet_helpers import infolet_filler, infolet_extractor
+from NossiPack.User import User
+from NossiSite.renderers import register_renderer
+from NossiSite.sheet_helpers import infolet_extractor, infolet_filler
+
+if TYPE_CHECKING:
+    from gamepack.WikiCharacterSheet import WikiCharacterSheet
 
 lm = NossiMarkdownProcessor()
 
 
 @register_renderer(FenCharacter)
 @register_renderer(EWCharacter)
-def render_character(sheet: WikiCharacterSheet[Any]):
+def render_character(sheet: WikiCharacterSheet[Any]) -> str:
+    """Render a FenCharacter or EWCharacter sheet to HTML.
+
+    Args:
+        sheet: The wiki character sheet to render.
+
+    Returns:
+        A redirect to the tag search if sheet is None, or a rendered HTML
+        template for the character sheet.
+    """
     # LSP check
     if sheet is None:
         return redirect(url_for("wiki.tagsearch", tag="character"))
@@ -23,7 +38,7 @@ def render_character(sheet: WikiCharacterSheet[Any]):
     username = session.get("user", "")
     u = User(username).configs()
     charsh = u.get("character_sheet", None)
-    path = sheet.file.relative_to(sheet.wikipath()) if sheet.file else Path(".")
+    path = sheet.file.relative_to(sheet.wikipath()) if sheet.file else Path()
 
     owner = ""
     if charsh:
@@ -39,11 +54,7 @@ def render_character(sheet: WikiCharacterSheet[Any]):
         infolet=infolet_filler(path),
         md=lambda x: lm.process(
             x,
-            page=(
-                sheet.file.relative_to(WikiPage.wikipath()).as_posix()
-                if sheet.file
-                else ""
-            ),
+            page=(sheet.file.relative_to(WikiPage.wikipath()).as_posix() if sheet.file else ""),
         ),
         extract=infolet_extractor,
         owner=owner,

@@ -1,20 +1,26 @@
+"""Tests for the NossiMarkdownProcessor and NossiTag priority system."""
+
 import pytest
-from NossiPack.markdown import NossiMarkdownProcessor, NossiTag, WikiEnvironment
+
+from NossiPack.markdown import NossiMarkdownProcessor
+from NossiPack.markdown.base import NossiTag, WikiEnvironment
 
 
-def test_nossi_markdown_processor():
+def test_nossi_markdown_processor() -> None:
+    """Verify custom pre-processing and post-processing tags are applied during rendering."""
+
     # Define tags inside the test so they don't get imported globally by accident
     # but they still trigger __init_subclass__
     class ReverseTag(NossiTag):
         priority = 999
 
-        def pre_process(self, text: str, env: WikiEnvironment) -> str:
+        def pre_process(self, text: str, env: WikiEnvironment) -> str:  # noqa: ARG002
             return text[::-1]
 
     class AppendTag(NossiTag):
         priority = 1000
 
-        def post_process(self, html: str, env: WikiEnvironment) -> str:
+        def post_process(self, html: str, env: WikiEnvironment) -> str:  # noqa: ARG002
             return html + "<p>appended</p>"
 
     try:
@@ -27,12 +33,12 @@ def test_nossi_markdown_processor():
         assert "<p>appended</p>" in result
     finally:
         # Clean up global registry to not break other tests
-        NossiTag.registry = [
-            t for t in NossiTag.registry if not isinstance(t, (ReverseTag, AppendTag))
-        ]
+        NossiTag.registry = [t for t in NossiTag.registry if not isinstance(t, (ReverseTag, AppendTag))]
 
 
-def test_priority_conflict():
+def test_priority_conflict() -> None:
+    """Verify that registering two tags with the same priority raises ValueError."""
+
     class ConflictTag1(NossiTag):
         priority = 5
 
@@ -43,6 +49,4 @@ def test_priority_conflict():
                 priority = 5
 
     finally:
-        NossiTag.registry = [
-            t for t in NossiTag.registry if not isinstance(t, ConflictTag1)
-        ]
+        NossiTag.registry = [t for t in NossiTag.registry if not isinstance(t, ConflictTag1)]

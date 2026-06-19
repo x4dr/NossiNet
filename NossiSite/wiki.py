@@ -1,43 +1,46 @@
+"""Blueprint for wiki page viewing, editing, searching, tag management, and administration."""
+
 import json
 import re
 import subprocess
 import threading
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Any
 from urllib import parse
 
 import bleach
 import markdown
 from flask import (
+    Blueprint,
+    abort,
+    flash,
+    redirect,
     render_template,
     request,
-    redirect,
-    url_for,
     session,
-    flash,
-    abort,
-    Blueprint,
+    url_for,
 )
-from markupsafe import Markup
-
-from NossiPack.User import Config
-from NossiPack.markdown import NossiMarkdownProcessor
-from NossiSite.base import log
-from NossiSite.helpers import checklogin
 from gamepack.Dice import DescriptiveError
 from gamepack.FenCharacter import FenCharacter
-from gamepack.MDPack import traverse_md, MDObj
+from gamepack.MDPack import MDObj, traverse_md
 from gamepack.WikiCharacterSheet import WikiCharacterSheet
 from gamepack.WikiPage import WikiPage
+from markupsafe import Markup
+from werkzeug.wrappers.response import Response as WerkzeugResponse
+
+from NossiPack.markdown import NossiMarkdownProcessor
+from NossiPack.User import Config
+from NossiSite.base import log
 from NossiSite.clock_sync import sync_clocks_with_db
+from NossiSite.helpers import checklogin
 
 WikiPage.set_wikipath(Path.home() / "wiki")
 wikistamp = [0.0]
 nossi_markdown = NossiMarkdownProcessor()
 wiki_tags_json = json.dumps([tag.to_dict() for tag in nossi_markdown.tags])
 
-chara_objects = {}
+chara_objects: dict[str, Any] = {}
 mdlinks = re.compile(r"<a href=\"(.*?)\".*?</a")
 
 
@@ -49,14 +52,16 @@ bleach.ALLOWED_ATTRIBUTES.update(
         "h3": ["id"],
         "h4": ["id"],
         "h5": ["id"],
-    }
+    },
 )
 views = Blueprint("wiki", __name__)
 
 
 @views.after_app_request
-def update(response):
-    def refresh():
+def update(response: WerkzeugResponse) -> WerkzeugResponse:
+    """Refresh the wiki cache periodically after each request if stale."""
+
+    def refresh() -> None:
         WikiPage.updatewikicache()
 
     if not WikiPage.wikicache or time.time() - WikiPage.wikistamp > 15 * 60:
@@ -66,7 +71,8 @@ def update(response):
 
 @views.route("/index/<path:path>")
 @views.route("/index/")
-def wiki_index(path="."):
+def wiki_index(path: str = ".") -> str:
+    """Render the wiki index page showing subdirectories and entries."""
     root = WikiPage.wikipath()
     r = WikiPage.wikindex()
     requested_path = root / path
@@ -75,28 +81,24 @@ def wiki_index(path="."):
 
     return render_template(
         "wiki/wikindex.html",
-        current_path=(
-            requested_path.relative_to(root) if requested_path != root else None
-        ),
+        current_path=(requested_path.relative_to(root) if requested_path != root else None),
         parent=requested_path.relative_to(root).parent,
         subdirs=sorted(
             [
                 x.stem
                 for x in requested_path.iterdir()
-                if x.is_dir()  # only show directories
-                and not x.stem.startswith(".")  # hide hidden directories
-            ]
+                if x.is_dir() and not x.stem.startswith(".")  # only show directories  # hide hidden directories
+            ],
         ),
-        entries=[
-            x.relative_to(root).with_suffix("") for x in r if x.parent == requested_path
-        ],
+        entries=[x.relative_to(root).with_suffix("") for x in r if x.parent == requested_path],
         tags=WikiPage.gettags(),
     )
 
 
 @views.route("/bytag/")
 @views.route("/bytag/<tag>")
-def tagsearch(tag=None):
+def tagsearch(tag: str | None = None) -> str:
+    """Render wiki index filtered by a specific tag."""
     files = WikiPage.wikindex()
     tags_by_name = WikiPage.gettags()
     results = []
@@ -112,23 +114,17 @@ def tagsearch(tag=None):
         current_path=None,
         parent=None,
         subdirs=[],
-        entries=[
-            x.relative_to(WikiPage.wikipath()).with_suffix("").as_posix()
-            for x in results
-        ],
+        entries=[x.relative_to(WikiPage.wikipath()).with_suffix("").as_posix() for x in results],
         tags=tags_by_name,
     )
 
 
 @views.route("/wikiadmin/<path:page>", methods=["GET", "POST"])
-def adminwiki(page: str):
+def adminwiki(page: str) -> str | WerkzeugResponse:
+    """Render the wiki admin page or process move/delete actions."""
     path: Path = (WikiPage.wikipath() / page).with_suffix(".md")
     if request.method == "GET":
-        backlinks = [
-            k
-            for k, v in WikiPage.getlinks().items()
-            if any(link.startswith(page) for link in v)
-        ]
+        backlinks = [k for k, v in WikiPage.getlinks().items() if any(link.startswith(page) for link in v)]
         info = subprocess.run(
             [
                 (Path("~").expanduser() / "bin/wikidata").as_posix(),
@@ -137,7 +133,7 @@ def adminwiki(page: str):
             shell=True,
             stdout=subprocess.PIPE,
         )
-        info = (info.stdout or bytes()).decode("utf-8")
+        (info.stdout or b"").decode("utf-8")
         try:
             loaded_page = WikiPage.load_locate(page)
             if not loaded_page:
@@ -164,9 +160,8 @@ def adminwiki(page: str):
         if (
             path.relative_to(WikiPage.wikipath()).as_posix() in k
             or k in path.relative_to(WikiPage.wikipath()).as_posix()
-        ):
-            if loc := WikiPage.locate(k):
-                WikiPage.reload_cache(loc)
+        ) and (loc := WikiPage.locate(k)):
+            WikiPage.reload_cache(loc)
     if loc := WikiPage.locate(path):
         WikiPage.reload_cache(loc)
     if "delete" in request.form:
@@ -198,14 +193,14 @@ def adminwiki(page: str):
             return redirect(url_for("wiki.adminwiki", page=page))
         with (WikiPage.wikipath() / "control").open("a+") as h:
             h.write(
-                f"{session['user']} moved {path.relative_to(WikiPage.wikipath())} to {n}.\n"
+                f"{session['user']} moved {path.relative_to(WikiPage.wikipath())} to {n}.\n",
             )
         subprocess.run(
             [
                 Path("~").expanduser() / "bin/wikimove",
                 path.relative_to(WikiPage.wikipath()).with_suffix(".md").as_posix(),
                 n.with_suffix(".md").as_posix(),
-            ]
+            ],
         )
         flash(f"Moved {path.relative_to(WikiPage.wikipath())} to {n}.", "warning")
         WikiPage.updatewikicache()
@@ -216,7 +211,8 @@ def adminwiki(page: str):
 @views.route("/wiki", methods=["GET", "POST"])
 @views.route("/wiki/", methods=["GET", "POST"])
 @views.route("/wiki/<path:page>", methods=["GET", "POST"])
-def wikipage(page: Optional[str] = None):
+def wikipage(page: str | None = None) -> str | WerkzeugResponse:
+    """Render or redirect to a wiki page, or show the creation form if it does not exist."""
     raw = request.url.endswith("/raw")
     if raw and page:
         page = page[:-4]
@@ -226,33 +222,33 @@ def wikipage(page: Optional[str] = None):
             return wiki_index()
         if "edit" in request.form:
             return redirect(url_for("wiki.wikipage", page=page))
-        elif "administrate" in request.form:
+        if "administrate" in request.form:
             return redirect(url_for("wiki.adminwiki", page=page))
-        else:
-            abort(400)
+        abort(400)
     try:
         page_lower = page.lower()
         page_lower = page_lower.strip(".").replace(
-            "/.", "/"
+            "/.",
+            "/",
         )  # remove hidden directory-dots
         p = WikiPage.locate(page_lower)
         if p is None:
             raise FileNotFoundError
         if p.with_suffix("").as_posix() != page_lower:
             return redirect(url_for("wiki.wikipage", page=p.with_suffix("").as_posix()))
-        loaded_page = WikiCharacterSheet.load_locate(page_lower)
+        loaded_page: WikiCharacterSheet[Any] | None = WikiCharacterSheet.load_locate(page_lower)
         if not loaded_page:
             raise FileNotFoundError
     except (DescriptiveError, FileNotFoundError) as e:
-        if (
-            isinstance(e, DescriptiveError)
-            and str(e.args[0]) != page + "not found in wiki."
-        ):
+        if isinstance(e, DescriptiveError) and str(e.args[0]) != page + "not found in wiki.":
             raise
         if session.get("logged_in"):
             entry = dict(id=0, text="", tags="", author=session.get("user"))
             return render_template(
-                "base/edit_entry.html", mode="wiki", wiki=page, entry=entry
+                "base/edit_entry.html",
+                mode="wiki",
+                wiki=page,
+                entry=entry,
             )
         flash("That page doesn't exist. Log in to create it!")
         session["returnto"] = request.url
@@ -268,38 +264,33 @@ def wikipage(page: Optional[str] = None):
             wiki=page,
             wiki_tags_json=wiki_tags_json,
             sheet_available=loaded_page.char is not None,
-            css=(
-                url_for("static", filename="wikimecha.css")
-                if "endworld" in page
-                else ""
-            ),
+            css=(url_for("static", filename="wikimecha.css") if "endworld" in page else ""),
         )
-    return loaded_page.body, 200, {"Content-Type": "text/plain; charset=utf-8"}
+    return WerkzeugResponse(loaded_page.body, 200, {"Content-Type": "text/plain; charset=utf-8"})
 
 
 _checkbox_state: dict[str, bool] = {}
 
 
 @views.route("/checkbox/<path:rest>")
-def checkbox_toggle(rest: str):
+def checkbox_toggle(rest: str) -> WerkzeugResponse:
+    """Toggle a checkbox state and return the updated HTML."""
     key = rest
     current = _checkbox_state.get(key, False)
     _checkbox_state[key] = not current
     checked = "checked" if not current else ""
-    return (
-        f'<input type="checkbox" {checked} '
-        f'hx-get="/checkbox/{key}" '
-        f'hx-swap="outerHTML" hx-trigger="change">',
+    return WerkzeugResponse(
+        f'<input type="checkbox" {checked} ' f'hx-get="/checkbox/{key}" ' f'hx-swap="outerHTML" hx-trigger="change">',
         200,
         {"Content-Type": "text/html"},
     )
 
 
 @views.route("/localmarkdown")
-def localmarkdown_demo():
+def localmarkdown_demo() -> str:
+    """Render an auto-generated reference page for all local markdown tags."""
     sections = [
-        "# Local Markdown Features\n\n"
-        "Auto-generated reference documentation for all markdown tags.\n"
+        "# Local Markdown Features\n\n" "Auto-generated reference documentation for all markdown tags.\n",
     ]
     placeholders: list[str] = []
     rendered_snippets: list[str] = []
@@ -309,12 +300,13 @@ def localmarkdown_demo():
         doc = cls.__doc__
         if doc:
             doc_rendered = nossi_markdown.process(
-                bleach.clean(doc), page="localmarkdown"
+                bleach.clean(doc),
+                page="localmarkdown",
             )
             idx = len(placeholders)
             placeholder = f"<!--LOCALMD_{idx:04d}-->"
             sections.append(
-                f"---\n\n## {cls.__name__}\n\n```\n{doc}\n```\n\n{placeholder}\n"
+                f"---\n\n## {cls.__name__}\n\n```\n{doc}\n```\n\n{placeholder}\n",
             )
             placeholders.append(placeholder)
             rendered_snippets.append(doc_rendered)
@@ -322,7 +314,7 @@ def localmarkdown_demo():
     body = "\n".join(sections)
     body = nossi_markdown.process(body, page="localmarkdown")
 
-    for placeholder, snippet in zip(placeholders, rendered_snippets):
+    for placeholder, snippet in zip(placeholders, rendered_snippets, strict=False):
         body = body.replace(placeholder, snippet)
 
     return render_template(
@@ -337,10 +329,10 @@ def localmarkdown_demo():
 
 
 @views.route("/localmarkdown/raw")
-def localmarkdown_raw():
+def localmarkdown_raw() -> WerkzeugResponse:
+    """Return raw markdown source for the local markdown reference page."""
     sections = [
-        "# Local Markdown Features\n\n"
-        "Auto-generated reference documentation for all markdown tags.\n"
+        "# Local Markdown Features\n\n" "Auto-generated reference documentation for all markdown tags.\n",
     ]
 
     for tag in nossi_markdown.tags:
@@ -349,58 +341,65 @@ def localmarkdown_raw():
         if doc:
             sections.append(f"---\n\n## {cls.__name__}\n\n{doc}\n")
 
-    return "\n".join(sections), 200, {"Content-Type": "text/plain; charset=utf-8"}
+    return WerkzeugResponse("\n".join(sections), 200, {"Content-Type": "text/plain; charset=utf-8"})
 
 
 @views.route("/wiki-tags.json")
-def wiki_tags_json_endpoint():
+def wiki_tags_json_endpoint() -> str:
+    """Return all available markdown tags as JSON."""
     return json.dumps([tag.to_dict() for tag in nossi_markdown.tags])
 
 
 @views.route("/tag-validate", methods=["POST"])
-def tag_validate():
+def tag_validate() -> WerkzeugResponse:
+    """Validate a markdown tag specification and return its parsed content."""
     data = request.get_json()
     if not data:
-        return {"valid": False}, 400
+        return WerkzeugResponse(json.dumps({"valid": False}), 400, {"Content-Type": "application/json"})
     tag_type = data.get("type", "")
     raw = data.get("raw", "")
 
     if tag_type in ("glitch", "invert"):
-        return {"valid": True, "content": raw}
+        return WerkzeugResponse(json.dumps({"valid": True, "content": raw}), 200, {"Content-Type": "application/json"})
 
     if tag_type == "transclude":
         page_match = re.search(
-            r"\[!(?![tq]:)([^#|\]]+?)(?:#([^|\]]*?))?(?:\|([^\]]*?))?\]", raw
+            r"\[!(?![tq]:)([^#|\]]+?)(?:#([^|\]]*?))?(?:\|([^\]]*?))?\]",
+            raw,
         )
         if page_match:
             exists = WikiPage.locate(page_match.group(1).lower()) is not None
-            return {"valid": exists, "content": page_match.group(2) or ""}
-        return {"valid": False}
+            data = json.dumps({"valid": exists, "content": page_match.group(2) or ""})
+            return WerkzeugResponse(data, 200, content_type="application/json")
+        return WerkzeugResponse(json.dumps({"valid": False}), 200, content_type="application/json")
 
     if tag_type == "section-tooltip":
         spec_match = re.search(r"\[!t:([^\]]+?)\]", raw, re.IGNORECASE)
         if spec_match:
             parts = spec_match.group(1).split("#", 1)
             exists = WikiPage.locate(parts[0].lower()) is not None
-            return {"valid": exists, "content": spec_match.group(1)}
-        return {"valid": False}
+            data = json.dumps({"valid": exists, "content": spec_match.group(1)})
+            return WerkzeugResponse(data, 200, content_type="application/json")
+        return WerkzeugResponse(json.dumps({"valid": False}), 200, content_type="application/json")
 
     if tag_type == "infolet":
         name_match = re.search(r"\[!q:(.*?)\]", raw, re.IGNORECASE)
         if name_match:
-            return {"valid": True, "content": name_match.group(1)}
-        return {"valid": False}
+            data = json.dumps({"valid": True, "content": name_match.group(1)})
+            return WerkzeugResponse(data, 200, content_type="application/json")
+        return WerkzeugResponse(json.dumps({"valid": False}), 200, content_type="application/json")
 
-    return {"valid": False}
+    return WerkzeugResponse(json.dumps({"valid": False}), 200, content_type="application/json")
 
 
 @views.route("/render/<path:locator>")
-def render_locator(locator: str):
+def render_locator(locator: str) -> WerkzeugResponse:
+    """Render a wiki page fragment (optionally with section anchor) as HTML."""
     raw = WikiPage.resolve_address(locator)
     if raw is None:
         abort(404)
     rendered = nossi_markdown.process(raw, locator.split("#", 1)[0])
-    return (
+    return WerkzeugResponse(
         rendered,
         200,
         {"Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache"},
@@ -408,7 +407,8 @@ def render_locator(locator: str):
 
 
 @views.route("/edit/<path:page>", methods=["GET", "POST"])
-def editwiki(page: str):
+def editwiki(page: str) -> str | WerkzeugResponse:
+    """Render the wiki editor for a page or process a save submission."""
     checklogin()
     page_lower = page.lower()
     try:
@@ -441,7 +441,10 @@ def editwiki(page: str):
                 text=loaded_page.body,
             )
             return render_template(
-                "base/edit_entry.html", mode="wiki", wiki=page, entry=entry
+                "base/edit_entry.html",
+                mode="wiki",
+                wiki=page,
+                entry=entry,
             )
         except FileNotFoundError:
             flash("entry " + str(page) + " not found.")
@@ -456,7 +459,7 @@ def editwiki(page: str):
                 loaded_page.tags = set(request.form["tags"].split(" "))
                 loaded_page.body = request.form["text"]
                 loaded_page.links = mdlinks.findall(
-                    markdown.markdown(request.form["text"])
+                    markdown.markdown(request.form["text"]),
                 )
                 page_to_save = loaded_page
             except DescriptiveError:
@@ -480,7 +483,8 @@ def editwiki(page: str):
 @views.route("/costcalc/all/<costs>/<penalty>")
 @views.route("/costcalc/all/<costs>/<penalty>/<width>")
 @views.route("/costcalc/all")
-def ddos(costs="0, 15, 35, 60, 100", penalty="0, 0, 0, 50, 100", width=3):
+def ddos(costs: str = "0, 15, 35, 60, 100", penalty: str = "0, 0, 0, 50, 100", width: int = 3) -> WerkzeugResponse:
+    """Calculate and cache FenCharacter cost tables for all levels up to a given cost/penalty."""
     # filter costs and penalty to not include path traversal
     costs = ",".join(str(int(x)) for x in costs.split(",") if int(x) >= 0)
     penalty = ",".join(str(int(x)) for x in penalty.split(",") if int(x) >= 0)
@@ -488,35 +492,30 @@ def ddos(costs="0, 15, 35, 60, 100", penalty="0, 0, 0, 50, 100", width=3):
     # noinspection PyBroadException
     try:
         if p.exists():
-            with open(p, "r") as f:
-                return f.read(), 200, {"Content-Type": "text/plain; charset=utf-8"}
+            with open(p) as f:
+                return WerkzeugResponse(f.read(), 200, {"Content-Type": "text/plain; charset=utf-8"})
         start = time.time()
-        if (
-            int(costs.split(",")[-1]) * 3 + sum(int(x) for x in penalty.split(",")) * 3
-            > 10000
-        ):
+        if int(costs.split(",")[-1]) * 3 + sum(int(x) for x in penalty.split(",")) * 3 > 10000:
             raise AttributeError("just too large of a space")
         with open(p, "w") as f:
-            res = []
+            res: list[Any] = []
             i = 0
-            while i == 0 or not all(
-                all(int(x) >= 5 for x in y if x) for y in res[-1][1]
-            ):
+            while i == 0 or not all(all(int(x) >= 5 for x in y if x) for y in res[-1][1]):
                 r = FenCharacter.cost_calc(str(i), width)
                 log.debug(f"Fencalc {i} {res}")
                 if i == 0 or r != res[-1][1]:
                     res.append([str(i), r])
                 if time.time() - start > 30:
-                    raise TimeoutError()
+                    raise TimeoutError
                 i += 1
             for k, v in res:
                 line = f"{'      '.join(', '.join(str(y) for y in x) for x in v)}"
                 f.write(f" {k: <4}: {line} \n")
-        return "Reload please", 200, {"Content-Type": "text/plain; charset=utf-8"}
+        return WerkzeugResponse("Reload please", 200, {"Content-Type": "text/plain; charset=utf-8"})
     except Exception:
         with open(p, "w") as f:
             f.write("an error has previously occured and this request is blocked")
-            return (
+            return WerkzeugResponse(
                 "error, this request is now blocked",
                 200,
                 {"Content-Type": "text/plain; charset=utf-8"},
@@ -525,11 +524,12 @@ def ddos(costs="0, 15, 35, 60, 100", penalty="0, 0, 0, 50, 100", width=3):
 
 @views.route("/costcalc/<inputstring>/<width>")
 @views.route("/costcalc/<inputstring>")
-def fen_calc(inputstring: str, width=3):
+def fen_calc(inputstring: str, width: int = 3) -> WerkzeugResponse:
+    """Calculate FenCharacter costs for a given input string and return plain text results."""
     res = FenCharacter.cost_calc(inputstring, width)
     if isinstance(res, int):
-        return str(res), 200, {"Content-Type": "text/plain; charset=utf-8"}
-    return (
+        return WerkzeugResponse(str(res), 200, {"Content-Type": "text/plain; charset=utf-8"})
+    return WerkzeugResponse(
         "\n".join(", ".join(str(y) for y in line) for line in res),
         200,
         {"Content-Type": "text/plain; charset=utf-8"},
@@ -537,13 +537,14 @@ def fen_calc(inputstring: str, width=3):
 
 
 @views.route("/search", methods=["GET"])
-def searchwiki():
+def searchwiki() -> str | WerkzeugResponse:
+    """Search wiki pages by title, tag, and body text, returning rendered results."""
     pre = 30
     pos = 30
     key = request.args.get("s", "")
     key = key.lower()
     if not key.strip():
-        return []
+        return WerkzeugResponse(json.dumps([]), 200, {"Content-Type": "application/json"})
     matches = []
     length = len(key)
     for w in WikiPage.wikindex():
@@ -566,16 +567,27 @@ def searchwiki():
                     w_rel,
                     loaded_page.title,
                     f"{loaded_page.body[max(p + m - pre, 0) : p + m + pos + length]}",
-                )
+                ),
             )
             p += m + 1
 
     return render_template(
-        "wiki/search_results.html", results=matches, start=pre, end=pre + length
+        "wiki/search_results.html",
+        results=matches,
+        start=pre,
+        end=pre + length,
     )
 
 
-def live_edit_get(formdata):
+def live_edit_get(formdata: dict[str, Any]) -> dict[str, Any]:
+    """Retrieve wiki page content for live editing based on type and path.
+
+    Args:
+        formdata: Dict with type, context, and path keys.
+
+    Returns:
+        Response dict with data and type fields.
+    """
     t = parse.unquote(formdata.get("type", "text"))
     loaded_page = WikiPage.load_locate(formdata["context"])
     if not loaded_page:
@@ -594,7 +606,16 @@ def live_edit_get(formdata):
     return {"data": "", "type": "error"}
 
 
-def live_edit_get_text(res, a):
+def live_edit_get_text(res: str, a: list[str]) -> dict[str, Any]:
+    """Extract text content from a wiki page for live editing.
+
+    Args:
+        res: Full wiki page body.
+        a: Path segments or percentage string.
+
+    Returns:
+        Dict with extracted text data.
+    """
     if m := re.match(r"(0\.?\d*|1)", a[0]):  # percentage request
         ratio = float(m.group(1))
         pos = int(len(res) * ratio)
@@ -605,7 +626,16 @@ def live_edit_get_text(res, a):
     return {"data": mdo.to_md(), "type": "text"}
 
 
-def live_edit_get_table(res, a):
+def live_edit_get_table(res: str, a: list[str]) -> dict[str, Any]:
+    """Extract table data from a wiki page for live editing.
+
+    Args:
+        res: Full wiki page body.
+        a: Path segments to the table node.
+
+    Returns:
+        Dict with table data and type.
+    """
     mdo = MDObj.from_md(res)
     for step in a:
         mdo = mdo.children[step]
@@ -615,19 +645,31 @@ def live_edit_get_table(res, a):
     return {"data": mdo.tables[0].to_simple(), "type": "table"}
 
 
-def live_edit_write(formdata, context):
+def live_edit_write(formdata: dict[str, Any], context: str | None) -> None:
+    """Dispatch live edit write operation to the appropriate handler based on type.
+
+    Args:
+        formdata: Dict with type, original, new, and path keys.
+        context: Wiki page context identifier.
+    """
     if formdata["type"] == "text":
         return live_edit_write_text(formdata, context)
-    elif formdata["type"] == "table":
+    if formdata["type"] == "table":
         return live_edit_write_table(formdata, context)
-    elif formdata["type"] == "tiptap":
+    if formdata["type"] == "tiptap":
         return live_edit_write_tiptap(formdata, context)
 
 
-def live_edit_write_text(formdata, context):
+def live_edit_write_text(formdata: dict[str, Any], context: str | None) -> None:
+    """Apply a text replacement to a wiki page.
+
+    Args:
+        formdata: Dict with original and new text.
+        context: Wiki page context identifier.
+    """
     old = formdata["original"].replace("\r\n", "\n")
     new = formdata["new"].replace("\r\n", "\n")
-    if not old == new:
+    if old != new:
         loc = WikiPage.locate(context)
         if not loc:
             return
@@ -642,12 +684,18 @@ def live_edit_write_text(formdata, context):
             else:
                 log.error(f"live replace didn't match {loc}")
         page.body = page.body.replace(old, new, 1)
-        page.save_overwrite(session.get("user"))
+        page.save_overwrite(str(session.get("user") or ""))
     else:
         log.info(f"rejected empty replace {context}")
 
 
-def live_edit_write_tiptap(formdata, context):
+def live_edit_write_tiptap(formdata: dict[str, Any], context: str | None) -> None:
+    """Save a full TipTap editor body to a wiki page.
+
+    Args:
+        formdata: Dict with body key containing the full page content.
+        context: Wiki page context identifier.
+    """
     body = formdata["body"].replace("\r\n", "\n")
     if not body.strip():
         log.warning("tiptap save with empty body — rejected")
@@ -660,10 +708,16 @@ def live_edit_write_tiptap(formdata, context):
     if not page:
         return
     page.body = body
-    page.save_overwrite(session.get("user"))
+    page.save_overwrite(str(session.get("user") or ""))
 
 
-def live_edit_write_table(formdata, context):
+def live_edit_write_table(formdata: dict[str, Any], context: str | None) -> None:
+    """Apply table cell edits to a wiki page.
+
+    Args:
+        formdata: Dict with path, header_, and table_ keys.
+        context: Wiki page context identifier.
+    """
     loc = WikiPage.locate(context)
     if not loc:
         return
@@ -689,20 +743,21 @@ def live_edit_write_table(formdata, context):
     md_text = md.to_md()
     if md_text != page.body:
         page.body = md_text
-        page.save_overwrite(session.get("user"))
+        page.save_overwrite(str(session.get("user") or ""))
 
 
 @views.route("/live_edit", methods=["POST"])
-def live_edit():
+def live_edit() -> WerkzeugResponse:
+    """Handle live edit AJAX requests — load modal data or save changes."""
     # loading edit modal is accomplished by posting relevant context data and receiving the reply
     if request.is_json and (formdata := request.get_json()):
-        return live_edit_get(formdata)
+        return WerkzeugResponse(json.dumps(live_edit_get(formdata)), 200, {"Content-Type": "application/json"})
     # else, form was transmitted
     formdata = request.form
-    context = formdata.get("context", None)
+    context: str | None = formdata.get("context", None)
     wiki = not context
     context = context or formdata.get("wiki", None)
-    sheet_owner = Config.users_with_option_value("character_sheet", context)
+    sheet_owner = Config.users_with_option_value("character_sheet", context or "")
     if sheet_owner:
         sheet_owner = sheet_owner[0][0]
     if (not sheet_owner) or session.get("user") == sheet_owner:
@@ -711,56 +766,76 @@ def live_edit():
         flash("Unauthorized, so ... no.", "error")
     if not wiki:
         return redirect(url_for("sheets.sheet", c=formdata["context"]))
-    else:
-        return redirect(url_for("wiki.wikipage", page=context))
+    return redirect(url_for("wiki.wikipage", page=context))
 
 
 @views.route("/q/<a>")
 @views.route("/q/<a>/raw")
 @views.route("/specific/<a>")
 @views.route("/specific/<path:a>")
-def specific(a, parse_md=None):
+def specific(a: str, parse_md: bool | None = None) -> str | WerkzeugResponse:
+    """Render a specific section or fragment of a wiki page by colon-separated path."""
     parse_md = not request.url.endswith("/raw") if parse_md is None else parse_md
-    if a.endswith("/raw"):
-        a = a[:-4]
+    a = a.removesuffix("/raw")
     a = a.replace("Ã¤", "ä").replace("ã¶", "ö").replace("ã¼", "ü")
-    a = a.split(":")
-    if a[-1] == "-":
-        a = a[:-1]
+    parts: list[str] = a.split(":")
+    if parts[-1] == "-":
+        parts = parts[:-1]
         hide_headline = 1
     else:
         hide_headline = 0
 
-    loaded_page = WikiPage.load_locate(a[0])
+    loaded_page = WikiPage.load_locate(parts[0])
     if not loaded_page:
-        return "not found", 404
+        return WerkzeugResponse("not found", 404)
     article: str = loaded_page.body
-    for seek in a[1:]:
+    for seek in parts[1:]:
         article = traverse_md(article, seek)
     if not article:
-        return "not found", 404
-    else:
-        article = article[article.find("\n") * hide_headline :]
+        return WerkzeugResponse("not found", 404)
+    article = article[article.find("\n") * hide_headline :]
     if parse_md:
-        return Markup(nossi_markdown.process(article, page=a[0]))
+        return Markup(nossi_markdown.process(article, page=parts[0]))
     return article
 
 
-def weaponadd(weapon_damage_array, b, ind=0):
+def weaponadd(weapon_damage_array: list[list[int]], b: list[int], ind: int = 0) -> list[list[int]]:
+    """Add weapon damage arrays element-wise, clamping to zero.
+
+    Args:
+        weapon_damage_array: List of weapon damage values.
+        b: List of bonus values to add.
+        ind: Index within each damage entry to modify.
+
+    Returns:
+        New list of damage arrays with the bonus applied.
+    """
     if len(weapon_damage_array) != len(b):
         raise DescriptiveError("Length mismatch!", weapon_damage_array, b)
     c = []
     for i, w in enumerate(weapon_damage_array):
-        c.append((w + [0, 0])[:2])
+        c.append(([*w, 0, 0])[:2])
         c[-1][ind] = max(c[-1][ind] + b[i], 0)
     return c
 
 
-def lowercase_access(d, k):
+def lowercase_access(d: dict[str, Any], k: str) -> Any:
+    """Look up a key in a dict case-insensitively.
+
+    Args:
+        d: Dictionary to search.
+        k: Key to look up (case-insensitive).
+
+    Returns:
+        The value for the matching key.
+
+    Raises:
+        DescriptiveError: If the key is not found.
+    """
     data = {k.lower(): v for k, v in d.items()}
-    res = data.get(k.lower(), None)
+    res = data.get(k.lower())
     if res is None:
         raise DescriptiveError(
-            k.lower() + " does not exist in " + " ".join(data.keys())
+            k.lower() + " does not exist in " + " ".join(data.keys()),
         )
     return res

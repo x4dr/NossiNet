@@ -1,11 +1,13 @@
-from dotenv import load_dotenv
+"""Main entry point for the NossiNet Flask application."""
 
 import logging.config
 
-import Data
-from NossiSite import views, extra, webhook, helpers, chat, socks, wiki, sheets
-from NossiSite.base import app
+from dotenv import load_dotenv
 from gamepack.WikiPage import WikiPage, start_savequeue
+
+import Data
+from NossiSite import chat, extra, helpers, sheets, socks, views, webhook, wiki
+from NossiSite.base import app
 
 load_dotenv()
 
@@ -26,6 +28,8 @@ helpers.register(app)
 
 WikiPage.live = True
 start_savequeue()
+
+__all__ = ["app"]
 
 if __name__ == "__main__":
     logging.warning("Nosferatu net being run directly, DO NOT USE IN PRODUCTION")

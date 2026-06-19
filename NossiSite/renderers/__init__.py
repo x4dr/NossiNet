@@ -1,19 +1,25 @@
-from typing import Dict, Callable, Any, Type, TypeVar
-from gamepack.WikiCharacterSheet import WikiCharacterSheet
+"""Renderer registration and dispatch for character sheet types."""
+
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, TypeVar
+
 from gamepack.BaseCharacter import BaseCharacter
+
+if TYPE_CHECKING:
+    from gamepack.WikiCharacterSheet import WikiCharacterSheet
 
 T = TypeVar("T", bound=BaseCharacter)
 
-_renderers: Dict[Type[BaseCharacter], Callable[[WikiCharacterSheet[Any]], Any]] = {}
+_renderers: dict[type[BaseCharacter], Callable[[WikiCharacterSheet[Any]], Any]] = {}
 
 
-def register_renderer(char_type: Type[T]):
-    """
-    Decorator to register a renderer function for a specific character type.
-    """
+def register_renderer[T: BaseCharacter](
+    char_type: type[T],
+) -> Callable[[Callable[[WikiCharacterSheet[Any]], Any]], Callable[[WikiCharacterSheet[Any]], Any]]:
+    """Register a renderer function for a specific character type."""
 
     # Registering...
-    def decorator(func: Callable[[WikiCharacterSheet[Any]], Any]):
+    def decorator(func: Callable[[WikiCharacterSheet[Any]], Any]) -> Callable[[WikiCharacterSheet[Any]], Any]:
         _renderers[char_type] = func
         return func
 
@@ -21,9 +27,7 @@ def register_renderer(char_type: Type[T]):
 
 
 def render_sheet(sheet: WikiCharacterSheet[Any]) -> Any:
-    """
-    Dispatches the rendering of a character sheet to the appropriate registered renderer.
-    """
+    """Dispatches the rendering of a character sheet to the appropriate registered renderer."""
     if not sheet.char:
         return None
 
@@ -36,4 +40,4 @@ def render_sheet(sheet: WikiCharacterSheet[Any]) -> Any:
 
 
 # Import renderers to register them
-from . import mecharenderer, characterrenderer, pbtarenderer  # noqa: E402, F401
+from . import characterrenderer, mecharenderer, pbtarenderer  # noqa: E402, F401

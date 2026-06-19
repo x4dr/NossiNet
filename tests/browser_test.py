@@ -1,8 +1,12 @@
+"""Playwright-based browser integration tests for NossiNet."""
+
 import asyncio
+
 from playwright.async_api import async_playwright
 
 
-async def run_test():
+async def run_test() -> bool:
+    """Open the mecha sheet page and verify system cards are rendered."""
     async with async_playwright() as p:
         try:
             # Ignore HTTPS errors for local dev

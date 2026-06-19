@@ -1,25 +1,33 @@
-import pytest
+"""Tests for clock widget UI interaction."""
+
 import sys
 from pathlib import Path
+
+import pytest
+from typing import Any
+
 from playwright.sync_api import Page, expect
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 
 @pytest.fixture(scope="session")
-def browser_context_args(browser_context_args):
+def browser_context_args(browser_context_args: dict[str, Any]) -> dict[str, bool]:
+    """Configure Playwright to ignore HTTPS errors for local testing."""
     return {**browser_context_args, "ignore_https_errors": True}
 
 
 @pytest.fixture(scope="function", autouse=True)
-def setup_clocks(page: Page):
+def setup_clocks(page: Page) -> None:
+    """Navigate to the clocks wiki page and wait for clock containers to load."""
     page.on("console", lambda msg: print(f"BROWSER: {msg.text}"))
     page.goto("https://127.0.0.1:5000/wiki/clocks")
     page.wait_for_selector(".clock-container", state="visible")
     page.wait_for_timeout(2000)
 
 
-def test_complex_clock_interaction(page: Page):
+def test_complex_clock_interaction(page: Page) -> None:
+    """Clicking a clock widget increments its state without errors."""
     clock_id = "IRUWOQ3FNRWGC4Q-MNWG6Y3LOMXG2ZA"
     clock_container = page.locator(f"#{clock_id}")
     expect(clock_container).to_be_visible()
@@ -43,7 +51,8 @@ def test_complex_clock_interaction(page: Page):
     print("Complex interaction completed.")
 
 
-def test_clock_ui_interaction_changes_active_attribute(page: Page):
+def test_clock_ui_interaction_changes_active_attribute(page: Page) -> None:
+    """Clicking a clock changes its data-active attribute."""
     # Locate the clock by its ID. Now that generate_clock is fixed to use relative paths,
     # the ID will include the .md suffix encoded.
     clock_id = "IRUWOQ3FNRWGC4Q-MNWG6Y3LOMXG2ZA"
@@ -69,6 +78,4 @@ def test_clock_ui_interaction_changes_active_attribute(page: Page):
     page.wait_for_timeout(2000)
     current_active = clock.get_attribute("data-active")
 
-    assert (
-        current_active != initial_active
-    ), "The clock 'data-active' attribute did not change after click interaction."
+    assert current_active != initial_active, "The clock 'data-active' attribute did not change after click interaction."

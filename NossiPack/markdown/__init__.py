@@ -1,24 +1,35 @@
+"""Custom markdown processing pipeline with NossiNet-specific tag extensions."""
+
 import re
 
 import markdown
-from NossiPack.markdown.base import WikiEnvironment, NossiTag
-import NossiPack.markdown.tags.glitch  # noqa: F401
-import NossiPack.markdown.tags.invert  # noqa: F401
+
+import NossiPack.markdown.tags.checkbox
+import NossiPack.markdown.tags.clock
+import NossiPack.markdown.tags.foldable
+import NossiPack.markdown.tags.glitch
+import NossiPack.markdown.tags.header_fix
+import NossiPack.markdown.tags.infolet
+import NossiPack.markdown.tags.invert
+import NossiPack.markdown.tags.links
+import NossiPack.markdown.tags.section_tooltip
 import NossiPack.markdown.tags.transclude  # noqa: F401
-import NossiPack.markdown.tags.checkbox  # noqa: F401
-import NossiPack.markdown.tags.infolet  # noqa: F401
-import NossiPack.markdown.tags.foldable  # noqa: F401
-import NossiPack.markdown.tags.header_fix  # noqa: F401
-import NossiPack.markdown.tags.clock  # noqa: F401
-import NossiPack.markdown.tags.links  # noqa: F401
-import NossiPack.markdown.tags.section_tooltip  # noqa: F401
+from NossiPack.markdown.base import NossiTag, WikiEnvironment
 
 
 class NossiMarkdownProcessor:
+    """Orchestrates the full wiki markdown rendering pipeline.
+
+    Applies tag pre-processors, runs the core markdown converter, then
+    applies tag post-processors. Code and fenced blocks are protected
+    from accidental modification at each stage.
+    """
+
     _code_pre_re = re.compile(r"<code[^>]*>.*?</code>|<pre[^>]*>.*?</pre>", re.DOTALL)
     _fenced_block_re = re.compile(r"^```\w*\s*\n.*?^```\s*$", re.MULTILINE | re.DOTALL)
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize the processor with the global NossiTag registry."""
         self.tags = NossiTag.registry
 
     @classmethod
@@ -26,7 +37,7 @@ class NossiMarkdownProcessor:
         protected: dict[str, str] = {}
         counter = 0
 
-        def _stash(match):
+        def _stash(match: re.Match[str]) -> str:
             nonlocal counter
             counter += 1
             key = f"\x00CODE_{counter}_\x00"
@@ -46,7 +57,7 @@ class NossiMarkdownProcessor:
         protected: dict[str, str] = {}
         counter = 0
 
-        def _stash(match):
+        def _stash(match: re.Match[str]) -> str:
             nonlocal counter
             counter += 1
             key = f"\x00FENCED_{counter}_\x00"
@@ -68,6 +79,16 @@ class NossiMarkdownProcessor:
         return cls._cross_line_emphasis_re.sub(lambda m: f"\\*{m.group(1)}\\*", text)
 
     def render(self, raw_text: str, page_name: str) -> str:
+        """Render wiki markdown through the full tag and markdown pipeline.
+
+        Args:
+            raw_text: The raw markdown source text.
+            page_name: The name of the page being rendered (used for
+                       environment context and link resolution).
+
+        Returns:
+            Fully rendered HTML with all tag extensions applied.
+        """
         env = WikiEnvironment(page_name, raw_text)
 
         # 0. Protect fenced code blocks from pre-processors and cross-line emphasis
@@ -85,7 +106,8 @@ class NossiMarkdownProcessor:
 
         # 2. Markdown Core
         html = markdown.markdown(
-            text, extensions=["nl2br", "tables", "toc", "fenced_code"]
+            text,
+            extensions=["nl2br", "tables", "toc", "fenced_code"],
         )
 
         env.html_content = html
@@ -98,9 +120,18 @@ class NossiMarkdownProcessor:
             html = tag.post_process(html, env)
 
         # 5. Restore code/pre blocks
-        html = self._restore_code(html, protected)
-
-        return html
+        return self._restore_code(html, protected)
 
     def process(self, text: str, page: str) -> str:
+        """Render wiki markdown through the full pipeline.
+
+        Convenience wrapper around ``render``.
+
+        Args:
+            text: The raw markdown source text.
+            page: The name of the page being rendered.
+
+        Returns:
+            Fully rendered HTML.
+        """
         return self.render(text, page)

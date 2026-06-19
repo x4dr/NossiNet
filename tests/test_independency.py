@@ -1,3 +1,5 @@
+"""Tests ensuring all application modules are importable without errors."""
+
 import importlib
 import sys
 from pathlib import Path
@@ -9,7 +11,8 @@ sys.path.insert(0, str(ROOT))
 BLACKLIST = [".venv"]
 
 
-def all_module_names():
+def all_module_names() -> list[str]:
+    """Collect all Python module names from NossiPack, NossiSite, and NossiInterface."""
     modules = set()
     for subdir in ["NossiPack", "NossiSite", "NossiInterface"]:
         for py_file in (ROOT / subdir).rglob("*.py"):
@@ -27,6 +30,6 @@ def all_module_names():
 
 
 @pytest.mark.parametrize("module_name", all_module_names())
-def test_module_importable(module_name):
+def test_module_importable(module_name: str) -> None:
     """Each module should import successfully."""
     importlib.import_module(module_name)

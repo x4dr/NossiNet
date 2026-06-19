@@ -1,37 +1,56 @@
+"""Blueprint for miscellaneous game utilities, card games, and character generation."""
+
 import html
 import random
 import time
+from typing import TYPE_CHECKING, Any
 
 from flask import (
-    request,
-    session,
+    Blueprint,
+    Response,
     flash,
     redirect,
-    url_for,
-    Response,
     render_template,
-    Blueprint,
+    request,
+    session,
+    url_for,
 )
+from gamepack.Dice import DescriptiveError
 
 from NossiPack.Cards import Cards
 from NossiPack.User import Userlist
 from NossiPack.VampireCharacter import VampireCharacter
 from NossiSite.base import log
 from NossiSite.helpers import checklogin
-from gamepack.Dice import DescriptiveError
+
+if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable
+
+    from werkzeug.wrappers.response import Response as WerkzeugResponse
 
 views = Blueprint("extra", __name__)
 
 
 def numbertomatrix(number: int, length: int) -> list[int]:
+    """Convert an integer into a binary matrix of the given length."""
     return [int(x) for x in bin(number)[2:].rjust(length, "0")]
 
 
 def randommatrix(length: int) -> list[int]:
+    """Generate a random binary matrix of the given length."""
     return [random.randint(0, 1) for _ in range(length)]
 
 
-def togglelock(matrix: list[int], position: int) -> (list[int], list[int]):
+def togglelock(matrix: list[int], position: int) -> tuple[list[int], list[int]]:
+    """Toggle a bit and its neighbours in a square matrix.
+
+    Args:
+        matrix: Flat list representing a square matrix.
+        position: Index of the bit to toggle.
+
+    Returns:
+        A tuple of the updated matrix and the list of toggled positions.
+    """
     # toggles the bit at position number and its neighbors if interpreted as a square matrix
     length = int(len(matrix) ** 0.5)
     pos = [position]
@@ -49,9 +68,9 @@ def togglelock(matrix: list[int], position: int) -> (list[int], list[int]):
 
 
 @views.route("/lock/<int:sides>")
-def lock(sides=5):
-    if sides > 50:
-        sides = 50
+def lock(sides: int = 5) -> str:
+    """Render a lights-out lock puzzle of the given size."""
+    sides = min(sides, 50)
     f = [0] * int(sides**2)
     for i, x in enumerate(randommatrix(sides**2)):
         if x:
@@ -61,7 +80,8 @@ def lock(sides=5):
 
 
 @views.route("/lockclick/<int:pos>")
-def lockinteract(pos: int):
+def lockinteract(pos: int) -> str | WerkzeugResponse:
+    """Handle a click on the lock puzzle and return the updated field."""
     if "lock" not in session:
         return redirect(url_for("extra.lock"))
 
@@ -71,61 +91,75 @@ def lockinteract(pos: int):
     f, p = togglelock(f, pos)
     session["lock"] = f
     return render_template(
-        "misc/lockfield.html", field=f, sidelen=int(len(f) ** 0.5), toupdate=p
+        "misc/lockfield.html",
+        field=f,
+        sidelen=int(len(f) ** 0.5),
+        toupdate=p,
     )
 
 
 @views.route("/setfromsource/")
-def setfromsource():
+def setfromsource() -> WerkzeugResponse:
+    """Overwrite the user's character sheet from a Dalines source URL."""
     checklogin()
     source = request.args.get("source")
     ul = Userlist()
-    u = ul.loaduserbyname(session.get("user"))
+    u = ul.loaduserbyname(str(session.get("user") or ""))
+    assert u is not None
     try:
         new = VampireCharacter()
-        if new.setfromdalines(source[-7:]):
+        if new.setfromdalines((source or "")[-7:]):
             u.sheetid = u.savesheet(new)
             ul.saveuserlist()
             flash("character has been overwritten with provided Dalines sheet!")
         else:
-            flash("problem with " + source)
+            flash("problem with " + (source or ""))
     except Exception:
         log.exception("setfromsource:")
         flash(
-            "Sorry " + session.get("user").capitalize() + ", I can not let you do that."
+            "Sorry " + (session.get("user") or "").capitalize() + ", I can not let you do that.",
         )
     return redirect(url_for("views.charsheet"))
 
 
 @views.route("/timetest")
-def timetest():
+def timetest() -> str:
+    """Return the current Unix timestamp as a string."""
     return str(time.time())
 
 
 @views.route("/boardgame<int:size>_<seed>.json")
 @views.route("/boardgame<int:size>_.json")
-def boardgamemap(size, seed=""):
-    if size > 100:
-        size = 100
+def boardgamemap(size: int, seed: str = "") -> WerkzeugResponse:
+    """Generate a random board game map as JSON.
+
+    Args:
+        size: Number of cells per side (clamped to 100).
+        seed: Optional seed for reproducible generation.
+
+    Returns:
+        A JSON response with the board layout.
+    """
+    size = min(size, 100)
     rx = random.Random()
     if seed:
         rx.seed(str(size) + str(seed))
 
-    def r(a=4):
+    def r(a: int = 4) -> Generator[int]:
         for _ in range(a):
             yield rx.randint(1, 10)
 
-    def e(inp, dif):
+    def e(inp: Iterable[int], dif: int) -> Generator[int]:
         for i in inp:
             yield 2 if i == 10 else (1 if i >= dif else 0)
 
-    def fpik(inp, pref="FPIK"):
+    def fpik(inp: Iterable[int], pref: str = "FPIK") -> Generator[str]:
         vals = list(inp)
         vals = [(v if v != 2 else (2 if sum(vals) < 4 else 1)) for v in vals]
         for i, p in enumerate(pref):
             yield '"' + p + '": ' + str(vals[i])
 
-    def cell():  # i, j):
+    def cell() -> Generator[str]:  # i, j):
         difficulty = 8
         """6 + (
             (9 if i == j else
@@ -135,23 +169,22 @@ def boardgamemap(size, seed=""):
              (6 if j % 2 == 1 and (i in [0, size - 1] or j in [0, size - 1]) else
               (5 if 0 < i < size - 1 else 8))))"""
 
-        for li in fpik(e(r(), difficulty)):
-            yield li
+        yield from fpik(e(r(), difficulty))
 
     first = True
 
-    def notfirst():
+    def notfirst() -> bool:
         nonlocal first
         if first:
             first = False
             return True
         return False
 
-    def resetfirst():
+    def resetfirst() -> None:
         nonlocal first
         first = True
 
-    def generate():
+    def generate() -> Generator[str]:
         yield '{"board": ['
         for x in range(size):
             yield ("," if not first else "") + "["
@@ -163,7 +196,7 @@ def boardgamemap(size, seed=""):
                     + ",".join(
                         cell(
                             # x, y
-                        )
+                        ),
                     )
                     + "}"
                 )
@@ -175,22 +208,36 @@ def boardgamemap(size, seed=""):
 
 @views.route("/gameboard/<int:size>/")
 @views.route("/gameboard/<int:size>/<seed>")
-def gameboard(size, seed=""):
-    if size > 20:
-        size = 20
+def gameboard(size: int, seed: str = "") -> str:
+    """Render the game board HTML page.
+
+    Args:
+        size: Number of cells per side (clamped to 20).
+        seed: Optional seed for map generation.
+    """
+    size = min(size, 20)
     return render_template("misc/gameboard.html", size=size, seed=seed)
 
 
 @views.route("/vamp_chargen/standard")
-def standardchar():
+def standardchar() -> WerkzeugResponse:
+    """Redirect to the standard vampire character generation preset."""
     return redirect(
-        url_for("extra.chargen", a=3, b=5, c=7, abia=5, abib=9, abic=13, shuffle=1)
+        url_for("extra.chargen", a=3, b=5, c=7, abia=5, abib=9, abic=13, shuffle=1),
     )
 
 
 @views.route("/cards/", methods=["GET"])
 @views.route("/cards/<command>", methods=["POST", "GET"])
-def cards(command: str = None):
+def cards(command: str | None = None) -> dict[str, Any] | str:
+    """Handle card deck operations (draw, spend, return, dedicate, etc.).
+
+    Args:
+        command: The action to perform on the deck.
+
+    Returns:
+        JSON result or rendered card page.
+    """
     checklogin()
     deck = Cards.getdeck(session["user"])
     try:
@@ -199,21 +246,21 @@ def cards(command: str = None):
                 return deck.serialized_parts
         elif request.method == "POST":
             par = html.escape(
-                request.get_json()["parameter"]
+                request.get_json()["parameter"],
             )  # escape html to prevent XSS
             if command == "draw":
                 return {"result": list(deck.draw(par))}
-            elif command == "spend":
+            if command == "spend":
                 return {"result": list(deck.spend(par))}
-            elif command == "returnfun":
+            if command == "returnfun":
                 return {"result": list(deck.pilereturn(par))}
-            elif command == "dedicate":
+            if command == "dedicate":
                 if ":" not in par:
                     par += ":"
                 return {"result": list(deck.dedicate(*par.split(":", 1)))}
-            elif command == "remove":
+            if command == "remove":
                 return {"result": list(deck.remove(par))}
-            elif command == "free":
+            if command == "free":
                 message = deck.undedicate(par)
                 for m in message:
                     flash("Affected Dedication: " + m)
@@ -239,10 +286,11 @@ def cards(command: str = None):
 
 
 @views.route("/vamp_chargen", methods=["GET", "POST"])
-def chargen_menu():
+def chargen_menu() -> str | WerkzeugResponse:
+    """Render or process the character generation menu form."""
     if request.method == "POST":
         f = dict(request.form)
-        if not f.get("vampire", None):
+        if not f.get("vampire"):
             return redirect(
                 url_for(
                     "vamp_chargen",
@@ -253,7 +301,7 @@ def chargen_menu():
                     abib=f["abib"],
                     abic=f["abic"],
                     shuffle=1 if f.get("shuffle", 0) else 0,
-                )
+                ),
             )
         return redirect(
             url_for(
@@ -267,17 +315,26 @@ def chargen_menu():
                 shuffle=1 if f["shuffle"] else 0,
                 vamp=f["discipline"],
                 back=f["back"],
-            )
+            ),
         )
     return render_template("sheets/generate_dialog.html")
 
 
 @views.route("/vamp_chargen/<a>,<b>,<c>,<abia>,<abib>,<abic>,<shuffle>")
 @views.route("/vamp_chargen/<a>,<b>,<c>,<abia>,<abib>,<abic>,<shuffle>,<vamp>,<back>")
-def chargen(a, b, c, abia, abib, abic, shuffle, vamp=None, back=None):
-    """
-    Redirects to the charactersheet/ editor(if logged in) of a randomly
-    generated character
+def chargen(
+    a: str,
+    b: str,
+    c: str,
+    abia: str,
+    abib: str,
+    abic: str,
+    shuffle: str,
+    vamp: str | None = None,
+    back: str | None = None,
+) -> str:
+    """Redirect to the sheet editor with a randomly generated character.
+
     :param a: points to be allocated in the first attribute group
     :param b: points to be allocated in the second attribute group
     :param c: points to be allocated in the third attribute group
@@ -287,7 +344,7 @@ def chargen(a, b, c, abia, abib, abic, shuffle, vamp=None, back=None):
     :param shuffle: if the first/second/third groups should be shuffled (each)
     :param vamp: if not None, character will be a vampire, int(vamp)
     is the amount of discipline points
-    :param back:  background points
+    :param back:  background points.
     """
     try:
         char = VampireCharacter.makerandom(
@@ -299,10 +356,10 @@ def chargen(a, b, c, abia, abib, abic, shuffle, vamp=None, back=None):
             int(abia),
             int(abib),
             int(abic),
-            int(shuffle),
+            bool(int(shuffle)),
         )
         if vamp is not None:
-            char.makevamprandom(vamp, back)
+            char.makevamprandom(vamp, back or "")
         if session.get("logged_in", False):
             return render_template(
                 "sheets/vampsheet_editor.html",

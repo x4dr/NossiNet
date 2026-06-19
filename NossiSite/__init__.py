@@ -1,8 +1,10 @@
+"""NossiSite package - Flask blueprints, helpers, and configuration for NossiNet."""
+
 import bleach
 
 ALLOWED_TAGS = frozenset(
-    list(bleach.ALLOWED_TAGS)
-    + [
+    [
+        *list(bleach.ALLOWED_TAGS),
         "br",
         "u",
         "p",
@@ -20,5 +22,5 @@ ALLOWED_TAGS = frozenset(
         "h6",
         "div",
         "hr",
-    ]
+    ],
 )

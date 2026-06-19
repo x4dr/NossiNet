@@ -1,9 +1,13 @@
+"""Tests for NossiNet markdown processing features."""
+
 import re
 from unittest.mock import MagicMock, patch
+
 from NossiPack.markdown import NossiMarkdownProcessor
 
 
-def test_transclude():
+def test_transclude() -> None:
+    """Basic page transclusion renders the wrapped content."""
     processor = NossiMarkdownProcessor()
     with patch("gamepack.WikiPage.WikiPage.load_locate") as mock_load:
         mock_page = MagicMock()
@@ -17,7 +21,7 @@ def test_transclude():
         assert "after" in result
 
 
-def test_transclude_scoping():
+def test_transclude_scoping() -> None:
     """Transcluded content is wrapped, parent content stays outside."""
     processor = NossiMarkdownProcessor()
     with patch("gamepack.WikiPage.WikiPage.load_locate") as mock_load:
@@ -26,17 +30,16 @@ def test_transclude_scoping():
         mock_load.return_value = mock_page
 
         result = processor.render(
-            "### Before\nstuff\n\n[!page]\n\n### After\nmore", "testpage"
+            "### Before\nstuff\n\n[!page]\n\n### After\nmore",
+            "testpage",
         )
         assert '<div class="transcluded">' in result
         assert "<h3>Before" in result or '<h3 id="before">Before' in result
         assert "<h3>After" in result or '<h3 id="after">After' in result
-        assert (
-            "<h2>Transcluded" in result or '<h2 id="transcluded">Transcluded' in result
-        )
+        assert "<h2>Transcluded" in result or '<h2 id="transcluded">Transcluded' in result
 
 
-def test_transclude_h2_in_h3_context():
+def test_transclude_h2_in_h3_context() -> None:
     """Transcluded h2 inside parent h3 should be scoped to wrapper."""
     processor = NossiMarkdownProcessor()
     with patch("gamepack.WikiPage.WikiPage.load_locate") as mock_load:
@@ -45,13 +48,14 @@ def test_transclude_h2_in_h3_context():
         mock_load.return_value = mock_page
 
         result = processor.render(
-            "### Parent\nbefore\n\n[!subpage]\n\nmore", "testpage"
+            "### Parent\nbefore\n\n[!subpage]\n\nmore",
+            "testpage",
         )
         before_wrapper = result.split('<div class="transcluded">')[0]
         assert "<h3" in before_wrapper or '<h3 id="parent">Parent' in result
 
 
-def test_transclude_h1_in_h3_context():
+def test_transclude_h1_in_h3_context() -> None:
     """Transcluded h1 inside parent h3 section."""
     processor = NossiMarkdownProcessor()
     with patch("gamepack.WikiPage.WikiPage.load_locate") as mock_load:
@@ -60,13 +64,14 @@ def test_transclude_h1_in_h3_context():
         mock_load.return_value = mock_page
 
         result = processor.render(
-            "### Small\nbefore\n\n[!page]\n\n### After\nmore", "testpage"
+            "### Small\nbefore\n\n[!page]\n\n### After\nmore",
+            "testpage",
         )
         assert '<div class="transcluded">' in result
         assert "<h1" in result or '<h1 id="big-heading">Big Heading' in result
 
 
-def test_transclude_foldable_scoped():
+def test_transclude_foldable_scoped() -> None:
     """Foldable inside transcluded content should close inside wrapper."""
     processor = NossiMarkdownProcessor()
     with patch("gamepack.WikiPage.WikiPage.load_locate") as mock_load:
@@ -75,17 +80,18 @@ def test_transclude_foldable_scoped():
         mock_load.return_value = mock_page
 
         result = processor.render(
-            "Parent before\n\n[!page]\n\nParent after", "testpage"
+            "Parent before\n\n[!page]\n\nParent after",
+            "testpage",
         )
         # The foldable div should close before the wrapper </div>
         transcluded_section = result.split('<div class="transcluded">')[1].split(
-            "</div>"
+            "</div>",
         )[0]
         assert '<div class="hiding"' in transcluded_section
         assert "Parent after" not in transcluded_section
 
 
-def test_multiple_transcludes():
+def test_multiple_transcludes() -> None:
     """Multiple transclusions each get their own wrapper."""
     processor = NossiMarkdownProcessor()
     bodies = {"alpha": "## Alpha\ncontent", "beta": "## Beta\ncontent"}
@@ -95,7 +101,7 @@ def test_multiple_transcludes():
         assert result.count('<div class="transcluded">') == 2
 
 
-def test_transclude_section():
+def test_transclude_section() -> None:
     """Transclude a specific section via #fragment."""
     processor = NossiMarkdownProcessor()
     body = """# Main
@@ -114,7 +120,7 @@ stuff"""
         assert "stuff" not in result
 
 
-def test_transclude_section_rename():
+def test_transclude_section_rename() -> None:
     """Transclude a section and rename its heading via alt text."""
     processor = NossiMarkdownProcessor()
     body = """# Main
@@ -128,7 +134,7 @@ secret info"""
         assert "secret info" in result
 
 
-def test_transclude_section_nonexistent():
+def test_transclude_section_nonexistent() -> None:
     """If fragment doesn't match, transclude syntax is left as-is."""
     processor = NossiMarkdownProcessor()
     body = "# Main\n\n## Details\ninfo"
@@ -138,7 +144,7 @@ def test_transclude_section_nonexistent():
         assert '<div class="transcluded">' not in result
 
 
-def test_transclude_section_top_level():
+def test_transclude_section_top_level() -> None:
     """Transclude a top-level # heading section."""
     processor = NossiMarkdownProcessor()
     body = """# Top
@@ -153,7 +159,7 @@ sub content"""
         assert "sub content" in result
 
 
-def test_transclude_section_with_foldable():
+def test_transclude_section_with_foldable() -> None:
     """Section transclusion with a foldable heading inside."""
     processor = NossiMarkdownProcessor()
     body = """## !Hidden
@@ -169,7 +175,8 @@ visible"""
         assert "visible" not in result
 
 
-def test_section_tooltip():
+def test_section_tooltip() -> None:
+    """Section tooltip renders trigger span and hidden content div."""
     processor = NossiMarkdownProcessor()
     body = "# Source\n\ncontent\n\n## Details\nsecret"
     with patch("gamepack.WikiPage.WikiPage.load_locate") as mock_load:
@@ -182,7 +189,8 @@ def test_section_tooltip():
         assert "tooltip" not in result
 
 
-def test_section_tooltip_fragment():
+def test_section_tooltip_fragment() -> None:
+    """Section tooltip with fragment targets the specific section."""
     processor = NossiMarkdownProcessor()
     body = "# Page\n\n## Details\nhidden\n\n## Other\nvisible"
     with patch("gamepack.WikiPage.WikiPage.load_locate") as mock_load:
@@ -192,7 +200,8 @@ def test_section_tooltip_fragment():
         assert "visible" not in result
 
 
-def test_section_tooltip_rename():
+def test_section_tooltip_rename() -> None:
+    """Section tooltip with alt text renames the heading."""
     processor = NossiMarkdownProcessor()
     body = "## Details\ninfo"
     with patch("gamepack.WikiPage.WikiPage.load_locate") as mock_load:
@@ -202,7 +211,7 @@ def test_section_tooltip_rename():
         assert "info" in result
 
 
-def test_section_tooltip_self_reference():
+def test_section_tooltip_self_reference() -> None:
     """Tooltip referencing the current page must not loop."""
     processor = NossiMarkdownProcessor()
     body = "## Section\ncontent [!t:Page] more [!t:Page#section]"
@@ -213,7 +222,7 @@ def test_section_tooltip_self_reference():
         assert "TIP_PLACEHOLDER_" not in result
 
 
-def test_section_tooltip_placeholder_does_not_wipe_outer():
+def test_section_tooltip_placeholder_does_not_wipe_outer() -> None:
     """Nested tooltip renders must not destroy outer placeholders."""
     processor = NossiMarkdownProcessor()
     inner_body = "inner content [!t:OtherPage]"
@@ -233,7 +242,7 @@ def test_section_tooltip_placeholder_does_not_wipe_outer():
         assert "target" in result
 
 
-def test_section_tooltip_cycle():
+def test_section_tooltip_cycle() -> None:
     """A→B→A cycle must not loop or produce raw syntax."""
     processor = NossiMarkdownProcessor()
     a_body = "Page A has [!t:PageB]"
@@ -250,7 +259,7 @@ def test_section_tooltip_cycle():
         assert "Page A has" in result
 
 
-def test_transclude_recursion_limit():
+def test_transclude_recursion_limit() -> None:
     """Recursive transclusion must not produce raw syntax or infinite nesting.
 
     PageA has [!PageB], PageB has [!PageA]. The depth limit of 5 must:
@@ -275,25 +284,28 @@ def test_transclude_recursion_limit():
     assert count <= 5, f"Expected ≤5 transclusion divs, got {count}"
 
 
-def test_glitch():
-
+def test_glitch() -> None:
+    """Glitch syntax renders a span with glitch class and data-text."""
     processor = NossiMarkdownProcessor()
     result = processor.render("g~hello~g", "testpage")
     assert 'class="glitch"' in result
     assert 'data-text="hello"' in result
 
 
-def test_checkbox():
+def test_checkbox() -> None:
+    """Checkbox syntax renders an HTML checkbox input."""
     processor = NossiMarkdownProcessor()
     result = processor.render("- [x] done", "testpage")
     assert 'type="checkbox"' in result
     assert "checked" in result
 
 
-def test_infolet():
+def test_infolet() -> None:
+    """Infolet tag renders an item tooltip with description."""
     processor = NossiMarkdownProcessor()
     with patch(
-        "gamepack.Item.Item.item_cache", {"test": MagicMock(description="desc")}
+        "gamepack.Item.Item.item_cache",
+        {"test": MagicMock(description="desc")},
     ):
         result = processor.render("[!q:test]", "testpage")
         assert 'class="tip-trigger"' in result
@@ -301,7 +313,8 @@ def test_infolet():
         assert "desc" in result
 
 
-def test_foldable_spans():
+def test_foldable_spans() -> None:
+    """Foldable headings produce hider and hiding span classes."""
     processor = NossiMarkdownProcessor()
     content = "# Main\n## !hidden\ncontent"
     result = processor.render(content, "testpage")
@@ -309,7 +322,8 @@ def test_foldable_spans():
     assert 'class="hiding"' in result
 
 
-def test_link_validation():
+def test_link_validation() -> None:
+    """Existing wiki links are resolved; broken links get a missing class."""
     processor = NossiMarkdownProcessor()
     with patch("gamepack.WikiPage.WikiPage.locate") as mock_locate:
         mock_locate.return_value = True
@@ -321,14 +335,15 @@ def test_link_validation():
         assert 'class="missing"' in result
 
 
-def test_clock():
+def test_clock() -> None:
+    """Clock syntax renders a clock container with data attributes."""
     processor = NossiMarkdownProcessor()
     result = processor.render("[clock|name@page]", "testpage")
     assert 'class="clock-container' in result
     assert 'data-total="1"' in result
 
 
-def test_foldable_id_unique():
+def test_foldable_id_unique() -> None:
     """Two foldables with same heading text must have different IDs."""
     processor = NossiMarkdownProcessor()
     from NossiPack.markdown.tags.foldable import FoldableTag
@@ -340,7 +355,7 @@ def test_foldable_id_unique():
     assert ids[0] != ids[1]
 
 
-def test_glitch_dual_text_not_side_by_side():
+def test_glitch_dual_text_not_side_by_side() -> None:
     """g~Text A~Text B~g must NOT show both texts as visible content."""
     processor = NossiMarkdownProcessor()
     result = processor.render("g~Text A~Text B~g", "testpage")
@@ -350,7 +365,7 @@ def test_glitch_dual_text_not_side_by_side():
     assert ">Text B<" not in result
 
 
-def test_glitch_separate_spans():
+def test_glitch_separate_spans() -> None:
     """g~hello~g — g~world~W0RLD~g must produce two separate spans."""
     processor = NossiMarkdownProcessor()
     result = processor.render("g~hello~g — g~world~W0RLD~g", "testpage")
@@ -362,7 +377,7 @@ def test_glitch_separate_spans():
     assert "world" in result
 
 
-def test_checkbox_in_code_block():
+def test_checkbox_in_code_block() -> None:
     """Checkbox syntax inside inline code must not be processed."""
     processor = NossiMarkdownProcessor()
     result = processor.render("`- [ ] unfinished`", "testpage")
@@ -370,7 +385,7 @@ def test_checkbox_in_code_block():
     assert "- [ ] unfinished" in result
 
 
-def test_checkbox_in_code_block_x():
+def test_checkbox_in_code_block_x() -> None:
     """Checkbox done syntax inside inline code must not be processed."""
     processor = NossiMarkdownProcessor()
     result = processor.render("`- [x] done`", "testpage")
@@ -378,7 +393,7 @@ def test_checkbox_in_code_block_x():
     assert "- [x] done" in result
 
 
-def test_checkbox_outside_code_block():
+def test_checkbox_outside_code_block() -> None:
     """Checkbox syntax outside code blocks still works."""
     processor = NossiMarkdownProcessor()
     result = processor.render("- [x] done", "testpage")
@@ -386,7 +401,7 @@ def test_checkbox_outside_code_block():
     assert "checked" in result
 
 
-def test_glitch_inside_code():
+def test_glitch_inside_code() -> None:
     """Glitch syntax inside code blocks must not be processed."""
     processor = NossiMarkdownProcessor()
     result = processor.render("`g~hello~g`", "testpage")
@@ -394,7 +409,7 @@ def test_glitch_inside_code():
     assert "&gt;" not in result  # no HTML-escaped brackets from failed matching
 
 
-def test_glitch_outside_code():
+def test_glitch_outside_code() -> None:
     """Glitch syntax outside code blocks still works."""
     processor = NossiMarkdownProcessor()
     result = processor.render("g~hello~g", "testpage")
@@ -402,7 +417,7 @@ def test_glitch_outside_code():
     assert 'data-text="hello"' in result
 
 
-def test_fenced_code_block():
+def test_fenced_code_block() -> None:
     """Triple-backtick fenced code blocks render as <pre><code>."""
     processor = NossiMarkdownProcessor()
     result = processor.render("```\ncode here\n```", "testpage")
@@ -411,7 +426,7 @@ def test_fenced_code_block():
     assert "code here" in result
 
 
-def test_fenced_code_protects_invert():
+def test_fenced_code_protects_invert() -> None:
     """i~text~i inside fenced code block must not be inverted."""
     processor = NossiMarkdownProcessor()
     result = processor.render("```\ni~not inverted~i\n```", "testpage")
@@ -419,14 +434,14 @@ def test_fenced_code_protects_invert():
     assert "i~not inverted~i" in result
 
 
-def test_fenced_code_protects_glitch():
+def test_fenced_code_protects_glitch() -> None:
     """g~text~g inside fenced code block must not be glitched."""
     processor = NossiMarkdownProcessor()
     result = processor.render("```\ng~not glitched~g\n```", "testpage")
     assert 'class="glitch"' not in result
 
 
-def test_invert():
+def test_invert() -> None:
     """i~text~i renders as <span class='invert'>."""
     processor = NossiMarkdownProcessor()
     result = processor.render("i~hello~i", "testpage")
@@ -434,21 +449,21 @@ def test_invert():
     assert "hello" in result
 
 
-def test_invert_inside_code():
+def test_invert_inside_code() -> None:
     """i~text~i inside inline code must not be inverted."""
     processor = NossiMarkdownProcessor()
     result = processor.render("`i~hello~i`", "testpage")
     assert 'class="invert"' not in result
 
 
-def test_invert_outside_code():
+def test_invert_outside_code() -> None:
     """i~text~i outside code blocks still works."""
     processor = NossiMarkdownProcessor()
     result = processor.render("i~hello~i", "testpage")
     assert 'class="invert"' in result
 
 
-def test_fenced_code_adjacent_to_invert():
+def test_fenced_code_adjacent_to_invert() -> None:
     """Fenced code block next to invert text must both render correctly."""
     processor = NossiMarkdownProcessor()
     result = processor.render("```\ncode\n```\n\ni~inverted~i", "testpage")
@@ -456,7 +471,7 @@ def test_fenced_code_adjacent_to_invert():
     assert 'class="invert"' in result
 
 
-def test_fenced_code_protects_checkbox():
+def test_fenced_code_protects_checkbox() -> None:
     """Checkbox syntax inside fenced code block must not be processed."""
     processor = NossiMarkdownProcessor()
     result = processor.render("```\n- [ ] unfinished\n- [x] done\n```", "testpage")
@@ -465,14 +480,14 @@ def test_fenced_code_protects_checkbox():
     assert "- [x] done" in result
 
 
-def test_checkbox_outside_fenced():
+def test_checkbox_outside_fenced() -> None:
     """Checkbox syntax outside fenced code blocks still works."""
     processor = NossiMarkdownProcessor()
     result = processor.render("- [ ] task\n```\ncode\n```", "testpage")
     assert result.count('type="checkbox"') == 1
 
 
-def test_tooltip_html_structure():
+def test_tooltip_html_structure() -> None:
     """Tooltip must render trigger span and hidden content div."""
     processor = NossiMarkdownProcessor()
     body = "## Section\ninner content"
@@ -483,3 +498,19 @@ def test_tooltip_html_structure():
         assert 'data-tip="stip-' in result
         assert 'class="tip-content"' in result
         assert "inner content" in result
+
+
+def test_transclude_missing_page_returns_original_syntax() -> None:
+    """When WikiPage.load_locate returns None, the original syntax must be preserved.
+
+    This guards against the None-path bug where .body is accessed without
+    an explicit None check, relying on a broad except Exception instead.
+    """
+    processor = NossiMarkdownProcessor()
+    with patch("gamepack.WikiPage.WikiPage.load_locate") as mock_load:
+        mock_load.return_value = None
+
+        result = processor.render("before\n\n[!nonexistent]\n\nafter", "testpage")
+
+    assert "[!nonexistent]" in result
+    assert '<div class="transcluded">' not in result

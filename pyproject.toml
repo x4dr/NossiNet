@@ -29,13 +29,8 @@ dependencies = [
 ]
 
 
-[tool.uv.workspace]
-members = [
-    "GamePack",
-]
-
 [tool.uv.sources]
-gamepack = { workspace = true }
+gamepack = { path = "../GamePack", editable = true }
 
 [dependency-groups]
 dev = [
@@ -50,7 +45,29 @@ dev = [
     "mypy>=1.15.0",
     "ruff>=0.15.16",
     "scipy>=1.16.3",
+    "types-beautifulsoup4>=4.12.0.20250516",
+    "types-bleach>=6.4.0.20260607",
+    "types-gevent>=26.4.0.20260518",
+    "types-markdown>=3.10.2.20260518",
+    "types-requests>=2.33.0.20260518",
 ]
+
+[tool.mypy]
+strict = true
+explicit_package_bases = true
+mypy_path = "../GamePack"
+
+
+[tool.black]
+line-length = 120
+
+[tool.ruff]
+target-version = "py314"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "D", "UP", "B", "SIM", "ARG", "RUF"]
+ignore = ["D203", "D213", "D407", "D413", "EM101"]  # EM101: single-language repo, string literals in exceptions are fine
 
 [tool.pytest.ini_options]
 env = [

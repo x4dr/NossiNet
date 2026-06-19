@@ -1,17 +1,22 @@
+"""Tests for the TipTap wiki live editor (open, edit, save, round-trip)."""
+
+from typing import Any
+
 import pytest
-from playwright.sync_api import Page, expect
+from playwright.sync_api import ConsoleMessage, Page, expect
 
 
 @pytest.fixture(scope="function")
-def browser_context_args(browser_context_args):
+def browser_context_args(browser_context_args: dict[str, Any]) -> dict[str, bool]:
+    """Configure Playwright to ignore HTTPS errors for local testing."""
     return {**browser_context_args, "ignore_https_errors": True}
 
 
-def test_tip_wiki_editor_opens_and_closes(page: Page):
+def test_tip_wiki_editor_opens_and_closes(page: Page) -> None:
     """Double-click opens the TipTap overlay, Cancel closes it."""
     errors = []
 
-    def on_console(msg):
+    def on_console(msg: ConsoleMessage) -> None:
         if msg.type == "error":
             errors.append(msg.text)
 
@@ -31,11 +36,11 @@ def test_tip_wiki_editor_opens_and_closes(page: Page):
     assert not non_sse_errors, f"Unexpected console errors: {non_sse_errors}"
 
 
-def test_tip_wiki_editor_save_roundtrip(page: Page):
+def test_tip_wiki_editor_save_roundtrip(page: Page) -> None:
     """Save button persists content and reloads the page."""
     errors = []
 
-    def on_console(msg):
+    def on_console(msg: ConsoleMessage) -> None:
         if msg.type == "error":
             errors.append(msg.text)
 
@@ -59,16 +64,14 @@ def test_tip_wiki_editor_save_roundtrip(page: Page):
     editor_text = page.locator("#tip-editor .ProseMirror").inner_text()
     non_sse_errors = [e for e in errors if "SSE" not in e]
     assert not non_sse_errors, f"Unexpected console errors: {non_sse_errors}"
-    assert (
-        "Markdown Demo" in editor_text
-    ), f"Expected original content after round-trip, got: {editor_text[:200]}"
+    assert "Markdown Demo" in editor_text, f"Expected original content after round-trip, got: {editor_text[:200]}"
 
 
-def test_checkbox_roundtrip(page: Page):
+def test_checkbox_roundtrip(page: Page) -> None:
     """Checkbox task list syntax survives a TipTap edit/save round-trip."""
     errors = []
 
-    def on_console(msg):
+    def on_console(msg: ConsoleMessage) -> None:
         if msg.type == "error":
             errors.append(msg.text)
 
@@ -97,11 +100,11 @@ def test_checkbox_roundtrip(page: Page):
     assert not non_sse_errors, f"Unexpected console errors: {non_sse_errors}"
 
 
-def test_glitch_and_strikethrough_survive_roundtrip(page: Page):
+def test_glitch_and_strikethrough_survive_roundtrip(page: Page) -> None:
     """Glitch syntax (g~text~g) and strikethrough (~~text~~) survive save roundtrip without corrupting each other."""
     errors = []
 
-    def on_console(msg):
+    def on_console(msg: ConsoleMessage) -> None:
         if msg.type == "error":
             errors.append(msg.text)
 
@@ -120,15 +123,9 @@ def test_glitch_and_strikethrough_survive_roundtrip(page: Page):
     source_text = page.locator("#tip-source-area").input_value()
     # Disabled marked's del tokenizer, so single-tilde glitch syntax is preserved as-is
     # (the markdown serializer escapes ~ as \~ for roundtrip stability)
-    assert (
-        "g~text~g" in source_text
-    ), f"Glitch simple syntax lost before save: {source_text[:300]}"
-    assert (
-        "g~text~replacement~g" in source_text
-    ), f"Glitch 3-part syntax lost before save: {source_text[:300]}"
-    assert (
-        "~~strikethrough~~" in source_text
-    ), f"Strikethrough syntax lost before save: {source_text[:300]}"
+    assert "g~text~g" in source_text, f"Glitch simple syntax lost before save: {source_text[:300]}"
+    assert "g~text~replacement~g" in source_text, f"Glitch 3-part syntax lost before save: {source_text[:300]}"
+    assert "~~strikethrough~~" in source_text, f"Strikethrough syntax lost before save: {source_text[:300]}"
 
     # Toggle back to WYSIWYG and save
     page.locator("#tip-source-toggle").click()
@@ -147,21 +144,17 @@ def test_glitch_and_strikethrough_survive_roundtrip(page: Page):
 
     non_sse_errors = [e for e in errors if "SSE" not in e]
     assert not non_sse_errors, f"Unexpected console errors: {non_sse_errors}"
-    assert (
-        "g~text~g" in source_text
-    ), f"Glitch simple syntax lost after roundtrip: {source_text[:300]}"
-    assert (
-        "~~strikethrough~~" in source_text
-    ), f"Strikethrough syntax lost after roundtrip: {source_text[:300]}"
+    assert "g~text~g" in source_text, f"Glitch simple syntax lost after roundtrip: {source_text[:300]}"
+    assert "~~strikethrough~~" in source_text, f"Strikethrough syntax lost after roundtrip: {source_text[:300]}"
 
     page.locator("#tip-close").click()
 
 
-def test_clock_roundtrip(page: Page):
+def test_clock_roundtrip(page: Page) -> None:
     """Clock syntax [clock|name|current|total] survives a TipTap save roundtrip."""
     errors = []
 
-    def on_console(msg):
+    def on_console(msg: ConsoleMessage) -> None:
         if msg.type == "error":
             errors.append(msg.text)
 
@@ -177,9 +170,7 @@ def test_clock_roundtrip(page: Page):
     page.locator("#tip-source-toggle").click()
     page.wait_for_timeout(500)
     source_text = page.locator("#tip-source-area").input_value()
-    assert (
-        "[clock|progress|3|8]" in source_text
-    ), f"Clock syntax lost before save: {source_text[:300]}"
+    assert "[clock|progress|3|8]" in source_text, f"Clock syntax lost before save: {source_text[:300]}"
 
     # Save and reload
     page.locator("#tip-source-toggle").click()
@@ -197,18 +188,16 @@ def test_clock_roundtrip(page: Page):
 
     non_sse_errors = [e for e in errors if "SSE" not in e]
     assert not non_sse_errors, f"Unexpected console errors: {non_sse_errors}"
-    assert (
-        "[clock|progress|3|8]" in source_text
-    ), f"Clock syntax lost after roundtrip: {source_text[:300]}"
+    assert "[clock|progress|3|8]" in source_text, f"Clock syntax lost after roundtrip: {source_text[:300]}"
 
     page.locator("#tip-close").click()
 
 
-def test_decorations_applied_without_errors(page: Page):
+def test_decorations_applied_without_errors(page: Page) -> None:
     """Tag decorations appear as .tag-dirty spans in the editor without console errors."""
     errors = []
 
-    def on_console(msg):
+    def on_console(msg: ConsoleMessage) -> None:
         if msg.type == "error":
             errors.append(msg.text)
 
@@ -222,25 +211,23 @@ def test_decorations_applied_without_errors(page: Page):
 
     # Wait for validator to start observing the editor
     page.wait_for_function(
-        "document.documentElement.dataset.wikiTagValidator === 'ready'", timeout=10000
+        "document.documentElement.dataset.wikiTagValidator === 'ready'",
+        timeout=10000,
     )
 
     # Decorations applied — at least one .tag-dirty exists
     dirty_count = page.locator(".ProseMirror .tag-dirty").count()
-    assert (
-        dirty_count > 0
-    ), f"Expected .tag-dirty elements in editor, found {dirty_count}"
+    assert dirty_count > 0, f"Expected .tag-dirty elements in editor, found {dirty_count}"
 
     # Wait for validator to resolve at least one tag (valid or invalid)
     page.wait_for_selector(
-        ".ProseMirror .tag-valid, .ProseMirror .tag-invalid", timeout=10000
+        ".ProseMirror .tag-valid, .ProseMirror .tag-invalid",
+        timeout=10000,
     )
 
     # The transclude [!pagename] doesn't exist → should be .tag-invalid
     invalid_count = page.locator(".ProseMirror .tag-invalid").count()
-    assert (
-        invalid_count > 0
-    ), f"Expected at least one .tag-invalid element, found {invalid_count}"
+    assert invalid_count > 0, f"Expected at least one .tag-invalid element, found {invalid_count}"
 
     # Console still clean
     non_sse_errors = [e for e in errors if "SSE" not in e]
@@ -249,11 +236,11 @@ def test_decorations_applied_without_errors(page: Page):
     page.locator("#tip-close").click()
 
 
-def test_source_mode_toggle(page: Page):
+def test_source_mode_toggle(page: Page) -> None:
     """Source mode toggle switches between WYSIWYG and raw textarea."""
     errors = []
 
-    def on_console(msg):
+    def on_console(msg: ConsoleMessage) -> None:
         if msg.type == "error":
             errors.append(msg.text)
 
@@ -273,9 +260,7 @@ def test_source_mode_toggle(page: Page):
     expect(page.locator("#tip-source-toggle")).to_have_text("</> WYSIWYG")
 
     source_text = page.locator("#tip-source-area").input_value()
-    assert (
-        source_text.strip()
-    ), f"Expected non-empty content in source view, got: {source_text[:200]}"
+    assert source_text.strip(), f"Expected non-empty content in source view, got: {source_text[:200]}"
 
     page.locator("#tip-source-toggle").click()
     page.wait_for_timeout(1000)
@@ -289,7 +274,7 @@ def test_source_mode_toggle(page: Page):
     assert not non_sse_errors, f"Unexpected console errors: {non_sse_errors}"
 
 
-def test_wiki_page_renders_tags_correctly(page: Page):
+def test_wiki_page_renders_tags_correctly(page: Page) -> None:
     """Verify server-side wiki page renders all tag types correctly."""
     errors = []
     page.on("console", lambda msg: errors.append(msg.text))
@@ -302,7 +287,7 @@ def test_wiki_page_renders_tags_correctly(page: Page):
     # Glitch — both syntaxes produce <span class="glitch"> with data-text
     assert body.locator("span.glitch").count() == 2
     data_texts = body.locator("span.glitch").all()
-    texts = sorted(t.get_attribute("data-text") for t in data_texts)
+    texts = sorted(text for t in data_texts if (text := t.get_attribute("data-text")) is not None)
     assert texts == ["replacement", "text"], f"Unexpected data-text values: {texts}"
 
     # Section tooltip: span.tip-trigger inside <p>, div.tip-content with rich HTML
@@ -333,7 +318,7 @@ def test_wiki_page_renders_tags_correctly(page: Page):
             contentHidden: content.hasAttribute('hidden'),
             nestedTranscludes: content.querySelectorAll('.transcluded').length,
         };
-    }"""
+    }""",
     )
     assert "error" not in tip_struct, f"DOM structure error: {tip_struct.get('error')}"
     assert "Transclusion" in tip_struct["triggerText"]
@@ -347,12 +332,10 @@ def test_wiki_page_renders_tags_correctly(page: Page):
 
     # Transclude: recursive transclusion produces nested .transcluded divs
     transcluded_count = body.locator(".transcluded").count()
-    assert (
-        transcluded_count > 0
-    ), f"Expected .transcluded elements, found {transcluded_count}"
+    assert transcluded_count > 0, f"Expected .transcluded elements, found {transcluded_count}"
 
     # Infolet: item not in cache, falls back to plain name
-    assert "itemname" in body.text_content()
+    assert "itemname" in (body.text_content() or "")
 
     # Foldable
     assert body.locator(".hider").count() == 1
@@ -364,7 +347,7 @@ def test_wiki_page_renders_tags_correctly(page: Page):
     assert body.locator('input[type="checkbox"]').count() == 2
 
     # Strikethrough via standard markdown
-    assert "~~strikethrough~~" in body.text_content()
+    assert "~~strikethrough~~" in (body.text_content() or "")
 
     # No console errors
     non_sse = [e for e in errors if "SSE" not in e and "favicon" not in e.lower()]

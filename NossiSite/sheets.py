@@ -1,54 +1,62 @@
-import re
+"""Blueprint for character sheets, mecha combat, and character generation."""
+
+import contextlib
 import logging
-from pathlib import Path
+import re
+from collections.abc import Callable
 from datetime import datetime
-from typing import cast, Tuple, Any, Optional, Dict
+from pathlib import Path
+from typing import Any, cast
 
 from flask import (
-    render_template,
     Blueprint,
-    request,
-    session,
-    redirect,
-    url_for,
+    abort,
     flash,
     jsonify,
-    abort,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
 )
+from gamepack.Dice import DescriptiveError
+from gamepack.DiceParser import DiceParser
+from gamepack.endworld import Mecha
+from gamepack.FenCharacter import FenCharacter
+from gamepack.WikiCharacterSheet import WikiCharacterSheet
+from gamepack.WikiPage import WikiPage
 from markupsafe import Markup
+from werkzeug.wrappers.response import Response as WerkzeugResponse
 
 from NossiPack.markdown import NossiMarkdownProcessor
 from NossiPack.User import Config, Userlist
 from NossiSite import chat
 from NossiSite.base_ext import decode_id
 from NossiSite.helpers import checklogin
-from NossiSite.socks import broadcast_to_hub
-from gamepack.Dice import DescriptiveError
-from gamepack.DiceParser import DiceParser
-from gamepack.FenCharacter import FenCharacter
-
-from gamepack.WikiCharacterSheet import WikiCharacterSheet
-from gamepack.WikiPage import WikiPage
-from gamepack.endworld import Mecha
-from NossiSite.renderers import render_sheet
 from NossiSite.mecha_history import MechaEncounterManager
+from NossiSite.renderers import render_sheet
+from NossiSite.socks import broadcast_to_hub
 
 log = logging.getLogger(__name__)
 
 
-def add_pending_event(m: str, event: Dict[str, Any]):
+def add_pending_event(m: str, event: dict[str, Any]) -> None:
+    """Add a pending mecha event to the session, merging duplicates where appropriate.
+
+    Args:
+        m: Mecha identifier.
+        event: Event dict to add.
+    """
     pending = session.setdefault("mecha_pending", {}).setdefault(m, [])
     etype = event.get("type")
     name = event.get("name")
 
     if etype == "HEAT_ASSIGNMENT":
         for existing in pending:
-            if (
-                existing.get("type") == "HEAT_ASSIGNMENT"
-                and existing.get("name") == name
-            ):
+            if existing.get("type") == "HEAT_ASSIGNMENT" and existing.get("name") == name:
                 existing["amount"] = existing.get("amount", 0.0) + event.get(
-                    "amount", 0.0
+                    "amount",
+                    0.0,
                 )
                 if abs(existing["amount"]) < 0.001:
                     pending.remove(existing)
@@ -85,12 +93,20 @@ def add_pending_event(m: str, event: Dict[str, Any]):
 
 def load_mecha_state(
     m: str,
-) -> Tuple[WikiCharacterSheet[Mecha], MechaEncounterManager, Optional[str]]:
-    m_sheet = WikiCharacterSheet.load_locate(m, cache=False)
+) -> tuple[WikiCharacterSheet[Mecha], MechaEncounterManager, str | None]:
+    """Load a mecha sheet with its current encounter state and pending events applied.
+
+    Args:
+        m: Mecha page identifier.
+
+    Returns:
+        A tuple of (character sheet, encounter manager, encounter ID or None).
+    """
+    m_sheet: WikiCharacterSheet[Any] | None = WikiCharacterSheet.load_locate(m, cache=False)
     if m_sheet is None or not isinstance(m_sheet.char, Mecha):
         abort(404)
 
-    mech = cast(Mecha, m_sheet.char)
+    mech = m_sheet.char
     history_mgr = MechaEncounterManager(WikiPage.wikipath(), m)
 
     # Get current encounter ID from session or latest
@@ -123,10 +139,8 @@ def load_mecha_state(
     # Apply pending session changes
     pending = session.get("mecha_pending", {}).get(m, [])
     for event in pending:
-        try:
+        with contextlib.suppress(Exception):
             mech.apply_event(event)
-        except Exception:
-            pass
 
     return m_sheet, history_mgr, encounter_id
 
@@ -136,7 +150,7 @@ views = Blueprint("sheets", __name__)
 
 
 def sanitize(text: str) -> str:
-    """Allows only letters, numbers, parentheses, commas, plus, minus, and spaces."""
+    """Allow only letters, numbers, parentheses, commas, plus, minus, and spaces."""
     if not text:
         return ""
     return re.sub(r"[^a-zA-Z0-9(),+\-\s]", "", text)
@@ -156,14 +170,30 @@ ordinals = [
 ]
 
 
-def system_map(selection):
+def system_map(selection: str) -> str:
+    """Map a system category to its HTMX template path.
+
+    Args:
+        selection: System category name.
+
+    Returns:
+        Template path string.
+    """
     if selection in ["offensive", "defensive", "support"]:
         selection = "generic"
 
     return f"sheets/mechasheet_htmx/{selection}.html"
 
 
-def system_map_classic(selection):
+def system_map_classic(selection: str) -> str:
+    """Map a system category to its classic template path.
+
+    Args:
+        selection: System category name.
+
+    Returns:
+        Template path string.
+    """
     if selection in ["offensive", "defensive", "support"]:
         selection = "generic"
 
@@ -171,17 +201,22 @@ def system_map_classic(selection):
 
 
 @views.route("/skills/<system>/<heading>")
-def get_skills(system, heading):
+def get_skills(system: str, heading: str) -> WerkzeugResponse:
+    """Return skills for a given system and heading as JSON.
+
+    Args:
+        system: Game system name (e.g. 'endworld').
+        heading: Skill category heading.
+
+    Returns:
+        JSON response with skill descriptions.
+    """
     if system == "context":
         system = session["character_gen"]["system"]
 
-    def flatten_skills(node):
+    def flatten_skills(node: Any) -> list[Any]:
         if hasattr(node, "children") and node.children:
-            return [
-                item
-                for child in node.children.values()
-                for item in flatten_skills(child)
-            ]
+            return [item for child in node.children.values() for item in flatten_skills(child)]
         return [node]
 
     if system == "endworld" and heading.lower() == "detail":
@@ -195,7 +230,7 @@ def get_skills(system, heading):
                 "player": "you",
                 "vice": "for roleplay purposes",
                 "category": "see the wiki :)",
-            }
+            },
         )
 
     page = f"{system}/descriptions/{heading.lower()}skills"
@@ -207,7 +242,16 @@ def get_skills(system, heading):
     return jsonify(result)
 
 
-def get_attributes(system, heading):
+def get_attributes(system: str, heading: str) -> list[str]:
+    """Look up attribute names for a system and heading from the wiki.
+
+    Args:
+        system: Game system name.
+        heading: Attribute group heading.
+
+    Returns:
+        List of attribute names.
+    """
     page = system + "/descriptions/attributes"
     p = WikiPage.load_locate(page)
     if not p:
@@ -216,13 +260,14 @@ def get_attributes(system, heading):
     attributes = md.children.get("Attributes")
     if attributes and attributes.tables:
         attributes_table = attributes.tables[0]
-        return attributes_table.column(heading, ["", "", ""])
+        return cast(list[str], attributes_table.column(heading, ["", "", ""]))
     return ["", "", ""]
 
 
 @views.route("/chargen/reset", methods=["GET"])
 @views.route("/chargen/", methods=["GET"])
-def chargen():
+def chargen() -> str | WerkzeugResponse:
+    """Render the character generator start page or redirect to login."""
     username = session.get("user", "")
     if not username:
         session["returnto"] = url_for("sheets.chargen")
@@ -230,15 +275,23 @@ def chargen():
     if "character_gen" not in session or request.path.endswith("/reset"):
         session["character_gen"] = {"stage": "start"}
         return redirect(url_for("sheets.chargen"))
-    else:
-        return render_template("sheets/chargen.html")
+    return render_template("sheets/chargen.html")
 
 
-stage_handlers = {}
+stage_handlers: dict[str, Any] = {}
 
 
-def charactergen_stage(stage):
-    def decorator(func):
+def charactergen_stage(stage: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    """Register a handler function for a character generation stage.
+
+    Args:
+        stage: Name of the stage to register.
+
+    Returns:
+        A decorator that registers the function in stage_handlers.
+    """
+
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         stage_handlers[stage] = func
         return func
 
@@ -246,7 +299,8 @@ def charactergen_stage(stage):
 
 
 @views.route("/chargen/htmx", methods=["GET"])
-def chargen_htmx():
+def chargen_htmx() -> WerkzeugResponse | str | tuple[str, int, dict[str, str]]:
+    """Dispatch the current character generation stage to its registered handler."""
     username = session.get("user", "")
     if not username:
         session["returnto"] = url_for("sheets.chargen")
@@ -256,11 +310,19 @@ def chargen_htmx():
     gen["name"] = gen.get("name", "").rsplit("/")[-1]
     stage = gen.get("stage", "start")
     handler = stage_handlers.get(stage, stage_handlers["?"])
-    return handler(gen)
+    return cast(WerkzeugResponse | str | tuple[str, int, dict[str, str]], handler(gen))
 
 
 @charactergen_stage("start")
-def chargen_start(state: dict):
+def chargen_start(state: dict[str, Any]) -> str:
+    """Render the starting stage of character generation.
+
+    Args:
+        state: Current character generation state.
+
+    Returns:
+        Rendered template HTML.
+    """
     return render_template(
         "sheets/chargen_htmx/char_gen_start.html",
         name=state.get("name", ""),
@@ -271,18 +333,20 @@ def chargen_start(state: dict):
 
 
 @charactergen_stage("prio")
-def chargen_priority(state: dict):
+def chargen_priority(state: dict[str, Any]) -> str:
+    """Render the priority assignment stage.
+
+    Args:
+        state: Current character generation state.
+
+    Returns:
+        Rendered template HTML.
+    """
     try:
         items = [x.strip() for x in state["order"].split(",")]
     except KeyError:
-        items = [
-            x.strip().strip(",")
-            for x in state.get("categories", "error").split(", ")
-            if x
-        ]
-    points = [
-        x.strip().strip(",") for x in state.get("points", "error").split(", ") if x
-    ]
+        items = [x.strip().strip(",") for x in state.get("categories", "error").split(", ") if x]
+    points = [x.strip().strip(",") for x in state.get("points", "error").split(", ") if x]
     return render_template(
         "sheets/chargen_htmx/char_gen_prio.html",
         ordinals=ordinals,
@@ -293,13 +357,18 @@ def chargen_priority(state: dict):
 
 
 @charactergen_stage("core")
-def chargen_corestats(state: dict):
+def chargen_corestats(state: dict[str, Any]) -> str:
+    """Render the core stats assignment stage.
+
+    Args:
+        state: Current character generation state.
+
+    Returns:
+        Rendered template HTML.
+    """
     heading = "Core Stats"
-    attributes = ["Resistance", "Fate", "Affinity"]
-    attributes = [
-        (x, int(state.get("attributes", {}).get(heading, {}).get(x, 1)))
-        for x in attributes
-    ]
+    attribute_names_list = ["Resistance", "Fate", "Affinity"]
+    attributes = [(x, int(state.get("attributes", {}).get(heading, {}).get(x, 1))) for x in attribute_names_list]
     return render_template(
         "sheets/chargen_htmx/char_gen_core.html",
         heading=heading,
@@ -310,7 +379,15 @@ def chargen_corestats(state: dict):
 
 
 @charactergen_stage("skills")
-def chargen_skills(state: dict):
+def chargen_skills(state: dict[str, Any]) -> str:
+    """Render the skills assignment stage.
+
+    Args:
+        state: Current character generation state.
+
+    Returns:
+        Rendered template HTML.
+    """
     order: list[str] = state.get("order", "").split(",")
     points = state.get("points", "").split(",")
     categories = []
@@ -335,18 +412,23 @@ def chargen_skills(state: dict):
 
 
 @charactergen_stage("attributes")
-def chargen_attributes(state: dict):
+def chargen_attributes(state: dict[str, Any]) -> str:
+    """Render the attributes assignment stage.
+
+    Args:
+        state: Current character generation state.
+
+    Returns:
+        Rendered template HTML.
+    """
     categories = []
     for c in state["categories"].split(","):
         c = c.strip()
         p = sum(int(x) for x in state.get("skills", {}).get(c, {}).values())
         p = 1 + (p // 2)
-        attributes = get_attributes("endworld", c)
-        attributes = [
-            (x, int(state.get("attributes", {}).get(c, {}).get(x, 1)))
-            for x in attributes
-        ]
-        categories.append({"heading": c, "points": p, "attributes": attributes})
+        attr_names = get_attributes("endworld", c)
+        attributes = [(x, int(state.get("attributes", {}).get(c, {}).get(x, 1))) for x in attr_names]
+    categories.append({"heading": c, "points": p, "attributes": attributes})
     return render_template(
         "sheets/chargen_htmx/char_gen_attributes.html",
         categories=categories,
@@ -355,7 +437,15 @@ def chargen_attributes(state: dict):
 
 
 @charactergen_stage("descriptions")
-def chargen_descriptions(state: dict):
+def chargen_descriptions(state: dict[str, Any]) -> str:
+    """Render the description/background entry stage.
+
+    Args:
+        state: Current character generation state.
+
+    Returns:
+        Rendered template HTML.
+    """
     return render_template(
         "sheets/chargen_htmx/char_gen_desc.html",
         prefill=state.get("desc", {}),
@@ -363,12 +453,28 @@ def chargen_descriptions(state: dict):
 
 
 @charactergen_stage("end")
-def chargen_end(state: dict):
+def chargen_end(state: dict[str, Any]) -> str:
+    """Render the final summary stage of character generation.
+
+    Args:
+        state: Current character generation state.
+
+    Returns:
+        Rendered template HTML.
+    """
     return render_template("sheets/chargen_htmx/char_gen_end.html", data=state)
 
 
 @charactergen_stage("?")
-def chardgen_htmx(state: dict):
+def chardgen_htmx(state: dict[str, Any]) -> tuple[str, int, dict[str, str]]:
+    """Fallback stage handler that redirects to edit page for unknown stages.
+
+    Args:
+        state: Current character generation state.
+
+    Returns:
+        Empty response with HX-Redirect header.
+    """
     state["stage"] = "start"
     session.modified = True
     return (
@@ -379,7 +485,15 @@ def chardgen_htmx(state: dict):
 
 
 @views.route("/edit_from_chargen/<name>")
-def edit_from_chargen(name):
+def edit_from_chargen(name: str) -> str:
+    """Create a wiki page from character generation data and open the editor.
+
+    Args:
+        name: Character name.
+
+    Returns:
+        Rendered editor template.
+    """
     path = Path("character") / name
     gen = session["character_gen"]
     p = WikiPage.load(path)
@@ -422,12 +536,14 @@ def edit_from_chargen(name):
 
 
 @views.route("/add-detail-row")
-def add_detail_row():
+def add_detail_row() -> str:
+    """Return an empty detail row template for HTMX dynamic addition."""
     return render_template("sheets/chargen_htmx/detail_row.html")
 
 
 @views.route("/chargen/", methods=["POST"])
-def handle_chargen():
+def handle_chargen() -> WerkzeugResponse | str | tuple[str, int, dict[str, str]]:
+    """Process character generation form POST data and update session state."""
     data = {k: v for k, v in list(request.form.lists())}
     if "csrf_token" in data:
         data.pop("csrf_token")
@@ -453,22 +569,22 @@ def handle_chargen():
                         continue
                     section_for_heading[key] = data["value"][i]
             continue
-        else:
-            v = v[0]
-        gen[k] = v
+        val = v[0]
+        gen[k] = val
         session.modified = True
     return chargen_htmx()
 
 
 @views.route("/doroll", methods=["POST"])
-def doroll():
+def doroll() -> WerkzeugResponse | tuple[WerkzeugResponse, int]:
+    """Perform a dice roll using the user's character sheet stats and broadcast results."""
     if not session.get("logged_in"):
         return (
             jsonify({"status": "error", "message": "unauthorized"}),
             401,
         )
     ul = Userlist()
-    username = session.get("user")
+    username = str(session.get("user") or "")
     u = ul.loaduserbyname(username)
     if not u:
         return jsonify({"status": "error", "message": "user not found"}), 404
@@ -480,7 +596,7 @@ def doroll():
             400,
         )
 
-    m_sheet = WikiCharacterSheet.load_locate(str(configchar))
+    m_sheet: WikiCharacterSheet[Any] | None = WikiCharacterSheet.load_locate(str(configchar))
     if not m_sheet or not isinstance(m_sheet.char, FenCharacter):
         return jsonify({"status": "error", "message": "no valid character sheet"}), 404
 
@@ -488,15 +604,11 @@ def doroll():
     data = request.get_json() or []
 
     # labels of stats to look up
-    stat_labels = {
-        p.get("label", "")
-        for p in data
-        if isinstance(p, dict) and p.get("type") == "stat"
-    }
+    stat_labels = {p.get("label", "") for p in data if isinstance(p, dict) and p.get("type") == "stat"}
     vals = {}
     if stat_labels:
         for cat in c.Categories.values():
-            for val_type in cat.keys():
+            for val_type in cat:
                 category_data = cat[val_type]
                 for item in stat_labels:
                     if item in category_data:
@@ -547,7 +659,8 @@ def doroll():
 
     # Handle reroll if present
     reroll = next(
-        (p for p in data if isinstance(p, dict) and p.get("type") == "reroll"), None
+        (p for p in data if isinstance(p, dict) and p.get("type") == "reroll"),
+        None,
     )
     if reroll:
         rv = reroll.get("val", "0")
@@ -561,13 +674,13 @@ def doroll():
         r = dp.do_roll(roll_code)
         roll_result = r.roll_v()
     except Exception as e:
-        log.error(f"Local roll failed: {e}")
+        log.exception(f"Local roll failed: {e}")
         roll_result = f"Error: {e}"
 
     # Prepare group message and Discord mention
     discord_config = u.config("discord", "")
     # Extract only digits from the start of the config (handles "ID(username)" format)
-    discord_id_match = re.match(r"(\d+)", discord_config)
+    discord_id_match = re.match(r"(\d+)", discord_config or "")
     discord_id = discord_id_match.group(1) if discord_id_match else ""
 
     mention = f"<@{discord_id}>" if discord_id else session["user"]
@@ -626,19 +739,35 @@ def doroll():
                     result=roll_result,
                     time=timestamp,
                 ),
-            }
+            },
         )
     except Exception as e:
-        log.error(f"SSE broadcast failed: {e}")
+        log.exception(f"SSE broadcast failed: {e}")
 
     return jsonify({"status": "ok", "roll_result": roll_result})
 
 
-def generate_meter_segments(fills, colors, total, names):
+def generate_meter_segments(
+    fills: list[float],
+    colors: list[str],
+    total: float,
+    names: list[str],
+) -> list[dict[str, Any]]:
+    """Generate segment data for a stacked meter visualisation.
+
+    Args:
+        fills: List of segment fill values.
+        colors: List of colours for segments.
+        total: Total value for percentage calculation.
+        names: List of segment names.
+
+    Returns:
+        List of segment dicts with fill, color, offset, name.
+    """
     if total <= 0:
         return []
     segments = []
-    bottom = 0
+    bottom: float = 0.0
     for i, fill in enumerate(fills):
         color = colors[i % len(colors)]
         percent = (100 * fill) / total
@@ -647,32 +776,58 @@ def generate_meter_segments(fills, colors, total, names):
             percent = max(0, 100 - offset)
             color = "var(--warn-color)"
         segments.append(
-            {"fill": percent, "color": color, "offset": offset, "name": names[i]}
+            {"fill": percent, "color": color, "offset": offset, "name": names[i]},
         )
         bottom += fill
     return segments
 
 
 @views.route("/mecha_status_summary/<path:m>")
-def mecha_status_summary(m):
+def mecha_status_summary(m: str) -> str:
+    """Render the mecha status bar summary panel.
+
+    Args:
+        m: Mecha page identifier.
+
+    Returns:
+        Rendered status bar HTML.
+    """
     m_sheet, _, _ = load_mecha_state(m)
-    mech = cast(Mecha, m_sheet.char)
+    mech = cast("Mecha", m_sheet.char)
     return render_template(
-        "sheets/mechasheet_htmx/status_bar.html", mech=mech, identifier=m
+        "sheets/mechasheet_htmx/status_bar.html",
+        mech=mech,
+        identifier=m,
     )
 
 
 @views.route("/mecha_movement_summary/<path:m>")
-def mecha_movement_summary(m):
+def mecha_movement_summary(m: str) -> str:
+    """Render the mecha current speed summary.
+
+    Args:
+        m: Mecha page identifier.
+
+    Returns:
+        Speed markup string.
+    """
     m_sheet, _, _ = load_mecha_state(m)
-    mech = cast(Mecha, m_sheet.char)
+    mech = cast("Mecha", m_sheet.char)
     return Markup(
-        f"Speed: <span class='highlight'>{round(mech.current_speed, 1)}</span> km/h"
+        f"Speed: <span class='highlight'>{round(mech.current_speed, 1)}</span> km/h",
     )
 
 
 @views.route("/mecha_timeline/<path:m>")
-def mecha_timeline(m):
+def mecha_timeline(m: str) -> str:
+    """Render the encounter timeline with playback controls.
+
+    Args:
+        m: Mecha page identifier.
+
+    Returns:
+        Rendered timeline HTML.
+    """
     _, history_mgr, encounter_id = load_mecha_state(m)
     if not encounter_id:
         return "<p style='color: var(--text-dim); font-style: italic;'>No encounter history found.</p>"
@@ -692,23 +847,47 @@ def mecha_timeline(m):
 
 
 @views.route("/mecha_energy_summary/<path:m>")
-def mecha_energy_summary(m):
+def mecha_energy_summary(m: str) -> str:
+    """Render the mecha energy output summary.
+
+    Args:
+        m: Mecha page identifier.
+
+    Returns:
+        Energy output markup string.
+    """
     m_sheet, _, _ = load_mecha_state(m)
-    mech = cast(Mecha, m_sheet.char)
+    mech = cast("Mecha", m_sheet.char)
     return Markup(f"Output: <span class='highlight'>{mech.energy_output()}</span>")
 
 
 @views.route("/mecha_heat_summary/<path:m>")
-def mecha_heat_summary(m):
+def mecha_heat_summary(m: str) -> str:
+    """Render the mecha heat/flux summary.
+
+    Args:
+        m: Mecha page identifier.
+
+    Returns:
+        Heat markup string.
+    """
     m_sheet, _, _ = load_mecha_state(m)
-    mech = cast(Mecha, m_sheet.char)
+    mech = cast("Mecha", m_sheet.char)
     return Markup(
-        f"Flux: <span class='highlight'>{round(mech.fluxpool, 1)} / {round(mech.fluxpool_max(), 1)}</span>"
+        f"Flux: <span class='highlight'>{round(mech.fluxpool, 1)} / {round(mech.fluxpool_max(), 1)}</span>",
     )
 
 
 @views.route("/mecha_start_encounter/<path:m>", methods=["POST"])
-def mecha_start_encounter(m):
+def mecha_start_encounter(m: str) -> WerkzeugResponse:
+    """Start a new encounter for the given mecha.
+
+    Args:
+        m: Mecha page identifier.
+
+    Returns:
+        Redirect to the mecha sheet.
+    """
     history_mgr = MechaEncounterManager(WikiPage.wikipath(), m)
     # Default name is the applied loadout
     encounter_id = history_mgr.start_new_encounter(custom_name="Default")
@@ -722,7 +901,16 @@ def mecha_start_encounter(m):
 
 
 @views.route("/mecha_select_encounter/<path:m>/<id>", methods=["POST"])
-def mecha_select_encounter(m, id):
+def mecha_select_encounter(m: str, id: str) -> WerkzeugResponse:
+    """Select an existing encounter to work with.
+
+    Args:
+        m: Mecha page identifier.
+        id: Encounter ID to select.
+
+    Returns:
+        Redirect to the mecha sheet.
+    """
     session.setdefault("mecha_encounter", {})[m] = id
     session.setdefault("mecha_pending", {})[m] = []
     # Reset playback turn so load_mecha_state finds the latest for this encounter
@@ -733,7 +921,16 @@ def mecha_select_encounter(m, id):
 
 
 @views.route("/mecha_rename_encounter/<path:m>/<id>", methods=["POST"])
-def mecha_rename_encounter(m, id):
+def mecha_rename_encounter(m: str, id: str) -> WerkzeugResponse:
+    """Rename an encounter.
+
+    Args:
+        m: Mecha page identifier.
+        id: Encounter ID to rename.
+
+    Returns:
+        Redirect to the mecha sheet.
+    """
     new_name = request.form.get("new_encounter_name")
     if new_name:
         history_mgr = MechaEncounterManager(WikiPage.wikipath(), m)
@@ -743,16 +940,20 @@ def mecha_rename_encounter(m, id):
 
 
 @views.route("/mecha_next_turn_view/<path:m>")
-def mecha_next_turn_view(m):
+def mecha_next_turn_view(m: str) -> str:
+    """Render the next-turn preview panel for a mecha."""
     m_sheet, _, _ = load_mecha_state(m)
-    mech = cast(Mecha, m_sheet.char)
+    mech = cast("Mecha", m_sheet.char)
     return render_template(
-        "sheets/mechasheet_htmx/next_turn_view.html", mech=mech, identifier=m
+        "sheets/mechasheet_htmx/next_turn_view.html",
+        mech=mech,
+        identifier=m,
     )
 
 
 @views.route("/mecha_assign_heat/<n>/<path:m>", methods=["POST"])
-def mecha_assign_heat(n, m):
+def mecha_assign_heat(n: str, m: str) -> tuple[str, dict[str, str]]:
+    """Assign heat to a mecha heat sink and return the updated heat UI fragment."""
     if m != "mechtest":
         checklogin()
 
@@ -761,7 +962,7 @@ def mecha_assign_heat(n, m):
 
     n = decode_id(n)
     m_sheet, _, _ = load_mecha_state(m)
-    mech = cast(Mecha, m_sheet.char)
+    mech = cast("Mecha", m_sheet.char)
     sys = mech.Heat.get(n)
     if not sys:
         abort(404)
@@ -772,23 +973,25 @@ def mecha_assign_heat(n, m):
             delta = target_val - sys.current
             if abs(delta) > 0.001:
                 add_pending_event(
-                    m, {"type": "HEAT_ASSIGNMENT", "name": n, "amount": delta}
+                    m,
+                    {"type": "HEAT_ASSIGNMENT", "name": n, "amount": delta},
                 )
-        except ValueError, TypeError:
+        except (ValueError, TypeError):
             abort(400)
     elif amount is not None:
         try:
             delta = float(amount)
             if abs(delta) > 0.001:
                 add_pending_event(
-                    m, {"type": "HEAT_ASSIGNMENT", "name": n, "amount": delta}
+                    m,
+                    {"type": "HEAT_ASSIGNMENT", "name": n, "amount": delta},
                 )
-        except ValueError, TypeError:
+        except (ValueError, TypeError):
             abort(400)
 
     # Re-load state to reflect change in UI
     m_sheet, _, _ = load_mecha_state(m)
-    mech = cast(Mecha, m_sheet.char)
+    mech = cast("Mecha", m_sheet.char)
     sys = mech.Heat.get(n)
     if not sys:
         abort(404)
@@ -803,7 +1006,8 @@ def mecha_assign_heat(n, m):
 
 
 @views.route("/mecha_commit_turn/<path:m>", methods=["POST"])
-def mecha_commit_turn(m):
+def mecha_commit_turn(m: str) -> WerkzeugResponse:
+    """Commit all pending mecha actions as a turn and save the encounter."""
     data = request.json
     print(f"DEBUG: Processing commit for {m}: {data}")
     if not data:
@@ -811,9 +1015,7 @@ def mecha_commit_turn(m):
 
     m_sheet, history_mgr, encounter_id = load_mecha_state(m)
     if not encounter_id:
-        encounter_id = (
-            history_mgr.get_latest_encounter_id() or history_mgr.start_new_encounter()
-        )
+        encounter_id = history_mgr.get_latest_encounter_id() or history_mgr.start_new_encounter()
         session.setdefault("mecha_encounter", {})[m] = encounter_id
 
     # 1. Truncate log if we are in the past
@@ -822,7 +1024,7 @@ def mecha_commit_turn(m):
     if playback_turn is not None:
         history_mgr.truncate_log(encounter_id, playback_turn)
 
-    mech = cast(Mecha, m_sheet.char)
+    mech = cast("Mecha", m_sheet.char)
 
     # 2. Add pending actions from the JSON data
     # Speed
@@ -875,7 +1077,7 @@ def mecha_commit_turn(m):
     # 3. Process the turn transition
     summary = mech.next_turn()
     print(
-        f"DEBUG: Commit turn result: new_turn={mech.turn}, overheated={summary.get('overheated')}"
+        f"DEBUG: Commit turn result: new_turn={mech.turn}, overheated={summary.get('overheated')}",
     )
 
     # 4. Log individual transition events first so they are replayed
@@ -906,7 +1108,7 @@ def mecha_commit_turn(m):
                     (e["target"] for e in summary["events"] if e["type"] == "OVERHEAT"),
                     None,
                 ),
-            }
+            },
         )
 
     session.modified = True
@@ -920,32 +1122,33 @@ def mecha_commit_turn(m):
 
 
 @views.route("/mecha_undo/<path:m>", methods=["POST"])
-def mecha_undo(m):
+def mecha_undo(m: str) -> tuple[str, int, dict[str, str]] | tuple[str, int]:
+    """Undo the last pending change or step back one turn in playback."""
     # 1. Try to undo pending changes first
     pending = session.get("mecha_pending", {}).get(m, [])
     if pending:
         pending.pop()
         session.modified = True
         return "", 204, {"HX-Refresh": "true"}
-    else:
-        # 2. If no pending, move playback pointer back
-        playback_session = session.setdefault("mecha_playback_turn", {})
-        current_turn = playback_session.get(m)
-        if current_turn is None:
-            _, _, encounter_id = load_mecha_state(m)
-            current_turn = session.get("mecha_playback_turn", {}).get(m, 0)
+    # 2. If no pending, move playback pointer back
+    playback_session = session.setdefault("mecha_playback_turn", {})
+    current_turn = playback_session.get(m)
+    if current_turn is None:
+        _, _, _encounter_id = load_mecha_state(m)
+        current_turn = session.get("mecha_playback_turn", {}).get(m, 0)
 
-        if current_turn > 0:
-            session.setdefault("mecha_playback_turn", {})[m] = current_turn - 1
-            session.modified = True
-            return "", 204, {"HX-Refresh": "true"}
+    if current_turn > 0:
+        session.setdefault("mecha_playback_turn", {})[m] = current_turn - 1
+        session.modified = True
+        return "", 204, {"HX-Refresh": "true"}
 
     return "", 204
 
 
 @views.route("/mecha_redo/<path:m>", methods=["POST"])
-def mecha_redo(m):
-    m_sheet, history_mgr, encounter_id = load_mecha_state(m)
+def mecha_redo(m: str) -> tuple[str, int, dict[str, str]] | tuple[str, int]:
+    """Step forward one turn in playback, redoing a previously undone commit."""
+    _m_sheet, history_mgr, encounter_id = load_mecha_state(m)
     if not encounter_id:
         return "", 204
 
@@ -970,7 +1173,8 @@ def mecha_redo(m):
 
 
 @views.route("/mecha_restore_state/<path:m>/<int:turn>", methods=["POST"])
-def mecha_restore_state(m, turn):
+def mecha_restore_state(m: str, turn: int) -> tuple[str, int, dict[str, str]]:
+    """Set the playback pointer to a specific turn (non-destructive)."""
     # Non-destructive: just move the pointer
     playback_session = session.setdefault("mecha_playback_turn", {})
     playback_session[m] = turn
@@ -983,12 +1187,13 @@ def mecha_restore_state(m, turn):
 
 
 @views.route("/mecha_next_turn/<path:m>", methods=["POST"])
-def mecha_next_turn(m):
+def mecha_next_turn(m: str) -> tuple[str, int, dict[str, str]]:
+    """Advance the mecha encounter by one turn, committing pending changes."""
     if m != "mechtest":
         checklogin()
 
     m_sheet, history_mgr, encounter_id = load_mecha_state(m)
-    mech = cast(Mecha, m_sheet.char)
+    mech = cast("Mecha", m_sheet.char)
 
     # 1. Start encounter if none exists
     if not encounter_id:
@@ -1046,7 +1251,7 @@ def mecha_next_turn(m):
                     (e["target"] for e in summary["events"] if e["type"] == "OVERHEAT"),
                     None,
                 ),
-            }
+            },
         )
         session.modified = True
 
@@ -1054,7 +1259,8 @@ def mecha_next_turn(m):
 
 
 @views.route("/mecha_use/<s>/<n>/<path:m>", methods=["POST"])
-def mecha_use(s: str, n: str, m):
+def mecha_use(s: str, n: str, m: str) -> tuple[str, dict[str, str]]:
+    """Toggle a mecha system and return the updated system template fragment."""
     if m != "mechtest":
         checklogin()
     n = decode_id(n)
@@ -1062,7 +1268,7 @@ def mecha_use(s: str, n: str, m):
     # Add to pending session changes
     # Determine state for toggle
     m_sheet, _, _ = load_mecha_state(m)
-    mech = cast(Mecha, m_sheet.char)
+    mech = cast("Mecha", m_sheet.char)
     sys = mech.get_system(n)
     if sys:
         new_state = "inactive" if sys.is_active() or sys.is_booting() else "active"
@@ -1070,7 +1276,7 @@ def mecha_use(s: str, n: str, m):
 
     # Re-load state to reflect change in UI
     m_sheet, _, _ = load_mecha_state(m)
-    mech = cast(Mecha, m_sheet.char)
+    mech = cast("Mecha", m_sheet.char)
     syscat = mech.get_syscat(s.title())
     system = syscat.get(n)
     if not system:
@@ -1078,15 +1284,16 @@ def mecha_use(s: str, n: str, m):
 
     template = system_map(s.lower())
     return render_template(template, system=system, identifier=m, sys_category=s), {
-        "HX-Trigger": "resource-updated"
+        "HX-Trigger": "resource-updated",
     }
 
 
 @views.route("/mecha_sys/<s>/<n>/<path:m>")
-def mecha_sys(s: str, n: str, m):
+def mecha_sys(s: str, n: str, m: str) -> str:
+    """Render a single mecha system panel."""
     n = decode_id(n)
     m_sheet, _, _ = load_mecha_state(m)
-    mech = cast(Mecha, m_sheet.char)
+    mech = cast("Mecha", m_sheet.char)
     syscat = mech.get_syscat(s.capitalize())
     if not syscat:
         abort(404)
@@ -1101,13 +1308,14 @@ def mecha_sys(s: str, n: str, m):
 
 
 @views.route("/mecha_system_detail/<path:m>/<s>/<n>")
-def mecha_system_detail(m, s, n):
+def mecha_system_detail(m: str, s: str, n: str) -> str:
+    """Render a detailed view of a mecha system with its wiki documentation."""
     if m != "mechtest":
         checklogin()
 
     n = decode_id(n)
     m_sheet, _, _ = load_mecha_state(m)
-    mech = cast(Mecha, m_sheet.char)
+    mech = cast("Mecha", m_sheet.char)
     syscat = mech.get_syscat(s.capitalize())
     if not syscat:
         abort(404)
@@ -1118,8 +1326,10 @@ def mecha_system_detail(m, s, n):
     from gamepack.WikiPage import WikiPage
 
     base_page = WikiPage.load_locate(sys.name)
+    if not base_page:
+        abort(404)
 
-    from NossiSite.sheet_helpers import infolet_filler, infolet_extractor
+    from NossiSite.sheet_helpers import infolet_extractor, infolet_filler
 
     return render_template(
         "sheets/mecha_system_detail.html",
@@ -1133,7 +1343,8 @@ def mecha_system_detail(m, s, n):
 
 
 @views.route("/mecha_set_roll/<path:m>/<s>/<n>", methods=["POST"])
-def mecha_set_roll(m, s, n):
+def mecha_set_roll(m: str, s: str, n: str) -> str:
+    """Set a pending roll value for a mecha system."""
     if m != "mechtest":
         checklogin()
 
@@ -1143,12 +1354,12 @@ def mecha_set_roll(m, s, n):
         try:
             val = int(roll)
             add_pending_event(m, {"type": "SYSTEM_ROLL", "name": n, "value": val})
-        except ValueError, TypeError:
+        except (ValueError, TypeError):
             abort(400)
 
     # Re-load state
     m_sheet, _, _ = load_mecha_state(m)
-    mech = cast(Mecha, m_sheet.char)
+    mech = cast("Mecha", m_sheet.char)
     syscat = mech.get_syscat(s.capitalize())
     sys = syscat.get(n)
     if not sys:
@@ -1159,12 +1370,13 @@ def mecha_set_roll(m, s, n):
 
 
 @views.route("/mecha_update_sector/<path:m>/<name>", methods=["POST"])
-def mecha_update_sector(m, name):
+def mecha_update_sector(m: str, name: str) -> str:
+    """Update or create a mecha sector (damage, malfunctions)."""
     if m != "mechtest":
         checklogin()
 
     m_sheet, _, _ = load_mecha_state(m)
-    mech = cast(Mecha, m_sheet.char)
+    mech = cast("Mecha", m_sheet.char)
 
     if name == "NEW":
         new_name = request.form.get("new_name")
@@ -1175,10 +1387,8 @@ def mecha_update_sector(m, name):
         malfunctions = request.form.get("malfunctions")
         if name in mech.Sectors:
             if damage is not None:
-                try:
+                with contextlib.suppress(ValueError, TypeError):
                     mech.Sectors[name]["Damage"] = int(damage)
-                except ValueError, TypeError:
-                    pass
             if malfunctions is not None:
                 mech.Sectors[name]["Malfunctions"] = malfunctions
 
@@ -1188,12 +1398,15 @@ def mecha_update_sector(m, name):
         m_sheet.save_low_prio("test-session")
 
     return render_template(
-        "sheets/mechasheet_htmx/overview_ui.html", mech=mech, identifier=m
+        "sheets/mechasheet_htmx/overview_ui.html",
+        mech=mech,
+        identifier=m,
     )
 
 
 @views.route("/mecha_check_modals/<path:m>")
-def mecha_check_modals(m):
+def mecha_check_modals(m: str) -> str | tuple[str, int]:
+    """Check for pending modals (e.g. overheat) and render the first one."""
     modals = session.get("mecha_modals", {}).get(m, [])
     if not modals:
         return "", 204
@@ -1210,7 +1423,8 @@ def mecha_check_modals(m):
 
 
 @views.route("/mecha_clear_modals/<path:m>", methods=["POST"])
-def mecha_clear_modals(m):
+def mecha_clear_modals(m: str) -> tuple[str, int]:
+    """Clear all pending modals for a given mecha."""
     if "mecha_modals" in session and m in session["mecha_modals"]:
         session["mecha_modals"][m] = []
         session.modified = True
@@ -1218,9 +1432,10 @@ def mecha_clear_modals(m):
 
 
 @views.route("/mecha_overheat_redirect/<path:m>/<target>")
-def mecha_overheat_redirect(m, target):
+def mecha_overheat_redirect(m: str, target: str) -> str:
+    """Render the overview UI with a suggested system after an overheat event."""
     m_sheet, _, _ = load_mecha_state(m)
-    mech = cast(Mecha, m_sheet.char)
+    mech = cast("Mecha", m_sheet.char)
     return render_template(
         "sheets/mechasheet_htmx/overview_ui.html",
         mech=mech,
@@ -1230,16 +1445,20 @@ def mecha_overheat_redirect(m, target):
 
 
 @views.route("/mech_energy_meter/<path:m>")
-def energy_meter(m):
+def energy_meter(m: str) -> str:
+    """Render the mecha energy allocation meter."""
     m_sheet, _, _ = load_mecha_state(m)
-    mech = cast(Mecha, m_sheet.char)
+    mech = cast("Mecha", m_sheet.char)
     current_max = mech.energy_budget()
     overall_max = mech.energy_total()
-    systems, active = mech.energy_allocation()
+    systems, _active = mech.energy_allocation()
     fills = [x.energy for x in systems]
     colors = ["var(--secondary-color)", "var(--primary-color)"]
     segments = generate_meter_segments(
-        fills, colors, current_max, [x.name for x in systems]
+        fills,
+        colors,
+        current_max,
+        [x.name for x in systems],
     )
     return render_template(
         "sheets/mechasheet_htmx/bar.html",
@@ -1250,9 +1469,10 @@ def energy_meter(m):
 
 
 @views.route("/mech_heat_ui/<path:m>")
-def mech_heat_ui(m):
+def mech_heat_ui(m: str) -> str:
+    """Render the complete mecha heat/flux management UI panel."""
     m_sheet, _, _ = load_mecha_state(m)
-    mech = cast(Mecha, m_sheet.char)
+    mech = cast("Mecha", m_sheet.char)
     total_flux = mech.fluxpool_max()
     current_flux = mech.fluxpool
     projected_gen = mech.projected_flux()
@@ -1282,9 +1502,7 @@ def mech_heat_ui(m):
     for cat in ["Movement", "Energy", "Heat", "Offensive", "Defensive", "Support"]:
         for sys in getattr(mech, cat).values():
             if sys.is_active() or sys.is_booting():
-                h = sys.amount * (
-                    sum(sys.heats.values()) if hasattr(sys, "heats") else sys.heat
-                )
+                h = sys.amount * (sum(sys.heats.values()) if hasattr(sys, "heats") else sys.heat)
                 if h > 0:
                     producers.append({"name": sys.name, "amount": h})
 
@@ -1304,16 +1522,17 @@ def mech_heat_ui(m):
 
 
 @views.route("/sheet/<path:c>")
-def sheet(c):
+def sheet(c: str) -> str | WerkzeugResponse:
+    """Render or redirect to a character sheet, mecha, or wiki page."""
     try:
-        s = WikiCharacterSheet.load_locate(c, cache=False)
+        s: WikiCharacterSheet[Any] | None = WikiCharacterSheet.load_locate(c, cache=False)
         if s:
             if isinstance(s.char, Mecha):
                 s, _, _ = load_mecha_state(c)
 
             rendered = render_sheet(s)
             if rendered:
-                return rendered
+                return cast("str | WerkzeugResponse", rendered)
             return redirect(url_for("wiki.wikipage", page=c))
 
         flash("Error: not found. Create Character?")
@@ -1326,29 +1545,31 @@ def sheet(c):
 
 
 @views.route("/sheet/<path:m>/unmodified")
-def sheet_unmodified(m):
-    m_sheet = WikiCharacterSheet.load_locate(m)
+def sheet_unmodified(m: str) -> str:
+    """Render the classic mecha sheet without encounter state applied."""
+    m_sheet: WikiCharacterSheet[Any] | None = WikiCharacterSheet.load_locate(m)
     if not m_sheet or not isinstance(m_sheet.char, Mecha):
         abort(404)
     return render_template(
-        "sheets/mechasheet_classic.html", mech=m_sheet.char, identifier=m
+        "sheets/mechasheet_classic.html",
+        mech=m_sheet.char,
+        identifier=m,
     )
 
 
 @views.route("/mecha_movement_graph/<path:m>")
-def mecha_movement_graph(m):
+def mecha_movement_graph(m: str) -> str:
+    """Render the mecha movement speed graph."""
     m_sheet, _, _ = load_mecha_state(m)
-    mech = cast(Mecha, m_sheet.char)
+    mech = cast("Mecha", m_sheet.char)
     data = mech.speeds()
     ns_max_time = 1
     ns_max_speed = 1
     for _, sys in data.items():
         for t, v in sys["speeds"].items():
             ti = int(t)
-            if ti > ns_max_time:
-                ns_max_time = ti
-            if v > ns_max_speed:
-                ns_max_speed = v
+            ns_max_time = max(ns_max_time, ti)
+            ns_max_speed = max(ns_max_speed, v)
 
     return render_template(
         "sheets/mechasheet_htmx/movement_graph.html",
@@ -1361,5 +1582,6 @@ def mecha_movement_graph(m):
 
 @views.route("/pbta/<path:c>")
 @views.route("/fensheet/<path:c>")
-def oldsheet(c):
+def oldsheet(c: str) -> WerkzeugResponse:
+    """Redirect old sheet URLs to the unified sheet route."""
     return redirect(url_for("sheets.sheet", c=c))

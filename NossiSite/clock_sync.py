@@ -1,11 +1,16 @@
+"""Synchronises clock widgets between wiki pages and the database."""
+
 import logging
-from Data import connect_db
+
 from gamepack.WikiPage import WikiPage
+
+from Data import connect_db
 
 log = logging.getLogger(__name__)
 
 
-def sync_clocks_with_db():
+def sync_clocks_with_db() -> None:
+    """Scan all wiki pages for clock definitions and sync their values into the clocks table."""
     log.debug("Starting clock synchronization with database.")
     db = connect_db("sync_clocks")
 
@@ -18,7 +23,7 @@ def sync_clocks_with_db():
             total_val   INTEGER NOT NULL,
             PRIMARY KEY (page_id, clock_name)
         );
-    """
+    """,
     )
 
     all_clocks = []
@@ -37,13 +42,13 @@ def sync_clocks_with_db():
                 total = int(match.group("maximum"))
                 all_clocks.append((page_id, name, current, total))
         except Exception as e:
-            log.error(f"Error parsing clock in {md_file}: {e}")
+            log.exception(f"Error parsing clock in {md_file}: {e}")
 
     cursor = db.cursor()
     cursor.execute("BEGIN TRANSACTION")
     try:
         cursor.execute(
-            "CREATE TEMP TABLE temp_clocks (page_id TEXT, clock_name TEXT, current_val INTEGER, total_val INTEGER)"
+            "CREATE TEMP TABLE temp_clocks (page_id TEXT, clock_name TEXT, current_val INTEGER, total_val INTEGER)",
         )
         cursor.executemany("INSERT INTO temp_clocks VALUES (?, ?, ?, ?)", all_clocks)
 
@@ -53,7 +58,7 @@ def sync_clocks_with_db():
             SET current_val = t.current_val, total_val = t.total_val
             FROM temp_clocks t
             WHERE clocks.page_id = t.page_id AND clocks.clock_name = t.clock_name
-        """
+        """,
         )
 
         cursor.execute(
@@ -63,7 +68,7 @@ def sync_clocks_with_db():
             FROM temp_clocks t
             LEFT JOIN clocks c ON t.page_id = c.page_id AND t.clock_name = c.clock_name
             WHERE c.clock_name IS NULL
-        """
+        """,
         )
 
         cursor.execute(
@@ -73,7 +78,7 @@ def sync_clocks_with_db():
                 SELECT 1 FROM temp_clocks t
                 WHERE t.page_id = clocks.page_id AND t.clock_name = clocks.clock_name
             )
-        """
+        """,
         )
 
         cursor.execute("DROP TABLE temp_clocks")
@@ -81,5 +86,5 @@ def sync_clocks_with_db():
         log.debug("Clock synchronization completed.")
     except Exception as e:
         db.rollback()
-        log.error(f"Clock synchronization failed: {e}")
+        log.exception(f"Clock synchronization failed: {e}")
         raise

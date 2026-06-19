@@ -1,26 +1,36 @@
-import pytest
+"""Tests for HTMX fragment rendering of mecha sheet templates."""
+
+import contextlib
 from pathlib import Path
-from flask import render_template
-from NossiSite.base import app
-from gamepack.WikiPage import WikiPage
-from gamepack.endworld.Mecha import Mecha
-from gamepack.endworld.System import System
-from gamepack.endworld.HeatSystem import HeatSystem
+from unittest.mock import patch
+
+import pytest
+from flask import Flask, render_template
 from gamepack.endworld.EnergySystem import EnergySystem
+from gamepack.endworld.HeatSystem import HeatSystem
+from gamepack.endworld.Mecha import Mecha
 from gamepack.endworld.MovementSystem import MovementSystem
+from gamepack.endworld.OffensiveSystem import OffensiveSystem
+from gamepack.WikiPage import WikiPage
+
+from NossiSite.base import app
 
 
 @pytest.fixture
-def mecha_instance():
+def mecha_instance() -> Mecha:
+    """Create a Mecha instance with one system of each type for template rendering."""
     m = Mecha()
-    m.Offensive["Gun"] = System(
-        "Gun", {"energy": 10, "heat": 5, "enabled": "[x]", "amount": 1}
+    m.Offensive["Gun"] = OffensiveSystem(
+        "Gun",
+        {"energy": 10, "heat": 5, "enabled": "[x]", "amount": 1},
     )
     m.Heat["Sink"] = HeatSystem(
-        "Sink", {"capacity": 100, "flux": 10, "enabled": "[x]", "amount": 1}
+        "Sink",
+        {"capacity": 100, "flux": 10, "enabled": "[x]", "amount": 1},
     )
     m.Energy["Reactor"] = EnergySystem(
-        "Reactor", {"energy": 100, "mass": 10, "amount": 1}
+        "Reactor",
+        {"energy": 100, "mass": 10, "amount": 1},
     )
     m.Movement["Wheels"] = MovementSystem(
         "Wheels",
@@ -37,11 +47,10 @@ def mecha_instance():
 
 
 @pytest.fixture
-def test_app():
-    # Mock set_wikipath to prevent errors during import
-    WikiPage.set_wikipath = lambda path: None
-
-    from NossiSite import sheets, views, wiki
+def test_app() -> Flask:
+    """Create a Flask test app with all blueprints registered for HTMX tests."""
+    with patch.object(WikiPage, "set_wikipath"):
+        from NossiSite import sheets, views, wiki
 
     if "sheets" not in app.blueprints:
         app.register_blueprint(sheets.views)
@@ -54,15 +63,14 @@ def test_app():
     register_helpers(app)
 
     # Ensure wikipath is set for tests
-    try:
+    with contextlib.suppress(Exception):
         WikiPage.set_wikipath(Path("wiki"))
-    except Exception:
-        pass
 
     return app
 
 
-def test_render_htmx_fragments(test_app, mecha_instance):
+def test_render_htmx_fragments(test_app: Flask, mecha_instance: Mecha) -> None:
+    """Verify all HTMX mecha sheet fragments render without error and contain expected content."""
     with test_app.test_request_context():
         # Test generic system
         rendered = render_template(

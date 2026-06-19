@@ -1,11 +1,14 @@
+"""Page transclusion and section inclusion for wiki markdown."""
+
 import re
-from NossiPack.markdown.base import NossiTag, WikiEnvironment
+
 from gamepack.WikiPage import WikiPage
+
+from NossiPack.markdown.base import NossiTag, WikiEnvironment
 
 
 class TranscludeTag(NossiTag):
-    """
-    Include content from another page: `[!pagename]`
+    """Include content from another page: `[!pagename]`.
 
     Fetches a wiki page and inserts it inline, rendered through the full
     markdown pipeline. Transcluded content wraps in a `.transcluded` div.
@@ -25,6 +28,7 @@ class TranscludeTag(NossiTag):
     Examples:
       [!endworld/mecha/systems/tables#heavy-shield|Heavy Shield Table]
       [!demo#demo-foldable]
+
     """
 
     priority = 20
@@ -38,14 +42,39 @@ class TranscludeTag(NossiTag):
     pattern = r"\[!(?![tq]:)(?P<page>[^#|\]]+?)(?:#(?P<fragment>[^|\]]*?))?(?:\|(?P<text>[^\]]*?))?\]"
 
     transclude_re = re.compile(
-        r"\[!(?![tq]:)(?P<page>[^#|\]]+?)(?:#(?P<fragment>[^|\]]*?))?(?:\|(?P<text>[^\]]*?))?\]"
+        r"\[!(?![tq]:)(?P<page>[^#|\]]+?)(?:#(?P<fragment>[^|\]]*?))?(?:\|(?P<text>[^\]]*?))?\]",
     )
     heading_re = re.compile(r"^(#{1,6})\s+(.+?)(?:\s+#+\s*)?$", re.MULTILINE)
 
-    def post_process(self, html: str, env: WikiEnvironment) -> str:
+    def post_process(self, html: str, env: WikiEnvironment) -> str:  # noqa: ARG002
+        """Replace transclusion syntax with inline rendered page content.
+
+        Processes ``[!pagename]``, ``[!pagename#heading|Text]`` patterns.
+
+        Args:
+            html: The rendered HTML content.
+            env: The current rendering environment (unused).
+
+        Returns:
+            HTML with transclusion placeholders replaced by rendered
+            page content wrapped in ``.transcluded`` divs.
+        """
         return self.transclude_re.sub(self._transclude, html)
 
     def _extract_section(self, body: str, fragment: str) -> str | None:
+        """Extract content under a specific heading from a page body.
+
+        Headings are matched case-insensitively; the foldable ``!``
+        prefix is stripped for comparison.
+
+        Args:
+            body: The full markdown body of the source page.
+            fragment: The heading text to locate.
+
+        Returns:
+            The markdown content of the matching section, or None
+            if no matching heading is found.
+        """
         target = fragment.lower().replace("-", " ")
         lines = body.split("\n")
 
@@ -69,7 +98,20 @@ class TranscludeTag(NossiTag):
     def _rename_heading(self, body: str, new_title: str) -> str:
         return self.heading_re.sub(lambda m: f"{m.group(1)} {new_title}", body, count=1)
 
-    def _transclude(self, match: re.Match):
+    def _transclude(self, match: re.Match[str]) -> str:
+        """Render a single transclusion match.
+
+        Loads the target page, optionally extracts a section, renames
+        the heading if requested, and renders through the full markdown
+        pipeline. Includes recursion depth protection.
+
+        Args:
+            match: The regex match for a transclusion pattern.
+
+        Returns:
+            Rendered HTML wrapped in a ``.transcluded`` div, or the
+            original match text on failure.
+        """
         TranscludeTag._depth += 1
         try:
             if TranscludeTag._depth > TranscludeTag._max_depth:
@@ -88,6 +130,8 @@ class TranscludeTag(NossiTag):
                 text = text.strip()
 
             page = WikiPage.load_locate(pagename)
+            if page is None:
+                return match.group(0)
             body = page.body
 
             if fragment:

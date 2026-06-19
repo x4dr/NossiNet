@@ -1,10 +1,12 @@
+"""Automatic multi-line heading fix for rendered wiki HTML."""
+
 import re
+
 from NossiPack.markdown.base import NossiTag, WikiEnvironment
 
 
 class HeaderFixTag(NossiTag):
-    """
-    Multi-line header fix (automatic).
+    """Multi-line header fix (automatic).
 
     If a heading tag spans multiple lines in the HTML (e.g. from long content
     with line-breaks), only the first line stays inside the <h...> tag.
@@ -23,17 +25,32 @@ class HeaderFixTag(NossiTag):
         re.IGNORECASE | re.DOTALL,
     )
 
-    def post_process(self, html: str, env: WikiEnvironment) -> str:
+    def post_process(self, html: str, env: WikiEnvironment) -> str:  # noqa: ARG002
+        """Fix multi-line headings by moving extra lines outside the header tag.
+
+        Args:
+            html: The rendered HTML content.
+            env: The current rendering environment (unused).
+
+        Returns:
+            HTML with multi-line headings collapsed to single-line header tags.
+        """
         return self.header_re.sub(self._fix_header, html)
 
-    def _fix_header(self, match: re.Match):
+    def _fix_header(self, match: re.Match[str]) -> str:
+        """Collapse a multi-line heading to a single line.
+
+        Args:
+            match: The regex match for a heading element.
+
+        Returns:
+            The heading tag with only the first line inside the tag;
+            remaining lines are placed after the closing tag.
+        """
         content = match.group("content")
         if "\n" not in content:
             return match.group(0)
 
         # Keep only the first line in the header, append the rest after
         lines = content.splitlines()
-        return (
-            f"<{match.group('h')} {match.group('extra')}>"
-            f"{lines[0]}</{match.group('h')}>" + "\n".join(lines[1:])
-        )
+        return f"<{match.group('h')} {match.group('extra')}>" f"{lines[0]}</{match.group('h')}>" + "\n".join(lines[1:])

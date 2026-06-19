@@ -1,16 +1,19 @@
+"""Blueprint for Server-Sent Events (SSE) clock synchronisation and real-time broadcasting."""
+
 import json
 import queue
 import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from flask import Blueprint, Response, stream_with_context
+from typing import Any
 
+from flask import Blueprint, Response, stream_with_context
+from gamepack.WikiPage import WikiPage
 
 from Data import connect_db
 from NossiSite.base import log
-from NossiSite.base_ext import encode_id, decode_id
-from gamepack.WikiPage import WikiPage
+from NossiSite.base_ext import decode_id, encode_id
 from NossiSite.clock_sync import sync_clocks_with_db
 
 views = Blueprint("socks", __name__)
@@ -18,6 +21,8 @@ views = Blueprint("socks", __name__)
 
 @dataclass
 class BroadcastElement:
+    """A clock element to be broadcast to connected SSE clients."""
+
     name: str
     page: str
     context: str
@@ -27,21 +32,36 @@ class BroadcastElement:
 
 broadcast_elements: list[BroadcastElement] = []
 broadcast = threading.Event()
-connected_hubs = set()
+connected_hubs: set[Any] = set()
 
 
-def get_clock_from_db(name, page_id, context):
+def get_clock_from_db(name: str, page_id: str, context: str) -> tuple[int, int] | None:
+    """Retrieve a clock's current and total values from the database.
+
+    Args:
+        name: Clock name.
+        page_id: Page identifier.
+        context: Database connection context label.
+
+    Returns:
+        A tuple of (current_val, total_val) or None if not found.
+    """
     db = connect_db(f"socks.{context}")
-    return db.execute(
+    row = db.execute(
         "SELECT current_val, total_val FROM clocks WHERE clock_name = ? AND page_id = ?",
         (name, page_id),
     ).fetchone()
+    if row is not None:
+        return int(row[0]), int(row[1])
+    return None
 
 
 @views.route("/sse_updates")
-def sse_updates_handler():
-    def generate():
-        q = queue.Queue()
+def sse_updates_handler() -> Response:
+    """SSE endpoint that streams real-time updates (clocks, chat, rolls) to connected clients."""
+
+    def generate() -> Any:
+        q: queue.Queue[Any] = queue.Queue()
         connected_hubs.add(q)
         try:
             # Removed the "data: connected" line which was causing JSON parse errors
@@ -52,7 +72,6 @@ def sse_updates_handler():
                 yield f"event: {event_type}\ndata: {json.dumps(update)}\n\n"
         except GeneratorExit:
             log.info("SSE Hub: Client disconnected")
-            pass
         finally:
             if q in connected_hubs:
                 connected_hubs.remove(q)
@@ -70,8 +89,10 @@ def sse_updates_handler():
 
 
 @views.route("/sse_test")
-def sse_test_handler():
-    def generate():
+def sse_test_handler() -> Response:
+    """SSE test endpoint that streams the current time every second."""
+
+    def generate() -> Any:
         while True:
             yield f"data: {time.strftime('%H:%M:%S')}\n\n"
             time.sleep(1)
@@ -88,19 +109,21 @@ def sse_test_handler():
     )
 
 
-def broadcast_to_hub(payload):
+def broadcast_to_hub(payload: dict[str, Any]) -> None:
+    """Push a payload to all connected SSE hub queues."""
     for q in connected_hubs:
         q.put(payload)
 
 
 @views.route("/<endpoint>/<name>/<page>/<delta>")
-def change_clock(endpoint, name, page, delta):
+def change_clock(endpoint: str, name: str, page: str, delta: str) -> tuple[str, int]:
+    """Handle a clock change from the UI and broadcast the updated state."""
     log.info(
-        f"Incoming clock change: endpoint={endpoint}, name={name}, page={page}, delta={delta}"
+        f"Incoming clock change: endpoint={endpoint}, name={name}, page={page}, delta={delta}",
     )
     page_id = decode_id(page)
     name = decode_id(name)
-    delta = int(delta)
+    delta_value = int(delta)
 
     # Path resolution:
     # 1. Start with the decoded page path (which is currently just 'clocks')
@@ -120,7 +143,7 @@ def change_clock(endpoint, name, page, delta):
     cursor = db.cursor()
     cursor.execute(
         "UPDATE clocks SET current_val = MIN(total_val, MAX(0, current_val + ?)) WHERE clock_name = ? AND page_id = ?",
-        (delta, name, target_page_id),
+        (delta_value, name, target_page_id),
     )
     db.commit()
 
@@ -128,13 +151,14 @@ def change_clock(endpoint, name, page, delta):
     # broadcast_elements.append needs to pass the same page id we used in the update
     # which is target_page_id
     broadcast_elements.append(
-        BroadcastElement(name, target_page_id, "wiki", element_type, False)
+        BroadcastElement(name, target_page_id, "wiki", element_type, initial=False),
     )
     broadcast.set()
     return "", 204
 
 
-def broadcast_clock_update():
+def broadcast_clock_update() -> None:
+    """Background worker that processes queued clock updates and broadcasts them via SSE."""
     while True:
         broadcast.wait()
         while broadcast_elements:
@@ -147,18 +171,19 @@ def broadcast_clock_update():
 
                     target_path = (WikiPage.wikipath() / element.page).resolve()
                     # If it's a directory or doesn't end in .md, try adding it to match the cache key
-                    if not target_path.suffix == ".md":
+                    if target_path.suffix != ".md":
                         target_path = target_path.with_suffix(".md")
 
                     if not target_path.is_absolute():
-                        raise ValueError(f"Path {target_path} is not absolute")
+                        msg = f"Path {target_path} is not absolute"
+                        raise ValueError(msg)
 
                     page = WikiPage.page_cache.get(target_path)
                     if page:
                         # Use relative path for clock lookup
                         try:
                             rel_page = str(
-                                Path(element.page).relative_to(WikiPage.wikipath())
+                                Path(element.page).relative_to(WikiPage.wikipath()),
                             )
                         except ValueError:
                             rel_page = element.page
@@ -177,13 +202,15 @@ def broadcast_clock_update():
                             broadcast_to_hub(payload)
                         else:
                             log.warning(
-                                f"Could not find clock {element.name} in DB on page {rel_page}"
+                                f"Could not find clock {element.name} in DB on page {rel_page}",
                             )
                             continue
 
                     else:
                         log.warning(
-                            f"Broadcast: Page {element.page} (resolved as {target_path}) could not be located in cache."
+                            "Broadcast: Page %s (resolved as %s) could not be located in cache.",
+                            element.page,
+                            target_path,
                         )
 
             except Exception as e:
@@ -191,7 +218,8 @@ def broadcast_clock_update():
         broadcast.clear()
 
 
-def start_threads():
+def start_threads() -> None:
+    """Initialise clock DB sync and start the background clock broadcast thread."""
     sync_clocks_with_db()
     t = threading.Thread(target=broadcast_clock_update)
     t.daemon = True
@@ -199,16 +227,19 @@ def start_threads():
 
 
 def generate_clock(
-    active: int, total: int, name="", page="", endpoint="changeclock", initial=False
-):
+    active: int,
+    total: int,
+    name: str = "",
+    page: str = "",
+    endpoint: str = "changeclock",
+    *,
+    initial: bool = False,
+) -> str:
+    """Generate HTML markup for a circular clock widget synchronised with the database."""
     total = int(total)
     # page might be relative, ensure consistent lookup
     # strip wiki base if present
-    rel_page = (
-        str(Path(page).relative_to(WikiPage.wikipath()))
-        if Path(page).is_absolute()
-        else page
-    )
+    rel_page = str(Path(page).relative_to(WikiPage.wikipath())) if Path(page).is_absolute() else page
     if not rel_page.endswith(".md"):
         rel_page += ".md"
 
@@ -237,15 +268,18 @@ def generate_clock(
 
 
 def generate_line(
-    active: int, total: int, name="", page="", endpoint="changeline", initial=False
-):
+    active: int,
+    total: int,
+    name: str = "",
+    page: str = "",
+    endpoint: str = "changeline",
+    *,
+    initial: bool = False,
+) -> str:
+    """Generate HTML markup for a linear gauge (line clock) widget synchronised with the database."""
     total = int(total)
     # page might be relative, ensure consistent lookup
-    rel_page = (
-        str(Path(page).relative_to(WikiPage.wikipath()))
-        if Path(page).is_absolute()
-        else page
-    )
+    rel_page = str(Path(page).relative_to(WikiPage.wikipath())) if Path(page).is_absolute() else page
     if not rel_page.endswith(".md"):
         rel_page += ".md"
 
@@ -263,4 +297,6 @@ def generate_line(
                  data-endpoint="/{endpoint}/{encode_id(name)}/{encode_id(rel_page)}/{incdec}"
                  style="--bouncedelay:{i / total}">
                 </div>"""
-    return f'<div class="gauge {"" if initial else "cooldown"}" id="{encode_id(name)}-{encode_id(rel_page)}">{boxes}</div>'
+    gauge_cls = "" if initial else "cooldown"
+    gid = f"{encode_id(name)}-{encode_id(rel_page)}"
+    return f'<div class="gauge {gauge_cls}" id="{gid}">{boxes}</div>'

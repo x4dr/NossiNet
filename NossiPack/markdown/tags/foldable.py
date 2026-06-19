@@ -1,10 +1,12 @@
+"""Collapsible foldable sections for wiki markdown."""
+
 import re
+
 from NossiPack.markdown.base import NossiTag, WikiEnvironment
 
 
 class FoldableTag(NossiTag):
-    """
-    Collapsible sections: prefix a heading with `!`: `## !Heading`
+    """Collapsible sections: prefix a heading with `!`: `## !Heading`.
 
     The content following the heading is hidden by default.
     Click the heading to expand / collapse.
@@ -14,6 +16,7 @@ class FoldableTag(NossiTag):
     Examples:
       ## !Demo Foldable
       This content starts collapsed.
+
     """
 
     priority = 50
@@ -25,7 +28,20 @@ class FoldableTag(NossiTag):
     headline_re = re.compile(r"(<h(\d)[^>]*)>\s*!(.*?)\s*(</h\d+>)", re.IGNORECASE)
     _counter = 0
 
-    def post_process(self, html: str, env: WikiEnvironment) -> str:
+    def post_process(self, html: str, env: WikiEnvironment) -> str:  # noqa: ARG002
+        """Wrap foldable headings and their content in collapse/expand markup.
+
+        Headings prefixed with ``!`` get a ``hider`` class and their
+        following content is wrapped in a ``hiding`` div until the next
+        heading of the same or higher level.
+
+        Args:
+            html: The rendered HTML content.
+            env: The current rendering environment (unused).
+
+        Returns:
+            HTML with foldable sections wrapped in toggle elements.
+        """
         result = []
         last_end = 0
 
@@ -39,11 +55,11 @@ class FoldableTag(NossiTag):
 
             result.append(
                 f'{h_open} class="hider" data-for="{header_id}">{text}{h_close}'
-                f'<div id="{header_id}" class="hiding">'
+                f'<div id="{header_id}" class="hiding">',
             )
 
             rest = html[match.end() :]
-            next_boundary = re.search(rf"<h[1-{level}][^>]*>", rest, re.I)
+            next_boundary = re.search(rf"<h[1-{level}][^>]*>", rest, re.IGNORECASE)
             if next_boundary:
                 result.append(rest[: next_boundary.start()])
                 result.append("</div>")

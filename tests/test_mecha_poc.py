@@ -1,13 +1,21 @@
-import pytest
+"""Tests for mecha game mechanics including turns, heat, speed, and system booting."""
+
+from collections.abc import Iterator
+from pathlib import Path
 from unittest.mock import patch
-from gamepack.WikiPage import WikiPage
+
+import pytest
+from flask.testing import FlaskClient
 from gamepack.endworld.Mecha import Mecha
-from NossiSite.mecha_history import MechaEncounterManager
+from gamepack.WikiPage import WikiPage
+
 from NossiSite.base import app
+from NossiSite.mecha_history import MechaEncounterManager
 
 
 @pytest.fixture
-def temp_wiki(tmp_path):
+def temp_wiki(tmp_path: Path) -> Path:
+    """Create a temporary wiki directory structure for test isolation."""
     wiki = tmp_path / "wiki"
     wiki.mkdir()
     (wiki / "backups").mkdir()
@@ -15,7 +23,8 @@ def temp_wiki(tmp_path):
 
 
 @pytest.fixture
-def test_client(temp_wiki):
+def test_client(temp_wiki: Path) -> Iterator[FlaskClient]:
+    """Create a Flask test client authenticated as TESTUSER."""
     from NossiSite import sheets
 
     if "sheets" not in app.blueprints:
@@ -31,14 +40,16 @@ def test_client(temp_wiki):
             yield client
 
 
-def test_mecha_turn_property():
+def test_mecha_turn_property() -> None:
+    """Verify Mecha turn defaults to zero and can be set."""
     m = Mecha()
     assert m.turn == 0
     m.turn = 5
     assert m.turn == 5
 
 
-def test_mecha_next_turn():
+def test_mecha_next_turn() -> None:
+    """Verify next_turn increments turn and returns summary with thermals."""
     m = Mecha()
     m.turn = 1
     summary = m.next_turn()
@@ -47,11 +58,12 @@ def test_mecha_next_turn():
     assert "thermals" in summary
 
 
-def test_system_booting():
-    from gamepack.endworld.System import System
+def test_system_booting() -> None:
+    """Verify a system transitions through booting states over successive turns."""
+    from gamepack.endworld.OffensiveSystem import OffensiveSystem
 
     m = Mecha()
-    s = System("TestSys", {"boot": 2, "enabled": "[x]", "energy": 10, "amount": 1})
+    s = OffensiveSystem("TestSys", {"boot": 2, "enabled": "[x]", "energy": 10, "amount": 1})
     m.Offensive["TestSys"] = s
 
     # Turn 1: Booting starts
@@ -68,7 +80,8 @@ def test_system_booting():
     assert s.is_active()
 
 
-def test_encounter_manager(temp_wiki):
+def test_encounter_manager(temp_wiki: Path) -> None:
+    """Verify MechaEncounterManager can start, log, and load encounters."""
     mgr = MechaEncounterManager(temp_wiki, "test_mech")
 
     # Start encounter
@@ -87,7 +100,8 @@ def test_encounter_manager(temp_wiki):
     assert data["events"][1]["turn"] == 1
 
 
-def test_pending_heat():
+def test_pending_heat() -> None:
+    """Verify pending heat is reset to zero after next_turn."""
     m = Mecha()
     m.pending_heat = 10
     m.next_turn()
@@ -96,16 +110,17 @@ def test_pending_heat():
     assert m.pending_heat == 0
 
 
-def test_projected_flux():
-    from gamepack.endworld.System import System
+def test_projected_flux() -> None:
+    """Verify projected_flux sums heat from active and soon-to-be-active systems."""
+    from gamepack.endworld.OffensiveSystem import OffensiveSystem
 
     m = Mecha()
-    s1 = System("ActiveSys", {"heat": 5, "enabled": "[x]", "amount": 1})
+    s1 = OffensiveSystem("ActiveSys", {"heat": 5, "enabled": "[x]", "amount": 1})
     s1.boot_progress = 0  # active
     s1.activation_rounds = 0
     m.Offensive["S1"] = s1
 
-    s2 = System("BootingSys", {"heat": 10, "enabled": "[x]", "boot": 1, "amount": 1})
+    s2 = OffensiveSystem("BootingSys", {"heat": 10, "enabled": "[x]", "boot": 1, "amount": 1})
     s2.boot_progress = 0
     m.Offensive["S2"] = s2
 
@@ -113,7 +128,8 @@ def test_projected_flux():
     assert m.projected_flux() == 15
 
 
-def test_heat_assignment():
+def test_heat_assignment() -> None:
+    """Verify heat can be assigned to a HeatSystem and deducted from fluxpool."""
     from gamepack.endworld.HeatSystem import HeatSystem
 
     m = Mecha()
@@ -140,7 +156,8 @@ def test_heat_assignment():
     assert m.fluxpool == 5
 
 
-def test_speed_transition():
+def test_speed_transition() -> None:
+    """Verify acceleration and deceleration transitions over successive turns."""
     from gamepack.endworld.MovementSystem import MovementSystem
 
     m = Mecha()
@@ -172,7 +189,8 @@ def test_speed_transition():
     assert m.current_speed >= 0
 
 
-def test_system_library_loading(temp_wiki):
+def test_system_library_loading(temp_wiki: Path) -> None:
+    """Verify system data can be loaded from the wiki library directory."""
     # Create a system in the library
     sys_dir = temp_wiki / "systems" / "movement"
     sys_dir.mkdir(parents=True, exist_ok=True)
@@ -185,3 +203,44 @@ def test_system_library_loading(temp_wiki):
         data = m.load_system_data("TestWheels", "Movement")
         assert data["Thrust"] == "500"
         assert data["Mass"] == "5"
+
+
+def test_mecha_system_detail_missing_wiki_page(
+    test_client: FlaskClient,
+    temp_wiki: Path,
+) -> None:
+    """When WikiPage.load_locate returns None, the route must return 404.
+
+    This guards against the None-path bug where base_page is passed
+    to the template without None check.
+    """
+    import base64
+
+    from gamepack.endworld.OffensiveSystem import OffensiveSystem
+    from unittest.mock import MagicMock, patch
+
+    mech = Mecha()
+    mech.Offensive["0"] = OffensiveSystem(
+        "TestGun",
+        {"energy": 10, "heat": 5, "enabled": "[x]", "amount": 1},
+    )
+
+    mock_sheet = MagicMock()
+    mock_sheet.char = mech
+
+    n_encoded = base64.b32encode(b"0").decode().rstrip("=")
+
+    with (
+        patch("NossiSite.sheets.load_mecha_state", return_value=(mock_sheet, MagicMock(), None)),
+        patch("NossiSite.sheets.render_template") as mock_render,
+        patch("gamepack.WikiPage.WikiPage.load_locate", return_value=None),
+    ):
+
+        mock_render.return_value = ""
+        response = test_client.get(
+            f"/mecha_system_detail/test_mech/offensive/{n_encoded}",
+        )
+
+        # Without fix (render_template is called): status_code == 200
+        # With fix (abort(404) before render): status_code == 404
+        assert response.status_code == 404

@@ -1,15 +1,19 @@
+"""Test data setup script for UI integration tests."""
+
 import sys
 from pathlib import Path
 
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from NossiPack.User import Userlist, Config  # noqa: E402
-from Data import connect_db  # noqa: E402
-from gamepack.WikiPage import WikiPage  # noqa: E402
+from gamepack.WikiPage import WikiPage
+
+from Data import connect_db
+from NossiPack.User import Config, Userlist
 
 
-def setup():
+def setup() -> None:
+    """Create a test character sheet and register a test user."""
     # 1. Create a markdown file for the sheet
     WikiPage.set_wikipath(Path("./wiki_test"))
     wiki_dir = Path("./wiki_test")

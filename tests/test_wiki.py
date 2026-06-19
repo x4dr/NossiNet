@@ -1,28 +1,35 @@
+"""Tests for the wiki blueprint, FenCharacter, markdown rendering, and mecha integration."""
+
 from pathlib import Path
 from unittest import mock
+
 from flask import url_for
+from gamepack.endworld import MovementSystem
+from gamepack.endworld.Mecha import Mecha
+from gamepack.FenCharacter import FenCharacter
+from gamepack.ItemBase import fenconvert, fendeconvert
+from gamepack.MDPack import search_tables, table_add, table_remove, table_row_edit
+from gamepack.WikiPage import WikiPage
 
 import Data
 from NossiPack.markdown import NossiMarkdownProcessor
-from gamepack.FenCharacter import FenCharacter
-from gamepack.Item import fenconvert, fendeconvert
-from gamepack.MDPack import search_tables, table_add, table_remove, table_row_edit
-from gamepack.WikiPage import WikiPage
-from gamepack.endworld import MovementSystem
-from gamepack.endworld.Mecha import Mecha
 from tests.NossiTestCase import NossiTestCase
 
 
 class TestWiki(NossiTestCase):
+    """Test cases for wiki pages, FenCharacter parsing, markdown, and mecha speed calculations."""
+
     render_templates = False
 
-    def setUp(self):
+    def setUp(self) -> None:
+        """Set up the test by calling the parent setUp."""
         super().setUp()  # DB and app already initialized
 
     @mock.patch.object(Data, "DATABASE", "index.db")
-    def test_index(self):
+    def test_index(self) -> None:
+        """Verify the wiki index page loads successfully."""
         try:
-            WikiPage._wikipath = Path(".")
+            WikiPage._wikipath = Path()
             c = self.register_login()
             with self.app.app_context():
                 rv = c.get(url_for("wiki.wiki_index"))
@@ -30,15 +37,17 @@ class TestWiki(NossiTestCase):
         finally:
             self.delete("index.db")
 
-    def test_xp_parsing(self):
+    def test_xp_parsing(self) -> None:
+        """Verify FenCharacter XP string parsing returns the correct total."""
         self.assertEqual(
             FenCharacter.parse_xp(
-                "[Worograd, Istan, Dinas Godol, Yonn]KKLP(1/3) (nvm)"
+                "[Worograd, Istan, Dinas Godol, Yonn]KKLP(1/3) (nvm)",
             ),
             7,
         )
 
-    def test_FenCharacter_cost(self):
+    def test_fen_character_cost(self) -> None:
+        """Verify FenCharacter cost_calc returns correct values for various inputs."""
         sut = [
             FenCharacter.cost_calc("1,0,1"),
             FenCharacter.cost_calc("3,2,4"),
@@ -50,7 +59,8 @@ class TestWiki(NossiTestCase):
             FenCharacter.cost_calc("17"),
         )
 
-    def test_fenconvert(self):
+    def test_fenconvert(self) -> None:
+        """Verify fenconvert and fendeconvert handle weight and money units correctly."""
         self.assertEqual(fenconvert("30kg"), 30000)
         self.assertEqual(fendeconvert(30000, "weight"), "30kg")
         self.assertEqual(fendeconvert(30001, "weight"), "30.001kg")
@@ -60,7 +70,8 @@ class TestWiki(NossiTestCase):
         self.assertEqual(fendeconvert(fenconvert("3332c"), "money"), "33.32s")
         self.assertEqual(fendeconvert(fenconvert("0.001a"), "money"), "10k")
 
-    def test_tablesrearch(self):
+    def test_tablesrearch(self) -> None:
+        """Verify table search, add, remove, and edit functions work correctly."""
         sut = "##somestuff\n|a|b|\n|-|-|\n|x|1|\ny|2\n"
         self.assertEqual(search_tables(sut, "y", 0), "y|2\n")
         sut = table_add(sut, "z", "3")
@@ -70,7 +81,8 @@ class TestWiki(NossiTestCase):
         sut = table_row_edit(sut, "z", "whoop")
         self.assertEqual(search_tables(sut, "z", 0), "| z | whoop |\n")
 
-    def test_local_markdown_hiding(self):
+    def test_local_markdown_hiding(self) -> None:
+        """Verify headings prefixed with !hidden are excluded from rendering."""
         processed = NossiMarkdownProcessor().process(
             "# thing\n"
             "## !hidden subheading\n"
@@ -82,13 +94,14 @@ class TestWiki(NossiTestCase):
         )
         self.assertIn('<h2 id="visible-again">visible again</h2>', processed)
 
-    def test_mecha(self):
+    def test_mecha(self) -> None:
+        """Verify mecha sheet can be loaded from a wiki page and converted to MD."""
         root = Path(__file__).parent.absolute()
         with mock.patch.object(WikiPage, "_wikipath", root):
-            wikipage = WikiPage.load(Path("testmecha.md"), False)
+            wikipage = WikiPage.load(Path("testmecha.md"), cache=False)
             self.assertIsNotNone(wikipage)
             if wikipage:
-                mecha_sheet = Mecha.from_mdobj(wikipage.md(True))
+                mecha_sheet = Mecha.from_mdobj(wikipage.md(sanitize=True))
                 self.assertIsNotNone(mecha_sheet.total_mass)
                 self.assertTrue(hasattr(mecha_sheet, "speeds"))
 
@@ -98,40 +111,38 @@ class TestWiki(NossiTestCase):
                 wikipage.live = False
                 wikipage.save_overwrite("", "")
 
-    def test_render_endpoint_returns_rendered_html(self):
+    def test_render_endpoint_returns_rendered_html(self) -> None:
+        """Verify the render endpoint returns rendered HTML for a valid locator."""
         with mock.patch.object(WikiPage, "resolve_address") as mock_resolve:
             mock_resolve.return_value = "## Test Heading\ntest content"
             with self.app.app_context():
                 rv = self.client.get(
-                    url_for("wiki.render_locator", locator="test_page#Test Heading")
+                    url_for("wiki.render_locator", locator="test_page#Test Heading"),
                 )
             self.assertEqual(rv.status_code, 200)
             self.assertEqual(rv.content_type, "text/html; charset=utf-8")
             self.assertIn(b"Test Heading</h2>", rv.data)
             self.assertIn(b"test content", rv.data)
 
-    def test_render_endpoint_returns_404_for_nonexistent(self):
+    def test_render_endpoint_returns_404_for_nonexistent(self) -> None:
+        """Verify the render endpoint returns 404 for a non-existent locator."""
         with mock.patch.object(WikiPage, "resolve_address") as mock_resolve:
             mock_resolve.return_value = None
             with self.app.app_context():
                 rv = self.client.get(
-                    url_for("wiki.render_locator", locator="no_such_page")
+                    url_for("wiki.render_locator", locator="no_such_page"),
                 )
             self.assertEqual(rv.status_code, 404)
 
-    def test_speed(self):
+    def test_speed(self) -> None:
+        """Verify movement system speed calculations for all entries in the systems table."""
         root = Path("~/wiki").expanduser().absolute()
         with mock.patch.object(WikiPage, "_wikipath", root):
             wikipage = WikiPage.load(Path("endworld/mecha/systems/movement.md"))
             self.assertIsNotNone(wikipage)
             if wikipage:
                 # The structure is # Movement Systems -> ## Systems
-                systems = (
-                    wikipage.md()
-                    .children["Movement Systems"]
-                    .children["Systems"]
-                    .tables[0]
-                )
+                systems = wikipage.md().children["Movement Systems"].children["Systems"].tables[0]
                 for i in range(2, len(systems.rows)):
                     if systems.rows[i][2].strip() == "":
                         continue

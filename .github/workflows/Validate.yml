@@ -11,7 +11,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          submodules: recursive
           fetch-depth: 0
 
       - name: Setup Python 3.14
@@ -22,6 +21,17 @@ jobs:
       - name: Install uv
         run: pip install uv
 
+      - name: Pin gamepack to committed SHA
+        run: |
+          SHA=$(cat .gamepack-sha)
+          python3 -c "
+          import pathlib, re
+          p = pathlib.Path('pyproject.toml')
+          c = p.read_text()
+          c = re.sub(r'path = \"\.\./GamePack\".*', f'git = \"https://github.com/x4dr/GamePack.git\", rev = \"{SHA}\"', c)
+          p.write_text(c)
+          "
+
       - name: Cache uv + venv
         uses: actions/cache@v3
         with:
@@ -31,7 +41,7 @@ jobs:
           key: uv-${{ runner.os }}-py314-${{ hashFiles('uv.lock') }}
 
       - name: Sync environment
-        run: uv sync --frozen
+        run: uv sync
 
       - name: Set up the wiki environment
         run: git clone https://github.com/x4dr/Fen.git ~/wiki
@@ -61,9 +71,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          submodules: recursive
           fetch-depth: 0
-
 
       - uses: actions/setup-python@v5
         with:
@@ -71,6 +79,17 @@ jobs:
 
       - name: Install uv
         run: pip install uv
+
+      - name: Pin gamepack to committed SHA
+        run: |
+          SHA=$(cat .gamepack-sha)
+          python3 -c "
+          import pathlib, re
+          p = pathlib.Path('pyproject.toml')
+          c = p.read_text()
+          c = re.sub(r'path = \"\.\./GamePack\".*', f'git = \"https://github.com/x4dr/GamePack.git\", rev = \"{SHA}\"', c)
+          p.write_text(c)
+          "
 
       - name: Cache uv + venv
         uses: actions/cache@v3
@@ -81,7 +100,7 @@ jobs:
           key: uv-${{ runner.os }}-py314-${{ hashFiles('uv.lock') }}
 
       - name: Sync environment
-        run: uv sync --frozen
+        run: uv sync
 
       - name: Set PY
         run: echo "PY=$(python --version | sha256sum | cut -d' ' -f1)" >> $GITHUB_ENV

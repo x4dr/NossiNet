@@ -1,44 +1,50 @@
+"""Blueprint for main site views including authentication, user profiles, theming, and blog-style entries."""
+
 import json
 import string
 import subprocess
 import time
 from random import SystemRandom
+from typing import TYPE_CHECKING, Any
 
 import bleach
 from flask import (
+    Blueprint,
     abort,
-    session,
+    current_app,
+    flash,
+    jsonify,
+    make_response,
+    redirect,
     render_template,
     request,
-    flash,
-    redirect,
+    session,
     url_for,
-    Blueprint,
-    current_app,
-    make_response,
-    jsonify,
 )
+from gamepack.Dice import DescriptiveError
+from gamepack.WikiCharacterSheet import WikiCharacterSheet
 from werkzeug.security import gen_salt
 
 from Data import connect_db
-from NossiPack.User import Userlist, User, Config
+from NossiPack.User import Config, User, Userlist
 from NossiPack.VampireCharacter import VampireCharacter
 from NossiSite import ALLOWED_TAGS
-from NossiSite.base import log, app
+from NossiSite.base import app, log
 from NossiSite.helpers import checklogin
-from gamepack.Dice import DescriptiveError
-from gamepack.WikiCharacterSheet import WikiCharacterSheet
+
+if TYPE_CHECKING:
+    from werkzeug.wrappers.response import Response as WerkzeugResponse
 
 views = Blueprint("views", __name__)
 
 
 @views.route("/version")
-def getversion():
+def getversion() -> tuple[str, int, dict[str, str]]:
+    """Return the latest git commit log entry as plain text."""
     # skipcq: BAN-B607, BAN-B603
     res = subprocess.run(
         ["git", "log", "-n 1"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         encoding="utf-8",
         check=True,
     )
@@ -48,24 +54,27 @@ def getversion():
 
 @views.route("/entries/")
 @views.route("/entries/<x>")
-def get_entry(x=None):
+def get_entry(x: str | None = None) -> dict[str, Any]:
+    """Retrieve a blog entry by ID with sanitised HTML."""
     if not x:
         return {}
     db = connect_db("entrybyid")
-    e = [
+    e = next(
         dict(author=row[0], title=row[1], text=row[2], tags=row[3])
         for row in [
             db.execute(
-                "SELECT author, title, text, tags FROM entries WHERE id = ?", [x]
-            ).fetchone()
+                "SELECT author, title, text, tags FROM entries WHERE id = ?",
+                [x],
+            ).fetchone(),
         ]
-    ][0]
+    )
     e["text"] = bleach.clean(e["text"], tags=ALLOWED_TAGS)
     return e
 
 
 @views.route("/entry_text/<x>")
-def entry_text(x):
+def entry_text(x: str) -> str | dict[str, Any]:
+    """Retrieve the sanitised text body of a blog entry by ID."""
     if not x:
         return {}
     db = connect_db("entrybyid")
@@ -76,41 +85,35 @@ def entry_text(x):
 
 
 @views.route("/")
-def show_entries():
+def show_entries() -> str:
+    """Render the main index page listing all blog entries the user has access to."""
     db = connect_db("main")
     cur = db.execute("SELECT author, title, id, tags FROM entries ORDER BY id DESC")
-    entries = [
-        dict(author=row[0], title=row[1], id=row[2], tags=row[3])
-        for row in cur.fetchall()
-    ]
+    entries = [dict(author=row[0], title=row[1], id=row[2], tags=row[3]) for row in cur.fetchall()]
     entries = [
         e
         for e in entries
-        if any(
-            t in (e.get("tags", "") or "default").split(" ")
-            for t in session.get("tags", "default").split(" ")
-        )
+        if any(t in (e.get("tags", "") or "default").split(" ") for t in session.get("tags", "default").split(" "))
     ]
     for e in entries:
         e["own"] = (session.get("logged_in")) and (session.get("user") == e["author"])
     entries = [
         e for e in entries if e.get("author", "none")[0].isupper()
     ]  # don't send out lowercase authors ("deleted")
-    t = render_template("base/show_entries.html", entries=entries)
-    return t
+    return render_template("base/show_entries.html", entries=entries)
 
 
 @views.route("/themeeditor")
-def theme_editor():
+def theme_editor() -> str:
+    """Render the theme editor page."""
     return render_template("base/themeeditor.html")
 
 
 @views.route("/savetheme", methods=["POST"])
-def save_theme():
+def save_theme() -> tuple[WerkzeugResponse, int]:
+    """Save the user's custom theme CSS variables."""
     username = session.get("user", "")
-    app.jinja_env.globals["restart_id"] = "".join(
-        SystemRandom().choice(string.hexdigits) for _ in range(4)
-    )
+    app.jinja_env.globals["restart_id"] = "".join(SystemRandom().choice(string.hexdigits) for _ in range(4))
     if not username:
         flash("not logged in", "error")
         return (
@@ -120,7 +123,7 @@ def save_theme():
     usertheme = ""
     for k in request.form:
         v = request.form.get(k)
-        if not v.strip():
+        if not v or not v.strip():
             continue
         usertheme += f"{k}:{v};"
     Config.save(username, "theme", usertheme)
@@ -132,11 +135,12 @@ def save_theme():
 
 
 @views.route("/theme.css")
-def theme():
+def theme() -> WerkzeugResponse:
+    """Generate the user's custom theme CSS file, falling back to light theme."""
     username = session.get("user", "")
     usertheme = User(username).configs().get("theme", "")
     if not usertheme and session.get("light"):
-        with open(current_app.static_folder + "/light-theme.conf", "r") as f:
+        with open((current_app.static_folder or "") + "/light-theme.conf") as f:
             usertheme = f.read()
     t = {}
     if username:
@@ -145,17 +149,17 @@ def theme():
                 continue
             k, v = entry.split(":")
             t[k.strip()] = v.strip()
-    with open(current_app.static_folder + "/base-theme.css", "r") as f:
+    with open((current_app.static_folder or "") + "/base-theme.css") as f:
         basetheme = f.read()
     output = ""
-    for line in basetheme.splitlines(True):
+    for line in basetheme.splitlines(keepends=True):
         if "-" not in line:
             output += line
             continue
         colorname = line.lstrip(" -")
         splitpos = colorname.find("-color:")
         colorname = colorname[:splitpos]
-        if colorname in t.keys():
+        if colorname in t:
             output += f"    --{colorname}-color: {t[colorname]};\n"
         else:
             output += line
@@ -166,38 +170,33 @@ def theme():
 
 @views.route("/edit/post/<x>", methods=["GET", "POST"])
 @views.route("/edit/all", methods=["GET", "POST"])
-def editentries(x=None):
+def editentries(x: str | None = None) -> str | WerkzeugResponse:
+    """Edit a blog entry by ID or list all entries by the current user."""
     checklogin()
     db = connect_db("editentries")
     if request.method == "GET":
         if x is None:
             cur = db.execute(
-                "SELECT author, title, text, id, tags "
-                "FROM entries WHERE UPPER(author) LIKE UPPER(?)",
+                "SELECT author, title, text, id, tags " "FROM entries WHERE UPPER(author) LIKE UPPER(?)",
                 [session.get("user")],
             )
-            entries = [
-                dict(author=row[0], title=row[1], text=row[2], id=row[3], tags=row[4])
-                for row in cur.fetchall()
-            ]
+            entries = [dict(author=row[0], title=row[1], text=row[2], id=row[3], tags=row[4]) for row in cur.fetchall()]
             return render_template("base/show_entries.html", entries=entries, edit=True)
         try:
-            x = int(x)
+            x_int = int(x)
             cur = db.execute(
                 "SELECT author, title, text, id, tags FROM entries WHERE id == ?",
-                [x],
+                [x_int],
             )
-            entry = [
-                dict(author=row[0], title=row[1], text=row[2], id=row[3], tags=row[4])
-                for row in cur.fetchall()
-            ][0]
-            if (session.get("user").upper() == entry["author"].upper()) or session.get(
-                "admin"
+            entry = next(
+                dict(author=row[0], title=row[1], text=row[2], id=row[3], tags=row[4]) for row in cur.fetchall()
+            )
+            if ((session.get("user") or "").upper() == entry["author"].upper()) or session.get(
+                "admin",
             ):
                 return render_template("base/edit_entry.html", mode="blog", entry=entry)
-            else:
-                raise ValueError()
-        except ValueError, IndexError:
+            raise ValueError
+        except (ValueError, IndexError):
             flash("not authorized to edit post " + str(x))
             return redirect(url_for("views.editentries"))
     if request.method == "POST":
@@ -207,12 +206,9 @@ def editentries(x=None):
             "SELECT author, title, text, id, tags FROM entries WHERE id == ?",
             [int(request.form["id"])],
         )
-        entry = [
-            dict(author=row[0], title=row[1], text=row[2], id=row[3], tags=row[4])
-            for row in cur.fetchall()
-        ][0]
-        if (session.get("user").upper() == entry["author"].upper()) or session.get(
-            "admin"
+        entry = next(dict(author=row[0], title=row[1], text=row[2], id=row[3], tags=row[4]) for row in cur.fetchall())
+        if ((session.get("user") or "").upper() == entry["author"].upper()) or session.get(
+            "admin",
         ):
             db.execute(
                 "UPDATE entries SET title=?, text=?, tags=? WHERE id == ?",
@@ -228,10 +224,7 @@ def editentries(x=None):
             flash("entry was successfully edited")
         else:
             flash(
-                "not authorized: "
-                + session.get("user").upper()
-                + "!="
-                + entry["author"].upper()
+                "not authorized: " + (session.get("user") or "").upper() + "!=" + entry["author"].upper(),
             )
 
         return redirect(url_for("views.show_entries"))
@@ -239,7 +232,8 @@ def editentries(x=None):
 
 
 @views.route("/update_filter/", methods=["POST"])
-def update_filter():
+def update_filter() -> WerkzeugResponse:
+    """Update the tag filter for the current session and redirect to the index."""
     if session.get("logged_in"):
         session["tags"] = request.form["tags"]
     return redirect(url_for("views.show_entries"))
@@ -247,10 +241,11 @@ def update_filter():
 
 @views.route("/config/", methods=["POST"])
 @views.route("/config/<path:x>", methods=["GET", "POST"])
-def config(x=None):
+def config(x: str | None = None) -> str | WerkzeugResponse:
+    """View or update a user configuration option."""
     checklogin()
     if request.method == "GET":
-        c = Config.load(session["user"], x) or ""
+        c = Config.load(session["user"], x or "") or ""
         heading = x
         return render_template("base/config.html", heading=heading, config=x, curval=c)
     if request.method == "POST":
@@ -278,62 +273,76 @@ def config(x=None):
 
 
 @views.route("/charactersheet/")
-def charsheet():
+def charsheet() -> str | WerkzeugResponse:
+    """Redirect the logged-in user to their configured character sheet."""
     checklogin()
     ul = Userlist()
-    u = ul.loaduserbyname(session.get("user"))
+    u = ul.loaduserbyname(str(session.get("user") or ""))
+    assert u is not None
     configchar = u.config("character_sheet", None)
     if configchar:
-        char = WikiCharacterSheet.load_locate(configchar)
+        char: WikiCharacterSheet[Any] | None = WikiCharacterSheet.load_locate(configchar)
         if char and hasattr(char, "render"):
             res = char.render()
             if res:
-                return res
+                return res  # type: ignore[no-any-return]
         return redirect(url_for("sheets.sheet", c=configchar))
     return redirect(url_for("sheets.chargen"))
 
 
 @views.route("/showsheet/<name>")
-def showsheet(name="None"):
+def showsheet(name: str = "None") -> str | WerkzeugResponse:
+    """Display another user's vampire character sheet if permitted."""
     checklogin()
     if name == "None":
         return "error"
     name = name.upper()
     ul = Userlist()
     u = ul.loaduserbyname(name)
-    if u and u.sheetpublic or session.get("admin", False):
+    if u is None:
+        abort(404)
+    if (u and u.sheetpublic) or session.get("admin", False):
         return render_template(
-            "sheets/vampsheet.html", character=u.getsheet().getdictrepr(), own=False
+            "sheets/vampsheet.html",
+            character=u.getsheet().getdictrepr(),
+            own=False,
         )
     flash("you do not have permission to see this")
     return render_template(
-        "sheets/vampsheet.html", character=VampireCharacter().getdictrepr(), own=False
+        "sheets/vampsheet.html",
+        character=VampireCharacter().getdictrepr(),
+        own=False,
     )
 
 
 @views.route("/deletesheet/", methods=["POST"])
-def del_sheet():
+def del_sheet() -> WerkzeugResponse:
+    """Delete (free) a character sheet by its number."""
     checklogin()
     x = int(request.form["sheetnum"])
-    User.freesheet(x)
+    User.freesheet(str(x))
     return redirect(url_for("views.menu_oldsheets"))
 
 
 @views.route("/claimsheet/", methods=["POST"])
-def claim_sheet():
-    """assign unassigned/'deleted' charactersheet to user"""
+def claim_sheet() -> WerkzeugResponse:
+    """Assign unassigned/'deleted' charactersheet to user."""
     checklogin()
     x = int(request.form["sheetnum"])
-    Userlist().loaduserbyname(session["user"]).claimsheet(x)
+    u = Userlist().loaduserbyname(str(session["user"] or ""))
+    assert u is not None
+    u.claimsheet(str(x))
     return redirect(url_for("views.menu_oldsheets"))
 
 
 @views.route("/restoresheet/", methods=["POST"])
-def res_sheet():
+def res_sheet() -> WerkzeugResponse:
+    """Restore an old character sheet from the user's history."""
     checklogin()
     x = int(request.form["sheetnum"])
     ul = Userlist()
-    u = ul.loaduserbyname(session.get("user"))
+    u = ul.loaduserbyname(str(session.get("user") or ""))
+    assert u is not None
     if u.loadoldsheets().get(x, None):
         u.sheetid = x
         ul.saveuserlist()
@@ -342,12 +351,14 @@ def res_sheet():
 
 
 @views.route("/berlinmap")
-def berlinmap():
+def berlinmap() -> str:
+    """Render the Berlin interactive map page."""
     return render_template("misc/map.html")
 
 
 @views.route("/berlinmap/data.dat")
-def mapdata():
+def mapdata() -> str:
+    """Generate JSON data for Berlin map property and actor overlays."""
     db = connect_db("mapdata")
     log.debug("generating mapdata")
     time0 = time.time()
@@ -371,28 +382,34 @@ def mapdata():
 
 
 @views.route("/oldsheets/")
-def menu_oldsheets():
+def menu_oldsheets() -> str:
+    """Show the user's old character sheets with XP diffs."""
     checklogin()
     ul = Userlist()
-    u = ul.loaduserbyname(session.get("user"))
+    u = ul.loaduserbyname(str(session.get("user") or ""))
+    assert u is not None
     oldsheets = []
     xpdiffs = []
     for i, sheet in u.loadoldsheets().items():
         oldsheets.append([i, sheet.timestamp, sheet.meta])
         if len(oldsheets) > 1:
-            xpdiffs.append(sheet.get_diff(u.getsheet(oldsheets[-2][0])))
+            xpdiffs.append(sheet.get_diff(u.getsheet(int(str(oldsheets[-2][0])))))
         else:
             xpdiffs.append(sheet.get_diff(None))
     return render_template(
-        "sheets/oldsheets.html", oldsheets=oldsheets, xpdiffs=xpdiffs
+        "sheets/oldsheets.html",
+        oldsheets=oldsheets,
+        xpdiffs=xpdiffs,
     )
 
 
 @views.route("/showoldsheets/<x>")
-def showoldsheets(x):
+def showoldsheets(x: str) -> str | WerkzeugResponse:
+    """View a specific old character sheet by its number."""
     checklogin()
     ul = Userlist()
-    u = ul.loaduserbyname(session.get("user"))
+    u = ul.loaduserbyname(str(session.get("user") or ""))
+    assert u is not None
     try:
         sheetnum = int(x)
     except Exception:
@@ -406,23 +423,25 @@ def showoldsheets(x):
             oldsheet=x,
         )
     flash(
-        "I am not allowed to tell you if that character even exists. "
-        "Maybe you can summon them?"
+        "I am not allowed to tell you if that character even exists. " "Maybe you can summon them?",
     )
     return render_template("sheets/oldsheets.html", summon=x)
 
 
 @views.route("/new_vamp_sheet/", methods=["GET"])
-def new_vamp_sheet():
+def new_vamp_sheet() -> str:
+    """Render the vampire character sheet editor for a blank sheet."""
     checklogin()
     return render_template("sheets/vampsheet_editor.html", character=VampireCharacter())
 
 
 @views.route("/modify_sheet/", methods=["GET", "POST"])
-def modify_sheet():
+def modify_sheet() -> str | WerkzeugResponse:
+    """View or process modifications to the user's vampire character sheet."""
     checklogin()
     ul = Userlist()
-    u = ul.loaduserbyname(session.get("user"))
+    u = ul.loaduserbyname(str(session.get("user") or ""))
+    assert u is not None
     if request.method == "POST":
         log.info(f"incoming modify: {request.form}")
         u.update_sheet(request.form)
@@ -438,22 +457,23 @@ def modify_sheet():
             Clans=u.getsheet().get_clans(),
             Backgrounds=u.getsheet().get_backgrounds(),
         )
-    raise DescriptiveError(f"unsupported sheettpe:{sheet['Type']}")
+    msg = f"unsupported sheettpe:{sheet['Type']}"
+    raise DescriptiveError(msg)
 
 
 @views.route("/delete_entry/<ident>", methods=["POST"])
-def delete_entry(ident):
+def delete_entry(ident: str) -> WerkzeugResponse:
+    """Toggle a blog entry's deleted state by lowercasing/uppercasing its author."""
     checklogin()
     db = connect_db("deleteentry")
     entry = {}
     cur = db.execute(
-        "SELECT author, title, text, id FROM entries WHERE id = ?", [ident]
+        "SELECT author, title, text, id FROM entries WHERE id = ?",
+        [ident],
     )
     for row in cur.fetchall():  # SHOULD only run once
         entry = dict(author=row[0], title=row[1], text=row[2], id=row[3])
-    if (not session.get("admin")) and (
-        entry.get("author", "").upper() != session.get("user")
-    ):
+    if (not session.get("admin")) and (entry.get("author", "").upper() != session.get("user")):
         flash("This is not your Post!")
     else:
         if entry.get("author", "A")[0].islower():
@@ -461,20 +481,21 @@ def delete_entry(ident):
                 "UPDATE entries SET author = ? WHERE id = ?",
                 [entry.get("author", "").upper(), entry.get("id")],
             )
-            flash('Entry: "' + entry.get("title") + '" has been restored.')
+            flash('Entry: "' + (entry.get("title") or "") + '" has been restored.')
 
         else:
             db.execute(
                 "UPDATE entries SET author = ? WHERE id = ?",
-                [entry.get("author", "").lower(), entry.get("id")],
+                [entry.get("author", "").upper(), entry.get("id")],
             )
-            flash('Entry: "' + entry.get("title") + '" has been deleted.')
+            flash('Entry: "' + (entry.get("title") or "") + '" has been deleted.')
         db.commit()
     return redirect(url_for("views.show_entries"))
 
 
 @views.route("/add", methods=["POST"])
-def add_entry():
+def add_entry() -> WerkzeugResponse:
+    """Insert a new blog entry into the database."""
     checklogin()
     log.info(f"{session.get('user', '?')} adding {request.form}")
 
@@ -494,11 +515,14 @@ def add_entry():
 
 
 @views.route("/buy_funds/", methods=["GET", "POST"])
-def add_funds():
+def add_funds() -> str:
+    """Render the funds purchase page and process credit transfers."""
+    checklogin()
     ul = Userlist()
-    u = ul.loaduserbyname(session.get("user"))
+    u = ul.loaduserbyname(str(session.get("user") or ""))
+    assert u is not None
     error = None
-    keyprovided = session.get("amount") is not None
+    keyprovided: bool | None = session.get("amount") is not None
     if not keyprovided:
         keyprovided = None
     if request.method == "POST":
@@ -506,21 +530,19 @@ def add_funds():
             amount = int(request.form["amount"])
             if amount > 0:
                 key = int(time.time())
-                key = str(hash(str(key)))
-                log.info(f"REQUEST BY {u.username} FOR {amount} CREDITS. KEY: {key}.")
-                session["key"] = key[-10:]
+                key_str = str(hash(str(key)))
+                log.info(f"REQUEST BY {u.username} FOR {amount} CREDITS. KEY: {key_str}.")
+                session["key"] = key_str[-10:]
                 session["amount"] = amount
                 keyprovided = True
             else:
                 error = "need positive amount"
         except Exception:
             try:
-                key = request.form["key"][-10:]
-                if key == session.pop("key"):
+                key_input = request.form["key"][-10:]
+                if key_input == session.pop("key"):
                     flash(
-                        "Transfer of "
-                        + str(session.get("amount"))
-                        + " Credits was successfull!"
+                        "Transfer of " + str(session.get("amount")) + " Credits was successfull!",
                     )
                     u.funds += int(session.pop("amount"))
                 else:
@@ -533,12 +555,16 @@ def add_funds():
     ul.saveuserlist()
 
     return render_template(
-        "base/funds.html", user=u, error=error, keyprovided=keyprovided
+        "base/funds.html",
+        user=u,
+        error=error,
+        keyprovided=keyprovided,
     )
 
 
 @views.route("/register", methods=["GET", "POST"])
-def register_user():  # this is not clrs secure because it does not need to be
+def register_user() -> str | WerkzeugResponse:  # this is not clrs secure because it does not need to be
+    """Render the registration form and process new user sign-ups."""
     error = None
     if request.method == "POST":
         username = request.form["username"].strip().upper()
@@ -563,21 +589,22 @@ def register_user():  # this is not clrs secure because it does not need to be
 
 
 @views.route("/login", methods=["GET", "POST"])
-def login():
+def login() -> str | WerkzeugResponse:
+    """Render the login form and authenticate users."""
     error = None
     if request.method == "POST":
         ul = Userlist()
         user = request.form["username"]
         user = user.upper()
-        if not ul.valid(user, request.form.get("password", None)):
+        if not ul.valid(user, request.form.get("password", "")):
             error = "invalid username/password combination"
         else:
             session["logged_in"] = True
             session["print"] = gen_salt(32)
             session["user"] = user
-            session["admin"] = (
-                ul.loaduserbyname(session.get("user")).admin == "Administrator"
-            )
+            u_adm = ul.loaduserbyname(str(session.get("user") or ""))
+            assert u_adm is not None
+            session["admin"] = u_adm.admin == "Administrator"
             flash("You were logged in")
             log.info(f"logged in as {user}")
 
@@ -587,14 +614,16 @@ def login():
 
 
 @views.route("/logout")
-def logout():
+def logout() -> WerkzeugResponse:
+    """Clear the session and log the user out."""
     session.clear()
     flash("You were logged out")
     return redirect(url_for("views.show_entries"))
 
 
 @views.route("/nn")
-def start():
+def start() -> str:
+    """Render the Nosferatu Network welcome splash page."""
     return render_template(
         "base/show_entries.html",
         entries=[
@@ -602,14 +631,15 @@ def start():
                 author="the NOSFERATU NETWORK",
                 title="WeLcOmE tO tHe NoSfErAtU nEtWoRk",
                 text="",
-            )
+            ),
         ],
         heads=['<META HTTP-EQUIV="refresh" CONTENT="5;url=/">'],
     )
 
 
 @views.route("/user/<username>")
-def show_user_profile(username):
+def show_user_profile(username: str) -> str:
+    """Display a user's profile page with messages and configuration."""
     msgs = []
 
     if username == session.get("user"):
@@ -632,12 +662,7 @@ def show_user_profile(username):
             )
             if msg["lock"]:
                 if msg["author"] == username:
-                    msg["text"] = (
-                        "[not yet paid for by "
-                        + msg["recipient"]
-                        + "]<br><br>"
-                        + msg["text"]
-                    )
+                    msg["text"] = "[not yet paid for by " + msg["recipient"] + "]<br><br>" + msg["text"]
                     msg.pop("lock")
                 else:
                     msg["text"] = "[locked until you pay]"
@@ -647,18 +672,20 @@ def show_user_profile(username):
     u = ul.loaduserbyname(username)
     if u is None:
         u = User(username, "")
-    site = render_template("base/userinfo.html", user=u, msgs=msgs, configs=u.configs())
-    return site
+    return render_template("base/userinfo.html", user=u, msgs=msgs, configs=u.configs())
 
 
 @views.route("/impressum/")
-def impressum():
+def impressum() -> str:
+    """Render the legal impressum / imprint page."""
     return render_template("base/Impressum.html")
 
 
 @views.route("/sendmsg/<username>", methods=["POST"])
-def send_msg(username):
-    def check0(a):
+def send_msg(username: str) -> WerkzeugResponse:
+    """Send a message to a user."""
+
+    def check0(a: str) -> bool:
         return int(a) == 0
 
     error = None
@@ -666,8 +693,7 @@ def send_msg(username):
     checklogin()
     db = connect_db("mapdata")
     db.execute(
-        "INSERT INTO messages (author, recipient, title, text, value, lock)"
-        " VALUES (?, ?, ?, ?, ?, ?)",  # 6
+        "INSERT INTO messages (author, recipient, title, text, value, lock)" " VALUES (?, ?, ?, ?, ?, ?)",  # 6
         [
             session.get("user"),  # 1 -author
             username,  # 2 -recipient
@@ -683,7 +709,9 @@ def send_msg(username):
 
 
 @views.route("/unlock/<ident>")
-def unlock(ident):
+def unlock(ident: str) -> str:
+    """Pay to unlock a locked message and transfer funds to the author."""
+    checklogin()
     ul = Userlist()
     error = None
     lock = 0
@@ -691,22 +719,25 @@ def unlock(ident):
     value = 0
 
     db = connect_db("mapdata")
-    u = ul.loaduserbyname(session.get("user"))
+    u = ul.loaduserbyname(str(session.get("user") or ""))
+    assert u is not None
     cur = db.execute("SELECT author, value, lock FROM messages WHERE id = ?", [ident])
     for row in cur.fetchall():
         author = row[0]
         value = row[1]
         lock = row[2]
     n = ul.loaduserbyname(
-        author
+        author,
     )  # n because n = u seen from the other side of the table
     if lock == 1:
-        if u.funds < value:
+        if n is None:
+            error = "Recipient no longer exists."
+        elif u.funds < value:
             error = "Not enough funds."
         else:
             u.funds -= value
             aftertax = int(value * 0.99)  # 1% Tax
-            n.funds = int((n.funds + aftertax))
+            n.funds = int(n.funds + aftertax)
             db.execute("UPDATE messages SET lock = 0 WHERE id = ?", [ident])
             flash("Transfer complete. Check the received message.")
             db.commit()
@@ -718,16 +749,18 @@ def unlock(ident):
         heads=[
             '<META HTTP-EQUIV="refresh" CONTENT="5;url='
             + url_for("views.show_user_profile", username=u.username)
-            + '">'
+            + '">',
         ],
     )
 
 
 @views.route("/resetpassword/", methods=["GET", "POST"])
-def resetpassword():
+def resetpassword() -> str:
+    """Render the password reset form and process password changes."""
     checklogin()
     ul = Userlist()
-    u = ul.loaduserbyname(session.get("user"))
+    u = ul.loaduserbyname(str(session.get("user") or ""))
+    assert u is not None
     if request.method == "POST":
         try:
             username = request.form["username"].strip().upper()
@@ -735,6 +768,7 @@ def resetpassword():
             newpassword = request.form["newpassword"]
             if session.get("admin", False):
                 u = ul.loaduserbyname(username)
+                assert u is not None
             if u.username == username:
                 if u.check_password(password) or session.get("admin", False):
                     u.set_password(newpassword)
@@ -752,10 +786,12 @@ def resetpassword():
 
 
 @views.route("/payout/", methods=["GET", "POST"])
-def payout():
+def payout() -> str:
+    """Render the payout page and process fund deductions."""
     checklogin()
     ul = Userlist()
-    u = ul.loaduserbyname(session.get("user"))
+    u = ul.loaduserbyname(str(session.get("user") or ""))
+    assert u is not None
     error = None
     if request.method == "POST":
         try:
@@ -765,7 +801,7 @@ def payout():
             log.info(f"DEDUCT BY {session.get('user')}: {amount}")
             if u.funds < 0:
                 flash("not enough funds")
-                raise Exception()
+                raise Exception
             flash("Deduct successfull")
             ul.saveuserlist()
         except Exception:
@@ -775,7 +811,8 @@ def payout():
 
 
 @views.route("/lightswitch/")
-def lightswitch():
+def lightswitch() -> WerkzeugResponse:
+    """Toggle the light/dark theme preference in the session."""
     if session.get("light", False):
         session.pop("light")
     else:
@@ -784,5 +821,6 @@ def lightswitch():
 
 
 @views.route("/sse_test_ui")
-def sse_test_ui():
+def sse_test_ui() -> str:
+    """Render the SSE test UI page."""
     return render_template("sse_test.html")

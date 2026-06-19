@@ -1,13 +1,29 @@
+"""Renderer for Mecha character sheets."""
+
+from typing import TYPE_CHECKING
+
 from flask import render_template, session
-from gamepack.WikiCharacterSheet import WikiCharacterSheet
 from gamepack.endworld.Mecha import Mecha
 from gamepack.WikiPage import WikiPage
-from NossiSite.renderers import register_renderer
+
 from NossiSite.mecha_history import MechaEncounterManager
+from NossiSite.renderers import register_renderer
+
+if TYPE_CHECKING:
+    from gamepack.WikiCharacterSheet import WikiCharacterSheet
 
 
 @register_renderer(Mecha)
-def render_mecha(sheet: WikiCharacterSheet[Mecha]):
+def render_mecha(sheet: WikiCharacterSheet[Mecha]) -> str:
+    """Render a Mecha sheet to HTML.
+
+    Args:
+        sheet: The wiki character sheet containing the Mecha to render.
+
+    Returns:
+        A rendered HTML template for the mecha sheet, or an error string if
+        the character data is missing.
+    """
     identifier = sheet.file.stem if sheet.file else "mechtest"
     # Special case for tests/testmecha to keep it consistent if needed
     if sheet.file and "tests" in sheet.file.parts:
@@ -22,7 +38,7 @@ def render_mecha(sheet: WikiCharacterSheet[Mecha]):
     if not current_encounter_id:
         current_encounter_id = history_mgr.get_latest_encounter_id()
 
-    from NossiSite.sheet_helpers import infolet_filler, infolet_extractor
+    from NossiSite.sheet_helpers import infolet_extractor, infolet_filler
 
     return render_template(
         "sheets/mechasheet.html",

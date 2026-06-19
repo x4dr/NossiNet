@@ -1,11 +1,14 @@
+"""Vampire: The Masquerade character implementation."""
+
 import collections
+import contextlib
 import html
 import pickle
 import random
 import re
 import time
 from random import randint, shuffle
-from typing import Dict
+from typing import Any, Self
 from urllib import request
 
 from Data import getlocale_data
@@ -15,12 +18,12 @@ __author__ = "maric"
 from NossiSite.base import log
 
 
-def intdef(s, default=0):
-    """
-    Tries to Parse int
+def intdef(s: str, default: int = 0) -> int:
+    """Parse int from string.
+
     :param s: input that will be applied int()
     :param default: return value if s is not int
-    :return: int(s) or default
+    :return: int(s) or default.
     """
     try:
         return int(s)
@@ -30,26 +33,27 @@ def intdef(s, default=0):
 
 # noinspection DuplicatedCode
 class VampireCharacter:
-    """
-    Class to represent WoD v20 Charactersheets
-    used to be descendant of Character but that class is disabled until a proper
-    interface is extracted
+    """Character sheet for World of Darkness v20.
+
+    Used to be a descendant of Character but that class is disabled
+    until a proper interface is extracted.
     """
 
-    meta: Dict[str, str]
+    meta: dict[str, str]
 
     def __init__(
         self,
-        name="",
-        attributes=None,
-        meta=None,
-        abilities=None,
-        virtues=None,
-        backgrounds=None,
-        disciplines=None,
-        special=None,
-    ):
-        """
+        name: str = "",
+        attributes: dict[str, int] | None = None,
+        meta: dict[str, str] | None = None,
+        abilities: dict[str, Any] | None = None,
+        virtues: collections.OrderedDict[str, int] | None = None,
+        backgrounds: collections.OrderedDict[str, int] | None = None,
+        disciplines: collections.OrderedDict[str, int] | None = None,
+        special: dict[str, int] | None = None,
+    ) -> None:
+        """Initialize VampireCharacter.
+
         :param name: name of the character
         :param attributes: attribute dict
         :param meta: meta information dict
@@ -93,24 +97,28 @@ class VampireCharacter:
         super().__init__()
 
     def checksum(self) -> int:
-        """
-        To Validate Integrity of all the int-bearing fields and add them times their
-        index together. Two Characters should have the same checksum if they are the
-        same, and should have a high likelyhood of having different checksums, if
-        they are different.
+        """Validate character integrity via checksum.
+
+        Adds all int-bearing fields multiplied by their index. Two matching characters
+        should have the same checksum; different characters should likely differ.
         """
         result = 0
         u = self.unify()
-        for i, a in enumerate(sorted(list(u.keys()))):
+        for i, a in enumerate(sorted(u.keys())):
             try:
                 result += int(u[a]) * 5**i
             except Exception:
-                raise Exception("could not add up", a)
+                raise Exception("could not add up", a) from None
         print("checksum", result)
         return result
 
     @staticmethod
-    def get_clans():
+    def get_clans() -> dict[str, list[str]]:
+        """Return the available clans and their discipline sets.
+
+        Returns:
+            A dict mapping clan names to lists of discipline names.
+        """
         return {
             "Assamite": ["Celerity", "Obfuscate", "Quietus"],
             "Brujah": ["Celerity", "Potence", "Presence"],
@@ -133,11 +141,21 @@ class VampireCharacter:
             "Cappadocian": ["Auspex", "Fortitude", "Necromancy"],
         }
 
-    def get_clandisciplines(self):
+    def get_clandisciplines(self) -> list[str] | str:
+        """Get the discipline list for the character's clan.
+
+        Returns:
+            A list of discipline names or 'No Clan'.
+        """
         return self.get_clans().get(self.meta["Clan"], "No Clan")
 
     @staticmethod
-    def get_backgrounds():
+    def get_backgrounds() -> list[str]:
+        """Return the list of available background types.
+
+        Returns:
+            A list of background name strings.
+        """
         return [
             "Allies",
             "Contacts",
@@ -152,8 +170,17 @@ class VampireCharacter:
             "Mentor",
         ]
 
-    def validate_char(self, extra=False):
-        def need(name, number):
+    def validate_char(self, *, extra: bool = False) -> str:
+        """Validate that the character meets creation rules.
+
+        Args:
+            extra: If True, include detailed freebie spending breakdown.
+
+        Returns:
+            A comment string with validation messages or empty if valid.
+        """
+
+        def need(name: str, number: int) -> str:
             return name + f" still needs {abs(int(number)):d} points allocated. \n"
 
         freebs = 15
@@ -161,15 +188,9 @@ class VampireCharacter:
         if self.meta["Clan"] == "Nosferatu":
             self.attributes["Appearance"] = 0
         att = [
-            self.attributes["Strength"]
-            + self.attributes["Dexterity"]
-            + self.attributes["Stamina"],
-            self.attributes["Charisma"]
-            + self.attributes["Manipulation"]
-            + self.attributes["Appearance"],
-            self.attributes["Perception"]
-            + self.attributes["Intelligence"]
-            + self.attributes["Wits"],
+            self.attributes["Strength"] + self.attributes["Dexterity"] + self.attributes["Stamina"],
+            self.attributes["Charisma"] + self.attributes["Manipulation"] + self.attributes["Appearance"],
+            self.attributes["Perception"] + self.attributes["Intelligence"] + self.attributes["Wits"],
         ]
         if self.meta["Clan"] == "Nosferatu":
             att[1] += 1  # clan weakness
@@ -242,11 +263,7 @@ class VampireCharacter:
             comment += need("The Virtues section", vir)
         if dis < 0:
             comment += need("The Discipline section", dis)
-        hum = (
-            self.special["Humanity"]
-            - self.virtues["Conscience"]
-            - self.virtues["SelfControl"]
-        )
+        hum = self.special["Humanity"] - self.virtues["Conscience"] - self.virtues["SelfControl"]
         wil = self.special["Willmax"] - self.virtues["Courage"]
 
         if hum < 0:
@@ -277,22 +294,33 @@ class VampireCharacter:
             if freebs < 15 and extra:
                 comment += (
                     f"Freebies spent:\n"
-                    f"High Attribute Group: \t {str(attgrphigh * 5)}\n"
-                    f"Medium Attribute Group:\t {str(attgrpmedium * 5)}\n"
-                    f"Low Attribute Group: \t {str(attgrplow * 5)}\n"
-                    f"High Ability Group: \t {str(abigrphigh * 2)}\n"
-                    f"Medium Ability Group: \t {str(abigrpmedium * 2)}\n"
-                    f"Low Ability Group: \t {str(abigrplow * 2)}\n"
-                    f"Background Section: \t {str(bac * 1)}\n"
-                    f"Discipline Section: \t {str(dis * 7)}\n"
-                    f"Virtues: \t \t {str(vir * 2)}\n"
-                    f"Humanity: \t \t {str(hum * 1)}\n"
-                    f"Willpower: \t \t {str(wil * 1)}\n"
+                    f"High Attribute Group: \t {attgrphigh * 5!s}\n"
+                    f"Medium Attribute Group:\t {attgrpmedium * 5!s}\n"
+                    f"Low Attribute Group: \t {attgrplow * 5!s}\n"
+                    f"High Ability Group: \t {abigrphigh * 2!s}\n"
+                    f"Medium Ability Group: \t {abigrpmedium * 2!s}\n"
+                    f"Low Ability Group: \t {abigrplow * 2!s}\n"
+                    f"Background Section: \t {bac * 1!s}\n"
+                    f"Discipline Section: \t {dis * 7!s}\n"
+                    f"Virtues: \t \t {vir * 2!s}\n"
+                    f"Humanity: \t \t {hum * 1!s}\n"
+                    f"Willpower: \t \t {wil * 1!s}\n"
                 )
         return comment
 
     @staticmethod
-    def calc_cost(val1, val2, cost, cost0):
+    def calc_cost(val1: int, val2: int, cost: int, cost0: int) -> int:
+        """Calculate XP cost to raise a value from val1 to val2.
+
+        Args:
+            val1: Starting value.
+            val2: Target value.
+            cost: Cost per dot above zero.
+            cost0: Flat cost for raising from 0 to 1.
+
+        Returns:
+            The total XP cost.
+        """
         lower = min(val1, val2)
         higher = max(val1, val2)
         result = 0
@@ -305,31 +333,49 @@ class VampireCharacter:
             lower += 1
         return result
 
-    def get_diff(self, old=None, extra=False):
+    def get_diff(self, old: VampireCharacter | None = None, *, extra: bool = False) -> str:
+        """Calculate XP difference between this sheet and a previous version.
+
+        Args:
+            old: An older VampireCharacter instance to compare against.
+            extra: If True, return a human-readable string instead of int.
+
+        Returns:
+            An XP cost integer or a formatted string with the breakdown.
+        """
         xpdiff = 0
-        result = self.validate_char(extra)
+        result = self.validate_char(extra=extra)
         if old is None:
             return result
-        for a in self.attributes.keys():
+        for a in self.attributes:
             xpdiff += self.calc_cost(self.attributes[a], old.attributes[a], 4, 1000)
-        for b in self.abilities.keys():
-            for a in self.abilities[b].keys():
+        for b in self.abilities:
+            for a in self.abilities[b]:
                 xpdiff += self.calc_cost(
-                    self.abilities[b][a], old.abilities[b][a], 2, 3
+                    self.abilities[b][a],
+                    old.abilities[b][a],
+                    2,
+                    3,
                 )
-        for a in self.disciplines.keys():
+        for a in self.disciplines:
             c = 7
-            b = self.get_clandisciplines()
-            if b == "No Clan":
+            clan_disciplines = self.get_clandisciplines()
+            if clan_disciplines == "No Clan":
                 c = 6
-            elif a in b:
+            elif a in clan_disciplines:
                 c = 5
             xpdiff += self.calc_cost(
-                self.disciplines[a], old.disciplines.get_str(a, 0), c, 10
+                self.disciplines[a],
+                old.disciplines.get(a, 0),
+                c,
+                10,
             )
 
         xpdiff += self.calc_cost(
-            self.special["Willmax"], old.special["Willmax"], 1, 1000
+            self.special["Willmax"],
+            old.special["Willmax"],
+            1,
+            1000,
         )
         if extra:
             result += f"To upgrade the sheet from {old.timestamp} to this one would cost {xpdiff:d} XP."
@@ -337,15 +383,19 @@ class VampireCharacter:
             result += str(xpdiff)
         return result
 
-    def dictlist(self):
+    def dictlist(self) -> list[dict[str, int]]:
+        """Return character data as a list of dicts for serialization.
+
+        Returns:
+            A list of dicts for attributes, abilities, virtues, disciplines,
+            backgrounds, and special values.
+        """
         special = {}
-        for i in self.special.keys():
-            try:
+        for i in self.special:
+            with contextlib.suppress(Exception):  # sort all numeric values into special
                 special[i] = int(
-                    self.special[i]
+                    self.special[i],
                 )  # legacy ... rework might be as easy as removing this
-            except Exception:
-                pass  # sort all numeric values into special
 
         return [
             self.attributes,
@@ -357,59 +407,80 @@ class VampireCharacter:
             special,
         ]
 
-    def unify(self):
+    def unify(self) -> dict[str, str]:
+        """Flatten all character values into a single dict.
+
+        Returns:
+            A dict mapping field names to their string values.
+        """
         a = self.dictlist()
         result = {}
         for b in a:
-            for i in b.keys():
+            for i in b:
                 result[i] = str(b[i])
         return result
 
     # noinspection PyUnresolvedReferences
-    def setfromdalines(self, number):
-        def getmeta(name):
+    def setfromdalines(self, number: str | int) -> bool:
+        """Populate character data from a Dalines sheet generator URL.
+
+        Args:
+            number: The Dalines sheet ID number.
+
+        Returns:
+            True on success, False if the number is invalid.
+        """
+
+        def getmeta(name: str) -> str | None:
             value = re.compile(
                 name + r':.*?">(.*?)</td>',
                 flags=(re.MULTILINE + re.DOTALL + re.IGNORECASE),
             )
-            try:
-                return value.search(dalines).group(1)
-            except Exception:
-                return None
+            m = value.search(dalines)
+            if m:
+                return m.group(1)
+            return None
 
-        def getval(name):
+        def getval(name: str) -> int:
             name = name.replace(" ", "")
             value = re.compile(
                 name + r".*?</td>(.*?)</td>",
                 flags=(re.MULTILINE + re.DOTALL + re.IGNORECASE),
             )
-            try:
-                return value.search(dalines).group().count("checked")
-            except Exception:
-                log.info(f"VampireCharacter_fromdalines:not found in sheet:{name}!")
-                return 0
+            m = value.search(dalines)
+            if m:
+                return m.group().count("checked")
+            log.info(f"VampireCharacter_fromdalines:not found in sheet:{name}!")
+            return 0
 
-        def getbgdscp():
-            section = re.compile(
+        def getbgdscp() -> tuple[list[str], list[str]]:
+            section_re = re.compile(
                 r"Backgrounds(.*?)Merit",
                 flags=(re.MULTILINE + re.DOTALL + re.IGNORECASE),
             )
-            section = section.search(dalines).group(1)
-            teedees = re.compile(r"<td>(?:<b>)?(.*?)(?:</b>)?</td>")
-            teedees = teedees.findall(section)
-            backgroundnames = [0, 3, 5, 7, 10, 12, 14]
-            backgroundnames = [teedees[x] for x in backgroundnames]
-            disciplinenames = [1, 4, 6, 8, 11, 13, 15]
-            disciplinenames = [teedees[x] for x in disciplinenames]
+            sec_match = section_re.search(dalines)
+            if sec_match is None:
+                return [], []
+            section_text = sec_match.group(1)
+            teedees_re = re.compile(r"<td>(?:<b>)?(.*?)(?:</b>)?</td>")
+            teedees = teedees_re.findall(section_text)
+            bg_indices = [0, 3, 5, 7, 10, 12, 14]
+            backgroundnames = [teedees[x] for x in bg_indices]
+            disc_indices = [1, 4, 6, 8, 11, 13, 15]
+            disciplinenames = [teedees[x] for x in disc_indices]
             return backgroundnames, disciplinenames
 
-        def getmthmwp():
-            section = re.compile(
-                r"Merits(.*?)</table>", flags=(re.MULTILINE + re.DOTALL + re.IGNORECASE)
+        def getmthmwp() -> tuple[str, int, int]:
+            section_re = re.compile(
+                r"Merits(.*?)</table>",
+                flags=(re.MULTILINE + re.DOTALL + re.IGNORECASE),
             )
-            section = section.search(dalines).group(1)
-            teedees = re.compile(r"<td .*?>(.*?)?</td>")
-            teedees = teedees.findall(section)
+            sec_match = section_re.search(dalines)
+            if sec_match is None:
+                return "", 0, 0
+            section_text = sec_match.group(1)
+            teedees_re = re.compile(r"<td .*?>(.*?)?</td>")
+            teedees = teedees_re.findall(section_text)
             _merits = ""
             for i in range(2, 31, 3):
                 _merits += teedees[i] + "\n"
@@ -417,18 +488,23 @@ class VampireCharacter:
             _willpower = teedees[15].count("checked")
             return _merits, _humanity, _willpower
 
+        number_str = str(number)
         try:
-            number = int(number)
+            number = int(number_str)
         except Exception:
-            try:
-                number = int(re.search(r"\D*(.*)", number).group(1))
-            except Exception:
+            num_match = re.search(r"\D*(.*)", number_str)
+            if num_match:
+                try:
+                    number = int(num_match.group(1))
+                except Exception:
+                    return False
+            else:
                 return False
 
         response = request.urlopen("https://sheetgen.dalines.net/sheet/" + str(number))
         dalines = response.read().decode()
 
-        for a in self.meta.keys():
+        for a in self.meta:
             b = getmeta(a)
             if b:
                 self.meta[a] = b
@@ -440,17 +516,17 @@ class VampireCharacter:
             self.backgrounds[b] = getval(b)
         for b in dscp:
             self.disciplines[b] = getval(b)
-        for b in self.virtues.keys():
+        for b in self.virtues:
             self.virtues[b] = getval(b)
 
-        for a in self.attributes.keys():
+        for a in self.attributes:
             try:
                 self.attributes[a] = getval(a)
             except Exception:
                 self.attributes[a] = 0
 
-        for b in self.abilities.keys():
-            for a in self.abilities[b].keys():
+        for b in self.abilities:
+            for a in self.abilities[b]:
                 try:
                     self.abilities[b][a] = getval(a)
                 except Exception:
@@ -462,7 +538,15 @@ class VampireCharacter:
 
         return True
 
-    def setfromform(self, form):  # accesses internal dicts
+    def setfromform(self, form: dict[str, Any]) -> Self:  # accesses internal dicts
+        """Populate character data from a submitted web form.
+
+        Args:
+            form: The form data dict with field names and values.
+
+        Returns:
+            The VampireCharacter instance for chaining.
+        """
         self.attributes = self.zero_attributes()
         self.abilities = self.zero_abilities()
         self.disciplines = collections.OrderedDict()
@@ -472,7 +556,7 @@ class VampireCharacter:
         self.special["Bloodmax"] = 10
         for field in form:
             value = form[field]
-            if field in self.meta.keys():
+            if field in self.meta:
                 if value is not None:
                     self.meta[field] = value
                     if field == "Merits":
@@ -483,44 +567,37 @@ class VampireCharacter:
                             self.meta["Generation"] = "15"
                             self.backgrounds["Generation"] = -2
                 continue
-            if field in self.attributes.keys():
+            if field in self.attributes:
                 if value is not None:
                     self.attributes[field] = intdef(value)
                 continue
-            if field in self.abilities["Skills"].keys():
+            if field in self.abilities["Skills"]:
                 if value is not None:
                     self.abilities["Skills"][field] = intdef(value)
                 continue
-            if field in self.abilities["Talents"].keys():
+            if field in self.abilities["Talents"]:
                 if value is not None:
                     self.abilities["Talents"][field] = intdef(value)
                 continue
-            if field in self.abilities["Knowledges"].keys():
+            if field in self.abilities["Knowledges"]:
                 if value is not None:
                     self.abilities["Knowledges"][field] = intdef(value)
                 continue
             if "background_name_" in field:
-                if (
-                    (value is not None)
-                    and (value != "")
-                    and (field != "background_name_")
-                ):  # no empty submits
+                if (value is not None) and (value != "") and (field != "background_name_"):  # no empty submits
                     try:
                         preval = self.backgrounds[value]
                     except Exception:
                         preval = 0
+                    bg_match = re.match(r"background_name_(.*)", field)
+                    key = "background_value_" + (bg_match.group(1) if bg_match else "")
                     try:
-                        self.backgrounds[value] = preval + int(
-                            form[
-                                "background_value_"
-                                + re.match(r"background_name_(.*)", field).group(1)
-                            ]
-                        )
+                        self.backgrounds[value] = preval + int(form[key])
                     except Exception:
                         self.backgrounds[value] = 0
                 if value == "Generation":
                     self.meta[value] = str(
-                        int(self.meta[value]) - self.backgrounds[value]
+                        int(self.meta[value]) - self.backgrounds[value],
                     )
                     self.special["Bloodmax"] = int(10 + self.backgrounds[value])
                     if self.meta[value] == "7":
@@ -540,33 +617,25 @@ class VampireCharacter:
 
                 continue
             if "discipline_name_" in field:
-                if (value is not None) and (
-                    field != "discipline_name_"
-                ):  # no empty submits
+                if (value is not None) and (field != "discipline_name_"):  # no empty submits
                     try:
                         preval = self.disciplines[value]
                     except Exception:
                         preval = 0
+                    disc_match = re.match(r"discipline_name_(.*)", field)
+                    key = "discipline_value_" + (disc_match.group(1) if disc_match else "")
                     try:
-                        self.disciplines[value] = preval + int(
-                            form[
-                                "discipline_value_"
-                                + re.match(r"discipline_name_(.*)", field).group(1)
-                            ]
-                        )
+                        self.disciplines[value] = preval + int(form[key])
                     except Exception:
                         self.disciplines[value] = 0
                 continue
             if "virtue_name_" in field:
-                if (value is not None) and (
-                    field != "virtue_name_"
-                ):  # no empty submits
+                if (value is not None) and (field != "virtue_name_"):  # no empty submits
+                    virt_match = re.match(r"virtue_name_(.*)", field)
+                    key = "virtue_value_" + (virt_match.group(1) if virt_match else "")
                     try:
                         self.virtues[value] = int(
-                            form[
-                                "virtue_value_"
-                                + re.match(r"virtue_name_(.*)", field).group(1)
-                            ]
+                            form[key],
                         )
                     except Exception:
                         self.virtues[value] = 0
@@ -577,55 +646,49 @@ class VampireCharacter:
                 continue
             if "virtue_value_" in field:
                 continue
-            if field in self.special.keys() and value is not None:
+            if field in self.special and value is not None:
                 self.special[field] = intdef(value)
                 continue
             if "newsheet" not in field:
                 log.error(f"VampireCharacter unknown data: {field}:{value}")
 
-        self.disciplines = collections.OrderedDict(
-            x for x in sorted(self.disciplines.items()) if x[0] != ""
-        )
-        self.backgrounds = collections.OrderedDict(
-            x for x in sorted(self.backgrounds.items()) if x[0] != ""
-        )
+        self.disciplines = collections.OrderedDict(x for x in sorted(self.disciplines.items()) if x[0] != "")
+        self.backgrounds = collections.OrderedDict(x for x in sorted(self.backgrounds.items()) if x[0] != "")
         self.timestamp = time.strftime("%Y/%m/%d-%H:%M:%S")
         return self
 
-    def applydamage(self, amount, dmg_type="Lethal"):
+    def applydamage(self, amount: int, dmg_type: str = "Lethal") -> None:
+        """Apply damage to the character's health track.
+
+        Args:
+            amount: Positive for damage, negative for healing.
+            dmg_type: 'Bashing', 'Lethal', or 'Aggravated'.
+        """
         if amount > 0:
             self.special[dmg_type] += amount
+        elif dmg_type == "Aggravated":
+            self.special["Aggravated"] += amount
+            if self.special["Aggravated"] <= 0:
+                self.special["Aggravated"] = 0
+                self.special["Partialheal"] = 0
         else:
-            if dmg_type == "Aggravated":
-                self.special["Aggravated"] += amount
-                if self.special["Aggravated"] <= 0:
-                    self.special["Aggravated"] = 0
-                    self.special["Partialheal"] = 0
-            else:
-                self.special["Bashing"] += amount
-                if self.special["Bashing"] < 0:
-                    self.special["Lethal"] += self.special["Bashing"]
-                    self.special["Bashing"] = 0
-                if self.special["Lethal"] < 0:
-                    self.special["Partialheal"] -= self.special["Lethal"]
-                    self.special["Lethal"] = 0
-                if self.special["Partialheal"] > 4:
-                    self.special["Partialheal"] -= 5
-                    self.applydamage(-1, "Aggravated")
-        while (
-            self.special["Bashing"]
-            + self.special["Lethal"]
-            + self.special["Aggravated"]
-            > 7
-        ):
+            self.special["Bashing"] += amount
+            if self.special["Bashing"] < 0:
+                self.special["Lethal"] += self.special["Bashing"]
+                self.special["Bashing"] = 0
+            if self.special["Lethal"] < 0:
+                self.special["Partialheal"] -= self.special["Lethal"]
+                self.special["Lethal"] = 0
+            if self.special["Partialheal"] > 4:
+                self.special["Partialheal"] -= 5
+                self.applydamage(-1, "Aggravated")
+        while self.special["Bashing"] + self.special["Lethal"] + self.special["Aggravated"] > 7:
             if dmg_type == "Bashing":  # if damage is bashing
                 if self.special["Bashing"] > 1:  # and there already is bashing damage
                     self.special["Bashing"] -= 2  # transform a bashing into lethal
                     self.special["Lethal"] += 1
                 else:
-                    self.special["Bashing"] = (
-                        0  # bashing will not overflow into aggravated
-                    )
+                    self.special["Bashing"] = 0  # bashing will not overflow into aggravated
                     break
             elif dmg_type == "Lethal":
                 if self.special["Lethal"] > 1:  # same for lethal to aggravated
@@ -636,29 +699,29 @@ class VampireCharacter:
 
             if self.special["Aggravated"] >= 7:
                 raise Exception(
-                    self.meta["Name"]
-                    + " is ash with "
-                    + str(self.special["Aggravated"])
-                    + " aggravated damage."
+                    self.meta["Name"] + " is ash with " + str(self.special["Aggravated"]) + " aggravated damage.",
                 )
 
-    def process_trigger(self, trigger):
+    def process_trigger(self, trigger: str) -> None:
+        """Process a trigger string for blood, willpower, or damage.
+
+        Args:
+            trigger: A trigger string like '§blood_1' or '§damage_bashing_2'.
+        """
         if "§blood_" in trigger:
             try:
                 amount = int(trigger.replace("§blood_", "").strip())
                 self.special["Bloodpool"] -= amount
-                if self.special["Bloodpool"] > self.special["Bloodmax"]:
-                    self.special["Bloodpool"] = self.special["Bloodmax"]
+                self.special["Bloodpool"] = min(self.special["Bloodpool"], self.special["Bloodmax"])
             except Exception:
-                raise Exception("Invalid Blood value: " + trigger)
+                raise Exception("Invalid Blood value: " + trigger) from None
         if "§will_" in trigger:
             try:
                 amount = int(trigger.replace("§will_", "").strip())
                 self.special["Willpower"] -= amount
-                if self.special["Willpower"] > self.special["Willmax"]:
-                    self.special["Willpower"] = self.special["Willmax"]
+                self.special["Willpower"] = min(self.special["Willpower"], self.special["Willmax"])
             except Exception:
-                raise Exception("Invalid Will value: " + trigger)
+                raise Exception("Invalid Will value: " + trigger) from None
 
         if "§damage_" in trigger:
             try:
@@ -670,13 +733,13 @@ class VampireCharacter:
                     self.applydamage(amount, dmg_type="Aggravated")
                 else:
                     amount = int(
-                        trigger.replace(trigger[: trigger.rfind("_") + 1], "").strip()
+                        trigger.replace(trigger[: trigger.rfind("_") + 1], "").strip(),
                     )
                     self.applydamage(amount)
             except Exception as inst:
                 raise Exception(
-                    "Invalid damage: " + trigger + ", because " + str(inst.args[0])
-                )
+                    "Invalid damage: " + trigger + ", because " + str(inst.args[0]),
+                ) from None
 
         if "§heal_" in trigger:
             try:
@@ -687,10 +750,15 @@ class VampireCharacter:
                     amount = int(trigger.replace("§heal_", "").strip())
                     self.applydamage(-amount)
             except Exception:
-                raise Exception("Invalid healing: " + trigger)
+                raise Exception("Invalid healing: " + trigger) from None
 
-    def getdictrepr(self):
-        character = {
+    def getdictrepr(self) -> dict[str, Any]:
+        """Return a dictionary representation of the character.
+
+        Returns:
+            A dict with all character data suitable for serialization.
+        """
+        return {
             "Meta": self.meta,
             "Attributes": self.attributes,
             "Abilities": self.abilities,
@@ -701,10 +769,17 @@ class VampireCharacter:
             "Special": self.special,
             "Type": "OWOD",
         }
-        return character
 
     @classmethod
-    def from_character(cls, char: "VampireCharacter"):
+    def from_character(cls, char: VampireCharacter) -> VampireCharacter:
+        """Create a new VampireCharacter from an existing instance.
+
+        Args:
+            char: The source VampireCharacter.
+
+        Returns:
+            A new VampireCharacter with copied data.
+        """
         d = char.getdictrepr()
         c = VampireCharacter(
             d.get("Name", d["Meta"]["Name"]),
@@ -719,11 +794,12 @@ class VampireCharacter:
         c.timestamp = char.timestamp
         return c
 
-    def legacy_convert(self):
+    def legacy_convert(self) -> None:
+        """Convert legacy sheet data to the current format."""
         # this is the legacy section used to update old sheets into new formats
         # Fix: uppercasing attributes
         newatt = self.zero_attributes()
-        for i in self.attributes.keys():
+        for i in self.attributes:
             newkey = i[0].upper() + i[1:]
             newatt[newkey] = self.attributes[i]
         self.attributes = newatt
@@ -739,14 +815,19 @@ class VampireCharacter:
         except Exception:
             self.special["Partialheal"] = 0
 
-    def combine_bgvdscp(self):
-        combined = []
+    def combine_bgvdscp(self) -> list[Any]:
+        """Combine backgrounds, disciplines, and virtues into a single list.
+
+        Returns:
+            A list of dicts pairing each background, discipline, and virtue.
+        """
+        combined: list[Any] = []
         for i in range(
             max(
                 len(self.backgrounds),
                 len(self.disciplines.keys()),
                 len(self.virtues.keys()),
-            )
+            ),
         ):
             combined.append({})
             try:
@@ -754,9 +835,7 @@ class VampireCharacter:
             except Exception:
                 combined[i]["Background"] = ""
             try:
-                combined[i]["Background_Value"] = self.backgrounds[
-                    list(self.backgrounds.keys())[i]
-                ]
+                combined[i]["Background_Value"] = self.backgrounds[list(self.backgrounds.keys())[i]]
             except Exception:
                 combined[i]["Background_Value"] = 0
             try:
@@ -764,9 +843,7 @@ class VampireCharacter:
             except Exception:
                 combined[i]["Discipline"] = ""
             try:
-                combined[i]["Discipline_Value"] = self.disciplines[
-                    list(self.disciplines.keys())[i]
-                ]
+                combined[i]["Discipline_Value"] = self.disciplines[list(self.disciplines.keys())[i]]
             except Exception:
                 combined[i]["Discipline_Value"] = 0
             try:
@@ -780,7 +857,13 @@ class VampireCharacter:
 
         return combined
 
-    def makevamprandom(self, dis, back):
+    def makevamprandom(self, dis: int | str, back: int | str) -> None:
+        """Randomly assign disciplines and backgrounds to the character.
+
+        Args:
+            dis: Number of discipline points to allocate.
+            back: Number of background points to allocate.
+        """
         alldis = list({y for x in self.get_clans().values() for y in x})
         self.meta["Clan"] = random.choice(list(self.get_clans().keys()))
         for d in self.get_clandisciplines():
@@ -791,8 +874,8 @@ class VampireCharacter:
                 self.disciplines[d] += 1
             else:
                 d = random.choice(alldis)
-                if self.disciplines.get_str(d, 0) < 5:
-                    self.disciplines[d] = self.disciplines.get_str(d, 0) + 1
+                if self.disciplines.get(d, 0) < 5:
+                    self.disciplines[d] = self.disciplines.get(d, 0) + 1
                 else:
                     self.disciplines["DUDE LIKE SO MANY"] = 5
                     self.meta["Gear"] += "\n[overflowed Discipline point]"
@@ -809,25 +892,51 @@ class VampireCharacter:
 
     @staticmethod
     def makerandom(
-        mini, cap, prio1a, prio1b, prio1c, prio2a, prio2b, prio2c, do_shuffle
-    ):
-        def allocaterandomly(num, minimum, maximum, var):
+        mini: int,
+        cap: int,
+        prio1a: int,
+        prio1b: int,
+        prio1c: int,
+        prio2a: int,
+        prio2b: int,
+        prio2c: int,
+        do_shuffle: bool,
+    ) -> VampireCharacter:
+        """Generate a random VampireCharacter with allocated stats.
+
+        Args:
+            mini: Minimum attribute value.
+            cap: Maximum attribute value.
+            prio1a: Priority 1A allocation.
+            prio1b: Priority 1B allocation.
+            prio1c: Priority 1C allocation.
+            prio2a: Priority 2A allocation.
+            prio2b: Priority 2B allocation.
+            prio2c: Priority 2C allocation.
+            prio1a/b/c: Priority values for attribute groups.
+            prio2a/b/c: Priority values for ability groups.
+            do_shuffle: If True, randomly shuffle priority assignments.
+
+        Returns:
+            A VampireCharacter instance with randomly generated stats.
+        """
+
+        def allocaterandomly(num: int, minimum: int, maximum: int, var: int) -> list[int]:
             attribute = [minimum] * var
             while num:
                 x = randint(0, var - 1)
                 if attribute[x] < maximum:
                     attribute[x] += 1
                     num -= 1
-                else:
-                    if sum(attribute) >= maximum * var:
-                        break
+                elif sum(attribute) >= maximum * var:
+                    break
             return attribute
 
         response = request.urlopen(
             "https://www.behindthename.com/random/random.php?number=2&gender=both&"
             "surname=&randomsurname=yes&all=no&usage_ger=1&usage_myth=1&usage_anci=1&"
             "usage_bibl=1&usage_hist=1&usage_lite=1&usage_theo=1&usage_goth=1&"
-            "usage_fntsy=1"
+            "usage_fntsy=1",
         )
         prio = [prio1a, prio1b, prio1c]
         abi = [prio2a, prio2b, prio2c]
@@ -836,7 +945,7 @@ class VampireCharacter:
             shuffle(abi)
 
         names = re.compile(
-            "<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......"
+            "<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......<a c[^>]*.([^<]*)......",
         )
         a = str(response.read())
 
@@ -848,22 +957,28 @@ class VampireCharacter:
             + allocaterandomly(prio[2], mini, cap, 3)
         )
         abi = (
-            allocaterandomly(abi[0], 0, 3, 10)
-            + allocaterandomly(abi[1], 0, 3, 10)
-            + allocaterandomly(abi[2], 0, 3, 10)
+            allocaterandomly(abi[0], 0, 3, 10) + allocaterandomly(abi[1], 0, 3, 10) + allocaterandomly(abi[2], 0, 3, 10)
         )
         char.set_attributes_from_int_list(att)
         char.set_abilities_from_int_list(abi)
         char.set_virtues_from_int_list(allocaterandomly(7, 1, 5, 3))
-        try:
-            char.meta["Name"] = html.unescape(
-                result.group(1) + " " + result.group(2) + " " + result.group(3)
-            )
-        except Exception:
+        if result:
+            try:
+                char.meta["Name"] = html.unescape(
+                    result.group(1) + " " + result.group(2) + " " + result.group(3),
+                )
+            except Exception:
+                char.name = "choose a name!"
+        else:
             char.name = "choose a name!"
         return char
 
-    def set_attributes_from_int_list(self, att):
+    def set_attributes_from_int_list(self, att: list[int]) -> None:
+        """Populate attributes from a flat integer list.
+
+        Args:
+            att: List of 9 integers in standard attribute order.
+        """
         self.attributes["Strength"] = att[0]
         self.attributes["Dexterity"] = att[1]
         self.attributes["Stamina"] = att[2]
@@ -876,7 +991,12 @@ class VampireCharacter:
         self.attributes["Intelligence"] = att[7]
         self.attributes["Wits"] = att[8]
 
-    def set_abilities_from_int_list(self, abi):
+    def set_abilities_from_int_list(self, abi: list[int]) -> None:
+        """Populate abilities from a flat integer list.
+
+        Args:
+            abi: List of integers for all abilities in sorted order.
+        """
         i = 0
         for c in reversed(sorted(self.abilities.keys())):
             for a in sorted(self.abilities[c].keys()):
@@ -884,8 +1004,13 @@ class VampireCharacter:
                 i += 1
 
     @staticmethod
-    def zero_attributes():
-        attributes = {
+    def zero_attributes() -> dict[str, int]:
+        """Return a zeroed-out attributes dict.
+
+        Returns:
+            A dict with all nine attributes set to 0.
+        """
+        return {
             "Strength": 0,
             "Dexterity": 0,
             "Stamina": 0,
@@ -896,15 +1021,24 @@ class VampireCharacter:
             "Intelligence": 0,
             "Wits": 0,
         }
-        return attributes
 
     @staticmethod
-    def zero_abilities():
-        return getlocale_data()["abilities"]
+    def zero_abilities() -> dict[str, Any]:
+        """Return a zeroed-out abilities dict.
+
+        Returns:
+            A nested dict of ability categories with values set to 0.
+        """
+        return getlocale_data()["abilities"]  # type: ignore[no-any-return]
 
     @staticmethod
-    def zero_specials():
-        special = {
+    def zero_specials() -> dict[str, int]:
+        """Return a zeroed-out special values dict.
+
+        Returns:
+            A dict with health, willpower, blood, and damage fields at zero.
+        """
+        return {
             "Humanity": 0,
             "Willpower": 0,
             "Willmax": 1,
@@ -915,11 +1049,15 @@ class VampireCharacter:
             "Lethal": 0,
             "Aggravated": 0,
         }
-        return special
 
     @staticmethod
-    def zero_meta() -> Dict[str, str]:
-        meta: Dict[str, str] = {
+    def zero_meta() -> dict[str, str]:
+        """Return a zeroed-out meta information dict.
+
+        Returns:
+            A dict with all meta fields set to empty strings or defaults.
+        """
+        meta: dict[str, str] = {
             "Name": "",
             "Nature": "",
             "Generation": "",
@@ -936,21 +1074,44 @@ class VampireCharacter:
         return meta
 
     @staticmethod
-    def zero_virtues():
+    def zero_virtues() -> collections.OrderedDict[str, int]:
+        """Return a zeroed-out virtues dict.
+
+        Returns:
+            An OrderedDict with Conscience, SelfControl, and Courage at 0.
+        """
         return collections.OrderedDict(
-            {"Conscience": 0, "SelfControl": 0, "Courage": 0}
+            {"Conscience": 0, "SelfControl": 0, "Courage": 0},
         )
 
-    def serialize(self):
+    def serialize(self) -> bytes:
+        """Serialize the character to bytes via pickle.
+
+        Returns:
+            A bytes object of the pickled character.
+        """
         return pickle.dumps(self)
 
     @staticmethod
-    def deserialize(serialized):
+    def deserialize(serialized: bytes) -> VampireCharacter:
+        """Deserialize a character from bytes and apply legacy conversion.
+
+        Args:
+            serialized: A bytes object from a prior serialize() call.
+
+        Returns:
+            A VampireCharacter instance.
+        """
         tmp = VampireCharacter.from_character(pickle.loads(serialized))
         tmp.legacy_convert()
         return tmp
 
-    def set_virtues_from_int_list(self, vir):
+    def set_virtues_from_int_list(self, vir: list[int]) -> None:
+        """Populate virtues from a flat integer list.
+
+        Args:
+            vir: List of 3 integers for Conscience, SelfControl, Courage.
+        """
         self.virtues["Conscience"] = vir[0]
         self.virtues["SelfControl"] = vir[1]
         self.virtues["Courage"] = vir[2]

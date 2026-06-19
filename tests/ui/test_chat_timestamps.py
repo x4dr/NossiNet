@@ -1,16 +1,22 @@
-import pytest
+"""Tests for chat timestamp instant-update behaviour."""
+
+import os
+import shutil
+import sqlite3
 import subprocess
 import time
-import os
-import sqlite3
-import shutil
+from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
+
+import pytest
 from playwright.sync_api import Page, expect
 from pytest_httpserver import HTTPServer
 
 
 @pytest.fixture(scope="session")
-def webhook_server():
+def webhook_server() -> Iterator[HTTPServer]:
+    """Start a mock webhook server for Discord integration tests."""
     server = HTTPServer()
     server.start()
     server.expect_request("/mock-webhook").respond_with_data("OK", status=204)
@@ -21,7 +27,8 @@ def webhook_server():
 
 
 @pytest.fixture(scope="session")
-def test_db(webhook_server):
+def test_db(webhook_server: HTTPServer) -> Iterator[str]:
+    """Create a temporary test database with mock webhook URL."""
     test_db_path = Path("test_NN.db").absolute()
     if Path("NN.db").exists():
         shutil.copy("NN.db", test_db_path)
@@ -41,7 +48,8 @@ def test_db(webhook_server):
 
 
 @pytest.fixture(scope="session")
-def test_server(test_db):
+def test_server(test_db: str) -> Iterator[str]:
+    """Start a NossiNet server subprocess for the test session."""
     # Start the server as a true subprocess
     env = os.environ.copy()
     env["DATABASE"] = test_db
@@ -72,11 +80,13 @@ def test_server(test_db):
 
 
 @pytest.fixture(scope="function")
-def browser_context_args(browser_context_args):
-    return {**browser_context_args, "ignore_https_errors": True}
+def browser_context_args(browser_context_args: dict[str, Any]) -> dict[str, Any]:
+    """Configure Playwright to ignore HTTPS errors for local testing."""
+    return browser_context_args
 
 
-def test_chat_timestamp_instant_update(page: Page, test_server, webhook_server):
+def test_chat_timestamp_instant_update(page: Page, test_server: str, webhook_server: HTTPServer) -> None:
+    """Chat messages show relative timestamps immediately via MutationObserver."""
     base_url = test_server
 
     # 1. Login
@@ -101,9 +111,7 @@ def test_chat_timestamp_instant_update(page: Page, test_server, webhook_server):
 
     # 5. Verify Webhook (Safety Confirmation)
     page.wait_for_timeout(1000)
-    assert (
-        len(webhook_server.log) > 0
-    ), "Discord webhook was NOT intercepted by local mock!"
+    assert len(webhook_server.log) > 0, "Discord webhook was NOT intercepted by local mock!"
 
     # 6. Check the timestamp inside the newly appeared element
     timestamp = page.locator(f"div:has-text('{test_msg}')").locator(".timestamp").last

@@ -1,10 +1,12 @@
+"""Flask application factory and core configuration for NossiSite."""
+
 import logging
 import os
 import random
 import string
 
 from flask import Flask
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect  # type: ignore[import-untyped]
 
 from NossiSite.base_ext import encode_id
 
@@ -14,7 +16,7 @@ csrf = CSRFProtect(app)
 
 key = ""
 try:
-    with open(os.path.join(os.path.expanduser("~"), "key"), "r") as keyfile:
+    with open(os.path.join(os.path.expanduser("~"), "key")) as keyfile:
         key = keyfile.read()
 except FileNotFoundError:
     with open(os.path.join(os.path.expanduser("~"), "key"), "w") as keyfile:
@@ -26,7 +28,7 @@ SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Strict"
 GITHUB_WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET")
-WTF_CSRF_TIME_LIMIT = 60 * 60 * 24 * 7  #
+WTF_CSRF_TIME_LIMIT = 60 * 60 * 24 * 7  # 1 week
 app.config.from_object(__name__)
 log = logging.getLogger("frontend")
 fh = logging.FileHandler("nossilog.log", mode="a")
@@ -34,7 +36,5 @@ fh.setLevel(logging.DEBUG)
 log.addHandler(fh)
 logging.basicConfig(format="%(asctime)s %(levelname)s:%(message)s")
 log.setLevel(logging.DEBUG)
-app.jinja_env.globals["restart_id"] = "".join(
-    random.SystemRandom().choice(string.hexdigits) for _ in range(4)
-)
+app.jinja_env.globals["restart_id"] = "".join(random.SystemRandom().choice(string.hexdigits) for _ in range(4))
 app.jinja_env.filters["b64e"] = encode_id

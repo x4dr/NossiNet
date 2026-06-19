@@ -16,3 +16,5 @@
 */__pycache__/
 *.pem
 /.env
+/GamePack/
+.gamepack-sha

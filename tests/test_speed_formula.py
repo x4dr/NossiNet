@@ -1,8 +1,11 @@
-import random
+"""Speed formula verification comparing iterative simulation with rule-of-thumb approximation."""
+
 import math
+import random
 
 
-def iterative_speed(thrust, amount, anchor, mass, dynamics) -> dict:
+def iterative_speed(thrust: float, amount: int, anchor: float, mass: float, dynamics: int) -> dict[str, float]:
+    """Simulate speed over time with iterative drag integration, returning topspeed, duration, and time90."""
     dt = 0.1
     speed = 0.0
     mech_total_mass = mass * amount
@@ -16,19 +19,13 @@ def iterative_speed(thrust, amount, anchor, mass, dynamics) -> dict:
     if net_force <= 0:
         return {"topspeed": 0.0, "duration": 0.0, "time90": 0.0}
 
-    if dynamics == 0:
-        v_max = net_force ** (1 / 3)
-    else:
-        v_max = math.sqrt(net_force * dynamics / 10)
+    v_max = net_force ** (1 / 3) if dynamics == 0 else math.sqrt(net_force * dynamics / 10)
 
     accel = 1.0
     seconds = 0.0
     time90 = 0.0
     while accel > 0.001 and seconds < 1000:
-        if dynamics == 0:
-            drag_force = speed**3
-        else:
-            drag_force = speed**2 / (dynamics / 10)
+        drag_force = speed**3 if dynamics == 0 else speed**2 / (dynamics / 10)
 
         accel = (thrust_force - friction_force - drag_force) / (mech_total_mass * 10)
         speed += accel * dt
@@ -39,7 +36,8 @@ def iterative_speed(thrust, amount, anchor, mass, dynamics) -> dict:
     return {"topspeed": speed * 3.6, "duration": seconds, "time90": time90}
 
 
-def rule_of_thumb_speed(thrust, amount, anchor, mass, dynamics) -> dict:
+def rule_of_thumb_speed(thrust: float, amount: int, anchor: float, mass: float, dynamics: int) -> dict[str, float]:
+    """Approximate top speed and time-to-90% using closed-form formulas for cubic and quadratic drag."""
     mech_total_mass = mass * amount
     net_force = (thrust * amount) - (anchor * mech_total_mass)
 
@@ -58,7 +56,8 @@ def rule_of_thumb_speed(thrust, amount, anchor, mass, dynamics) -> dict:
     return {"topspeed": v_max * 3.6, "duration": 5 * tau, "time90": time90}
 
 
-def test_formulas():
+def test_formulas() -> None:
+    """Compare iterative_speed with rule_of_thumb_speed across random parameters to verify accuracy."""
     passed_speed = 0
     passed_time90 = 0
     total = 100
@@ -87,11 +86,7 @@ def test_formulas():
             continue
 
         diff_s = abs(actual["topspeed"] - rule["topspeed"]) / actual["topspeed"]
-        diff_t = (
-            abs(actual["time90"] - rule["time90"]) / actual["time90"]
-            if actual["time90"] > 0
-            else 0
-        )
+        diff_t = abs(actual["time90"] - rule["time90"]) / actual["time90"] if actual["time90"] > 0 else 0
 
         if diff_s <= 0.10:
             passed_speed += 1
