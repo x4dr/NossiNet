@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "nossinet"
 version = "0.1.0"
@@ -28,6 +32,9 @@ dependencies = [
     "zipp>=3.23.0",
 ]
 
+
+[tool.setuptools.packages.find]
+include = ["NossiPack*", "NossiSite*", "Data*"]
 
 [tool.uv.sources]
 gamepack = { path = "../GamePack", editable = true }

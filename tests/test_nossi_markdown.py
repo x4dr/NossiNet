@@ -33,7 +33,7 @@ def test_nossi_markdown_processor() -> None:
         assert "<p>appended</p>" in result
     finally:
         # Clean up global registry to not break other tests
-        NossiTag.registry = [t for t in NossiTag.registry if not isinstance(t, (ReverseTag, AppendTag))]
+        NossiTag.registry[:] = [t for t in NossiTag.registry if not isinstance(t, (ReverseTag, AppendTag))]
 
 
 def test_priority_conflict() -> None:
@@ -49,4 +49,4 @@ def test_priority_conflict() -> None:
                 priority = 5
 
     finally:
-        NossiTag.registry = [t for t in NossiTag.registry if not isinstance(t, ConflictTag1)]
+        NossiTag.registry[:] = [t for t in NossiTag.registry if not isinstance(t, ConflictTag1)]

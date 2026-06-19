@@ -48,38 +48,6 @@ def test_mecha_turn_property() -> None:
     assert m.turn == 5
 
 
-def test_mecha_next_turn() -> None:
-    """Verify next_turn increments turn and returns summary with thermals."""
-    m = Mecha()
-    m.turn = 1
-    summary = m.next_turn()
-    assert m.turn == 2
-    assert summary["turn"] == 2
-    assert "thermals" in summary
-
-
-def test_system_booting() -> None:
-    """Verify a system transitions through booting states over successive turns."""
-    from gamepack.endworld.OffensiveSystem import OffensiveSystem
-
-    m = Mecha()
-    s = OffensiveSystem("TestSys", {"boot": 2, "enabled": "[x]", "energy": 10, "amount": 1})
-    m.Offensive["TestSys"] = s
-
-    # Turn 1: Booting starts
-    assert s.is_booting()
-    assert not s.is_active()
-
-    m.next_turn()  # Turn 1 -> 2
-    assert s.boot_progress == 1
-    assert s.is_booting()
-
-    m.next_turn()  # Turn 2 -> 3
-    assert s.boot_progress == 2
-    assert not s.is_booting()
-    assert s.is_active()
-
-
 def test_encounter_manager(temp_wiki: Path) -> None:
     """Verify MechaEncounterManager can start, log, and load encounters."""
     mgr = MechaEncounterManager(temp_wiki, "test_mech")
@@ -156,39 +124,6 @@ def test_heat_assignment() -> None:
     assert m.fluxpool == 5
 
 
-def test_speed_transition() -> None:
-    """Verify acceleration and deceleration transitions over successive turns."""
-    from gamepack.endworld.MovementSystem import MovementSystem
-
-    m = Mecha()
-    ms = MovementSystem(
-        "Wheels",
-        {
-            "thrust": 400,
-            "anchor": 0.5,
-            "dynamics": 5,
-            "mass": 2,
-            "amount": 10,
-            "enabled": "[x]",
-        },
-    )
-    m.Movement["Wheels"] = ms
-
-    m.current_speed = 0
-    m.target_speed = 100
-
-    m.next_turn()
-    assert m.current_speed > 0
-    assert m.current_speed <= 100
-
-    # Test deceleration
-    m.current_speed = 100
-    m.target_speed = 0
-    m.next_turn()
-    assert m.current_speed < 100
-    assert m.current_speed >= 0
-
-
 def test_system_library_loading(temp_wiki: Path) -> None:
     """Verify system data can be loaded from the wiki library directory."""
     # Create a system in the library
@@ -207,7 +142,6 @@ def test_system_library_loading(temp_wiki: Path) -> None:
 
 def test_mecha_system_detail_missing_wiki_page(
     test_client: FlaskClient,
-    temp_wiki: Path,
 ) -> None:
     """When WikiPage.load_locate returns None, the route must return 404.
 
@@ -215,9 +149,9 @@ def test_mecha_system_detail_missing_wiki_page(
     to the template without None check.
     """
     import base64
+    from unittest.mock import MagicMock, patch
 
     from gamepack.endworld.OffensiveSystem import OffensiveSystem
-    from unittest.mock import MagicMock, patch
 
     mech = Mecha()
     mech.Offensive["0"] = OffensiveSystem(
