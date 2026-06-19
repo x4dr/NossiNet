@@ -28,7 +28,7 @@ jobs:
           import pathlib, re
           p = pathlib.Path('pyproject.toml')
           c = p.read_text()
-          c = re.sub(r'path = \"\.\./GamePack\".*', f'git = \"https://github.com/x4dr/GamePack.git\", rev = \"{SHA}\"', c)
+          c = re.sub(r'path = \"\.\./GamePack\".*', 'git = \"https://github.com/x4dr/GamePack.git\", rev = \"$SHA\"', c)
           p.write_text(c)
           "
 
@@ -87,7 +87,7 @@ jobs:
           import pathlib, re
           p = pathlib.Path('pyproject.toml')
           c = p.read_text()
-          c = re.sub(r'path = \"\.\./GamePack\".*', f'git = \"https://github.com/x4dr/GamePack.git\", rev = \"{SHA}\"', c)
+          c = re.sub(r'path = \"\.\./GamePack\".*', 'git = \"https://github.com/x4dr/GamePack.git\", rev = \"$SHA\"', c)
           p.write_text(c)
           "
 
