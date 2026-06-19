@@ -17,4 +17,3 @@
 *.pem
 /.env
 /GamePack/
-.gamepack-sha
