@@ -10,6 +10,17 @@
         return m ? m.content : ''
     }
 
+    // Number of /tag-validate requests currently in flight. Exposed via the
+    // data-wiki-tag-validator attribute so callers can wait for validation to
+    // settle instead of guessing with a timeout: every settled request
+    // re-dispatches a transaction in the editor to force re-decoration, and
+    // doing that while the user is typing moves the caret out from under them.
+    let inFlight = 0
+
+    function setPhase(phase) {
+        document.documentElement.dataset.wikiTagValidator = phase
+    }
+
     async function validate(el) {
         const raw = el.getAttribute('data-raw') || ''
         const tagType = el.getAttribute('data-type') || Array.from(el.classList).find(
@@ -17,6 +28,8 @@
         ) || ''
         if (!tagType || !raw) return
 
+        inFlight += 1
+        setPhase('validating')
         try {
             const r = await fetch('/tag-validate', {
                 method: 'POST',
@@ -31,6 +44,8 @@
         } catch {
             window.__tagValidation[raw] = 'invalid'
         }
+        inFlight -= 1
+        if (inFlight === 0) setPhase('ready')
 
         // Trigger re-decoration so the plugin picks up the cached result
         document.dispatchEvent(new CustomEvent('tag-validation-update'))
@@ -39,6 +54,7 @@
     function startObserver(root) {
         // Process existing dirty tags (from initial decoration)
         root.querySelectorAll('.tag-dirty').forEach(validate)
+        if (inFlight === 0) setPhase('ready')
 
         // Watch for new tags introduced by editing
         const observer = new MutationObserver((mutations) => {
@@ -57,16 +73,12 @@
         const pm = document.querySelector('.ProseMirror')
         if (pm) {
             startObserver(pm)
-            document.documentElement.dataset.wikiTagValidator = 'ready'
             return
         }
         // .ProseMirror is added later when the editor opens (dblclick)
         document.addEventListener('editor-prosemirror-ready', () => {
             const el = document.querySelector('.ProseMirror')
-            if (el) {
-                startObserver(el)
-                document.documentElement.dataset.wikiTagValidator = 'ready'
-            }
+            if (el) startObserver(el)
         })
     }
 
