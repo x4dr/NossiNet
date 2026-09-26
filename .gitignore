@@ -11,6 +11,7 @@
 /.coverage
 /*.result
 /*.gz
+/commit_tmp
 /tests/NN.db
 /tests/logs/
 */__pycache__/
