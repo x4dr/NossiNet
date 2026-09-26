@@ -80,7 +80,7 @@ window.addEventListener("load", function () {
 
                 if (data.type === 'roll') {
                     const resultEl = document.getElementById('lightning-result');
-                    if (resultEl) {
+                    if (resultEl && resultEl.dataset.user === data.user) {
                         resultEl.textContent = '';
                         resultEl.appendChild(document.createTextNode(`${data.labels} ==> `));
                         const strong = document.createElement('strong');

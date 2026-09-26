@@ -46,10 +46,22 @@ window.addEventListener("load", () => {
 
     function overlay_edit(reply) {
         const editfield = document.getElementById("editfield");
+        if (editfield == null) {
+            console.error("overlay_edit: #editfield missing");
+            return;
+        }
         const overlay = document.getElementById("overlay");
+        if (overlay == null) {
+            console.error("overlay_edit: #overlay missing");
+            return;
+        }
         const textdiv = editfield.querySelector("textarea");
         const olddata = editfield.querySelector("[name='original']");
-        const closebutton = editfield.querySelector("#closebutton");
+        const closebutton = editfield.querySelector("[name='closebutton']");
+        if (textdiv == null || olddata == null || closebutton == null) {
+            console.error("overlay_edit: editfield is missing expected parts");
+            return;
+        }
         editfield.className = "editfield"
         editfield.classList.add("activeedit");
         textdiv.value = reply["data"];
@@ -69,15 +81,26 @@ window.addEventListener("load", () => {
     }
 
     function table_row_overlay_edit(reply) {
-        const editfield = document.getElementById("table_editor");
+        const editfield = document.querySelector("div#table_editor");
+        if (editfield == null) {
+            console.error("table_row_overlay_edit: div#table_editor missing");
+            return;
+        }
         const overlay = document.getElementById("overlay");
-        const table = editfield.querySelector("table");
+        const table = editfield.querySelector("#table_editor_grid");
         const addbutton = editfield.querySelector("[name='addtable_entry']");
-        const closebutton = editfield.querySelector("#closebutton");
+        const closebutton = editfield.querySelector("[name='closebutton']");
+        const stylesfield = editfield.querySelector("[name='styles']");
+        const pathfield = editfield.querySelector("[name='path']");
+        if (overlay == null || table == null || addbutton == null || closebutton == null
+            || stylesfield == null || pathfield == null) {
+            console.error("table_row_overlay_edit: table editor is missing expected parts");
+            return;
+        }
         const headers = reply["data"]["headers"];
         const rows = reply["data"]["rows"];
-        editfield.querySelector("[name='styles']").value = reply["data"]["styles"];
-        editfield.querySelector("[name='path']").value = JSON.stringify(reply["path"]);
+        stylesfield.value = reply["data"]["styles"];
+        pathfield.value = JSON.stringify(reply["path"]);
 
         let header_row = table.querySelector("thead tr");
         header_row.innerHTML = "";

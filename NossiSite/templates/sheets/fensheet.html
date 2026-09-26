@@ -61,11 +61,11 @@
     {%- if v is mapping -%}
     <thead>
         <tr>
-            <th data-path="{{ character.headings_used[" values"] }}|{{ name|urlencode }}|{{ k[:30]|urlencode }}" class="subheading
+            <th data-path="{{ character.headings_used["values"] }}|{{ name|urlencode }}|{{ k[:30]|urlencode }}" class="subheading
                 {%- if owner %} editable{% endif %}" colspan="2">{{- k -}}</th>
         </tr>
     </thead>
-    <tbody class="{%- if owner %} editable{% endif -%}" data-path="{{ character.headings_used[" values"] }}|{{
+    <tbody class="{%- if owner %} editable{% endif -%}" data-path="{{ character.headings_used["values"] }}|{{
         name|urlencode }}|{{ k[:30]|urlencode }}" data-type="table">
         {% set notfirstsection = loop.index0 %}
         {%- for vk,vv in v.items() -%}
@@ -95,7 +95,7 @@
 {% endmacro %}
 {%- macro catformat(cat, name, cost) -%}
 <div class="gridwrapper category">
-    <div tabindex="0" aria-describedby="{{ cat }}-tooltip" data-path="{{ character.headings_used[" values"] }}|{{
+    <div tabindex="0" aria-describedby="{{ cat }}-tooltip" data-path="{{ character.headings_used["values"] }}|{{
         name|urlencode }}" class="tooltip heading span-2{% if owner %} editable{% endif %}">{{ name }}
         <span class="tooltiptext" id="{{ cat }}-tooltip" role="tooltip">Options<br />for {{ cost }}<br />{% for l in
             character.cost_calc(cost) %}{% for b in l %}{{ b }}{% if not loop.last %},{% endif %}{% endfor %}
@@ -156,8 +156,7 @@
     <div style="visibility: hidden" id="context_element">{{ context }}</div>
     <div class="flexwrapper">
         {%- for key,val in character.Character.items() -%}
-        <div class="infobox box{% if owner %} editable{% endif %}" data-path="{{ character.headings_used["
-            description"]|urlencode }}|{{ key|urlencode }}">
+        <div class="infobox box{% if owner %} editable{% endif %}" data-path="{{ character.headings_used["description"]|urlencode }}|{{ key|urlencode }}">
             <div class="heading box">{{ key }}</div>
             <div class="desc-text">
                 {%- if val is string -%}
@@ -194,7 +193,7 @@
             {% endfor %}
         </div>
         <div id="lightning-sequence"></div>
-        <div id="lightning-result" class="lightning-result"></div>
+        <div id="lightning-result" class="lightning-result" data-user="{{ session.user }}"></div>
 
         <div id="reroll-wrapper" style="display: none;">
             <button id="reroll-toggle" class="lightning-btn" title="Reroll Options">R</button>
@@ -239,7 +238,7 @@
             <input name="type" type="hidden" value="table">
             <input name="styles" type="hidden" value="">
             <input name="path" type="hidden" value="">
-            <table id="table_editor">
+            <table id="table_editor_grid">
                 <thead>
                     <tr></tr>
                 </thead>

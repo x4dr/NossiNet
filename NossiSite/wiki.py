@@ -670,8 +670,15 @@ def live_edit_get_text(res: str, a: list[str]) -> dict[str, Any]:
         pos = int(len(res) * ratio)
         return {"data": res[max(0, pos - 200) : pos + 500]}
     mdo = MDObj.from_md(res)
-    for step in a:
-        mdo = mdo.children[step]
+    try:
+        for step in a:
+            mdo = mdo.children[step]
+    except KeyError as e:
+        return {
+            "data": "",
+            "type": "error",
+            "error": f"traversal error: element not found in sheet ({e.args[0]})",
+        }
     return {"data": mdo.to_md(), "type": "text"}
 
 
@@ -686,8 +693,15 @@ def live_edit_get_table(res: str, a: list[str]) -> dict[str, Any]:
         Dict with table data and type.
     """
     mdo = MDObj.from_md(res)
-    for step in a:
-        mdo = mdo.children[step]
+    try:
+        for step in a:
+            mdo = mdo.children[step]
+    except KeyError as e:
+        return {
+            "data": "",
+            "type": "error",
+            "error": f"traversal error: element not found in sheet ({e.args[0]})",
+        }
     if not mdo.tables:
         return {"data": "", "type": "error"}
 
