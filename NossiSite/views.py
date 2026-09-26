@@ -196,7 +196,7 @@ def editentries(x: str | None = None) -> str | WerkzeugResponse:
             ):
                 return render_template("base/edit_entry.html", mode="blog", entry=entry)
             raise ValueError
-        except (ValueError, IndexError):
+        except ValueError, IndexError:
             flash("not authorized to edit post " + str(x))
             return redirect(url_for("views.editentries"))
     if request.method == "POST":

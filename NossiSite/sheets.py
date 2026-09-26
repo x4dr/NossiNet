@@ -976,7 +976,7 @@ def mecha_assign_heat(n: str, m: str) -> tuple[str, dict[str, str]]:
                     m,
                     {"type": "HEAT_ASSIGNMENT", "name": n, "amount": delta},
                 )
-        except (ValueError, TypeError):
+        except ValueError, TypeError:
             abort(400)
     elif amount is not None:
         try:
@@ -986,7 +986,7 @@ def mecha_assign_heat(n: str, m: str) -> tuple[str, dict[str, str]]:
                     m,
                     {"type": "HEAT_ASSIGNMENT", "name": n, "amount": delta},
                 )
-        except (ValueError, TypeError):
+        except ValueError, TypeError:
             abort(400)
 
     # Re-load state to reflect change in UI
@@ -1354,7 +1354,7 @@ def mecha_set_roll(m: str, s: str, n: str) -> str:
         try:
             val = int(roll)
             add_pending_event(m, {"type": "SYSTEM_ROLL", "name": n, "value": val})
-        except (ValueError, TypeError):
+        except ValueError, TypeError:
             abort(400)
 
     # Re-load state
