@@ -1,6 +1,7 @@
 """Blueprint for wiki page viewing, editing, searching, tag management, and administration."""
 
 import json
+import os
 import re
 import subprocess
 import threading
@@ -35,7 +36,7 @@ from NossiSite.base import log
 from NossiSite.clock_sync import sync_clocks_with_db
 from NossiSite.helpers import checklogin
 
-WikiPage.set_wikipath(Path.home() / "wiki")
+WikiPage.set_wikipath(Path(os.environ.get("NOSSI_WIKI_PATH", Path.home() / "wiki")))
 wikistamp = [0.0]
 nossi_markdown = NossiMarkdownProcessor()
 wiki_tags_json = json.dumps([tag.to_dict() for tag in nossi_markdown.tags])
