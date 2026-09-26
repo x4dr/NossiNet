@@ -1,20 +1,14 @@
 """Tests for local markdown rendering without console errors."""
 
-from typing import TYPE_CHECKING, Any
+from __future__ import annotations
 
-import pytest
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from playwright.sync_api import ConsoleMessage, Page
 
 
-@pytest.fixture(scope="function")
-def browser_context_args(browser_context_args: dict[str, Any]) -> dict[str, bool]:
-    """Configure Playwright to ignore HTTPS errors for local testing."""
-    return {**browser_context_args, "ignore_https_errors": True}
-
-
-def test_localmarkdown_renders_without_errors(page: Page) -> None:
+def test_localmarkdown_renders_without_errors(page: Page, app_server: str) -> None:
     """Local markdown page loads without browser console errors or 404s."""
     errors = []
 
@@ -29,7 +23,7 @@ def test_localmarkdown_renders_without_errors(page: Page) -> None:
         lambda response: (errors.append(f"404 on {response.url}") if response.status == 404 else None),
     )
 
-    page.goto("https://127.0.0.1:5000/localmarkdown")
+    page.goto(f"{app_server}/localmarkdown")
 
     page.wait_for_timeout(2000)
 

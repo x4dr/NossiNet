@@ -1,21 +1,12 @@
 """Tests for the local markdown demo page rendering."""
 
-from typing import Any
-
-import pytest
 from playwright.sync_api import Page, expect
 
 
-@pytest.fixture(scope="function")
-def browser_context_args(browser_context_args: dict[str, Any]) -> dict[str, bool]:
-    """Configure Playwright to ignore HTTPS errors for local testing."""
-    return {**browser_context_args, "ignore_https_errors": True}
-
-
-def test_localmarkdown_rendering(page: Page) -> None:
+def test_localmarkdown_rendering(page: Page, app_server: str) -> None:
     """Local markdown page displays correct title and expected headings."""
     # Navigate to localmarkdown demo page
-    page.goto("https://127.0.0.1:5000/localmarkdown")
+    page.goto(f"{app_server}/localmarkdown")
 
     # Capture and print content to diagnose the empty rendering issue
     content = page.content()

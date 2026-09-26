@@ -1,17 +1,17 @@
 """Tests for chat timestamp instant-update behaviour."""
 
-import os
 import shutil
 import sqlite3
-import subprocess
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
-from typing import Any
 
 import pytest
 from playwright.sync_api import Page, expect
 from pytest_httpserver import HTTPServer
+
+# Must match the port map documented in tests/ui/conftest.py.
+PORT_CHAT = 5001
 
 
 @pytest.fixture(scope="session")
@@ -48,41 +48,9 @@ def test_db(webhook_server: HTTPServer) -> Iterator[str]:
 
 
 @pytest.fixture(scope="session")
-def test_server(test_db: str) -> Iterator[str]:
+def test_server(test_db: str, nossi_server: Callable[..., str]) -> str:
     """Start a NossiNet server subprocess for the test session."""
-    # Start the server as a true subprocess
-    env = os.environ.copy()
-    env["DATABASE"] = test_db
-    env["PYTHONPATH"] = "."
-
-    port = 5001
-    proc = subprocess.Popen(
-        ["python", "NossiNet.py", str(port)],
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
-
-    # Wait for server to be responsive
-    time.sleep(8)
-    if proc.poll() is not None:
-        stdout, stderr = proc.communicate()
-        pytest.fail(f"Server failed to start!\nSTDOUT: {stdout}\nSTDERR: {stderr}")
-
-    yield f"https://127.0.0.1:{port}"
-
-    proc.terminate()
-    try:
-        proc.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-        proc.kill()
-
-
-@pytest.fixture(scope="function")
-def browser_context_args(browser_context_args: dict[str, Any]) -> dict[str, Any]:
-    """Configure Playwright to ignore HTTPS errors for local testing."""
-    return browser_context_args
+    return nossi_server(PORT_CHAT, database=Path(test_db))
 
 
 def test_chat_timestamp_instant_update(page: Page, test_server: str, webhook_server: HTTPServer) -> None:

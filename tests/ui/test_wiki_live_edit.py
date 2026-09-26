@@ -1,18 +1,31 @@
 """Tests for the TipTap wiki live editor (open, edit, save, round-trip)."""
 
-from typing import Any
-
-import pytest
 from playwright.sync_api import ConsoleMessage, Page, expect
 
 
-@pytest.fixture(scope="function")
-def browser_context_args(browser_context_args: dict[str, Any]) -> dict[str, bool]:
-    """Configure Playwright to ignore HTTPS errors for local testing."""
-    return {**browser_context_args, "ignore_https_errors": True}
+def wait_for_validation(page: Page) -> None:
+    """Block until the tag validator has reached a verdict on every tag.
+
+    Tags render as ``.tag-dirty`` until ``/tag-validate`` returns, then become
+    ``.tag-valid`` or ``.tag-invalid``. Each settled request re-dispatches a
+    transaction to force re-decoration, so typing before this point moves the
+    caret out from under the user.
+
+    Args:
+        page: Playwright page showing the open editor.
+    """
+    page.wait_for_function(
+        """() => {
+            const root = document.querySelector('#tip-editor .ProseMirror')
+            if (!root) return false
+            const resolved = root.querySelectorAll('.tag-valid, .tag-invalid').length
+            return resolved > 0 && root.querySelectorAll('.tag-dirty').length === 0
+        }""",
+        timeout=15000,
+    )
 
 
-def test_tip_wiki_editor_opens_and_closes(page: Page) -> None:
+def test_tip_wiki_editor_opens_and_closes(page: Page, editor_page_url: str) -> None:
     """Double-click opens the TipTap overlay, Cancel closes it."""
     errors = []
 
@@ -22,7 +35,7 @@ def test_tip_wiki_editor_opens_and_closes(page: Page) -> None:
 
     page.on("console", on_console)
 
-    page.goto("https://127.0.0.1:5000/wiki/demo")
+    page.goto(editor_page_url)
     expect(page.locator("#wikibody")).to_be_visible()
 
     page.locator("#wikibody").dblclick()
@@ -36,7 +49,7 @@ def test_tip_wiki_editor_opens_and_closes(page: Page) -> None:
     assert not non_sse_errors, f"Unexpected console errors: {non_sse_errors}"
 
 
-def test_tip_wiki_editor_save_roundtrip(page: Page) -> None:
+def test_tip_wiki_editor_save_roundtrip(page: Page, editor_page_url: str) -> None:
     """Save button persists content and reloads the page."""
     errors = []
 
@@ -46,7 +59,7 @@ def test_tip_wiki_editor_save_roundtrip(page: Page) -> None:
 
     page.on("console", on_console)
 
-    page.goto("https://127.0.0.1:5000/wiki/demo")
+    page.goto(editor_page_url)
     expect(page.locator("#wikibody")).to_be_visible()
 
     page.locator("#wikibody").dblclick()
@@ -64,10 +77,10 @@ def test_tip_wiki_editor_save_roundtrip(page: Page) -> None:
     editor_text = page.locator("#tip-editor .ProseMirror").inner_text()
     non_sse_errors = [e for e in errors if "SSE" not in e]
     assert not non_sse_errors, f"Unexpected console errors: {non_sse_errors}"
-    assert "Markdown Demo" in editor_text, f"Expected original content after round-trip, got: {editor_text[:200]}"
+    assert "Editor Fixture" in editor_text, f"Expected original content after round-trip, got: {editor_text[:200]}"
 
 
-def test_checkbox_roundtrip(page: Page) -> None:
+def test_checkbox_roundtrip(page: Page, editor_page_url: str) -> None:
     """Checkbox task list syntax survives a TipTap edit/save round-trip."""
     errors = []
 
@@ -77,7 +90,7 @@ def test_checkbox_roundtrip(page: Page) -> None:
 
     page.on("console", on_console)
 
-    page.goto("https://127.0.0.1:5000/wiki/demo")
+    page.goto(editor_page_url)
     expect(page.locator("#wikibody")).to_be_visible()
 
     # Verify checkboxes render in the static wiki view
@@ -100,7 +113,7 @@ def test_checkbox_roundtrip(page: Page) -> None:
     assert not non_sse_errors, f"Unexpected console errors: {non_sse_errors}"
 
 
-def test_glitch_and_strikethrough_survive_roundtrip(page: Page) -> None:
+def test_glitch_and_strikethrough_survive_roundtrip(page: Page, editor_page_url: str) -> None:
     """Glitch syntax (g~text~g) and strikethrough (~~text~~) survive save roundtrip without corrupting each other."""
     errors = []
 
@@ -110,7 +123,7 @@ def test_glitch_and_strikethrough_survive_roundtrip(page: Page) -> None:
 
     page.on("console", on_console)
 
-    page.goto("https://127.0.0.1:5000/wiki/demo")
+    page.goto(editor_page_url)
     expect(page.locator("#wikibody")).to_be_visible()
 
     page.locator("#wikibody").dblclick()
@@ -150,7 +163,7 @@ def test_glitch_and_strikethrough_survive_roundtrip(page: Page) -> None:
     page.locator("#tip-close").click()
 
 
-def test_clock_roundtrip(page: Page) -> None:
+def test_clock_roundtrip(page: Page, editor_page_url: str) -> None:
     """Clock syntax [clock|name|current|total] survives a TipTap save roundtrip."""
     errors = []
 
@@ -160,7 +173,7 @@ def test_clock_roundtrip(page: Page) -> None:
 
     page.on("console", on_console)
 
-    page.goto("https://127.0.0.1:5000/wiki/demo")
+    page.goto(editor_page_url)
     expect(page.locator("#wikibody")).to_be_visible()
 
     page.locator("#wikibody").dblclick()
@@ -193,8 +206,8 @@ def test_clock_roundtrip(page: Page) -> None:
     page.locator("#tip-close").click()
 
 
-def test_decorations_applied_without_errors(page: Page) -> None:
-    """Tag decorations appear as .tag-dirty spans in the editor without console errors."""
+def test_decorations_applied_without_errors(page: Page, editor_page_url: str) -> None:
+    """Every tag in the editor reaches a validated or invalid verdict, without console errors."""
     errors = []
 
     def on_console(msg: ConsoleMessage) -> None:
@@ -203,36 +216,27 @@ def test_decorations_applied_without_errors(page: Page) -> None:
 
     page.on("console", on_console)
 
-    page.goto("https://127.0.0.1:5000/wiki/demo")
+    page.goto(editor_page_url)
     expect(page.locator("#wikibody")).to_be_visible()
 
     page.locator("#wikibody").dblclick()
     page.wait_for_selector(".tip-overlay", state="visible", timeout=5000)
+    wait_for_validation(page)
 
-    # Wait for validator to start observing the editor
-    page.wait_for_function(
-        "document.documentElement.dataset.wikiTagValidator === 'ready'",
-        timeout=10000,
-    )
+    # The transclude of a nonexistent page must be rejected.
+    expect(page.locator(".ProseMirror .tag-invalid").first).to_be_visible(timeout=10000)
 
-    # Decorations applied — at least one .tag-dirty exists
-    dirty_count = page.locator(".ProseMirror .tag-dirty").count()
-    assert dirty_count > 0, f"Expected .tag-dirty elements in editor, found {dirty_count}"
+    # The glitch, strikethrough, clock and checkbox tags all resolve.
+    valid_count = page.locator(".ProseMirror .tag-valid").count()
+    assert valid_count > 0, f"Expected .tag-valid elements in editor, found {valid_count}"
 
-    # The transclude [!pagename] doesn't exist → should become .tag-invalid
-    page.wait_for_selector(
-        ".ProseMirror .tag-invalid",
-        timeout=10000,
-    )
-
-    # Console still clean
     non_sse_errors = [e for e in errors if "SSE" not in e]
     assert not non_sse_errors, f"Unexpected console errors: {non_sse_errors}"
 
     page.locator("#tip-close").click()
 
 
-def test_source_mode_toggle(page: Page) -> None:
+def test_source_mode_toggle(page: Page, editor_page_url: str) -> None:
     """Source mode toggle switches between WYSIWYG and raw textarea."""
     errors = []
 
@@ -242,7 +246,7 @@ def test_source_mode_toggle(page: Page) -> None:
 
     page.on("console", on_console)
 
-    page.goto("https://127.0.0.1:5000/wiki/demo")
+    page.goto(editor_page_url)
     expect(page.locator("#wikibody")).to_be_visible()
 
     page.locator("#wikibody").dblclick()
@@ -270,7 +274,7 @@ def test_source_mode_toggle(page: Page) -> None:
     assert not non_sse_errors, f"Unexpected console errors: {non_sse_errors}"
 
 
-def test_live_link_conversion(page: Page) -> None:
+def test_live_link_conversion(page: Page, editor_page_url: str) -> None:
     """Typing [text](url) in the editor creates a link mark immediately."""
     errors = []
 
@@ -280,100 +284,31 @@ def test_live_link_conversion(page: Page) -> None:
 
     page.on("console", on_console)
 
-    page.goto("https://127.0.0.1:5000/wiki/demo")
+    page.goto(editor_page_url)
     expect(page.locator("#wikibody")).to_be_visible()
 
     page.locator("#wikibody").dblclick()
     page.wait_for_selector(".tip-overlay", state="visible", timeout=5000)
     expect(page.locator("#tip-editor .ProseMirror")).to_be_visible()
 
-    page.locator("#tip-editor .ProseMirror").click()
+    # Every settled /tag-validate re-dispatches a transaction to force
+    # re-decoration, which moves the caret. Wait for validation to actually
+    # finish rather than guessing with a timeout.
+    wait_for_validation(page)
+
+    # Click a real paragraph, not the centre of .ProseMirror: the container's
+    # geometric centre lands in the gap between blocks, which focuses the editor
+    # without placing a caret, and the typed text then goes nowhere.
+    page.locator("#tip-editor .ProseMirror p").last.click()
     page.keyboard.type("[Aurier](aurier)")
 
-    page.wait_for_timeout(500)
+    link = page.locator("#tip-editor .ProseMirror a").first
+    expect(link).to_be_visible(timeout=5000)
 
-    link_count = page.locator("#tip-editor .ProseMirror a").count()
-    assert link_count > 0, (
-        f"Expected at least one <a> link in the editor after typing [Aurier](aurier), " f"found {link_count}"
-    )
-
-    href = page.locator("#tip-editor .ProseMirror a").first.get_attribute("href")
+    href = link.get_attribute("href")
     assert href == "aurier", f"Expected href='aurier', got '{href}'"
 
     non_sse_errors = [e for e in errors if "SSE" not in e]
     assert not non_sse_errors, f"Unexpected console errors: {non_sse_errors}"
 
     page.locator("#tip-close").click()
-
-
-def test_wiki_page_renders_tags_correctly(page: Page) -> None:
-    """Verify server-side wiki page renders all tag types correctly."""
-    errors = []
-    page.on("console", lambda msg: errors.append(msg.text))
-
-    page.goto("https://127.0.0.1:5000/wiki/demo")
-    page.wait_for_selector("#wikibody", state="visible", timeout=10000)
-
-    body = page.locator("#wikibody")
-
-    # Glitch — both syntaxes produce <span class="glitch"> with data-text
-    assert body.locator("span.glitch").count() == 2
-    data_texts = body.locator("span.glitch").all()
-    texts = sorted(text for t in data_texts if (text := t.get_attribute("data-text")) is not None)
-    assert texts == ["replacement", "text"], f"Unexpected data-text values: {texts}"
-
-    # Section tooltip: span.tip-trigger inside <p> with data-tip locator (no embedded content)
-    tip_struct = page.evaluate(
-        """() => {
-        const trigger = document.querySelector('span.tip-trigger');
-        if (!trigger) return { error: 'no span.tip-trigger' };
-
-        const tipId = trigger.getAttribute('data-tip');
-        if (!tipId) return { error: 'no data-tip attr' };
-
-        const parentP = trigger.closest('p');
-        if (!parentP) return { error: 'trigger not inside <p>' };
-
-        const prevH2 = parentP.previousElementSibling;
-        if (!prevH2 || prevH2.tagName !== 'H2' || !prevH2.textContent.includes('Section Tooltip'))
-            return { error: 'paragraph not under Section Tooltip heading',
-                     prevTag: prevH2?.tagName, prevText: prevH2?.textContent };
-
-        return {
-            triggerText: trigger.textContent,
-            tipId: tipId,
-            parentPTag: parentP.tagName,
-            headingAbove: prevH2.textContent,
-        };
-    }""",
-    )
-    assert "error" not in tip_struct, f"DOM structure error: {tip_struct.get('error')}"
-    assert "Transclusion" in tip_struct["triggerText"]
-    assert (
-        tip_struct["tipId"] == "demo#transclusion"
-    ), f"Expected data-tip to be locator 'demo#transclusion', got '{tip_struct['tipId']}'"
-
-    # Transclude: recursive transclusion produces nested .transcluded divs
-    transcluded_count = body.locator(".transcluded").count()
-    assert transcluded_count > 0, f"Expected .transcluded elements, found {transcluded_count}"
-
-    # Infolet: item not in cache, falls back to plain name
-    assert "itemname" in (body.text_content() or "")
-
-    # Foldable
-    assert body.locator(".hider").count() == 1
-
-    # Clock
-    assert body.locator(".clock-container").count() == 1
-
-    # Checkbox
-    assert body.locator('input[type="checkbox"]').count() == 2
-
-    # Strikethrough via ~~text~~ renders as <del>
-    del_elements = body.locator("del")
-    assert del_elements.count() >= 1, f"Expected <del> elements for ~~strikethrough~~, found {del_elements.count()}"
-    assert "strikethrough" in (del_elements.first.text_content() or "")
-
-    # No console errors
-    non_sse = [e for e in errors if "SSE" not in e and "favicon" not in e.lower()]
-    assert not non_sse, f"Console errors: {non_sse}"

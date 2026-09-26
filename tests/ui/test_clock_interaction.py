@@ -1,80 +1,45 @@
 """Tests for clock widget UI interaction."""
 
-import sys
-from pathlib import Path
-from typing import Any
-
 import pytest
 from playwright.sync_api import Page, expect
 
-sys.path.append(str(Path(__file__).parent.parent.parent))
 
+def test_complex_clock_interaction(page: Page, app_server: str) -> None:
+    """Clicking a clock widget repeatedly leaves it interactive and error-free."""
+    errors: list[str] = []
+    page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
 
-@pytest.fixture(scope="session")
-def browser_context_args(browser_context_args: dict[str, Any]) -> dict[str, bool]:
-    """Configure Playwright to ignore HTTPS errors for local testing."""
-    return {**browser_context_args, "ignore_https_errors": True}
+    page.goto(f"{app_server}/wiki/clocks")
+    clock = page.locator(".clock-container").first
+    expect(clock).to_be_visible(timeout=10000)
 
-
-@pytest.fixture(scope="function", autouse=True)
-def setup_clocks(page: Page) -> None:
-    """Navigate to the clocks wiki page and wait for clock containers to load."""
-    page.on("console", lambda msg: print(f"BROWSER: {msg.text}"))
-    page.goto("https://127.0.0.1:5000/wiki/clocks")
-    page.wait_for_selector(".clock-container", state="visible")
-    page.wait_for_timeout(2000)
-
-
-def test_complex_clock_interaction(page: Page) -> None:
-    """Clicking a clock widget increments its state without errors."""
-    clock_id = "IRUWOQ3FNRWGC4Q-MNWG6Y3LOMXG2ZA"
-    clock_container = page.locator(f"#{clock_id}")
-    expect(clock_container).to_be_visible()
-
-    # Wait for JS
-    page.wait_for_timeout(1500)
-
-    # Check if we can increment or decrement
-    box = clock_container.bounding_box()
+    box = clock.bounding_box()
     if not box:
-        pytest.fail("Clock container not found/visible.")
+        pytest.fail("Clock container has no bounding box.")
 
     for _ in range(4):
-        # Click the right side (angle ~90) to increment,
-        # or just click center-ish to interact
         page.mouse.click(box["x"] + box["width"] * 0.75, box["y"] + box["height"] * 0.5)
         page.wait_for_timeout(300)
 
-    # We should have changed state at least.
-    # The test doesn't care exactly how many, just that it's interactive.
-    print("Complex interaction completed.")
+    non_sse_errors = [e for e in errors if "SSE" not in e]
+    assert not non_sse_errors, f"Unexpected console errors: {non_sse_errors}"
 
 
-def test_clock_ui_interaction_changes_active_attribute(page: Page) -> None:
+def test_clock_ui_interaction_changes_active_attribute(page: Page, app_server: str) -> None:
     """Clicking a clock changes its data-active attribute."""
-    # Locate the clock by its ID. Now that generate_clock is fixed to use relative paths,
-    # the ID will include the .md suffix encoded.
-    clock_id = "IRUWOQ3FNRWGC4Q-MNWG6Y3LOMXG2ZA"
-    clock = page.locator(f"#{clock_id}")
+    page.goto(f"{app_server}/wiki/clocks")
+    clock = page.locator(".clock-container").first
+    expect(clock).to_be_visible(timeout=10000)
 
-    # Ensure it's visible
-    expect(clock).to_be_visible()
-
-    # Capture initial data-active value
     initial_active = clock.get_attribute("data-active")
+    assert initial_active is not None, "Clock container has no data-active attribute"
 
     # Wait for the delayed JS handlers in sse_handler.js to attach
     page.wait_for_timeout(1500)
 
-    # Click the clock to increment
     box = clock.bounding_box()
-    if box:
-        page.mouse.click(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
-    else:
-        pytest.fail("Clock container not found/visible.")
+    if not box:
+        pytest.fail("Clock container has no bounding box.")
+    page.mouse.click(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
 
-    # Verify the UI update
-    page.wait_for_timeout(2000)
-    current_active = clock.get_attribute("data-active")
-
-    assert current_active != initial_active, "The clock 'data-active' attribute did not change after click interaction."
+    expect(clock).not_to_have_attribute("data-active", initial_active, timeout=10000)
