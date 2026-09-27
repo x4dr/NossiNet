@@ -1,5 +1,7 @@
 """Tests for the TipTap wiki live editor (open, edit, save, round-trip)."""
 
+import re
+
 from playwright.sync_api import ConsoleMessage, Page, expect
 
 
@@ -23,6 +25,35 @@ def wait_for_validation(page: Page) -> None:
         }""",
         timeout=15000,
     )
+
+
+def read_source(page: Page) -> str:
+    """Switch the editor into source mode and return the raw markdown.
+
+    Waits for the textarea to be populated rather than sleeping for a fixed time.
+
+    Args:
+        page: Playwright page showing the open editor.
+
+    Returns:
+        The editor contents as markdown source.
+    """
+    page.locator("#tip-source-toggle").click()
+    area = page.locator("#tip-source-area")
+    expect(area).to_be_visible(timeout=10000)
+    expect(area).not_to_have_value(re.compile(r"^$"), timeout=10000)
+    return area.input_value()
+
+
+def back_to_wysiwyg(page: Page) -> None:
+    """Switch the editor back to the WYSIWYG view and wait for it to be ready.
+
+    Args:
+        page: Playwright page showing the open editor.
+    """
+    page.locator("#tip-source-toggle").click()
+    expect(page.locator("#tip-editor .ProseMirror")).to_be_visible(timeout=10000)
+    expect(page.locator("#tip-source-area")).not_to_be_visible(timeout=10000)
 
 
 def test_tip_wiki_editor_opens_and_closes(page: Page, editor_page_url: str) -> None:
@@ -131,9 +162,7 @@ def test_glitch_and_strikethrough_survive_roundtrip(page: Page, editor_page_url:
     expect(page.locator("#tip-editor .ProseMirror")).to_be_visible()
 
     # Toggle to source mode to check raw markdown before save
-    page.locator("#tip-source-toggle").click()
-    page.wait_for_timeout(500)
-    source_text = page.locator("#tip-source-area").input_value()
+    source_text = read_source(page)
     # Disabled marked's del tokenizer, so single-tilde glitch syntax is preserved as-is
     # (the markdown serializer escapes ~ as \~ for roundtrip stability)
     assert "g~text~g" in source_text, f"Glitch simple syntax lost before save: {source_text[:300]}"
@@ -141,8 +170,7 @@ def test_glitch_and_strikethrough_survive_roundtrip(page: Page, editor_page_url:
     assert "~~strikethrough~~" in source_text, f"Strikethrough syntax lost before save: {source_text[:300]}"
 
     # Toggle back to WYSIWYG and save
-    page.locator("#tip-source-toggle").click()
-    page.wait_for_timeout(1000)
+    back_to_wysiwyg(page)
     page.locator("#tip-save").click()
     page.wait_for_selector(".tip-overlay", state="hidden", timeout=10000)
     expect(page.locator("#wikibody")).to_be_visible()
@@ -151,9 +179,7 @@ def test_glitch_and_strikethrough_survive_roundtrip(page: Page, editor_page_url:
     page.locator("#wikibody").dblclick()
     page.wait_for_selector(".tip-overlay", state="visible", timeout=5000)
 
-    page.locator("#tip-source-toggle").click()
-    page.wait_for_timeout(500)
-    source_text = page.locator("#tip-source-area").input_value()
+    source_text = read_source(page)
 
     non_sse_errors = [e for e in errors if "SSE" not in e]
     assert not non_sse_errors, f"Unexpected console errors: {non_sse_errors}"
@@ -180,14 +206,11 @@ def test_clock_roundtrip(page: Page, editor_page_url: str) -> None:
     page.wait_for_selector(".tip-overlay", state="visible", timeout=5000)
 
     # Check clock is present in source mode
-    page.locator("#tip-source-toggle").click()
-    page.wait_for_timeout(500)
-    source_text = page.locator("#tip-source-area").input_value()
+    source_text = read_source(page)
     assert "[clock|progress|3|8]" in source_text, f"Clock syntax lost before save: {source_text[:300]}"
 
     # Save and reload
-    page.locator("#tip-source-toggle").click()
-    page.wait_for_timeout(1000)
+    back_to_wysiwyg(page)
     page.locator("#tip-save").click()
     page.wait_for_selector(".tip-overlay", state="hidden", timeout=10000)
     expect(page.locator("#wikibody")).to_be_visible()
@@ -195,9 +218,7 @@ def test_clock_roundtrip(page: Page, editor_page_url: str) -> None:
     # Re-open and verify clock survived
     page.locator("#wikibody").dblclick()
     page.wait_for_selector(".tip-overlay", state="visible", timeout=5000)
-    page.locator("#tip-source-toggle").click()
-    page.wait_for_timeout(500)
-    source_text = page.locator("#tip-source-area").input_value()
+    source_text = read_source(page)
 
     non_sse_errors = [e for e in errors if "SSE" not in e]
     assert not non_sse_errors, f"Unexpected console errors: {non_sse_errors}"
@@ -259,13 +280,12 @@ def test_source_mode_toggle(page: Page, editor_page_url: str) -> None:
     expect(page.locator("#tip-source-area")).to_be_visible()
     expect(page.locator("#tip-source-toggle")).to_have_text("</> WYSIWYG")
 
-    source_text = page.locator("#tip-source-area").input_value()
+    area = page.locator("#tip-source-area")
+    expect(area).not_to_have_value(re.compile(r"^$"), timeout=10000)
+    source_text = area.input_value()
     assert source_text.strip(), f"Expected non-empty content in source view, got: {source_text[:200]}"
 
-    page.locator("#tip-source-toggle").click()
-    page.wait_for_timeout(1000)
-    expect(page.locator("#tip-editor .ProseMirror")).to_be_visible()
-    expect(page.locator("#tip-source-area")).not_to_be_visible()
+    back_to_wysiwyg(page)
     expect(page.locator("#tip-source-toggle")).to_have_text("</> Source")
 
     page.locator("#tip-close").click()
