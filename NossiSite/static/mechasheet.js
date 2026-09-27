@@ -289,16 +289,6 @@ window.updateForecastDisplays = function () {
         genFlux += window.mechaState.pending.heat_manual;
     }
 
-    const forecastText = document.getElementById('js-projected-heat');
-    if (forecastText) forecastText.innerText = "+" + genFlux.toFixed(1) + " Flux";
-
-    const heatTabForecast = document.getElementById('js-heat-forecast-val');
-    if (heatTabForecast) {
-        const net = genFlux - (window.mechaState.projectedCooling || 0);
-        heatTabForecast.innerText = (net > 0 ? "+" : "") + net.toFixed(1) + " Flux";
-        heatTabForecast.style.color = (net > window.mechaState.baseFluxPoolMax) ? "var(--danger)" : "var(--primary)";
-    }
-
     const breakdown = document.getElementById('js-forecast-breakdown');
     if (breakdown) {
         breakdown.innerHTML = "";
@@ -317,18 +307,8 @@ window.updateForecastDisplays = function () {
         bar.style.backgroundColor = genFlux > maxF ? "var(--danger)" : "var(--primary)";
     }
 
-    const heatBar = document.getElementById('js-heat-forecast-bar');
-    if (heatBar) {
-        const maxF = window.mechaState.baseFluxPoolMax;
-        heatBar.style.width = Math.min(100, (genFlux / maxF) * 100) + "%";
-        heatBar.style.backgroundColor = genFlux > maxF ? "var(--danger)" : "var(--primary)";
-    }
-
     const warning = document.getElementById('js-overheat-warning');
     if (warning) warning.innerHTML = genFlux > window.mechaState.baseFluxPoolMax ? '<p style="color: var(--danger); font-size: 0.7em; margin-top: 10px; font-style: italic;">OVERHEAT RISK</p>' : '';
-
-    const heatWarning = document.getElementById('js-heat-forecast-warning');
-    if (heatWarning) heatWarning.innerHTML = genFlux > window.mechaState.baseFluxPoolMax ? '<p style="color: var(--danger); font-size: 0.8em; margin-top: 8px; font-style: italic;">WARNING: Generation exceeds transfer capacity (' + window.mechaState.baseFluxPoolMax.toFixed(1) + '). Overheat imminent!</p>' : '';
 
     const outText = document.getElementById('js-energy-output');
     if (outText) outText.innerText = energyOutput.toFixed(1);

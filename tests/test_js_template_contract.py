@@ -40,16 +40,6 @@ JS_OWNED_IDS = {
     "wiki-tag-validator-init",
 }
 
-# Ids that JavaScript reaches for but no template declares. All of these are
-# referenced by mechasheet.js, which is unfinished and being cut, so there is no
-# point wiring up markup for them. Delete this set when mecha is removed.
-KNOWN_MISSING_IDS = {
-    "js-heat-forecast-bar",
-    "js-heat-forecast-val",
-    "js-heat-forecast-warning",
-    "js-projected-heat",
-}
-
 
 def _js_referenced_ids() -> set[str]:
     """Collect every element id the static JavaScript looks up.
@@ -79,18 +69,18 @@ def _template_ids() -> set[str]:
 
 def test_js_id_selectors_exist_in_templates() -> None:
     """Every id JS looks up is either declared in a template or explicitly JS-owned."""
-    unaccounted = _js_referenced_ids() - _template_ids() - JS_OWNED_IDS - KNOWN_MISSING_IDS
+    unaccounted = _js_referenced_ids() - _template_ids() - JS_OWNED_IDS
     assert not unaccounted, (
         "JavaScript queries ids that no template declares and that are not listed as "
-        f"JS-owned or known-missing: {sorted(unaccounted)}. Either the template lost the "
-        "element or the JS selector is stale."
+        f"JS-owned: {sorted(unaccounted)}. Either the template lost the element or the "
+        "JS selector is stale."
     )
 
 
-def test_known_missing_ids_are_still_only_mecha() -> None:
-    """The known-missing set has not grown beyond the mecha sheet being cut."""
-    unexpected = KNOWN_MISSING_IDS - _js_referenced_ids()
-    assert not unexpected, (
-        f"{sorted(unexpected)} are listed in KNOWN_MISSING_IDS but no longer referenced by "
-        "any JavaScript. Remove them from the set."
+def test_js_owned_ids_are_still_referenced() -> None:
+    """The JS-owned set has not grown stale."""
+    stale = JS_OWNED_IDS - _js_referenced_ids()
+    assert not stale, (
+        f"{sorted(stale)} are listed in JS_OWNED_IDS but no longer referenced by any "
+        "JavaScript. If the element moved into a template, remove it from the set."
     )
