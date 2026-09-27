@@ -12,6 +12,8 @@
 /*.result
 /*.gz
 /commit_tmp
+/todo.md
+/nossinet.egg-info/
 /tests/NN.db
 /tests/logs/
 */__pycache__/
