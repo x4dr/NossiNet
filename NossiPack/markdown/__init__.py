@@ -10,6 +10,7 @@ import NossiPack.markdown.tags.foldable
 import NossiPack.markdown.tags.glitch
 import NossiPack.markdown.tags.header_fix
 import NossiPack.markdown.tags.infolet
+import NossiPack.markdown.tags.infolet_embed
 import NossiPack.markdown.tags.invert
 import NossiPack.markdown.tags.links
 import NossiPack.markdown.tags.section_tooltip

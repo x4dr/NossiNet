@@ -363,6 +363,18 @@ def tag_validate() -> WerkzeugResponse:
     if tag_type in ("glitch", "invert"):
         return WerkzeugResponse(json.dumps({"valid": True, "content": raw}), 200, {"Content-Type": "application/json"})
 
+    if tag_type == "infolet-embed":
+        from NossiPack.markdown.tags.infolet_embed import InfoletEmbedTag
+
+        tag = next((t for t in nossi_markdown.tags if isinstance(t, InfoletEmbedTag)), None)
+        info = tag.extract_locator(raw) if tag else None
+        valid = info is not None and tag is not None and tag.can_resolve(info, data.get("context", ""))
+        return WerkzeugResponse(
+            json.dumps({"valid": valid, "content": info or ""}),
+            200,
+            {"Content-Type": "application/json"},
+        )
+
     if tag_type == "transclude":
         page_match = re.search(
             r"\[!(?![tq]:)([^#|\]]+?)(?:#([^|\]]*?))?(?:\|([^\]]*?))?\]",

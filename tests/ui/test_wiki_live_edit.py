@@ -332,3 +332,33 @@ def test_live_link_conversion(page: Page, editor_page_url: str) -> None:
     assert not non_sse_errors, f"Unexpected console errors: {non_sse_errors}"
 
     page.locator("#tip-close").click()
+
+
+def test_infolet_embeds_render_in_browser(page: Page, infolet_page_url: str) -> None:
+    """Infolet embeds render as disclosure blocks, with unresolved ones marked."""
+    page.goto(infolet_page_url)
+    expect(page.locator("#wikibody")).to_be_visible()
+
+    folds = page.locator("#wikibody details.infolet-fold")
+    expect(folds.first).to_be_visible(timeout=10000)
+    assert folds.count() == 2, f"Expected 2 collapsible infolets, found {folds.count()}"
+    expect(folds.first.locator("summary")).to_have_text("Resolved")
+    # The second uses the empty-name form, so it carries no summary text.
+    expect(folds.nth(1).locator("summary")).to_have_text("")
+
+    # The stylesheet is actually applied, not just the markup present.
+    border = folds.first.evaluate("el => getComputedStyle(el).borderTopWidth")
+    assert border not in ("", "0px"), f"Expected a visible border on .infolet-fold, got {border}"
+
+    # A folded block really is collapsed until its summary is clicked.
+    assert not folds.first.evaluate("el => el.open")
+    folds.first.locator("summary").click()
+    assert folds.first.evaluate("el => el.open")
+
+    # Locators with no resolver, and one naming a missing heading, are marked.
+    unresolved = page.locator("#wikibody .infolet-unresolved")
+    expect(unresolved.first).to_be_visible(timeout=10000)
+    assert unresolved.count() == 2, f"Expected 2 unresolved markers, found {unresolved.count()}"
+    text = unresolved.all_text_contents()
+    assert any("weapon:Dolch:L10HSCB" in t for t in text), f"weapon marker missing from {text}"
+    assert any("No Such Heading" in t for t in text), f"missing-heading marker missing from {text}"

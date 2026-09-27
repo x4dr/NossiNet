@@ -146,3 +146,46 @@ img {
     outline: 2px solid var(--secondary-color);
     outline-offset: 2px;
 }
+
+/* Infolet embeds: [name[[info]]] and friends render as a native disclosure. */
+.wiki details.infolet-fold {
+    margin: 0.6em 0;
+    padding: 0.3em 0.6em;
+    border: 1px solid var(--tertiary-color);
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--midground-color), transparent 40%);
+}
+
+.wiki details.infolet-fold > summary {
+    cursor: pointer;
+    color: var(--primary-color);
+    font-weight: 600;
+    list-style-position: outside;
+}
+
+.wiki details.infolet-fold > summary:hover {
+    color: var(--secondary-color);
+}
+
+.wiki details.infolet-fold > summary:focus-visible {
+    outline: 2px solid var(--secondary-color);
+    outline-offset: 2px;
+}
+
+.wiki details.infolet-fold[open] > summary {
+    margin-bottom: 0.4em;
+}
+
+.wiki details.infolet-fold > *:last-child {
+    margin-bottom: 0;
+}
+
+/* A locator with no resolver. Loud on purpose: it means the wiki references
+   something that does not resolve, which should be fixed rather than hidden. */
+.wiki .infolet-unresolved {
+    color: var(--warn-color);
+    background: color-mix(in srgb, var(--warn-color), transparent 85%);
+    border-bottom: 1px dotted var(--warn-color);
+    padding: 0 0.2em;
+    font-size: 0.9em;
+}

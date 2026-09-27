@@ -233,9 +233,25 @@ def editor_wiki_server(nossi_server: Callable[..., str], tmp_path_factory: pytes
     """
     root = make_wiki(
         tmp_path_factory.mktemp("wiki_editor"),
-        {"editorfixture.md": FIXTURE_DIR / "editor_wiki_page.md"},
+        {
+            "editorfixture.md": FIXTURE_DIR / "editor_wiki_page.md",
+            "infoletfixture.md": FIXTURE_DIR / "infolet_wiki_page.md",
+        },
     )
     return nossi_server(PORT_WIKI, wiki_root=root)
+
+
+@pytest.fixture(scope="session")
+def infolet_page_url(editor_wiki_server: str) -> str:
+    """URL of the throwaway infolet fixture page.
+
+    Args:
+        editor_wiki_server: Base URL from the ``editor_wiki_server`` fixture.
+
+    Returns:
+        Absolute URL to the infolet fixture wiki page.
+    """
+    return f"{editor_wiki_server}/wiki/infoletfixture"
 
 
 @pytest.fixture(scope="session")
