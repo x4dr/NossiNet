@@ -407,7 +407,9 @@ def tag_validate() -> WerkzeugResponse:
         return WerkzeugResponse(json.dumps({"valid": False}), 200, content_type="application/json")
 
     if tag_type == "wikilink":
-        link_match = re.search(r"\[\[([^\]]+?)\]\]", raw)
+        # Mirrors the editor's wikilink pattern, including the lookahead that
+        # keeps typed infolet locators from being validated as wiki links.
+        link_match = re.search(r"\[\[(?!\[?(?:specific|weapon|q):)([^\]]+?)\]\]", raw)
         if link_match:
             inner = link_match.group(1)
             # Strip optional |text suffix

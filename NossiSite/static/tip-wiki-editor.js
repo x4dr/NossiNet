@@ -127,9 +127,12 @@ function createWikiTagPlugin(tags, pm) {
         })
 
     // Wiki link pattern [[page]], [[page#heading]], [[page|text]], [[page#heading|text]]
+    // The lookahead keeps typed infolet locators ([[specific:...]] and friends)
+    // out of the wikilink pattern, otherwise the two overlap and ProseMirror
+    // splits the text into nested spans.
     tagPatterns.push({
         id: 'wikilink',
-        regex: /\[\[(?<ref>[^\]]+?)\]\]/g,
+        regex: /\[\[(?!\[?(?:specific|weapon|q):)(?<ref>[^\]]+?)\]\]/g,
     })
 
     function matchTip(match, id) {

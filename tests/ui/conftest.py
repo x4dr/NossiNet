@@ -219,26 +219,39 @@ def nossi_server() -> Iterator[Callable[..., str]]:
 
 
 @pytest.fixture(scope="session")
-def editor_wiki_server(nossi_server: Callable[..., str], tmp_path_factory: pytest.TempPathFactory) -> str:
-    """Server serving a throwaway wiki seeded with the editor fixture page.
+def editor_wiki_root(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Build the throwaway wiki the editor server serves and return its root.
+
+    Args:
+        tmp_path_factory: pytest-provided factory for temporary directories.
+
+    Returns:
+        Path to the temporary wiki root.
+    """
+    return make_wiki(
+        tmp_path_factory.mktemp("wiki_editor"),
+        {
+            "editorfixture.md": FIXTURE_DIR / "editor_wiki_page.md",
+            "infoletfixture.md": FIXTURE_DIR / "infolet_wiki_page.md",
+            "weapons.md": FIXTURE_DIR / "weapons_wiki_page.md",
+        },
+    )
+
+
+@pytest.fixture(scope="session")
+def editor_wiki_server(nossi_server: Callable[..., str], editor_wiki_root: Path) -> str:
+    """Server serving a throwaway copy of the wiki.
 
     Use this for tests that save wiki pages, so nothing is written to ``~/wiki``.
 
     Args:
         nossi_server: Server factory from the ``nossi_server`` fixture.
-        tmp_path_factory: pytest-provided factory for temporary directories.
+        editor_wiki_root: Temporary wiki root from the ``editor_wiki_root`` fixture.
 
     Returns:
         Base URL of the running server.
     """
-    root = make_wiki(
-        tmp_path_factory.mktemp("wiki_editor"),
-        {
-            "editorfixture.md": FIXTURE_DIR / "editor_wiki_page.md",
-            "infoletfixture.md": FIXTURE_DIR / "infolet_wiki_page.md",
-        },
-    )
-    return nossi_server(PORT_WIKI, wiki_root=root)
+    return nossi_server(PORT_WIKI, wiki_root=editor_wiki_root)
 
 
 @pytest.fixture(scope="session")

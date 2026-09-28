@@ -348,3 +348,10 @@ def test_malformed_weapon_mod_renders_a_marker(weapon_wiki: Callable[..., str]) 
     """A mod that does not match the documented shape is reported."""
     html = weapon_wiki("[[weapon:Dolch:XYZ]]")
     assert 'class="infolet-unresolved"' in html
+
+
+def test_selector_tolerates_an_empty_trailing_component(render: Callable[..., str]) -> None:
+    """``zauber::-`` drops the heading with no nested selector, like ``zauber:-``."""
+    out = render("[[specific:sourcepage:Wasser::-]]")
+    assert "<p>Water body.</p>" in out
+    assert "Wasser</h2>" not in out

@@ -88,9 +88,14 @@ class InfoletEmbedTag(NossiTag):
     description = "Insert a wiki section inline or as a collapsible block"
     example = "[Herz stoppen[[specific:ideas/lifemagic:Herz stoppen:-]]]"
     category = "content"
-    # Group-free so the same pattern is a valid JavaScript RegExp in the editor's
-    # decorator; named groups would be duplicated across the alternatives.
-    pattern = r"\[\[?[^\[\]]*(?:specific|weapon|armor|q):[^\[\]]*\]\]?\]?"
+    # Mirrors the three container regexes exactly, so the text the editor
+    # decorates is the same text extract_locator can parse. Group-free so it is
+    # also a valid JavaScript RegExp in the editor's decorator.
+    pattern = (
+        r"\[[^[\]]*\[\[(?:specific|weapon|q):[^[\]]*\]\]\]"
+        r"|!\[\[(?:specific|weapon|q):[^[\]]*\]\]"
+        r"|\[\[(?:specific|weapon|q):[^[\]]*\]\]"
+    )
 
     # Ordered most specific first. A bare [[info]] would otherwise be carved out
     # of [name[[info]]] or [[[info]]], leaving a stray bracket behind.
@@ -447,14 +452,15 @@ class InfoletEmbedTag(NossiTag):
         """
         section = body
         heading = ""
-        for part in selector.split(":"):
-            part = part.strip()
-            if not part:
-                return None
-            found = self._find_section(section, part)
+        # Empty components are tolerated so ``zauber::-`` (drop the heading, no
+        # nested selector) behaves the same as ``zauber:-``.
+        for part in (p for p in selector.split(":") if p.strip()):
+            found = self._find_section(section, part.strip())
             if found is None:
                 return None
             heading, section = found
+        if not heading:
+            return None
         return heading, section
 
     def _find_section(self, body: str, heading_text: str) -> tuple[str, str] | None:

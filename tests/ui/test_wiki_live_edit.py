@@ -1,6 +1,7 @@
 """Tests for the TipTap wiki live editor (open, edit, save, round-trip)."""
 
 import re
+from pathlib import Path
 
 from playwright.sync_api import ConsoleMessage, Page, expect
 
@@ -355,10 +356,79 @@ def test_infolet_embeds_render_in_browser(page: Page, infolet_page_url: str) -> 
     folds.first.locator("summary").click()
     assert folds.first.evaluate("el => el.open")
 
-    # Locators with no resolver, and one naming a missing heading, are marked.
+    # The weapon locator resolves to a damage table with the selection marked.
+    waffenmod = page.locator("#wikibody .waffenmod")
+    expect(waffenmod).to_be_visible(timeout=10000)
+    assert "Dolch" in (waffenmod.text_content() or "")
+    assert page.locator("#wikibody .waffenmod .waffenmod-selected").count() > 0
+
+    # Only the locator naming a heading that does not exist stays unresolved.
     unresolved = page.locator("#wikibody .infolet-unresolved")
     expect(unresolved.first).to_be_visible(timeout=10000)
-    assert unresolved.count() == 2, f"Expected 2 unresolved markers, found {unresolved.count()}"
-    text = unresolved.all_text_contents()
-    assert any("weapon:Dolch:L10HSCB" in t for t in text), f"weapon marker missing from {text}"
-    assert any("No Such Heading" in t for t in text), f"missing-heading marker missing from {text}"
+    assert unresolved.count() == 1, f"Expected 1 unresolved marker, found {unresolved.count()}"
+    assert "No Such Heading" in (unresolved.first.text_content() or "")
+
+
+def test_infolet_decorations_validate_in_the_editor(page: Page, infolet_page_url: str) -> None:
+    """Infolet locators get exactly one decoration each, correctly classified."""
+    page.goto(infolet_page_url)
+    expect(page.locator("#wikibody")).to_be_visible()
+    page.locator("#wikibody").dblclick()
+    page.wait_for_selector(".tip-overlay", state="visible", timeout=5000)
+    wait_for_validation(page)
+
+    # This page carries nothing but infolet embeds, so every data-raw decoration
+    # on it is one of ours. Note the plugin drops the tag id from invalid
+    # decorations, so they are counted by class alone.
+    decorated = page.locator("#tip-editor .ProseMirror [data-raw]")
+    expect(decorated.first).to_be_visible(timeout=10000)
+    assert decorated.count() == 5, f"Expected 5 decorated infolets, found {decorated.count()}"
+
+    valid = page.locator("#tip-editor .ProseMirror .tag-valid")
+    invalid = page.locator("#tip-editor .ProseMirror .tag-invalid")
+    assert valid.count() == 4, f"Expected 4 valid infolets, found {valid.count()}"
+    assert invalid.count() == 1, f"Expected 1 invalid infolet, found {invalid.count()}"
+
+    # A typed locator must not also be decorated as a wiki link, which would
+    # split the text into overlapping spans.
+    assert page.locator("#tip-editor .ProseMirror .wikilink").count() == 0
+
+
+def test_infolet_syntax_survives_an_editor_save(
+    page: Page,
+    infolet_page_url: str,
+    editor_wiki_root: Path,
+) -> None:
+    """Saving from the editor rewrites the page without destroying the syntax.
+
+    The save handler calls ``location.reload()`` while an SSE stream is open, so
+    waiting on the browser to settle is racy. Waiting for the save response and
+    then reading the page off disk tests the thing that actually matters.
+    """
+    page.goto(infolet_page_url)
+    expect(page.locator("#wikibody")).to_be_visible()
+    page.locator("#wikibody").dblclick()
+    page.wait_for_selector(".tip-overlay", state="visible", timeout=5000)
+    wait_for_validation(page)
+
+    # The editor's markdown must still carry the original syntax.
+    source = read_source(page)
+    for snippet in (
+        "[Resolved[[specific:infoletfixture:Target:-]]]",
+        "[[[specific:infoletfixture:Target]]]",
+        "[[weapon:Dolch:L10HSCB]]",
+    ):
+        assert snippet in source, f"{snippet} lost before save:\n{source[:400]}"
+
+    with page.expect_response(lambda r: "/live_edit" in r.url, timeout=20000):
+        page.locator("#tip-save").click()
+
+    saved = (editor_wiki_root / "infoletfixture.md").read_text(encoding="utf8")
+    for snippet in (
+        "[Resolved[[specific:infoletfixture:Target:-]]]",
+        "[[[specific:infoletfixture:Target]]]",
+        "[[specific:infoletfixture:Target:-]]",
+        "[[weapon:Dolch:L10HSCB]]",
+        "[[specific:infoletfixture:No Such Heading]]",
+    ):
+        assert snippet in saved, f"{snippet} destroyed by the save:\n{saved[:600]}"
