@@ -189,3 +189,37 @@ img {
     padding: 0 0.2em;
     font-size: 0.9em;
 }
+
+/* Weapon damage table from a [[weapon:name:mods]] infolet. */
+.wiki .waffenmod {
+    margin: 0.6em 0;
+}
+
+.wiki .waffenmod-name {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 0.2em;
+}
+
+.wiki .waffenmod table {
+    border-collapse: collapse;
+}
+
+.wiki .waffenmod th,
+.wiki .waffenmod td {
+    padding: 0.15em 0.5em;
+    border: 1px solid color-mix(in srgb, var(--tertiary-color), transparent 40%);
+    text-align: center;
+}
+
+.wiki .waffenmod tbody th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--secondary-color);
+}
+
+.wiki .waffenmod .waffenmod-selected {
+    background: color-mix(in srgb, var(--highlight-color), transparent 20%);
+    color: var(--primary-color);
+    font-weight: 700;
+}

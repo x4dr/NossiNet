@@ -8,6 +8,7 @@ Every test renders against a throwaway wiki so the real ``~/wiki`` is untouched.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 from pathlib import Path
 
@@ -222,3 +223,128 @@ def test_extract_locator_rejects_non_embeds() -> None:
     tag = next(t for t in processor.tags if isinstance(t, InfoletEmbedTag))
     assert tag.extract_locator("just some text") is None
     assert tag.extract_locator("[!page#heading]") is None
+
+
+WEAPON_PAGE = """---
+tags: []
+title: Weapons
+---
+# Weapons
+
+### Dolch
+
+| Wert                             | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| [Hacken](damage#h-Hacken)        | 1 | 1 | 1 | 2 | 2 | 3 | 3 | 4 | 4 | 6 |
+| [Stechen](damage#p-stechen)      | 1 | 1;1 | 1;2 | 1;3 | 1;4 | 1;6 | 5;5 | 6;5 | 7;6 | 8;8 |
+| [Schneiden](weapons#c-schneiden) | 1 | 1 | 1 | 1 | 2 | 2 | 2 | 3 | 3 | 8 |
+| [Schlagen](damage#b-stumpf)      | 1 | 1 | 1 | 1 | 1 | 2 | 2 | 2 | 2 | 5 |
+
+### Hammer
+
+| Wert                             | 1 | 2 |
+|---|:---:|:---:|
+| [Hacken](damage#h-Hacken)        | 2 | 4 |
+| [Schlagen](damage#b-stumpf)      | 3 | 7 |
+"""
+
+
+@pytest.fixture
+def weapon_wiki(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Callable[..., str]:
+    """Install a throwaway wiki holding a weapons page and return a renderer.
+
+    Args:
+        tmp_path: pytest-provided temporary directory.
+        monkeypatch: pytest monkeypatch fixture.
+
+    Returns:
+        Callable taking markdown and an optional page name.
+    """
+    (tmp_path / "weapons.md").write_text(WEAPON_PAGE, encoding="utf8")
+    monkeypatch.setattr(WikiPage, "_wikipath", tmp_path)
+    monkeypatch.setattr(WikiPage, "page_cache", {})
+
+    processor = NossiMarkdownProcessor()
+
+    def _render(markdown_text: str, page: str = "current") -> str:
+        return processor.process(markdown_text, page=page)
+
+    return _render
+
+
+def _selected_cells(html: str) -> tuple[list[str], list[str]]:
+    """Return the selected column headers and cell values from rendered HTML.
+
+    Args:
+        html: Rendered HTML.
+
+    Returns:
+        Tuple of (selected column headers, selected cell values).
+    """
+    headers = re.findall(r'<th class="waffenmod-selected">([^<]*)</th>', html)
+    values = re.findall(r'<td class="waffenmod-selected">([^<]*)</td>', html)
+    return headers, values
+
+
+def test_weapon_locator_renders_the_damage_table(weapon_wiki: Callable[..., str]) -> None:
+    """[[weapon:name:mods]] renders the weapon's table with the selection marked."""
+    html = weapon_wiki("[[weapon:Dolch:L10HSCB]]")
+    assert '<div class="waffenmod">' in html
+    assert "Dolch" in html
+    assert _selected_cells(html) == (["10"], ["6", "8;8", "8", "5"])
+
+
+def test_weapon_mods_select_only_the_named_damage_codes(weapon_wiki: Callable[..., str]) -> None:
+    """Only the rows named by the codes are rendered."""
+    html = weapon_wiki("[[weapon:Dolch:L10B]]")
+    assert "Schlagen" in html
+    assert "Hacken" not in html
+    assert _selected_cells(html) == (["10"], ["5"])
+
+
+def test_weapon_left_count_indexes_from_the_left(weapon_wiki: Callable[..., str]) -> None:
+    """L<count> selects column <count> counting from the left."""
+    assert _selected_cells(weapon_wiki("[[weapon:Dolch:L1H]]")) == (["1"], ["1"])
+    assert _selected_cells(weapon_wiki("[[weapon:Dolch:L5H]]")) == (["5"], ["2"])
+
+
+def test_weapon_right_count_indexes_from_the_right(weapon_wiki: Callable[..., str]) -> None:
+    """R<count> selects the column <count> places from the right."""
+    assert _selected_cells(weapon_wiki("[[weapon:Dolch:R1H]]")) == (["10"], ["6"])
+    assert _selected_cells(weapon_wiki("[[weapon:Dolch:R2H]]")) == (["9"], ["4"])
+
+
+def test_weapon_count_clamps_to_the_table_length(weapon_wiki: Callable[..., str]) -> None:
+    """Counts past either end clamp rather than erroring."""
+    assert _selected_cells(weapon_wiki("[[weapon:Dolch:L99H]]")) == (["10"], ["6"])
+    assert _selected_cells(weapon_wiki("[[weapon:Dolch:R99H]]")) == (["1"], ["1"])
+
+
+def test_weapon_count_clamps_to_a_short_table(weapon_wiki: Callable[..., str]) -> None:
+    """Clamping uses the table's real length, not a fixed ten columns."""
+    assert _selected_cells(weapon_wiki("[[weapon:Hammer:L10H]]")) == (["2"], ["4"])
+    assert _selected_cells(weapon_wiki("[[weapon:Hammer:R1H]]")) == (["2"], ["4"])
+
+
+def test_weapon_without_mods_shows_the_last_column(weapon_wiki: Callable[..., str]) -> None:
+    """An empty mod string selects the last column and every damage code."""
+    html = weapon_wiki("[[weapon:Dolch:]]")
+    assert _selected_cells(html) == (["10"], ["6", "8;8", "8", "5"])
+
+
+def test_weapon_comma_separated_mods(weapon_wiki: Callable[..., str]) -> None:
+    """Several mods select several columns at once."""
+    html = weapon_wiki("[[weapon:Dolch:L1H,L10H]]")
+    assert _selected_cells(html) == (["1", "10"], ["1", "6"])
+
+
+def test_unknown_weapon_renders_a_marker(weapon_wiki: Callable[..., str]) -> None:
+    """A weapon with no table is reported rather than silently dropped."""
+    html = weapon_wiki("[[weapon:NoSuchWeapon:L10H]]")
+    assert 'class="infolet-unresolved"' in html
+
+
+def test_malformed_weapon_mod_renders_a_marker(weapon_wiki: Callable[..., str]) -> None:
+    """A mod that does not match the documented shape is reported."""
+    html = weapon_wiki("[[weapon:Dolch:XYZ]]")
+    assert 'class="infolet-unresolved"' in html

@@ -13,12 +13,19 @@ The inner locator is typed:
 
 * ``specific:page:selector`` — a heading on another page, with the section read
   up to the next heading of the same or higher level
-* ``weapon:...`` / ``armor:...`` / ``q:...`` — no resolver exists yet
+* ``weapon:name:mods`` — a weapon's damage table from the ``weapons`` page
+* ``q:...`` — no resolver exists yet
 
 A ``specific:`` selector is ``a:b`` to find heading ``b`` on the page, or
 ``a:b:c`` to find ``b`` first and then ``c`` within it. A trailing ``:-`` drops
 the heading itself, keeping only the body. A page of ``-`` searches the current
 page, then ``prices``, then ``items``.
+
+Weapon mods follow ``conventions.md``: ``L<count><codes>`` counts from the left
+and ``R<count><codes>`` from the right, both clamped to the table's real length.
+``<codes>`` is any of ``H`` (Hacken), ``S`` (Stechen), ``C`` (Schneiden) and
+``B`` (Schlagen). Several mods are comma separated. Only the selected damage
+rows are rendered, with the selected column marked.
 
 Locators that cannot be resolved render as a visible ``.infolet-unresolved``
 marker rather than being left as literal text, so the gap is visible instead of
@@ -39,10 +46,19 @@ FALLBACK_PAGES = ("prices", "items")
 
 #: Locator types that have no resolver yet. Kept explicit so ``/tag-validate``
 #: and this tag agree on what counts as unresolved.
-UNRESOLVED_TYPES = ("weapon", "armor", "q")
+UNRESOLVED_TYPES = ("q",)
 
-#: The only locator type with a resolver.
-RESOLVABLE_TYPES = ("specific",)
+#: Locator types that have a resolver.
+RESOLVABLE_TYPES = ("specific", "weapon")
+
+#: Page holding the weapon damage tables.
+WEAPON_PAGE = "weapons"
+
+#: Damage code to the row label it selects, in the order conventions.md uses.
+DAMAGE_CODES = {"H": "Hacken", "S": "Stechen", "C": "Schneiden", "B": "Schlagen"}
+
+#: A single weapon mod, e.g. ``L10HSCB`` or ``R2B``.
+_MOD_RE = re.compile(r"(?P<direction>[LR])(?P<count>\d+)(?P<codes>[HSCB]+)")
 
 #: Placeholder swapped in before the markdown converter runs. The resolved HTML
 #: is substituted afterwards, so a section made of block level elements does not
@@ -222,9 +238,160 @@ class InfoletEmbedTag(NossiTag):
 
         InfoletEmbedTag._depth += 1
         try:
-            return self._resolve_specific(rest, current_page)
+            if kind == "specific":
+                return self._resolve_specific(rest, current_page)
+            return self._resolve_weapon(rest)
         finally:
             InfoletEmbedTag._depth -= 1
+
+    def _resolve_weapon(self, rest: str) -> tuple[str, str] | None:
+        """Resolve a ``weapon:name:mods`` locator against the weapons page.
+
+        Args:
+            rest: Everything after ``weapon:``, i.e. ``name:mods``.
+
+        Returns:
+            Tuple of (weapon name, rendered damage table), or None if the weapon
+            or its table is missing.
+        """
+        name, _, mods = rest.partition(":")
+        name = name.strip()
+        if not name:
+            return None
+
+        loaded = WikiPage.load_locate(WEAPON_PAGE)
+        if loaded is None:
+            return None
+        found = self._find_section(loaded.body, name)
+        if found is None:
+            return None
+        _, section = found
+
+        table = self._parse_damage_table(section)
+        if table is None:
+            return None
+
+        headers, rows = table
+        if mods.strip():
+            selected = self._parse_mods(mods, headers)
+            if selected is None:
+                return None
+            columns, codes = selected
+        else:
+            columns = {len(headers) - 1}
+            codes = set(DAMAGE_CODES)
+
+        return name, self._render_damage_table(name, headers, rows, columns, codes)
+
+    def _parse_damage_table(self, section: str) -> tuple[list[str], list[tuple[str, list[str]]]] | None:
+        """Parse a weapon's damage table out of its wiki section.
+
+        The table has a ``Wert`` header row of column numbers and one row per
+        damage type, e.g. ``| [Hacken](damage#h-Hacken) | 1 | 2 | ... |``.
+
+        Args:
+            section: Markdown section of the weapon.
+
+        Returns:
+            Tuple of (column headers, [(row label, cell values)]), or None when
+            the section holds no recognisable damage table.
+        """
+        headers: list[str] = []
+        rows: list[tuple[str, list[str]]] = []
+
+        for line in section.split("\n"):
+            stripped = line.strip()
+            if not stripped.startswith("|"):
+                continue
+            cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+            if not cells:
+                continue
+            first = cells[0]
+            if first.lower() == "wert":
+                headers = cells[1:]
+                continue
+            if set(first) <= set(":- "):
+                continue
+            rows.append((re.sub(r"\[([^\]]*)]\([^)]*\)", r"\1", first), cells[1:]))
+
+        if not headers or not rows:
+            return None
+        return headers, rows
+
+    def _parse_mods(self, mods: str, headers: list[str]) -> tuple[set[int], set[str]] | None:
+        """Parse comma separated weapon mods into selected columns and codes.
+
+        ``L<count><codes>`` counts from the left as ``[count]`` and
+        ``R<count><codes>`` from the right as ``[-count]``, both clamped to the
+        table's real length.
+
+        Args:
+            mods: Raw mod text, e.g. ``L10HSCB`` or ``L10HSCB,R2B``.
+            headers: Column headers of the table being addressed.
+
+        Returns:
+            Tuple of (selected column indices, selected codes), or None if any
+            mod is malformed.
+        """
+        length = len(headers)
+        columns: set[int] = set()
+        codes: set[str] = set()
+
+        for part in mods.split(","):
+            match = _MOD_RE.fullmatch(part.strip())
+            if not match:
+                return None
+            count = int(match.group("count"))
+            # L is [count] and R is [-count] in Python index terms, both clamped
+            # to the table's real length.
+            index = count - 1 if match.group("direction") == "L" else length - count
+            columns.add(max(0, min(index, length - 1)))
+            codes.update(match.group("codes"))
+
+        if not columns or not codes:
+            return None
+        return columns, codes
+
+    def _render_damage_table(
+        self,
+        name: str,
+        headers: list[str],
+        rows: list[tuple[str, list[str]]],
+        columns: set[int],
+        codes: set[str],
+    ) -> str:
+        """Render the selected damage rows, marking the selected column.
+
+        Args:
+            name: Weapon name, used as the caption.
+            headers: Column headers of the source table.
+            rows: Row label and cell values of the source table.
+            columns: Selected column indices.
+            codes: Selected damage codes.
+
+        Returns:
+            HTML for the trimmed damage table.
+        """
+        wanted = {DAMAGE_CODES[code] for code in codes if code in DAMAGE_CODES}
+        parts = [f'<div class="waffenmod"><div class="waffenmod-name">{escape(name)}</div><table>']
+        parts.append("<thead><tr><th></th>")
+        for index, header in enumerate(headers):
+            marker = ' class="waffenmod-selected"' if index in columns else ""
+            parts.append(f"<th{marker}>{escape(header)}</th>")
+        parts.append("</tr></thead><tbody>")
+
+        for label, values in rows:
+            if wanted and label not in wanted:
+                continue
+            parts.append(f"<tr><th>{escape(label)}</th>")
+            for index in range(len(headers)):
+                value = values[index] if index < len(values) else ""
+                marker = ' class="waffenmod-selected"' if index in columns else ""
+                parts.append(f"<td{marker}>{escape(value)}</td>")
+            parts.append("</tr>")
+
+        parts.append("</tbody></table></div>")
+        return "".join(parts)
 
     def _resolve_specific(self, rest: str, current_page: str) -> tuple[str, str] | None:
         """Resolve a ``specific:`` locator.
