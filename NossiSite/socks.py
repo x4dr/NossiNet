@@ -32,7 +32,15 @@ class BroadcastElement:
 
 broadcast_elements: list[BroadcastElement] = []
 broadcast = threading.Event()
-connected_hubs: set[Any] = set()
+connected_hubs: set[queue.Queue[Any]] = set()
+
+#: How long an idle SSE client waits for a broadcast before a keepalive comment is
+#: written to it. The write is what detects a vanished peer: writing to a socket the
+#: client has closed fails, which unwinds the generator so its ``finally`` runs and
+#: gunicorn gets the pool slot back. Without a bound here the generator blocks in
+#: ``get()`` forever, the pool (default ``worker_connections`` = 1000) saturates, and
+#: gevent's ``StreamServer`` stops calling ``accept()`` at all.
+SSE_HEARTBEAT_INTERVAL = 15.0
 
 
 def get_clock_from_db(name: str, page_id: str, context: str) -> tuple[int, int] | None:
@@ -67,7 +75,14 @@ def sse_updates_handler() -> Response:
             # Removed the "data: connected" line which was causing JSON parse errors
             yield ": connected\n\n"
             while True:
-                update = q.get()
+                try:
+                    update = q.get(timeout=SSE_HEARTBEAT_INTERVAL)
+                except queue.Empty:
+                    # No traffic. Write a comment frame: it keeps the stream alive
+                    # through idle proxies and, more importantly, it is a write, so a
+                    # client that has gone away raises here and we exit the loop.
+                    yield ": ping\n\n"
+                    continue
                 event_type = update.get("type", "message")
                 yield f"event: {event_type}\ndata: {json.dumps(update)}\n\n"
         except GeneratorExit:
