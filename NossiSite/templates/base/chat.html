@@ -2,7 +2,9 @@
 {% block head %}
     <meta name="htmx-config" content='{"useTemplateFragments":"true"}'>
     <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename='chat.css') }}?v={{ restart_id }}">
-    <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.22.4/dist/livekit-client.umd.min.js"
+            integrity="sha384-JNwhkdJAnQYgi7FD+ASalB7FiUYwy+oCbt+5PgiIKYp7//rkJN4Gm8JGw2/13hit"
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="{{ url_for("static", filename='js/sse.js') }}?v={{ restart_id }}"></script>
     <script src="{{ url_for("static", filename='chat.js') }}?v={{ restart_id }}"></script>
 {% endblock %}
@@ -21,6 +23,7 @@
                     Video Call
                 </button>
             </div>
+            <div id="call-failure-notice" style="display: none; margin-bottom: 10px; color: var(--error-color);"></div>
         {% else %}
             <div style="margin-bottom: 2px; padding: 0; color: var(--tertiary-color); text-align: center; font-style: italic; font-size: 0.5em;">
                 Call functions unavailable

@@ -2,6 +2,7 @@
 
 import os
 import re
+import threading
 import time
 from datetime import UTC, datetime
 from typing import Any
@@ -22,6 +23,25 @@ views = Blueprint("chat", __name__)
 
 env = Environment(loader=PackageLoader("NossiSite"), autoescape=select_autoescape())
 history_template = env.get_template("base/chathistory.html")
+
+ROOM_NAME_RE = re.compile(r"[a-z0-9][a-z0-9_-]{0,63}")
+LIVEKIT_PING_INTERVAL = 60.0
+LIVEKIT_PING_TIMEOUT = 2.0
+
+
+# Reachability cache, guarded by _livekit_lock. A single mutable holder keeps
+# the timestamp and the answer in one assignable slot for the monitor thread.
+class _LiveKitState:
+    """Cached LiveKit reachability, shared by the monitor thread and request path."""
+
+    def __init__(self) -> None:
+        """Start out unchecked and unavailable."""
+        self.checked_at: float = 0.0
+        self.reachable: bool = False
+
+
+_livekit_state = _LiveKitState()
+_livekit_lock = threading.Lock()
 
 data: dict[str, Any] = {
     "webhook": "",
@@ -162,36 +182,23 @@ def chat_send() -> tuple[str, int]:
     return "", 204
 
 
-@views.route("/chat/livekit-token/<room_name>")
-def livekit_token(room_name: str) -> dict[str, str | None]:
-    """Generate a LiveKit access token for a given room.
+def _livekit_configured() -> bool:
+    """Report whether all three LiveKit environment variables are present."""
+    return bool(
+        os.environ.get("LIVEKIT_URL") and os.environ.get("LIVEKIT_API_KEY") and os.environ.get("LIVEKIT_API_SECRET"),
+    )
 
-    Args:
-        room_name: The LiveKit room to join.
+
+def _ping_livekit() -> bool:
+    """Probe whether the LiveKit server answers an HTTP request.
 
     Returns:
-        A dict with the JWT token and server URL.
+        True when the configured server responded, False when it is
+        unconfigured, unreachable or slow. Never raises.
     """
-    user = session.get("user", "Anonymous")
-    token = (
-        api.AccessToken(
-            os.environ.get("LIVEKIT_API_KEY"),
-            os.environ.get("LIVEKIT_API_SECRET"),
-        )
-        .with_identity(user)
-        .with_name(user)
-        .with_grants(api.VideoGrants(room_join=True, room=room_name))
-    )
-    return {"token": token.to_jwt(), "url": os.environ.get("LIVEKIT_URL")}
-
-
-@views.route("/chat/debug")
-def chat_debug() -> str | dict[str, Any]:
-    """Debug endpoint that probes the LiveKit server health."""
-    checklogin()
     lk_url = os.environ.get("LIVEKIT_URL")
     if not lk_url:
-        return "LIVEKIT_URL not set"
+        return False
 
     url = lk_url.replace("ws://", "http://").replace("wss://", "https://")
     if not url.startswith("http"):
@@ -200,26 +207,117 @@ def chat_debug() -> str | dict[str, Any]:
     try:
         with requests.Session() as s:
             s.trust_env = False
-            res = s.get(url, timeout=5, verify=False)
-            return {
-                "url": url,
-                "status": res.status_code,
-                "headers": dict(res.headers),
-                "text": res.text[:100],
-            }
-    except Exception as e:
-        return f"Check failed for {url}: {e}"
+            s.get(url, timeout=LIVEKIT_PING_TIMEOUT)
+    except requests.RequestException:
+        return False
+    except Exception as e:  # pragma: no cover - defensive
+        log.debug(f"LiveKit ping raised unexpectedly: {e}")
+        return False
+    return True
+
+
+def _livekit_reachable() -> bool:
+    """Report current LiveKit reachability, refreshing the cache if it is stale.
+
+    The cache is refreshed at most every ``LIVEKIT_PING_INTERVAL`` seconds. When
+    the last known state was "down" the wait is skipped once so that starting a
+    session flips the UI to available on the next page load rather than after a
+    full interval.
+
+    Returns:
+        True when LiveKit appears to be running.
+    """
+    with _livekit_lock:
+        now = time.time()
+        never_checked = _livekit_state.checked_at == 0.0
+        stale = now - _livekit_state.checked_at > LIVEKIT_PING_INTERVAL
+        # Re-probe promptly when the last answer was "down", so a session that
+        # starts mid-interval shows up on the next page load.
+        if never_checked or (stale and not _livekit_state.reachable):
+            _livekit_state.checked_at = now
+            _livekit_state.reachable = _ping_livekit()
+        return _livekit_state.reachable
+
+
+def _livekit_monitor() -> None:
+    """Poll LiveKit on an interval for the lifetime of the process."""
+    while True:
+        try:
+            reachable = _ping_livekit()
+            with _livekit_lock:
+                _livekit_state.checked_at = time.time()
+                _livekit_state.reachable = reachable
+        except Exception as e:  # pragma: no cover - defensive
+            log.debug(f"LiveKit monitor iteration failed: {e}")
+        time.sleep(LIVEKIT_PING_INTERVAL)
+
+
+threading.Thread(target=_livekit_monitor, daemon=True, name="livekit-monitor").start()
+
+
+@views.route("/chat/livekit-token/<room_name>")
+def livekit_token(room_name: str) -> tuple[dict[str, str], int]:
+    """Generate a LiveKit access token for a given room.
+
+    Requires a logged-in user: anyone unauthenticated could otherwise mint a
+    room-join credential for an arbitrary room name. Room access itself stays
+    open to any logged-in user, by design.
+
+    Args:
+        room_name: The LiveKit room to join.
+
+    Returns:
+        A JSON dict with the JWT token and server URL and status 200, or a JSON
+        error message with status 400, 401 or 503.
+    """
+    checklogin()
+
+    if not ROOM_NAME_RE.fullmatch(room_name):
+        log.warning(f"Rejected LiveKit room name: {room_name[:40]!r}")
+        return _token_error("Invalid room name", 400)
+
+    user = session.get("user")
+    if not user:
+        # checklogin() passed, so this should not be reachable; refuse rather
+        # than mint a token under a placeholder identity.
+        return _token_error("Not logged in", 401)
+
+    key = os.environ.get("LIVEKIT_API_KEY")
+    secret = os.environ.get("LIVEKIT_API_SECRET")
+    url = os.environ.get("LIVEKIT_URL")
+    if not key or not secret or not url:
+        log.warning("LiveKit variables missing in environment")
+        return _token_error("LiveKit is not configured", 503)
+
+    token = (
+        api.AccessToken(key, secret)
+        .with_identity(str(user))
+        .with_name(str(user))
+        .with_grants(api.VideoGrants(room_join=True, room=room_name))
+    )
+    return {"token": token.to_jwt(), "url": url}, 200
+
+
+def _token_error(message: str, status: int) -> tuple[dict[str, str], int]:
+    """Build a JSON error response for a refused token request."""
+    return {"error": message}, status
 
 
 @views.route("/chat/")
 def chatsite() -> str:
-    """Render the main chat page, conditionally enabling LiveKit features."""
+    """Render the main chat page, conditionally enabling LiveKit features.
+
+    LiveKit is offered only when it is both configured and actually answering.
+    Credentials alone are not enough: the server usually runs only for the
+    duration of a scheduled session, so the Join control is hidden while it is
+    down rather than inviting a click that cannot succeed.
+    """
     checklogin()
-    livekit_available = bool(
-        os.environ.get("LIVEKIT_URL") and os.environ.get("LIVEKIT_API_KEY") and os.environ.get("LIVEKIT_API_SECRET"),
-    )
-    if not livekit_available:
-        log.warning("LiveKit variables missing in environment")
+
+    livekit_available = _livekit_configured() and _livekit_reachable()
+
+    if _livekit_configured() and not livekit_available:
+        log.info("LiveKit configured but not answering; hiding call controls")
 
     return render_template("base/chat.html", livekit_available=livekit_available)
 

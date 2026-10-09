@@ -10,6 +10,52 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     let room = null;
 
+    const LIVEKIT_MESSAGES = {
+        library: "Video calls are unavailable right now. Try again later.",
+        token: "You need to log in before joining a call.",
+        unreachable: "The call server is not running. Start it and try again.",
+        generic: "Could not join the call.",
+    };
+
+    class CallFailure extends Error {
+        constructor(reason, status) {
+            super(reason);
+            this.reason = reason;
+            this.status = status;
+        }
+    }
+
+    function resetCallUI() {
+        wrapper.style.display = "none";
+        btn.style.display = "block";
+        const lkStart = document.getElementById("livekit-start");
+        if (lkStart) lkStart.style.display = "flex";
+        btn.disabled = false;
+        btn.innerText = "Join Video Call";
+        container.innerHTML = "";
+        const pList = document.getElementById("participant-list");
+        if (pList) pList.innerHTML = "";
+        const pCount = document.getElementById("participant-count");
+        if (pCount) pCount.innerText = "0";
+        const roomName = document.getElementById("current-room-name");
+        if (roomName) roomName.innerText = "";
+        micBtn.classList.remove("active-toggle");
+        camBtn.classList.remove("active-toggle");
+        micBtn.innerText = "Mute Mic";
+        camBtn.innerText = "Start Camera";
+        micBtn.onclick = null;
+        camBtn.onclick = null;
+        leaveBtn.onclick = null;
+    }
+
+    function leaveCall() {
+        if (room) {
+            room.disconnect();
+            room = null;
+        }
+        resetCallUI();
+    }
+
     if (btn) btn.addEventListener("click", async () => {
         let roomCode = document.getElementById("room-code-input").value.trim().toLowerCase();
         if (!roomCode) {
@@ -20,14 +66,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         btn.disabled = true;
         btn.innerText = "Connecting...";
         try {
-            const response = await fetch(`/chat/livekit-token/${roomCode}`);
-            if (!response.ok) throw new Error("Failed to get token");
-            const data = await response.json();
+            if (typeof window.LivekitClient === "undefined") {
+                throw new CallFailure("library");
+            }
 
-            wrapper.style.display = "block";
-            btn.style.display = "none";
-            const lkStart = document.getElementById("livekit-start");
-            if (lkStart) lkStart.style.display = "none";
+            const response = await fetch(`/chat/livekit-token/${roomCode}`);
+            if (!response.ok) throw new CallFailure("token", response.status);
+            const data = await response.json();
 
             room = new window.LivekitClient.Room({
                 adaptiveStream: true,
@@ -97,7 +142,19 @@ document.addEventListener("DOMContentLoaded", async () => {
                 updateParticipantTile(participant);
             });
 
-            await room.connect(data.url, data.token);
+            try {
+                await room.connect(data.url, data.token);
+            } catch (e) {
+                room = null;
+                throw new CallFailure("unreachable");
+            }
+
+            // Only reveal the call UI once the connection actually succeeded, so a
+            // failed attempt leaves the page exactly as it was.
+            wrapper.style.display = "block";
+            btn.style.display = "none";
+            const lkStart = document.getElementById("livekit-start");
+            if (lkStart) lkStart.style.display = "none";
 
             const roomNameEl = document.getElementById("current-room-name");
             if (roomNameEl) roomNameEl.innerText = roomCode;
@@ -146,29 +203,19 @@ document.addEventListener("DOMContentLoaded", async () => {
                 }
             };
 
-            leaveBtn.onclick = () => {
-                room.disconnect();
-                wrapper.style.display = "none";
-                btn.style.display = "block";
-                const lkStart = document.getElementById("livekit-start");
-                if (lkStart) lkStart.style.display = "flex";
-                btn.disabled = false;
-                btn.innerText = "Join Video Call";
-                container.innerHTML = "";
-                const pList = document.getElementById("participant-list");
-                if (pList) pList.innerHTML = "";
-                const pCount = document.getElementById("participant-count");
-                if (pCount) pCount.innerText = "0";
-                micBtn.classList.remove("active-toggle");
-                camBtn.classList.remove("active-toggle");
-                micBtn.innerText = "Mute Mic";
-                camBtn.innerText = "Start Camera";
-            };
+            leaveBtn.onclick = leaveCall;
 
         } catch (e) {
             console.error("Failed to connect to LiveKit", e);
-            btn.disabled = false;
+            resetCallUI();
+            const reason = (e instanceof CallFailure) ? e.reason : "generic";
             btn.innerText = "Join Video Call (Failed)";
+            btn.title = LIVEKIT_MESSAGES[reason] || LIVEKIT_MESSAGES.generic;
+            const notice = document.getElementById("call-failure-notice");
+            if (notice) {
+                notice.innerText = LIVEKIT_MESSAGES[reason] || LIVEKIT_MESSAGES.generic;
+                notice.style.display = "block";
+            }
         }
     });
 
