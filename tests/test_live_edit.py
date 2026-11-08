@@ -119,3 +119,36 @@ def test_fensheet_data_path_includes_values_heading(test_app: Flask) -> None:
         )
     assert 'data-path="Values|Mental"' in rendered
     assert 'data-path="|Mental"' not in rendered
+
+
+TABLE_SHEET = """\
+# Values
+## Mental
+### Attributes
+
+| Attribut | Level |
+|----------|-------|
+| Geist    | 3     |
+"""
+
+
+def test_live_edit_get_text_returns_raw_source_slice() -> None:
+    """Text loads keep the file's exact formatting so saving matches verbatim."""
+    result = _live_edit_get_text(TABLE_SHEET, ["Values", "Mental", "Attributes"])
+    assert result["type"] == "text"
+    assert result["data"] in TABLE_SHEET
+    assert "|----------|-------|" in result["data"]
+
+
+def test_live_edit_get_text_slice_stops_at_sibling_heading() -> None:
+    """The raw slice ends before the next heading at the same or higher level."""
+    result = _live_edit_get_text(NESTED_SHEET, ["Values", "Mental"])
+    assert "Intelligence" in result["data"]
+    assert "## Social" not in result["data"]
+
+
+def test_live_edit_get_text_matches_duplicate_header_suffix() -> None:
+    """Duplicate siblings are addressed with the same underscores MDObj uses."""
+    body = "# A\nfirst\n# A\nsecond\n"
+    result = _live_edit_get_text(body, ["A_"])
+    assert result["data"].strip() == "# A\nsecond"

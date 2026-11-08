@@ -670,6 +670,49 @@ def live_edit_get(formdata: dict[str, Any]) -> dict[str, Any]:
     return {"data": "", "type": "error"}
 
 
+def _raw_section(body: str, path: list[str]) -> str | None:
+    """Return the raw markdown source of the section at a header path.
+
+    Live editing posts the text it was shown back as ``original``, and saving
+    replaces that exact string. Serializing an MDObj normalizes table padding
+    and drops empty rows, so the result cannot be matched against the file.
+    Returning the untouched source slice keeps loading and saving byte-equal.
+
+    Args:
+        body: Full wiki page body.
+        path: Header titles from the root to the target section, using the
+            duplicate-suffix keys MDObj assigns to repeated sibling headers.
+
+    Returns:
+        The raw section text, or None when the path is not found.
+    """
+    lines = body.replace("\r\n", "\n").splitlines(keepends=True)
+    keys: list[str] = []
+    sibling_counts: dict[tuple[str, ...], dict[str, int]] = {}
+    start: int | None = None
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if not stripped.startswith("#"):
+            continue
+        level = len(stripped) - len(stripped.lstrip("#"))
+        if level == 0:
+            continue
+        if start is not None and level <= len(path):
+            return "".join(lines[start:index])
+        parent = tuple(keys[: level - 1])
+        counts = sibling_counts.setdefault(parent, {})
+        title = stripped.lstrip("# ").strip()
+        occurrence = counts.get(title, 0)
+        counts[title] = occurrence + 1
+        del keys[level - 1 :]
+        keys.append(title + "_" * occurrence)
+        if start is None and keys == path:
+            start = index
+    if start is None:
+        return None
+    return "".join(lines[start:])
+
+
 def live_edit_get_text(res: str, a: list[str]) -> dict[str, Any]:
     """Extract text content from a wiki page for live editing.
 
@@ -694,7 +737,8 @@ def live_edit_get_text(res: str, a: list[str]) -> dict[str, Any]:
             "type": "error",
             "error": f"traversal error: element not found in sheet ({e.args[0]})",
         }
-    return {"data": mdo.to_md(), "type": "text"}
+    raw = _raw_section(res, a)
+    return {"data": raw if raw is not None else mdo.to_md(), "type": "text"}
 
 
 def live_edit_get_table(res: str, a: list[str]) -> dict[str, Any]:
