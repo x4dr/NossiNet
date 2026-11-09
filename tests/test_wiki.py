@@ -13,7 +13,8 @@ from gamepack.WikiPage import WikiPage
 
 import Data
 from NossiPack.markdown import NossiMarkdownProcessor
-from tests.NossiTestCase import NossiTestCase
+
+from .NossiTestCase import NossiTestCase
 
 
 class TestWiki(NossiTestCase):

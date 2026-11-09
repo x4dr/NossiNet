@@ -6,7 +6,8 @@ from flask import url_for
 from werkzeug.exceptions import BadRequestKeyError
 
 import Data
-from tests.NossiTestCase import NossiTestCase
+
+from .NossiTestCase import NossiTestCase
 
 
 class TestViews(NossiTestCase):

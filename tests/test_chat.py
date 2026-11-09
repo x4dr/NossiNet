@@ -3,7 +3,8 @@
 from unittest import mock
 
 import Data
-from tests.NossiTestCase import NossiTestCase
+
+from .NossiTestCase import NossiTestCase
 
 LIVEKIT_ENV = {
     "LIVEKIT_URL": "wss://livekit.invalid",
