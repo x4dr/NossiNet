@@ -34,6 +34,7 @@ from NossiSite import chat
 from NossiSite.base_ext import decode_id
 from NossiSite.helpers import checklogin
 from NossiSite.mecha_history import MechaEncounterManager
+from NossiSite.pbta_edit import gauge_id, set_health, set_notes, toggle_move
 from NossiSite.renderers import render_sheet
 from NossiSite.socks import broadcast_to_hub
 
@@ -1584,4 +1585,182 @@ def mecha_movement_graph(m: str) -> str:
 @views.route("/fensheet/<path:c>")
 def oldsheet(c: str) -> WerkzeugResponse:
     """Redirect old sheet URLs to the unified sheet route."""
+    return redirect(url_for("sheets.sheet", c=c))
+
+
+def _pbta_sheet_owned_by_user(c: str) -> bool:
+    """Report whether the logged-in user owns the PBTA sheet ``c``.
+
+    Mirrors the guard in :func:`wiki.live_edit`: a sheet with no configured owner
+    is writable by anyone (so a shared or unclaimed sheet still works), otherwise
+    only the owner may write.
+
+    Args:
+        c: Sheet reference.
+
+    Returns:
+        True when the write is permitted.
+    """
+    owners = Config.users_with_option_value("character_sheet", c)
+    owner = owners[0][0] if owners else None
+    return not owner or session.get("user") == owner
+
+
+def _save_pbta_body(c: str, body: str) -> bool:
+    """Persist a rewritten PBTA sheet body to the wiki.
+
+    Args:
+        c: Sheet reference.
+        body: The new markdown body.
+
+    Returns:
+        True when the write succeeded.
+    """
+    loc = WikiPage.locate(c)
+    if not loc:
+        return False
+    page = WikiPage.load(loc)
+    if not page:
+        return False
+    page.body = body
+    page.save_overwrite(str(session.get("user") or ""))
+    return True
+
+
+@views.route("/pbta/<path:c>/health/<name>/<delta>", methods=["POST"])
+def pbta_health(c: str, name: str, delta: str) -> tuple[dict[str, Any], int]:
+    """Adjust one PBTA health gauge, rewrite the sheet markdown, and broadcast it.
+
+    The wiki markdown is the source of truth, so a click rewrites the Health
+    table rather than a database row: ``sync_clocks_with_db`` overwrites clock
+    rows from the markdown on every startup and wiki save, so a database-backed
+    gauge would silently reset mid-session.
+
+    Args:
+        c: Sheet reference.
+        name: Health row label, e.g. ``"Stress"``.
+        delta: ``"+1"`` or ``"-1"`` style increment, or an absolute integer.
+
+    Returns:
+        JSON with the new current/total values and status 200, or 401 when the
+        caller does not own the sheet, or 404 when the sheet or row is missing.
+    """
+    checklogin()
+    if not _pbta_sheet_owned_by_user(c):
+        return {"error": "Not your sheet"}, 401
+
+    loc = WikiPage.locate(c)
+    if not loc:
+        return {"error": "Sheet not found"}, 404
+    page = WikiPage.load(loc)
+    if not page:
+        return {"error": "Sheet not found"}, 404
+
+    row = _find_health_row(page.body, name)
+    if row is None:
+        return {"error": f"No health row named {name}"}, 404
+
+    try:
+        step = int(delta)
+    except ValueError:
+        return {"error": "delta must be an integer"}, 400
+
+    new_current = row["current"] + step
+    new_body = set_health(page.body, row["label"], new_current)
+    if not _save_pbta_body(c, new_body):
+        return {"error": "Could not save"}, 500
+
+    current = _clamp_health(new_current, row["maximum"])
+    # Keep peers in step. The target id matches render_gauge's, so the stock
+    # sse_handler.js line branch updates the gauge without a PBTA-specific client.
+    broadcast_to_hub(
+        {
+            "type": "line",
+            "target": gauge_id(row["label"], c),
+            "current": current,
+            "total": row["maximum"],
+        },
+    )
+    return {"current": current, "total": row["maximum"], "name": row["label"]}, 200
+
+
+def _find_health_row(body: str, name: str) -> dict[str, Any] | None:
+    """Locate a health row in the markdown Health table.
+
+    Args:
+        body: The page markdown.
+        name: The row label to find, case-insensitive.
+
+    Returns:
+        A dict with ``label``, ``current`` and ``maximum``, or None if absent.
+    """
+    row_re = re.compile(
+        r"^\s*\|\s*(?P<label>" + re.escape(name) + r")\s*\|\s*(?P<current>\d+)\s*\|\s*(?P<maximum>\d+)\s*\|",
+        re.IGNORECASE | re.MULTILINE,
+    )
+    match = row_re.search(body)
+    if not match:
+        return None
+    return {
+        "label": match.group("label").strip(),
+        "current": int(match.group("current")),
+        "maximum": int(match.group("maximum")),
+    }
+
+
+def _clamp_health(value: int, maximum: int) -> int:
+    """Clamp a health value to ``[0, maximum]``."""
+    return max(0, min(int(value), int(maximum)))
+
+
+@views.route("/pbta/<path:c>/move/<path:name>", methods=["POST"])
+def pbta_toggle_move(c: str, name: str) -> tuple[str, int]:
+    """Toggle a PBTA move checkbox in the sheet markdown.
+
+    Args:
+        c: Sheet reference.
+        name: The move text as it appears after the checkbox.
+
+    Returns:
+        Empty body with 200, or 401/404/500 on failure.
+    """
+    checklogin()
+    if not _pbta_sheet_owned_by_user(c):
+        return "", 401
+    loc = WikiPage.locate(c)
+    if not loc:
+        return "", 404
+    page = WikiPage.load(loc)
+    if not page:
+        return "", 404
+    new_body = toggle_move(page.body, name)
+    if new_body == page.body:
+        return "", 404
+    if not _save_pbta_body(c, new_body):
+        return "", 500
+    return "", 204
+
+
+@views.route("/pbta/<path:c>/notes", methods=["POST"])
+def pbta_save_notes(c: str) -> WerkzeugResponse:
+    """Save the PBTA notes textarea back into the sheet markdown.
+
+    Args:
+        c: Sheet reference.
+
+    Returns:
+        A redirect back to the sheet.
+    """
+    checklogin()
+    if not _pbta_sheet_owned_by_user(c):
+        flash("Unauthorized, so ... no.", "error")
+        return redirect(url_for("sheets.sheet", c=c))
+    notes = request.form.get("notes", "")
+    loc = WikiPage.locate(c)
+    if loc:
+        page = WikiPage.load(loc)
+        if page:
+            new_body = set_notes(page.body, notes)
+            if new_body != page.body:
+                _save_pbta_body(c, new_body)
     return redirect(url_for("sheets.sheet", c=c))

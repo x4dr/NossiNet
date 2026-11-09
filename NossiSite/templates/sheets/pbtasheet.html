@@ -94,16 +94,17 @@
             <input type="checkbox"
                    class="checkbox"
                    id="checkbox-{{ name }}"
-                   hx-get="/update_move/{{ c|urlencode }}/{{ name|urlencode }}"
-                   hx-trigger="click"
-                   hx-swap="outerHTML"><label
-                for="checkbox-{{ name }}" class="preview-label">{{ name }}</label>
-            <div class="preview-box"
-                 hx-get="/preview_move/{{ c|urlencode }}/{{ name|urlencode }}"
-                 hx-trigger="load"
-                 hx-swap="innerHTML">
-            </div>
+                   {% if checked %}checked{% endif %}
+                   {% if owner %}
+                   hx-post="/pbta/{{ c|urlencode }}/move/{{ name|urlencode }}"
+                   hx-trigger="change"
+                   hx-swap="none"
+                   hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
+                   {% endif %}><label
+            for="checkbox-{{ name }}" class="preview-label">{{ name }}</label>
         </div>
+    {% else %}
+        <div class="preview-container"><span class="preview-label">No moves</span></div>
     {% endfor %}
 {% endmacro %}
 
@@ -120,17 +121,17 @@
 {% macro display_inv(inventory) %}
     {% for k in inventory %}
         <div class="flex-center">
-            <div id="parent-{{ ("item-"+ k.name) |b64e }}-{{ c|b64e }}"
-                 hx-ws="connect:/ws_active_element?name={{ ("item-"+ k.name) |b64e }}&page={{ c|b64e }}&sheet=true">
-                <div id="{{ ("item-"+ k.name) |b64e }}-{{ c|b64e }}">Loading item...</div>
+            <div id="{{ ("item-"+ k.name) |b64e }}-{{ c|b64e }}">
+                {{ k.name.title() }}{% if k.quantity %} × {{ k.quantity }}{% endif %}
             </div>
             <label class="under label">{{ k.name.title() }}</label>
         </div>
-    {%- endfor -%}
+    {% else %}
+        <div class="flex-center"><span>No items</span></div>
+    {% endfor -%}
 {% endmacro %}
 
 {%- block body -%}
-    <body>
     <div class="container">
         <!-- Left Column -->
         <div class="column column-left">
@@ -140,18 +141,12 @@
             </div>
             <div class="stress section slanted-gauge">
                 <div>
-                    <div id="parent-{{ "stress" | b64e }}-{{ c|b64e }}"
-                         hx-ws="connect:/ws_active_element?name={{ "stress"|b64e }}&page={{ c|b64e }}&sheet=true">
-                        <div id="{{ "stress" | b64e }}-{{ c|b64e }}">Loading stress meter...</div>
-                    </div>
+                    {{ gauge("Stress") }}
                     <label class="under label">Stress</label>
                 </div>
 
                 <div class="trauma">
-                    <div id="parent-{{ "trauma"|b64e }}-{{ c|b64e }}"
-                         hx-ws="connect:/ws_active_element?name={{ "trauma"|b64e }}&page={{ c|b64e }}&sheet=true">
-                        <div id="{{ "trauma" | b64e }}-{{ c|b64e }}">Loading trauma meter...</div>
-                    </div>
+                    {{ gauge("Trauma", "trauma") }}
                     <label class="under label">Trauma</label>
                 </div>
             </div>
@@ -184,32 +179,32 @@
                 </table>
                 <div class="slanted-gauge">
                     <div class="healing-clock-section">
-                        <div id="parent-{{ "healing"|b64e }}-{{ c|b64e }}}"
-                             hx-ws="connect:/ws_active_element?name={{ "healing"|b64e }}&page={{ c|b64e }}&sheet=true">
-                            <div id="{{ "healing"|b64e }}-{{ c|b64e }}">Loading healing clock...</div>
-                        </div>
+                        {{ gauge("Healing") }}
                         <label class="label">Healing Clock</label>
                     </div>
                     <div>
-                        <div id="parent-{{ "armor"|b64e }}-{{ c|b64e }}"
-                             hx-ws="connect:/ws_active_element?name={{ "armor"|b64e }}&page={{ c|b64e }}&sheet=true">
-                            <div id="{{ "armor"|b64e }}-{{ c|b64e }}">Loading armor meter...</div>
-                        </div>
+                        {{ gauge("Armor") }}
                         <label class="label">Armor</label>
                     </div>
                 </div>
             </div>
             <div class="section">
                 <h2 class="pirata-one-regular"><label for="notes">Notes</label></h2>
-                <textarea id="notes"
-                          class="input-field tillana-medium"
-                          name="notes"
-                          rows="4"
-                          autocomplete="off"
-                          hx-post="/pbta-update-notes?c={{ c|urlencode }}"
-                          hx-trigger="blur, keyup delay:30s"
-                          hx-include="#csrf">{{ character.notes | safe }}</textarea>
-                <input type="hidden" id="csrf" name="csrf_token" value="{{ csrf_token() }}"/>
+                {% if owner %}
+                    <form method="post" action="{{ url_for('sheets.pbta_save_notes', c=c) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <textarea id="notes"
+                                  class="input-field tillana-medium"
+                                  name="notes"
+                                  rows="4"
+                                  autocomplete="off">{{ character.notes | safe }}</textarea>
+                        <div class="formline">
+                            <input class="dark" type="submit" name="savenotes" value="Save Notes"/>
+                        </div>
+                    </form>
+                {% else %}
+                    <div id="notes" class="input-field tillana-medium">{{ character.notes | safe }}</div>
+                {% endif %}
             </div>
         </div>
         <div class="column column-middle">
@@ -234,7 +229,5 @@
             </div>
         </div>
     </div>
-    </body>
 
 {%- endblock -%}
-</html>
